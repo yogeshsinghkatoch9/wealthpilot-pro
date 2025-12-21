@@ -4,7 +4,8 @@ import cookieParser from 'cookie-parser';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_URL = process.env.API_URL || 'http://localhost:4000/api';
+const API_URL = process.env.API_URL || 'http://localhost:4000';
+const API_BASE = `${API_URL}/api`;
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
@@ -15,7 +16,7 @@ app.use(cookieParser());
 
 // API Proxy - Forward /api/* requests to backend
 app.use('/api', async (req, res, next) => {
-  const backendUrl = `http://localhost:4000${req.originalUrl}`;
+  const backendUrl = `${API_URL}${req.originalUrl}`;
 
   try {
     const headers: any = {
@@ -90,7 +91,7 @@ app.use((req, res, next) => {
   res.locals.token = token;
   res.locals.isAuthenticated = !!token;
   res.locals.user = null;
-  res.locals.apiUrl = API_URL;
+  res.locals.apiUrl = API_BASE;
 
   if (token) {
     try {
@@ -110,7 +111,7 @@ async function apiFetch(endpoint: string, token: string | null = null, options: 
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   try {
-    const url = `${API_URL}${endpoint}`;
+    const url = `${API_BASE}${endpoint}`;
     console.log(`[apiFetch] Calling ${options.method || 'GET'} ${url}`);
 
     const response = await fetch(url, { ...options, headers });

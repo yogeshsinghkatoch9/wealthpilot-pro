@@ -3,7 +3,8 @@
  * Handles all API communication with the backend
  */
 
-const API_BASE_URL = process.env.API_URL || 'http://localhost:4000/api';
+// Use relative /api path - frontend server proxies to backend
+const API_BASE_URL = '/api';
 
 class ApiClient {
   constructor() {
