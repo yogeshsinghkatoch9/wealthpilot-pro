@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import cookieParser from 'cookie-parser';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,8 +11,6 @@ const API_BASE = `${API_URL}/api`;
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 app.use(express.static(path.join(__dirname, '../public')));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 console.log(`[Frontend] Starting with API_URL: ${API_URL}`);
@@ -27,70 +26,30 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Proxy - Forward /api/* requests to backend
-app.use('/api', async (req, res, next) => {
-  const backendUrl = `${API_URL}${req.originalUrl}`;
-
-  try {
-    const headers: any = {
-      'Content-Type': 'application/json'
-    };
-
-    // Get token from cookie and add as Authorization header
-    const token = req.cookies.token;
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+// API Proxy - Use http-proxy-middleware for proper proxying of all request types including file uploads
+app.use('/api', createProxyMiddleware({
+  target: API_URL,
+  changeOrigin: true,
+  // Don't parse body - let the backend handle it
+  on: {
+    proxyReq: (proxyReq, req: any, res) => {
+      // Forward Authorization from cookie if not already present
+      const token = req.cookies?.token;
+      if (token && !req.headers.authorization) {
+        proxyReq.setHeader('Authorization', `Bearer ${token}`);
+      }
+      console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}${req.originalUrl}`);
+    },
+    error: (err, req, res: any) => {
+      console.error('[Proxy Error]', err.message);
+      res.status(500).json({ error: 'Proxy error: ' + err.message });
     }
-
-    // Forward cookie header from request
-    if (req.headers.cookie) {
-      headers['Cookie'] = req.headers.cookie;
-    }
-
-    // Forward authorization header if already present
-    if (req.headers.authorization) {
-      headers['Authorization'] = req.headers.authorization;
-    }
-
-    const fetchOptions: any = {
-      method: req.method,
-      headers
-    };
-
-    // Add body for non-GET requests
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-      fetchOptions.body = JSON.stringify(req.body);
-    }
-
-    const response = await fetch(backendUrl, fetchOptions);
-
-    // Check if response is JSON
-    const contentType = response.headers.get('content-type');
-    let data;
-
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
-    } else {
-      data = await response.text();
-    }
-
-    res.status(response.status);
-
-    // Forward response headers if needed
-    if (response.headers.get('set-cookie')) {
-      res.set('set-cookie', response.headers.get('set-cookie')!);
-    }
-
-    if (typeof data === 'string') {
-      res.send(data);
-    } else {
-      res.json(data);
-    }
-  } catch (error: any) {
-    console.error('API Proxy Error:', error.message);
-    res.status(500).json({ error: 'Proxy error: ' + error.message });
   }
-});
+}));
+
+// Parse JSON/URL-encoded bodies for non-API routes (after proxy to avoid interfering with file uploads)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Theme middleware
 app.use((req, res, next) => {

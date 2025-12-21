@@ -6,70 +6,49 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const http_proxy_middleware_1 = require("http-proxy-middleware");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
-const API_URL = process.env.API_URL || 'http://localhost:4000/api';
+const API_URL = process.env.API_URL || 'http://localhost:4000';
+const API_BASE = `${API_URL}/api`;
 app.set('view engine', 'ejs');
 app.set('views', path_1.default.join(__dirname, '../views'));
 app.use(express_1.default.static(path_1.default.join(__dirname, '../public')));
+app.use((0, cookie_parser_1.default)());
+console.log(`[Frontend] Starting with API_URL: ${API_URL}`);
+console.log(`[Frontend] API_BASE: ${API_BASE}`);
+// Health check endpoint (must be before API proxy)
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        service: 'frontend',
+        apiUrl: API_URL,
+        timestamp: new Date().toISOString()
+    });
+});
+// API Proxy - Use http-proxy-middleware for proper proxying of all request types including file uploads
+app.use('/api', (0, http_proxy_middleware_1.createProxyMiddleware)({
+    target: API_URL,
+    changeOrigin: true,
+    // Don't parse body - let the backend handle it
+    on: {
+        proxyReq: (proxyReq, req, res) => {
+            // Forward Authorization from cookie if not already present
+            const token = req.cookies?.token;
+            if (token && !req.headers.authorization) {
+                proxyReq.setHeader('Authorization', `Bearer ${token}`);
+            }
+            console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}${req.originalUrl}`);
+        },
+        error: (err, req, res) => {
+            console.error('[Proxy Error]', err.message);
+            res.status(500).json({ error: 'Proxy error: ' + err.message });
+        }
+    }
+}));
+// Parse JSON/URL-encoded bodies for non-API routes (after proxy to avoid interfering with file uploads)
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use((0, cookie_parser_1.default)());
-// API Proxy - Forward /api/* requests to backend
-app.use('/api', async (req, res, next) => {
-    const backendUrl = `http://localhost:4000${req.originalUrl}`;
-    try {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        // Get token from cookie and add as Authorization header
-        const token = req.cookies.token;
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        // Forward cookie header from request
-        if (req.headers.cookie) {
-            headers['Cookie'] = req.headers.cookie;
-        }
-        // Forward authorization header if already present
-        if (req.headers.authorization) {
-            headers['Authorization'] = req.headers.authorization;
-        }
-        const fetchOptions = {
-            method: req.method,
-            headers
-        };
-        // Add body for non-GET requests
-        if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-            fetchOptions.body = JSON.stringify(req.body);
-        }
-        const response = await fetch(backendUrl, fetchOptions);
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        let data;
-        if (contentType && contentType.includes('application/json')) {
-            data = await response.json();
-        }
-        else {
-            data = await response.text();
-        }
-        res.status(response.status);
-        // Forward response headers if needed
-        if (response.headers.get('set-cookie')) {
-            res.set('set-cookie', response.headers.get('set-cookie'));
-        }
-        if (typeof data === 'string') {
-            res.send(data);
-        }
-        else {
-            res.json(data);
-        }
-    }
-    catch (error) {
-        console.error('API Proxy Error:', error.message);
-        res.status(500).json({ error: 'Proxy error: ' + error.message });
-    }
-});
 // Theme middleware
 app.use((req, res, next) => {
     res.locals.theme = req.cookies.theme || 'dark';
@@ -81,7 +60,7 @@ app.use((req, res, next) => {
     res.locals.token = token;
     res.locals.isAuthenticated = !!token;
     res.locals.user = null;
-    res.locals.apiUrl = API_URL;
+    res.locals.apiUrl = API_BASE;
     if (token) {
         try {
             const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
@@ -100,21 +79,31 @@ async function apiFetch(endpoint, token = null, options = {}) {
     if (token)
         headers['Authorization'] = `Bearer ${token}`;
     try {
-        const url = `${API_URL}${endpoint}`;
+        const url = `${API_BASE}${endpoint}`;
         console.log(`[apiFetch] Calling ${options.method || 'GET'} ${url}`);
         const response = await fetch(url, { ...options, headers });
-        const data = await response.json();
+        // Handle non-JSON responses
+        const contentType = response.headers.get('content-type');
+        let data;
+        if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+        }
+        else {
+            const text = await response.text();
+            console.error(`[apiFetch] Non-JSON response for ${endpoint}:`, text.substring(0, 200));
+            return { error: `Server returned non-JSON response (${response.status})` };
+        }
         console.log(`[apiFetch] Response status: ${response.status}`, `Data type: ${Array.isArray(data) ? 'array' : typeof data}`, Array.isArray(data) ? `Length: ${data.length}` : '');
         if (!response.ok) {
             console.error(`[apiFetch] HTTP ${response.status} error:`, data);
             const errorData = data;
-            return { error: errorData.error || errorData.message || `HTTP ${response.status}` };
+            return { error: errorData.error || errorData.message || `Server error (${response.status})` };
         }
         return data;
     }
     catch (err) {
         console.error(`[apiFetch] Network error for ${endpoint}:`, err.message);
-        return { error: 'Network error: ' + err.message };
+        return { error: `Cannot connect to server: ${err.message}` };
     }
 }
 // Require auth helper
