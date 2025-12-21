@@ -50,13 +50,12 @@ const app = express();
 const { prisma } = require('./db/simpleDb');
 const PORT = process.env.PORT || 4000;
 
-// Trust proxy for Railway/Vercel (required for rate limiting behind reverse proxy)
+// Trust proxy (required for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);
 
 // Middleware - Allow multiple origins for CORS
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://wealthpilot-pro.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
