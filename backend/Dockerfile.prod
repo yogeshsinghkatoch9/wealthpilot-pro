@@ -5,7 +5,7 @@ ENV PORT=4000
 
 WORKDIR /app
 
-# Install only essential runtime dependencies
+# Install runtime dependencies
 RUN apk add --no-cache curl tini openssl
 
 # Copy package files
@@ -18,21 +18,23 @@ RUN npm install --omit=dev --no-optional --ignore-scripts 2>/dev/null || npm ins
     npx prisma generate && \
     npm cache clean --force
 
-# Copy source code
+# Copy source code and entrypoint
 COPY src ./src
+COPY docker-entrypoint.sh ./
 
-# Create non-root user
+# Create non-root user and set permissions
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 wealthpilot && \
     mkdir -p /app/data /app/logs && \
+    chmod +x /app/docker-entrypoint.sh && \
     chown -R wealthpilot:nodejs /app
 
 USER wealthpilot
 
 EXPOSE 4000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
     CMD curl -f http://localhost:4000/health || exit 1
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "src/index.js"]
+CMD ["/app/docker-entrypoint.sh"]
