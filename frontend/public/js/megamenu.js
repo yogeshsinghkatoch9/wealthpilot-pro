@@ -319,6 +319,9 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Portfolio Builder</h3>
           <ul class="megamenu-links">
+            <li><a href="/portfolio-manager" class="megamenu-link megamenu-link-featured">
+              <span class="megamenu-link-icon">★</span> Portfolio Manager
+            </a></li>
             <li><a href="/investment-selector" class="megamenu-link megamenu-link-featured">
               <span class="megamenu-link-icon">★</span> Investment Selector
             </a></li>

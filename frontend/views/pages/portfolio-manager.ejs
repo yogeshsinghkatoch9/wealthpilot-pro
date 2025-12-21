@@ -1,0 +1,1365 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio Manager' }) %>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <h1 class="text-amber-400 text-lg font-bold tracking-wide">PORTFOLIO MANAGER</h1>
+    <div class="flex gap-3">
+      <button onclick="loadExistingPortfolio()" class="bloomberg-btn bloomberg-btn-secondary" title="Load existing portfolio">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        LOAD PORTFOLIO
+      </button>
+      <button onclick="rebalancePortfolio()" class="bloomberg-btn bloomberg-btn-secondary" id="rebalanceBtn" disabled>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        REBALANCE
+      </button>
+      <button onclick="analyzePortfolio()" class="bloomberg-btn bloomberg-btn-primary" id="analyzeBtn" disabled>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        FULL ANALYSIS
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-7xl mx-auto p-6 space-y-6">
+  <!-- Top Section: Investment Amount & Quick Stats -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Amount Invested -->
+    <div class="bloomberg-card">
+      <h2 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Total Investment</h2>
+      <div class="flex items-center gap-3">
+        <span class="text-slate-400 text-2xl">$</span>
+        <input type="number" id="totalInvestment" value="100000" min="0" step="1000"
+               class="form-input text-3xl font-mono font-bold text-white bg-transparent border-b-2 border-amber-400/50 focus:border-amber-400 w-full"
+               onchange="updatePortfolioValues()">
+      </div>
+      <p class="text-slate-500 text-xs mt-2">Enter total portfolio value</p>
+    </div>
+
+    <!-- Allocation Status -->
+    <div class="bloomberg-card">
+      <h2 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Allocation Status</h2>
+      <div id="allocationStatus" class="text-center py-2">
+        <p id="allocationTotal" class="text-4xl font-mono font-bold text-slate-500">0%</p>
+        <p id="allocationMessage" class="text-sm text-slate-400 mt-1">Add holdings to begin</p>
+      </div>
+    </div>
+
+    <!-- Portfolio Beta -->
+    <div class="bloomberg-card">
+      <h2 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Portfolio Beta</h2>
+      <div class="text-center py-2">
+        <p id="quickBeta" class="text-4xl font-mono font-bold text-cyan-400">--</p>
+        <p class="text-xs text-slate-400 mt-1">vs S&P 500</p>
+      </div>
+    </div>
+
+    <!-- Portfolio Yield -->
+    <div class="bloomberg-card">
+      <h2 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Dividend Yield</h2>
+      <div class="text-center py-2">
+        <p id="quickYield" class="text-4xl font-mono font-bold text-purple-400">--</p>
+        <p id="quickIncome" class="text-xs text-slate-400 mt-1">$-- annual income</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Investment Selector Section -->
+  <div class="bloomberg-card">
+    <h2 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Add Investment</h2>
+
+    <!-- Search Input -->
+    <div class="relative mb-4">
+      <input type="text" id="searchInput" placeholder="Search by ticker or company name..."
+             class="form-input w-full text-lg" autocomplete="off" oninput="debounceSearch(this.value)">
+      <div id="searchResults" class="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-80 overflow-y-auto hidden">
+      </div>
+    </div>
+
+    <!-- Selected Investment Details -->
+    <div id="investmentDetails" class="hidden">
+      <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <span id="detailSymbol" class="text-xl font-bold text-amber-400">--</span>
+            </div>
+            <div>
+              <h3 id="detailName" class="text-lg font-bold text-white">--</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <span id="detailSector" class="text-slate-400 text-sm">--</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <p id="detailPrice" class="text-xl font-mono font-bold text-white">$--</p>
+            <p id="detailChange" class="text-sm font-mono">--</p>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-3 md:grid-cols-6 gap-4 mt-4 pt-4 border-t border-slate-700">
+          <div>
+            <p class="text-xs text-slate-500 uppercase">P/E</p>
+            <p id="detailPE" class="text-sm font-mono text-white">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase">Div Yield</p>
+            <p id="detailDividend" class="text-sm font-mono text-purple-400">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase">Mkt Cap</p>
+            <p id="detailMarketCap" class="text-sm font-mono text-white">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase">Beta</p>
+            <p id="detailBeta" class="text-sm font-mono text-cyan-400">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase">52W High</p>
+            <p id="detail52High" class="text-sm font-mono text-emerald-400">--</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 uppercase">52W Low</p>
+            <p id="detail52Low" class="text-sm font-mono text-red-400">--</p>
+          </div>
+        </div>
+
+        <!-- Add to Portfolio -->
+        <div class="mt-4 flex items-end gap-4">
+          <div class="flex-1">
+            <label class="text-xs text-slate-500 uppercase">Allocation %</label>
+            <input type="number" id="allocationInput" value="10" min="0.1" max="100" step="0.1"
+                   class="form-input w-full mt-1" placeholder="Allocation %">
+          </div>
+          <button onclick="addToPortfolio()" class="bloomberg-btn bloomberg-btn-primary">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            ADD
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio Holdings Table -->
+  <div class="bloomberg-card">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-amber-400 text-sm font-bold uppercase tracking-wider">Portfolio Holdings</h2>
+      <button onclick="clearAll()" class="text-red-400 hover:text-red-300 text-sm">Clear All</button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+            <th class="py-3 text-left">Name</th>
+            <th class="py-3 text-left">Ticker</th>
+            <th class="py-3 text-right">Price</th>
+            <th class="py-3 text-right">% Alloc</th>
+            <th class="py-3 text-right">Value</th>
+            <th class="py-3 text-right">Proj. Income</th>
+            <th class="py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="portfolioTableBody">
+          <tr id="emptyPortfolioRow">
+            <td colspan="7" class="py-8 text-center text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+              </svg>
+              <p>No holdings added yet</p>
+              <p class="text-xs mt-1">Search and add investments above</p>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot id="portfolioFooter" class="hidden border-t-2 border-amber-400/50">
+          <tr class="text-white font-semibold">
+            <td class="py-3" colspan="3">TOTAL</td>
+            <td id="footerAllocation" class="py-3 text-right font-mono text-amber-400">0%</td>
+            <td id="footerValue" class="py-3 text-right font-mono">$0</td>
+            <td id="footerIncome" class="py-3 text-right font-mono text-purple-400">$0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Analysis Section (shown after analysis) -->
+  <div id="analysisSection" class="hidden space-y-6">
+    <!-- Row 1: Allocation Donut & Sector Treemap -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 1. Allocation Donut Chart -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Asset Class Allocation</h3>
+        <div class="h-72">
+          <canvas id="allocationDonutChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 2. Sector Treemap (using nested bars as approximation) -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Sector Breakdown</h3>
+        <div id="sectorTreemap" class="h-72 overflow-y-auto space-y-2">
+          <p class="text-slate-500 text-center py-8">Run analysis to see sector breakdown</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Risk-Return Scatter & Historical Growth -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 3. Risk-Return Scatter Plot -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Risk vs Return</h3>
+        <div class="h-72">
+          <canvas id="riskReturnChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 4. Historical Growth Simulation -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Growth Simulation (10 Years)</h3>
+        <div class="h-72">
+          <canvas id="growthSimulationChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Income Contribution & Holdings Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- 5. Income Contribution Chart -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Income Contribution by Holding</h3>
+        <div class="h-72">
+          <canvas id="incomeContributionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 6. Holdings Breakdown Pie -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Holdings Breakdown</h3>
+        <div class="h-72">
+          <canvas id="holdingsBreakdownChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detailed Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Historical Returns -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Historical Returns</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-400">1 Year</span>
+            <span id="return1yr" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">3 Year</span>
+            <span id="return3yr" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">5 Year</span>
+            <span id="return5yr" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">10 Year</span>
+            <span id="return10yr" class="font-mono font-bold">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Metrics -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Risk Metrics</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Portfolio Beta</span>
+            <span id="metricBeta" class="font-mono font-bold text-cyan-400">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Sharpe Ratio</span>
+            <span id="metricSharpe" class="font-mono font-bold text-emerald-400">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">VaR (95%)</span>
+            <span id="metricVaR" class="font-mono font-bold text-red-400">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Std Dev</span>
+            <span id="metricStdDev" class="font-mono font-bold text-amber-400">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concentration -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Concentration</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-400">HHI Index</span>
+            <span id="metricHHI" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Top 5 Weight</span>
+            <span id="metricTop5" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Holdings Count</span>
+            <span id="metricCount" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Rating</span>
+            <span id="metricRating" class="font-mono font-bold text-emerald-400">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Income Summary -->
+      <div class="bloomberg-card">
+        <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Income Summary</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Portfolio Yield</span>
+            <span id="metricYield" class="font-mono font-bold text-purple-400">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Annual Income</span>
+            <span id="metricAnnualIncome" class="font-mono font-bold text-emerald-400">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Monthly Income</span>
+            <span id="metricMonthlyIncome" class="font-mono font-bold">--</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Yield on Cost</span>
+            <span id="metricYOC" class="font-mono font-bold">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Suggestions -->
+    <div class="bloomberg-card" id="suggestionsCard">
+      <h3 class="text-amber-400 text-sm font-bold uppercase tracking-wider mb-4">Portfolio Suggestions</h3>
+      <div id="suggestionsList" class="space-y-3">
+        <p class="text-slate-500">Run analysis to get AI-powered suggestions</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Load Portfolio Modal -->
+<div id="loadPortfolioModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
+  <div class="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+    <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+      <h3 class="text-amber-400 text-lg font-bold">Load Portfolio</h3>
+      <button onclick="closeLoadModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="portfoliosList" class="p-4 overflow-y-auto max-h-96">
+      <p class="text-center text-slate-400">Loading portfolios...</p>
+    </div>
+  </div>
+</div>
+
+<!-- Rebalance Modal -->
+<div id="rebalanceModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center">
+  <div class="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-3xl mx-4 max-h-[80vh] overflow-hidden">
+    <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+      <h3 class="text-amber-400 text-lg font-bold">Rebalancing Recommendations</h3>
+      <button onclick="closeRebalanceModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="rebalanceContent" class="p-4 overflow-y-auto max-h-[60vh]">
+      <p class="text-center text-slate-400">Calculating rebalancing trades...</p>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+  // State
+  let portfolio = [];
+  let selectedInvestment = null;
+  let searchTimeout = null;
+  let analysisData = null;
+
+  // Charts
+  let allocationDonutChart = null;
+  let riskReturnChart = null;
+  let growthSimulationChart = null;
+  let incomeContributionChart = null;
+  let holdingsBreakdownChart = null;
+
+  const serverToken = `<%= token || "" %>`;
+
+  function getToken() {
+    return serverToken || '';
+  }
+
+  async function authFetch(url, options = {}) {
+    const token = getToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return fetch(url, { ...options, headers });
+  }
+
+  // Format helpers
+  function formatMoney(value, decimals = 0) {
+    if (value === null || value === undefined) return '--';
+    return '$' + Number(value).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+
+  function formatPercent(value, decimals = 2) {
+    if (value === null || value === undefined) return '--';
+    const num = Number(value);
+    const sign = num >= 0 ? '+' : '';
+    return sign + num.toFixed(decimals) + '%';
+  }
+
+  function formatMarketCap(value) {
+    if (!value) return '--';
+    if (value >= 1e12) return '$' + (value / 1e12).toFixed(2) + 'T';
+    if (value >= 1e9) return '$' + (value / 1e9).toFixed(2) + 'B';
+    if (value >= 1e6) return '$' + (value / 1e6).toFixed(2) + 'M';
+    return '$' + value.toLocaleString();
+  }
+
+  // Search functionality
+  function debounceSearch(query) {
+    clearTimeout(searchTimeout);
+    if (query.length < 1) {
+      document.getElementById('searchResults').classList.add('hidden');
+      return;
+    }
+    searchTimeout = setTimeout(() => searchInvestments(query), 300);
+  }
+
+  async function searchInvestments(query) {
+    try {
+      const response = await authFetch(`/api/investment-selector/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      const resultsDiv = document.getElementById('searchResults');
+      if (!data.success || !data.results || data.results.length === 0) {
+        resultsDiv.innerHTML = '<div class="p-4 text-slate-400 text-center">No results found</div>';
+        resultsDiv.classList.remove('hidden');
+        return;
+      }
+
+      resultsDiv.innerHTML = data.results.map(r => `
+        <div class="p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700 last:border-0"
+             onclick="selectInvestment('${r.symbol}')">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold text-amber-400">${r.symbol}</span>
+              <span class="text-slate-400 ml-2">${r.name || r.description || ''}</span>
+            </div>
+            <span class="text-xs text-slate-500">${r.type || 'Stock'}</span>
+          </div>
+        </div>
+      `).join('');
+      resultsDiv.classList.remove('hidden');
+    } catch (err) {
+      console.error('Search error:', err);
+    }
+  }
+
+  async function selectInvestment(symbol) {
+    document.getElementById('searchResults').classList.add('hidden');
+    document.getElementById('searchInput').value = symbol;
+
+    try {
+      const response = await authFetch(`/api/investment-selector/details/${symbol}`);
+      const data = await response.json();
+
+      if (!data.success) {
+        alert('Failed to get details: ' + (data.error || 'Unknown error'));
+        return;
+      }
+
+      selectedInvestment = data.data;
+      displayInvestmentDetails(data.data);
+    } catch (err) {
+      console.error('Error getting details:', err);
+      alert('Failed to get investment details');
+    }
+  }
+
+  function displayInvestmentDetails(inv) {
+    document.getElementById('detailSymbol').textContent = inv.symbol;
+    document.getElementById('detailName').textContent = inv.name || inv.symbol;
+    document.getElementById('detailSector').textContent = inv.sector || inv.industry || '--';
+    document.getElementById('detailPrice').textContent = formatMoney(inv.price, 2);
+
+    const changeEl = document.getElementById('detailChange');
+    const changeVal = inv.change || 0;
+    const changePct = inv.changePercent || 0;
+    changeEl.textContent = `${changeVal >= 0 ? '+' : ''}${changeVal.toFixed(2)} (${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%)`;
+    changeEl.className = `text-sm font-mono ${changeVal >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+    document.getElementById('detailPE').textContent = inv.pe ? inv.pe.toFixed(2) : '--';
+    document.getElementById('detailDividend').textContent = inv.dividendYield ? inv.dividendYield.toFixed(2) + '%' : '0%';
+    document.getElementById('detailMarketCap').textContent = formatMarketCap(inv.marketCap);
+    document.getElementById('detailBeta').textContent = inv.beta ? inv.beta.toFixed(2) : '--';
+    document.getElementById('detail52High').textContent = inv.week52High ? formatMoney(inv.week52High, 2) : '--';
+    document.getElementById('detail52Low').textContent = inv.week52Low ? formatMoney(inv.week52Low, 2) : '--';
+
+    document.getElementById('investmentDetails').classList.remove('hidden');
+  }
+
+  function addToPortfolio() {
+    if (!selectedInvestment) {
+      alert('Please select an investment first');
+      return;
+    }
+
+    const allocation = parseFloat(document.getElementById('allocationInput').value) || 0;
+    if (allocation <= 0 || allocation > 100) {
+      alert('Allocation must be between 0.1% and 100%');
+      return;
+    }
+
+    const existingIdx = portfolio.findIndex(p => p.symbol === selectedInvestment.symbol);
+    if (existingIdx >= 0) {
+      if (confirm(`${selectedInvestment.symbol} is already in portfolio. Update allocation?`)) {
+        portfolio[existingIdx].allocation = allocation;
+      } else {
+        return;
+      }
+    } else {
+      const currentTotal = portfolio.reduce((sum, p) => sum + p.allocation, 0);
+      if (currentTotal + allocation > 100) {
+        alert(`Cannot add ${allocation}% - would exceed 100% total. Current: ${currentTotal.toFixed(2)}%`);
+        return;
+      }
+
+      portfolio.push({
+        symbol: selectedInvestment.symbol,
+        name: selectedInvestment.name,
+        sector: selectedInvestment.sector || selectedInvestment.industry || 'Unknown',
+        assetClass: selectedInvestment.assetClass || 'Stocks',
+        allocation: allocation,
+        price: selectedInvestment.price,
+        dividendYield: selectedInvestment.dividendYield || 0,
+        beta: selectedInvestment.beta || 1,
+        pe: selectedInvestment.pe,
+        marketCap: selectedInvestment.marketCap
+      });
+    }
+
+    updatePortfolioTable();
+    updateAllocationStatus();
+    updateQuickMetrics();
+
+    document.getElementById('analyzeBtn').disabled = portfolio.length === 0;
+    document.getElementById('rebalanceBtn').disabled = portfolio.length === 0;
+
+    document.getElementById('investmentDetails').classList.add('hidden');
+    document.getElementById('searchInput').value = '';
+    selectedInvestment = null;
+  }
+
+  function removeFromPortfolio(symbol) {
+    portfolio = portfolio.filter(p => p.symbol !== symbol);
+    updatePortfolioTable();
+    updateAllocationStatus();
+    updateQuickMetrics();
+    document.getElementById('analyzeBtn').disabled = portfolio.length === 0;
+    document.getElementById('rebalanceBtn').disabled = portfolio.length === 0;
+    document.getElementById('analysisSection').classList.add('hidden');
+  }
+
+  function updatePortfolioTable() {
+    const tbody = document.getElementById('portfolioTableBody');
+    const footer = document.getElementById('portfolioFooter');
+    const emptyRow = document.getElementById('emptyPortfolioRow');
+    const totalInvestment = parseFloat(document.getElementById('totalInvestment').value) || 100000;
+
+    if (portfolio.length === 0) {
+      emptyRow.classList.remove('hidden');
+      footer.classList.add('hidden');
+      return;
+    }
+
+    emptyRow.classList.add('hidden');
+    footer.classList.remove('hidden');
+
+    let totalAlloc = 0;
+    let totalValue = 0;
+    let totalIncome = 0;
+
+    tbody.innerHTML = portfolio.map(p => {
+      const value = (p.allocation / 100) * totalInvestment;
+      const income = (p.dividendYield / 100) * value;
+      totalAlloc += p.allocation;
+      totalValue += value;
+      totalIncome += income;
+
+      return `
+        <tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
+          <td class="py-3">
+            <div class="flex items-center gap-2">
+              <span class="text-white font-medium">${p.name}</span>
+              <span class="text-xs text-slate-500">${p.sector}</span>
+            </div>
+          </td>
+          <td class="py-3 font-mono text-amber-400">${p.symbol}</td>
+          <td class="py-3 text-right font-mono text-white">${formatMoney(p.price, 2)}</td>
+          <td class="py-3 text-right">
+            <input type="number" value="${p.allocation}" min="0.1" max="100" step="0.1"
+                   class="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-right font-mono text-white"
+                   onchange="updateAllocation('${p.symbol}', this.value)">
+            <span class="text-slate-400">%</span>
+          </td>
+          <td class="py-3 text-right font-mono text-white">${formatMoney(value)}</td>
+          <td class="py-3 text-right font-mono text-purple-400">${formatMoney(income, 2)}</td>
+          <td class="py-3 text-center">
+            <button onclick="removeFromPortfolio('${p.symbol}')" class="text-red-400 hover:text-red-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('footerAllocation').textContent = totalAlloc.toFixed(2) + '%';
+    document.getElementById('footerAllocation').className = `py-3 text-right font-mono ${Math.abs(totalAlloc - 100) < 0.01 ? 'text-emerald-400' : 'text-amber-400'}`;
+    document.getElementById('footerValue').textContent = formatMoney(totalValue);
+    document.getElementById('footerIncome').textContent = formatMoney(totalIncome, 2);
+  }
+
+  function updateAllocation(symbol, newValue) {
+    const idx = portfolio.findIndex(p => p.symbol === symbol);
+    if (idx >= 0) {
+      const newAlloc = parseFloat(newValue) || 0;
+      const otherTotal = portfolio.reduce((sum, p, i) => i === idx ? sum : sum + p.allocation, 0);
+
+      if (otherTotal + newAlloc > 100) {
+        alert(`Cannot set to ${newAlloc}% - would exceed 100%`);
+        updatePortfolioTable();
+        return;
+      }
+
+      portfolio[idx].allocation = newAlloc;
+      updatePortfolioTable();
+      updateAllocationStatus();
+      updateQuickMetrics();
+      document.getElementById('analysisSection').classList.add('hidden');
+    }
+  }
+
+  function updatePortfolioValues() {
+    updatePortfolioTable();
+    updateQuickMetrics();
+  }
+
+  function updateAllocationStatus() {
+    const total = portfolio.reduce((sum, p) => sum + p.allocation, 0);
+    const totalEl = document.getElementById('allocationTotal');
+    const msgEl = document.getElementById('allocationMessage');
+
+    totalEl.textContent = total.toFixed(1) + '%';
+
+    if (portfolio.length === 0) {
+      totalEl.className = 'text-4xl font-mono font-bold text-slate-500';
+      msgEl.textContent = 'Add holdings to begin';
+      msgEl.className = 'text-sm text-slate-400 mt-1';
+    } else if (Math.abs(total - 100) < 0.1) {
+      totalEl.className = 'text-4xl font-mono font-bold text-emerald-400';
+      msgEl.textContent = 'Allocation complete ✓';
+      msgEl.className = 'text-sm text-emerald-400 mt-1';
+    } else if (total < 100) {
+      totalEl.className = 'text-4xl font-mono font-bold text-amber-400';
+      msgEl.textContent = `${(100 - total).toFixed(1)}% remaining`;
+      msgEl.className = 'text-sm text-amber-400 mt-1';
+    } else {
+      totalEl.className = 'text-4xl font-mono font-bold text-red-400';
+      msgEl.textContent = `${(total - 100).toFixed(1)}% over-allocated`;
+      msgEl.className = 'text-sm text-red-400 mt-1';
+    }
+  }
+
+  function updateQuickMetrics() {
+    if (portfolio.length === 0) {
+      document.getElementById('quickBeta').textContent = '--';
+      document.getElementById('quickYield').textContent = '--';
+      document.getElementById('quickIncome').textContent = '$-- annual income';
+      return;
+    }
+
+    const totalInvestment = parseFloat(document.getElementById('totalInvestment').value) || 100000;
+
+    // Calculate weighted beta
+    let weightedBeta = 0;
+    let weightedYield = 0;
+    let totalWeight = 0;
+
+    portfolio.forEach(p => {
+      const weight = p.allocation / 100;
+      weightedBeta += (p.beta || 1) * weight;
+      weightedYield += (p.dividendYield || 0) * weight;
+      totalWeight += weight;
+    });
+
+    if (totalWeight > 0) {
+      weightedBeta = weightedBeta / totalWeight * totalWeight; // Normalize
+      weightedYield = weightedYield / totalWeight * totalWeight;
+    }
+
+    const annualIncome = (weightedYield / 100) * totalInvestment;
+
+    document.getElementById('quickBeta').textContent = weightedBeta.toFixed(2);
+    document.getElementById('quickYield').textContent = weightedYield.toFixed(2) + '%';
+    document.getElementById('quickIncome').textContent = formatMoney(annualIncome, 0) + ' annual income';
+  }
+
+  function clearAll() {
+    if (portfolio.length > 0 && !confirm('Clear all holdings?')) {
+      return;
+    }
+    portfolio = [];
+    selectedInvestment = null;
+    analysisData = null;
+    document.getElementById('investmentDetails').classList.add('hidden');
+    document.getElementById('searchInput').value = '';
+    document.getElementById('analysisSection').classList.add('hidden');
+    document.getElementById('analyzeBtn').disabled = true;
+    document.getElementById('rebalanceBtn').disabled = true;
+    updatePortfolioTable();
+    updateAllocationStatus();
+    updateQuickMetrics();
+  }
+
+  // Full Analysis
+  async function analyzePortfolio() {
+    if (portfolio.length === 0) {
+      alert('Please add holdings first');
+      return;
+    }
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> ANALYZING...';
+
+    const totalInvestment = parseFloat(document.getElementById('totalInvestment').value) || 100000;
+
+    try {
+      // Call multiple endpoints in parallel
+      const [analyzeRes, simulateRes, riskReturnRes, incomeRes, suggestionsRes] = await Promise.all([
+        authFetch('/api/portfolio-manager/analyze', {
+          method: 'POST',
+          body: JSON.stringify({ holdings: portfolio, totalInvestment })
+        }),
+        authFetch('/api/portfolio-manager/simulate', {
+          method: 'POST',
+          body: JSON.stringify({ holdings: portfolio, totalInvestment, years: 10 })
+        }),
+        authFetch('/api/portfolio-manager/risk-return', {
+          method: 'POST',
+          body: JSON.stringify({ holdings: portfolio })
+        }),
+        authFetch('/api/portfolio-manager/income-breakdown', {
+          method: 'POST',
+          body: JSON.stringify({ holdings: portfolio, totalInvestment })
+        }),
+        authFetch('/api/portfolio-manager/suggestions', {
+          method: 'POST',
+          body: JSON.stringify({ holdings: portfolio })
+        })
+      ]);
+
+      const [analyzeData, simulateData, riskReturnData, incomeData, suggestionsData] = await Promise.all([
+        analyzeRes.json(),
+        simulateRes.json(),
+        riskReturnRes.json(),
+        incomeRes.json(),
+        suggestionsRes.json()
+      ]);
+
+      analysisData = {
+        analysis: analyzeData.success ? analyzeData.data : null,
+        simulation: simulateData.success ? simulateData.data : null,
+        riskReturn: riskReturnData.success ? riskReturnData.data : null,
+        income: incomeData.success ? incomeData.data : null,
+        suggestions: suggestionsData.success ? suggestionsData.data : null
+      };
+
+      displayAnalysis();
+      document.getElementById('analysisSection').classList.remove('hidden');
+      document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
+
+    } catch (err) {
+      console.error('Analysis error:', err);
+      alert('Failed to analyze portfolio');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg> FULL ANALYSIS';
+    }
+  }
+
+  function displayAnalysis() {
+    const { analysis, simulation, riskReturn, income, suggestions } = analysisData;
+
+    // Update metrics cards
+    if (analysis) {
+      const returns = analysis.returns || {};
+      const metrics = analysis.metrics || {};
+      const concentration = analysis.concentration || {};
+
+      // Returns
+      setReturnValue('return1yr', returns.year1);
+      setReturnValue('return3yr', returns.year3);
+      setReturnValue('return5yr', returns.year5);
+      setReturnValue('return10yr', returns.year10);
+
+      // Risk metrics
+      document.getElementById('metricBeta').textContent = metrics.beta ? metrics.beta.toFixed(2) : '--';
+      document.getElementById('metricSharpe').textContent = metrics.sharpeRatio ? metrics.sharpeRatio.toFixed(2) : '--';
+      document.getElementById('metricVaR').textContent = metrics.var95 ? formatMoney(metrics.var95) : '--';
+      document.getElementById('metricStdDev').textContent = metrics.stdDev ? (metrics.stdDev * 100).toFixed(2) + '%' : '--';
+
+      // Concentration
+      document.getElementById('metricHHI').textContent = concentration.hhi ? concentration.hhi.toFixed(0) : '--';
+      document.getElementById('metricTop5').textContent = concentration.top5 ? concentration.top5.toFixed(1) + '%' : '--';
+      document.getElementById('metricCount').textContent = portfolio.length;
+      document.getElementById('metricRating').textContent = concentration.rating || '--';
+
+      // Income
+      document.getElementById('metricYield').textContent = metrics.yield ? metrics.yield.toFixed(2) + '%' : '--';
+      document.getElementById('metricAnnualIncome').textContent = metrics.totalProjectedIncome ? formatMoney(metrics.totalProjectedIncome) : '--';
+      document.getElementById('metricMonthlyIncome').textContent = metrics.totalProjectedIncome ? formatMoney(metrics.totalProjectedIncome / 12) : '--';
+      document.getElementById('metricYOC').textContent = metrics.yield ? metrics.yield.toFixed(2) + '%' : '--';
+
+      // Create allocation donut chart
+      createAllocationDonutChart(analysis.assetClass);
+
+      // Create sector treemap
+      createSectorTreemap(analysis.sectors);
+    }
+
+    // Create charts
+    if (riskReturn) {
+      createRiskReturnChart(riskReturn);
+    }
+
+    if (simulation) {
+      createGrowthSimulationChart(simulation);
+    }
+
+    if (income) {
+      createIncomeContributionChart(income);
+    }
+
+    // Holdings breakdown chart
+    createHoldingsBreakdownChart();
+
+    // Suggestions
+    if (suggestions) {
+      displaySuggestions(suggestions);
+    }
+  }
+
+  function setReturnValue(id, value) {
+    const el = document.getElementById(id);
+    if (value !== null && value !== undefined) {
+      el.textContent = formatPercent(value);
+      el.className = `font-mono font-bold ${Number(value) >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+    } else {
+      el.textContent = '--';
+      el.className = 'font-mono font-bold text-slate-400';
+    }
+  }
+
+  // Chart creation functions
+  function createAllocationDonutChart(assetClass) {
+    const ctx = document.getElementById('allocationDonutChart').getContext('2d');
+
+    if (allocationDonutChart) {
+      allocationDonutChart.destroy();
+    }
+
+    const data = assetClass || { equity: 0, fixedIncome: 0, alternatives: 0, cash: 0 };
+
+    allocationDonutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Equity', 'Fixed Income', 'Alternatives', 'Cash'],
+        datasets: [{
+          data: [data.equity || 0, data.fixedIncome || 0, data.alternatives || 0, data.cash || 0],
+          backgroundColor: ['#10b981', '#3b82f6', '#8b5cf6', '#6b7280'],
+          borderColor: '#1e293b',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: '#94a3b8', font: { size: 11 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.label}: ${ctx.parsed.toFixed(1)}%`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function createSectorTreemap(sectors) {
+    const container = document.getElementById('sectorTreemap');
+
+    if (!sectors || Object.keys(sectors).length === 0) {
+      container.innerHTML = '<p class="text-slate-500 text-center py-8">No sector data available</p>';
+      return;
+    }
+
+    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#ec4899', '#84cc16'];
+
+    const sortedSectors = Object.entries(sectors).sort((a, b) => b[1] - a[1]);
+
+    container.innerHTML = sortedSectors.map(([sector, pct], i) => `
+      <div class="flex items-center gap-3">
+        <div class="w-3 h-3 rounded" style="background-color: ${colors[i % colors.length]}"></div>
+        <div class="flex-1">
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-slate-300">${sector}</span>
+            <span class="font-mono text-white">${pct.toFixed(1)}%</span>
+          </div>
+          <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width: ${pct}%; background-color: ${colors[i % colors.length]}"></div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function createRiskReturnChart(data) {
+    const ctx = document.getElementById('riskReturnChart').getContext('2d');
+
+    if (riskReturnChart) {
+      riskReturnChart.destroy();
+    }
+
+    const points = data.holdings || [];
+
+    riskReturnChart = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Holdings',
+          data: points.map(p => ({ x: p.risk || 0, y: p.return || 0 })),
+          backgroundColor: points.map(p => {
+            const sharpe = (p.return || 0) / ((p.risk || 1) || 1);
+            return sharpe > 0.5 ? '#10b981' : sharpe > 0 ? '#f59e0b' : '#ef4444';
+          }),
+          pointRadius: 8,
+          pointHoverRadius: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: { display: true, text: 'Risk (Beta)', color: '#94a3b8' },
+            grid: { color: '#334155' },
+            ticks: { color: '#94a3b8' }
+          },
+          y: {
+            title: { display: true, text: 'Expected Return %', color: '#94a3b8' },
+            grid: { color: '#334155' },
+            ticks: { color: '#94a3b8' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const point = points[ctx.dataIndex];
+                return `${point.symbol}: Risk ${ctx.parsed.x.toFixed(2)}, Return ${ctx.parsed.y.toFixed(1)}%`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function createGrowthSimulationChart(data) {
+    const ctx = document.getElementById('growthSimulationChart').getContext('2d');
+
+    if (growthSimulationChart) {
+      growthSimulationChart.destroy();
+    }
+
+    const projections = data.projections || [];
+    const labels = projections.map(p => `Year ${p.year}`);
+
+    growthSimulationChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Conservative (5%)',
+            data: projections.map(p => p.conservative),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Expected (8%)',
+            data: projections.map(p => p.expected),
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.4
+          },
+          {
+            label: 'Optimistic (12%)',
+            data: projections.map(p => p.optimistic),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            tension: 0.4
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            grid: { color: '#334155' },
+            ticks: {
+              color: '#94a3b8',
+              callback: (v) => '$' + (v / 1000).toFixed(0) + 'K'
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94a3b8' }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#94a3b8', font: { size: 10 } }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${formatMoney(ctx.parsed.y)}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function createIncomeContributionChart(data) {
+    const ctx = document.getElementById('incomeContributionChart').getContext('2d');
+
+    if (incomeContributionChart) {
+      incomeContributionChart.destroy();
+    }
+
+    const holdings = data.holdings || [];
+    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#ec4899', '#84cc16'];
+
+    incomeContributionChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: holdings.map(h => h.symbol),
+        datasets: [{
+          label: 'Annual Income',
+          data: holdings.map(h => h.income || 0),
+          backgroundColor: colors.slice(0, holdings.length),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        scales: {
+          x: {
+            grid: { color: '#334155' },
+            ticks: {
+              color: '#94a3b8',
+              callback: (v) => '$' + v.toLocaleString()
+            }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#94a3b8' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `Income: ${formatMoney(ctx.parsed.x, 2)}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function createHoldingsBreakdownChart() {
+    const ctx = document.getElementById('holdingsBreakdownChart').getContext('2d');
+
+    if (holdingsBreakdownChart) {
+      holdingsBreakdownChart.destroy();
+    }
+
+    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#ec4899', '#84cc16'];
+
+    holdingsBreakdownChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: portfolio.map(p => p.symbol),
+        datasets: [{
+          data: portfolio.map(p => p.allocation),
+          backgroundColor: colors.slice(0, portfolio.length),
+          borderColor: '#1e293b',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.label}: ${ctx.parsed.toFixed(1)}%`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function displaySuggestions(data) {
+    const container = document.getElementById('suggestionsList');
+    const suggestions = data.suggestions || [];
+
+    if (suggestions.length === 0) {
+      container.innerHTML = '<p class="text-slate-500">No suggestions at this time. Your portfolio looks well-balanced!</p>';
+      return;
+    }
+
+    container.innerHTML = suggestions.map(s => `
+      <div class="p-3 bg-slate-800/50 border border-slate-700 rounded-lg flex items-start gap-3">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center ${
+          s.type === 'warning' ? 'bg-red-500/20 text-red-400' :
+          s.type === 'info' ? 'bg-blue-500/20 text-blue-400' :
+          'bg-emerald-500/20 text-emerald-400'
+        }">
+          ${s.type === 'warning' ? '⚠' : s.type === 'info' ? 'ℹ' : '✓'}
+        </div>
+        <div>
+          <p class="text-white font-medium">${s.title}</p>
+          <p class="text-slate-400 text-sm mt-1">${s.description}</p>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Load existing portfolio
+  async function loadExistingPortfolio() {
+    document.getElementById('loadPortfolioModal').classList.remove('hidden');
+    const listDiv = document.getElementById('portfoliosList');
+    listDiv.innerHTML = '<p class="text-center text-slate-400">Loading portfolios...</p>';
+
+    try {
+      const response = await authFetch('/api/portfolios');
+      const portfolios = await response.json();
+
+      if (!portfolios || portfolios.length === 0) {
+        listDiv.innerHTML = '<p class="text-center text-slate-400">No portfolios found. Create one first.</p>';
+        return;
+      }
+
+      listDiv.innerHTML = portfolios.map(p => `
+        <div class="p-4 border border-slate-700 rounded-lg mb-3 hover:border-amber-400/50 transition-colors cursor-pointer" onclick="selectPortfolio('${p.id}')">
+          <div class="flex justify-between items-start">
+            <div>
+              <h4 class="font-bold text-white">${p.name}</h4>
+              <p class="text-sm text-slate-400">${p.holdings?.length || 0} holdings</p>
+            </div>
+            <span class="text-emerald-400 font-mono">${formatMoney(p.totalValue || 0)}</span>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error('Load error:', err);
+      listDiv.innerHTML = '<p class="text-center text-red-400">Failed to load portfolios</p>';
+    }
+  }
+
+  async function selectPortfolio(portfolioId) {
+    try {
+      const response = await authFetch(`/api/portfolios/${portfolioId}`);
+      const data = await response.json();
+
+      if (!data || !data.holdings) {
+        alert('Failed to load portfolio holdings');
+        return;
+      }
+
+      // Convert holdings to our format
+      portfolio = data.holdings.map(h => ({
+        symbol: h.symbol,
+        name: h.name || h.symbol,
+        sector: h.sector || 'Unknown',
+        assetClass: 'Stocks',
+        allocation: h.allocation || ((h.quantity * h.currentPrice) / (data.totalValue || 1)) * 100,
+        price: h.currentPrice || h.avgCost || 0,
+        dividendYield: h.dividendYield || 0,
+        beta: h.beta || 1
+      }));
+
+      document.getElementById('totalInvestment').value = data.totalValue || 100000;
+
+      updatePortfolioTable();
+      updateAllocationStatus();
+      updateQuickMetrics();
+      document.getElementById('analyzeBtn').disabled = portfolio.length === 0;
+      document.getElementById('rebalanceBtn').disabled = portfolio.length === 0;
+
+      closeLoadModal();
+    } catch (err) {
+      console.error('Select portfolio error:', err);
+      alert('Failed to load portfolio');
+    }
+  }
+
+  function closeLoadModal() {
+    document.getElementById('loadPortfolioModal').classList.add('hidden');
+  }
+
+  // Rebalance
+  async function rebalancePortfolio() {
+    if (portfolio.length === 0) {
+      alert('Please add holdings first');
+      return;
+    }
+
+    document.getElementById('rebalanceModal').classList.remove('hidden');
+    const content = document.getElementById('rebalanceContent');
+    content.innerHTML = '<p class="text-center text-slate-400">Calculating rebalancing trades...</p>';
+
+    const totalInvestment = parseFloat(document.getElementById('totalInvestment').value) || 100000;
+
+    // Create equal-weight targets for simplicity
+    const targetAllocations = {};
+    const equalWeight = 100 / portfolio.length;
+    portfolio.forEach(p => {
+      targetAllocations[p.symbol] = equalWeight;
+    });
+
+    try {
+      const response = await authFetch('/api/portfolio-manager/rebalance', {
+        method: 'POST',
+        body: JSON.stringify({
+          holdings: portfolio,
+          targetAllocations,
+          totalValue: totalInvestment
+        })
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        content.innerHTML = '<p class="text-center text-red-400">Failed to calculate rebalancing</p>';
+        return;
+      }
+
+      const trades = data.data.trades || [];
+
+      if (trades.length === 0) {
+        content.innerHTML = '<p class="text-center text-emerald-400">Portfolio is already balanced! No trades needed.</p>';
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="space-y-4">
+          <p class="text-slate-400 text-sm">To achieve equal-weight allocation (${equalWeight.toFixed(1)}% each):</p>
+          <div class="space-y-2">
+            ${trades.map(t => `
+              <div class="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
+                <div class="flex items-center gap-3">
+                  <span class="w-16 font-mono text-amber-400">${t.symbol}</span>
+                  <span class="px-2 py-1 rounded text-xs ${t.action === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">
+                    ${t.action}
+                  </span>
+                </div>
+                <div class="text-right">
+                  <p class="font-mono text-white">${formatMoney(Math.abs(t.amount))}</p>
+                  <p class="text-xs text-slate-400">${t.currentAllocation.toFixed(1)}% → ${t.targetAllocation.toFixed(1)}%</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="pt-4 border-t border-slate-700">
+            <p class="text-sm text-slate-400">Total Drift: <span class="font-mono text-amber-400">${data.data.totalDrift?.toFixed(2) || 0}%</span></p>
+          </div>
+        </div>
+      `;
+    } catch (err) {
+      console.error('Rebalance error:', err);
+      content.innerHTML = '<p class="text-center text-red-400">Failed to calculate rebalancing</p>';
+    }
+  }
+
+  function closeRebalanceModal() {
+    document.getElementById('rebalanceModal').classList.add('hidden');
+  }
+
+  // Close search results when clicking outside
+  document.addEventListener('click', (e) => {
+    const searchResults = document.getElementById('searchResults');
+    const searchInput = document.getElementById('searchInput');
+    if (!searchResults.contains(e.target) && e.target !== searchInput) {
+      searchResults.classList.add('hidden');
+    }
+  });
+</script>

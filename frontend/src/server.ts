@@ -703,6 +703,13 @@ app.get('/investment-selector', requireAuth, (req, res) => {
   });
 });
 
+// Portfolio Manager - Advanced portfolio construction and analytics
+app.get('/portfolio-manager', requireAuth, (req, res) => {
+  res.render('pages/portfolio-manager', {
+    pageTitle: 'Portfolio Manager'
+  });
+});
+
 app.get('/watchlist', requireAuth, async (req, res) => {
   const token = res.locals.token;
 

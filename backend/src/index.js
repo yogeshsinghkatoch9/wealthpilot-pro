@@ -118,6 +118,20 @@ try {
   });
 }
 
+// Portfolio manager routes with error handling
+let portfolioManagerRoutes;
+try {
+  portfolioManagerRoutes = require('./routes/portfolioManager');
+  console.log('[INDEX] Portfolio manager routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load portfolio manager routes:', error.message);
+  const expressRouter = require('express').Router;
+  portfolioManagerRoutes = expressRouter();
+  portfolioManagerRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Portfolio manager routes failed to load' });
+  });
+}
+
 // Portfolio upload routes with error handling
 let portfolioUploadRoutes;
 try {
@@ -196,7 +210,7 @@ app.use((req, res, next) => {
 
 // Health check - must work even before DB connection
 let dbConnected = false;
-const BUILD_VERSION = 'v32.0.0-portfolio-fix';
+const BUILD_VERSION = 'v33.0.0-portfolio-manager';
 const BUILD_TIME = new Date().toISOString(); // Captured at server start
 app.get('/health', (req, res) => {
   res.json({
@@ -246,6 +260,7 @@ app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
 app.use('/api/etf-analyzer', etfAnalyzerRoutes); // ETF analyzer
 app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
 app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
+app.use('/api/portfolio-manager', portfolioManagerRoutes); // Portfolio manager tool
 
 // Error handling middleware
 app.use((err, req, res, next) => {
