@@ -20,6 +20,20 @@ const marketRoutes = require('./routes/market');
 const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 
+// Market breadth routes with error handling
+let marketBreadthRoutes;
+try {
+  marketBreadthRoutes = require('./routes/marketBreadth');
+  console.log('[INDEX] Market breadth routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load market breadth routes:', error.message);
+  const expressRouter = require('express').Router;
+  marketBreadthRoutes = expressRouter();
+  marketBreadthRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Market breadth routes failed to load' });
+  });
+}
+
 // Portfolio upload routes with error handling
 let portfolioUploadRoutes;
 try {
@@ -117,6 +131,7 @@ app.use('/api/watchlists', watchlistRoutes);
 app.use('/api/watchlist', watchlistSimpleRoutes); // Simplified watchlist API (singular)
 app.use('/api/alerts', alertRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/market-breadth', marketBreadthRoutes); // Market breadth indicators
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dividends', dividendRoutes);
 app.use('/api/portfolio-upload', portfolioUploadRoutes); // Portfolio file upload
