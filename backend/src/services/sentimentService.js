@@ -7,7 +7,7 @@
  * Overall Score = 50% News + 50% Analyst
  */
 
-const { prisma } = require('@prisma/client');
+const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 const axios = require('axios');
 const yahooFinance = require('yahoo-finance2').default;

@@ -238,7 +238,7 @@ router.get('/analyze/:symbol', async (req, res) => {
           topHolding: holdings[0],
           top5Weight: holdings.slice(0, 5).reduce((sum, h) => sum + h.weight, 0).toFixed(2),
           top10Weight: holdings.slice(0, 10).reduce((sum, h) => sum + h.weight, 0).toFixed(2),
-          diversificationScore: this.calculateDiversificationScore(holdings),
+          diversificationScore: calculateDiversificationScore(holdings),
           dominantSector: sectors[0]
         }
       }

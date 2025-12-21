@@ -1,4 +1,4 @@
-const { prisma } = require('@prisma/client');
+const { prisma } = require('../db/simpleDb');
 const unifiedMarketData = require('./unifiedMarketData');
 const logger = require('../utils/logger');
 

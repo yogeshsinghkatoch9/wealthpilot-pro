@@ -20,6 +20,76 @@ const marketRoutes = require('./routes/market');
 const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 
+// Sector rotation routes with error handling
+let sectorRotationRoutes;
+try {
+  sectorRotationRoutes = require('./routes/sectorRotation');
+  console.log('[INDEX] Sector rotation routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load sector rotation routes:', error.message);
+  const expressRouter = require('express').Router;
+  sectorRotationRoutes = expressRouter();
+  sectorRotationRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Sector rotation routes failed to load' });
+  });
+}
+
+// Sector heatmap routes with error handling
+let sectorHeatmapRoutes;
+try {
+  sectorHeatmapRoutes = require('./routes/sectorHeatmap');
+  console.log('[INDEX] Sector heatmap routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load sector heatmap routes:', error.message);
+  const expressRouter = require('express').Router;
+  sectorHeatmapRoutes = expressRouter();
+  sectorHeatmapRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Sector heatmap routes failed to load' });
+  });
+}
+
+// ETF analyzer routes with error handling
+let etfAnalyzerRoutes;
+try {
+  etfAnalyzerRoutes = require('./routes/etfAnalyzer');
+  console.log('[INDEX] ETF analyzer routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load ETF analyzer routes:', error.message);
+  const expressRouter = require('express').Router;
+  etfAnalyzerRoutes = expressRouter();
+  etfAnalyzerRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'ETF analyzer routes failed to load' });
+  });
+}
+
+// Economic calendar routes with error handling
+let economicCalendarRoutes;
+try {
+  economicCalendarRoutes = require('./routes/economicCalendar');
+  console.log('[INDEX] Economic calendar routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load economic calendar routes:', error.message);
+  const expressRouter = require('express').Router;
+  economicCalendarRoutes = expressRouter();
+  economicCalendarRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Economic calendar routes failed to load' });
+  });
+}
+
+// Sentiment routes with error handling
+let sentimentRoutes;
+try {
+  sentimentRoutes = require('./routes/sentiment');
+  console.log('[INDEX] Sentiment routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load sentiment routes:', error.message);
+  const expressRouter = require('express').Router;
+  sentimentRoutes = expressRouter();
+  sentimentRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Sentiment routes failed to load' });
+  });
+}
+
 // Market breadth routes with error handling
 let marketBreadthRoutes;
 try {
@@ -107,7 +177,7 @@ app.use((req, res, next) => {
 
 // Health check - must work even before DB connection
 let dbConnected = false;
-const BUILD_VERSION = 'v29.2.3-holding-fix';
+const BUILD_VERSION = 'v30.0.0-all-routes';
 const BUILD_TIME = new Date().toISOString(); // Captured at server start
 app.get('/health', (req, res) => {
   res.json({
@@ -135,6 +205,11 @@ app.use('/api/market-breadth', marketBreadthRoutes); // Market breadth indicator
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dividends', dividendRoutes);
 app.use('/api/portfolio-upload', portfolioUploadRoutes); // Portfolio file upload
+app.use('/api/sector-rotation', sectorRotationRoutes); // Sector rotation analysis
+app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
+app.use('/api/etf-analyzer', etfAnalyzerRoutes); // ETF analyzer
+app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
+app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
 
 // Error handling middleware
 app.use((err, req, res, next) => {
