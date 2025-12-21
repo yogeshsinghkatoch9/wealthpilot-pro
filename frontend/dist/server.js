@@ -27,10 +27,12 @@ app.get('/health', (req, res) => {
     });
 });
 // API Proxy - Use http-proxy-middleware for proper proxying of all request types including file uploads
+// IMPORTANT: When mounted at '/api', the proxy strips '/api' by default, so we need to preserve it
 app.use('/api', (0, http_proxy_middleware_1.createProxyMiddleware)({
     target: API_URL,
     changeOrigin: true,
-    // Don't parse body - let the backend handle it
+    // Preserve the /api prefix when forwarding to backend
+    pathRewrite: (path) => `/api${path}`,
     on: {
         proxyReq: (proxyReq, req, res) => {
             // Forward Authorization from cookie if not already present
@@ -38,7 +40,8 @@ app.use('/api', (0, http_proxy_middleware_1.createProxyMiddleware)({
             if (token && !req.headers.authorization) {
                 proxyReq.setHeader('Authorization', `Bearer ${token}`);
             }
-            console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}${req.originalUrl}`);
+            // Log the actual forwarded path
+            console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}/api${req.url}`);
         },
         error: (err, req, res) => {
             console.error('[Proxy Error]', err.message);
