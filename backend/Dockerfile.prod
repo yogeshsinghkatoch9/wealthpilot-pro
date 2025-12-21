@@ -22,13 +22,13 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install dependencies (skip optional deps like canvas)
-# Also install prisma as dev dependency for generate
+# Also install prisma for generate
 RUN npm ci --omit=dev --no-optional && \
-    npm install prisma@5.7.0 --save-dev && \
+    npm install prisma@5.22.0 @prisma/client@5.22.0 && \
     npm cache clean --force
 
-# Generate Prisma client using the installed version
-RUN npx prisma@5.7.0 generate
+# Generate Prisma client
+RUN npx prisma generate
 
 # Copy source code
 COPY src ./src
