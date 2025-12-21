@@ -170,14 +170,19 @@ app.use('/api', limiter);
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`, {
     ip: req.ip,
-    userAgent: req.get('user-agent')
+    userAgent: req.get('user-agent'),
+    auth: req.headers.authorization ? 'Bearer ...' + req.headers.authorization.slice(-10) : 'none'
   });
+  // Log POST requests body for debugging
+  if (req.method === 'POST' && req.path.includes('portfolio')) {
+    logger.info(`[DEBUG] POST to ${req.path} body:`, JSON.stringify(req.body));
+  }
   next();
 });
 
 // Health check - must work even before DB connection
 let dbConnected = false;
-const BUILD_VERSION = 'v31.0.0-live-market-data';
+const BUILD_VERSION = 'v32.0.0-portfolio-fix';
 const BUILD_TIME = new Date().toISOString(); // Captured at server start
 app.get('/health', (req, res) => {
   res.json({
@@ -188,6 +193,22 @@ app.get('/health', (req, res) => {
     database: dbConnected ? 'connected' : 'connecting',
     portfolioUploadLoaded: !!portfolioUploadRoutes,
     dbType: process.env.DATABASE_TYPE || 'auto'
+  });
+});
+
+// Debug endpoint to check portfolio routes
+app.get('/debug/routes', (req, res) => {
+  const portfolioStack = portfolioRoutes.stack || [];
+  const routes = portfolioStack
+    .filter(layer => layer.route)
+    .map(layer => ({
+      path: layer.route.path,
+      methods: Object.keys(layer.route.methods).filter(m => layer.route.methods[m])
+    }));
+  res.json({
+    portfolioRoutesLoaded: !!portfolioRoutes,
+    portfolioRoutesCount: routes.length,
+    routes
   });
 });
 
@@ -236,7 +257,13 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
+  logger.warn(`[404] Route not found: ${req.method} ${req.path}`);
+  res.status(404).json({
+    error: 'Not found',
+    path: req.path,
+    method: req.method,
+    hint: 'This endpoint does not exist. Check available routes at /debug/routes'
+  });
 });
 
 // Scheduled jobs

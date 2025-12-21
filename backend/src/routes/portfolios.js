@@ -368,11 +368,19 @@ router.post('/', [
   body('description').optional().trim().isLength({ max: 500 }),
   body('currency').optional().isIn(['USD', 'EUR', 'GBP', 'CAD', 'AUD']),
   body('benchmark').optional().trim(),
-  body('cashBalance').optional().isFloat({ min: 0 })
+  body('cashBalance').optional().isFloat({ min: 0 }),
+  body('portfolio_type').optional().trim() // Accept portfolio_type from frontend
 ], async (req, res) => {
   try {
+    logger.info('[POST /portfolios] Request received', {
+      body: req.body,
+      userId: req.user?.id,
+      headers: { contentType: req.headers['content-type'] }
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.error('[POST /portfolios] Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
