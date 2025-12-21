@@ -1,0 +1,29 @@
+<%- include('../partials/header', { pageTitle: mode === 'login' ? 'Sign In' : 'Create Account' }) %>
+<div class="min-h-screen flex">
+  <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-sky-600 via-blue-700 to-purple-800 p-12 flex-col justify-between relative overflow-hidden">
+    <div class="absolute inset-0 opacity-30"><div class="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div><div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div></div>
+    <div class="relative">
+      <div class="flex items-center gap-3 mb-8"><svg class="w-10 h-10" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="white"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg><h1 class="text-3xl font-bold text-white">WealthPilot Pro</h1></div>
+      <h2 class="text-4xl font-bold text-white mb-4">Professional Portfolio Intelligence</h2>
+      <p class="text-xl text-white/80">V4 with TypeScript, WebSockets, and real-time updates.</p>
+    </div>
+    <div class="relative space-y-3">
+      <% ['Real-time WebSocket updates', 'TypeScript backend', 'Dark/Light themes', '13 dashboard pages', 'Scenario simulator'].forEach(f => { %><div class="flex items-center gap-3 text-white/90"><div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div><span><%= f %></span></div><% }) %>
+    </div>
+  </div>
+  <div class="flex-1 flex items-center justify-center p-8 <%= theme === 'light' ? 'bg-gray-50' : '' %>">
+    <div class="w-full max-w-md">
+      <div class="mb-8"><h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2"><%= mode === 'login' ? 'Welcome back' : 'Create account' %></h2><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><%= mode === 'login' ? 'Sign in to your portfolio' : 'Start investing smarter' %></p></div>
+      <% if (error) { %><div class="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"><%= error %></div><% } %>
+      <form action="/<%= mode %>" method="POST" class="space-y-4">
+        <% if (mode === 'register') { %><div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Full Name</label><input type="text" name="full_name" required class="form-input" placeholder="John Doe"></div><% } %>
+        <div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Username</label><input type="text" name="username" required class="form-input" placeholder="johndoe"></div>
+        <% if (mode === 'register') { %><div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Email</label><input type="email" name="email" required class="form-input" placeholder="john@example.com"></div><% } %>
+        <div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Password</label><input type="password" name="password" required class="form-input" placeholder="••••••••"></div>
+        <button type="submit" class="btn-primary w-full"><%= mode === 'login' ? 'Sign In' : 'Create Account' %></button>
+      </form>
+      <p class="text-center <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-6"><%= mode === 'login' ? "Don't have an account?" : 'Have an account?' %> <a href="/<%= mode === 'login' ? 'register' : 'login' %>" class="text-sky-400 hover:text-sky-300 font-medium"><%= mode === 'login' ? 'Sign up' : 'Sign in' %></a></p>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

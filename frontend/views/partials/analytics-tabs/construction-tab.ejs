@@ -1,0 +1,102 @@
+<!-- Construction Tab - 4 Analytics -->
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  
+  <!-- 14. Efficient Frontier (Scatter) -->
+  <div class="chart-container lg:col-span-2">
+    <div class="chart-header">
+      <h3 class="chart-title">Efficient Frontier</h3>
+      <div class="chart-controls">
+        <label class="text-sm text-gray-400 mr-2">Target Return:</label>
+        <input type="range" id="target-return-slider" min="0" max="20" step="0.5" value="10" class="mr-2">
+        <span class="text-sm font-mono text-amber-500" id="target-return-value">10.0%</span>
+      </div>
+    </div>
+    <canvas id="chart-efficient-frontier" height="100"></canvas>
+    <div id="export-efficient-frontier" class="export-controls"></div>
+    <div class="mt-3 grid grid-cols-3 gap-4 text-sm">
+      <div><span class="text-gray-400">Current Portfolio:</span> <span class="font-mono text-blue-500" id="current-position">--</span></div>
+      <div><span class="text-gray-400">Optimal Portfolio:</span> <span class="font-mono text-green-500" id="optimal-position">--</span></div>
+      <div><span class="text-gray-400">Sharpe Ratio:</span> <span class="font-mono text-amber-500" id="frontier-sharpe">--</span></div>
+    </div>
+  </div>
+
+  <!-- 15. Holdings Turnover (Calendar Heatmap) -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <h3 class="chart-title">Holdings Turnover</h3>
+      <div class="chart-controls">
+        <select id="turnover-year" class="chart-control-btn">
+          <option value="2024">2024</option>
+          <option value="2025" selected>2025</option>
+        </select>
+      </div>
+    </div>
+    <canvas id="chart-turnover" height="120"></canvas>
+    <div id="export-turnover" class="export-controls"></div>
+    <div class="mt-3 text-sm">
+      <span class="text-gray-400">Annual Turnover:</span> 
+      <span class="font-mono text-amber-500" id="annual-turnover">--</span>
+    </div>
+  </div>
+
+  <!-- 16. Liquidity Analysis (Bubble Chart) -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <h3 class="chart-title">Liquidity & Market Impact</h3>
+      <div class="chart-controls">
+        <span class="text-sm text-gray-400">Size = Days to Liquidate</span>
+      </div>
+    </div>
+    <canvas id="chart-liquidity"></canvas>
+    <div id="export-liquidity" class="export-controls"></div>
+    <div class="mt-3 text-sm">
+      <span class="text-gray-400">Avg Days to Liquidate:</span> 
+      <span class="font-mono text-amber-500" id="avg-dtl">--</span>
+      <span class="text-gray-400 ml-4">Liquidity Score:</span> 
+      <span class="font-mono text-green-500" id="liquidity-score">--</span>
+    </div>
+  </div>
+
+  <!-- 17. Transaction Cost Analysis (Box Plot + Timeline) -->
+  <div class="chart-container lg:col-span-2">
+    <div class="chart-header">
+      <h3 class="chart-title">Transaction Cost Analysis</h3>
+      <div class="chart-controls">
+        <button class="chart-control-btn" id="toggle-tca" data-view="boxplot">
+          Switch to Timeline
+        </button>
+      </div>
+    </div>
+    <canvas id="chart-tca-boxplot"></canvas>
+    <canvas id="chart-tca-timeline" class="hidden"></canvas>
+    <div id="export-tca" class="export-controls"></div>
+    <div class="mt-3 grid grid-cols-4 gap-4 text-sm">
+      <div><span class="text-gray-400">Avg Cost:</span> <span class="font-mono text-red-500" id="avg-tca">--</span></div>
+      <div><span class="text-gray-400">Implicit:</span> <span class="font-mono text-amber-500" id="implicit-cost">--</span></div>
+      <div><span class="text-gray-400">Explicit:</span> <span class="font-mono text-blue-500" id="explicit-cost">--</span></div>
+      <div><span class="text-gray-400">Slippage:</span> <span class="font-mono text-purple-500" id="slippage-cost">--</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Construction Metrics Summary -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+  <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+    <div class="text-sm text-gray-400 mb-1">Portfolio Efficiency</div>
+    <div class="text-2xl font-mono font-bold text-green-500" id="metric-efficiency">--</div>
+  </div>
+  <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+    <div class="text-sm text-gray-400 mb-1">Turnover Rate</div>
+    <div class="text-2xl font-mono font-bold text-blue-500" id="metric-turnover-rate">--</div>
+  </div>
+  <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+    <div class="text-sm text-gray-400 mb-1">Avg Holding Period</div>
+    <div class="text-2xl font-mono font-bold text-amber-500" id="metric-holding-period">--</div>
+  </div>
+  <div class="bg-gray-800 border border-gray-700 rounded-lg p-4">
+    <div class="text-sm text-gray-400 mb-1">Total TCA</div>
+    <div class="text-2xl font-mono font-bold text-red-500" id="metric-total-tca">--</div>
+  </div>
+</div>

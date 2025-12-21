@@ -1,0 +1,287 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const t = typeof technicals !== 'undefined' && technicals ? technicals : {};
+const tech = t.technicals || {};
+const adx = tech.adx || {};
+const price = t.currentPrice || 0;
+const chartData = t.chartData || [];
+
+// ADX values
+const adxValue = adx.adx || adx.value || 0;
+const plusDI = adx.plusDI || adx.pdi || 0;
+const minusDI = adx.minusDI || adx.mdi || 0;
+const diSpread = plusDI - minusDI;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatNum(v) { return (v || 0).toFixed(1); }
+
+// Trend strength based on ADX
+function getTrendStrength(adxVal) {
+  if (adxVal >= 50) return { text: 'Very Strong', color: 'purple' };
+  if (adxVal >= 25) return { text: 'Strong', color: 'emerald' };
+  if (adxVal >= 20) return { text: 'Emerging', color: 'amber' };
+  return { text: 'Weak', color: 'slate' };
+}
+
+// Trend direction based on DI
+function getTrendSignal(pdi, mdi) {
+  if (pdi > mdi + 5) return { text: 'UPTREND', color: 'emerald' };
+  if (mdi > pdi + 5) return { text: 'DOWNTREND', color: 'red' };
+  return { text: 'NEUTRAL', color: 'amber' };
+}
+
+const strength = getTrendStrength(adxValue);
+const signal = getTrendSignal(plusDI, minusDI);
+
+// Calculate position on scale (0-100 mapped to 0-100%)
+const adxPosition = Math.min(adxValue * 2, 100);
+%>
+<%- include('../partials/header', { pageTitle: 'ADX Indicator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">ADX INDICATOR</h1>
+      <p class="text-slate-400">Average Directional Index - Trend strength analysis</p>
+    </div>
+    <form method="GET" action="/adx-indicator" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">Analyze</button>
+    </form>
+  </div>
+</div>
+
+<% if (!technicals) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No ADX data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if market data is available.</p>
+</div>
+<% } else { %>
+
+<!-- Stock ADX Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-slate-800 to-slate-700">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-bold text-xl font-mono"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-amber-400 font-mono"><%= symbol %></h2>
+      <p class="text-slate-300 font-mono">Current: <span class="text-white"><%= formatPrice(price) %></span> • ADX(14)</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">ADX Value</p>
+      <p class="text-3xl font-bold text-<%= strength.color %>-400 font-mono"><%= formatNum(adxValue) %></p>
+      <p class="text-xs text-<%= strength.color %>-400"><%= strength.text %> Trend</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">+DI</p>
+      <p class="text-3xl font-bold text-emerald-400 font-mono"><%= formatNum(plusDI) %></p>
+      <p class="text-xs text-slate-300">Bullish pressure</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">-DI</p>
+      <p class="text-3xl font-bold text-red-400 font-mono"><%= formatNum(minusDI) %></p>
+      <p class="text-xs text-slate-300">Bearish pressure</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">DI Spread</p>
+      <p class="text-3xl font-bold text-<%= diSpread >= 0 ? 'emerald' : 'red' %>-400 font-mono"><%= diSpread >= 0 ? '+' : '' %><%= formatNum(diSpread) %></p>
+      <p class="text-xs text-slate-300"><%= diSpread > 5 ? 'Strong bullish' : diSpread < -5 ? 'Strong bearish' : 'Neutral' %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase tracking-wider">Signal</p>
+      <p class="text-2xl font-bold text-<%= signal.color %>-400 font-mono"><%= signal.text %></p>
+      <p class="text-xs text-slate-300">+DI <%= plusDI > minusDI ? '>' : '<' %> -DI</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADX Strength Scale -->
+<div class="bloomberg-card p-4">
+  <p class="text-xs text-slate-300 mb-3">ADX measures trend strength (not direction). Higher values indicate stronger trends.</p>
+  <div class="relative h-10 rounded-full bg-gradient-to-r from-slate-600 via-amber-500 to-emerald-500 overflow-hidden">
+    <div class="absolute inset-0 flex justify-between items-center px-4 text-xs font-bold text-white font-mono">
+      <span>0-20 Weak</span>
+      <span>20-25 Emerging</span>
+      <span>25-50 Strong</span>
+      <span>50+ Very Strong</span>
+    </div>
+    <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-slate-900 shadow-lg transition-all" style="left: <%= adxPosition %>%"></div>
+  </div>
+</div>
+
+<!-- ADX Interpretation -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4">Trend Analysis</h3>
+    <div class="space-y-4">
+      <div class="p-4 rounded-lg border-2 border-<%= strength.color %>-500 bg-<%= strength.color %>-500/10">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-lg font-bold text-<%= strength.color %>-400">Trend Strength: <%= strength.text %></p>
+            <p class="text-sm text-slate-400">ADX = <%= formatNum(adxValue) %></p>
+          </div>
+          <span class="text-3xl font-bold font-mono text-<%= strength.color %>-400"><%= formatNum(adxValue) %></span>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div class="flex items-center justify-between p-3 bg-slate-800 rounded">
+          <span class="text-slate-400">+DI (Bullish Directional)</span>
+          <span class="font-mono font-bold text-emerald-400"><%= formatNum(plusDI) %></span>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-slate-800 rounded">
+          <span class="text-slate-400">-DI (Bearish Directional)</span>
+          <span class="font-mono font-bold text-red-400"><%= formatNum(minusDI) %></span>
+        </div>
+        <div class="flex items-center justify-between p-3 bg-slate-800 rounded">
+          <span class="text-slate-400">Directional Movement</span>
+          <span class="font-mono font-bold text-<%= signal.color %>-400"><%= signal.text %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4">Trading Signals</h3>
+    <div class="space-y-3">
+      <% if (adxValue >= 25 && plusDI > minusDI) { %>
+      <div class="p-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-500/10">
+        <p class="font-bold text-emerald-400">Strong Uptrend Confirmed</p>
+        <p class="text-xs text-slate-400">ADX above 25 with +DI dominant indicates a strong bullish trend. Consider long positions or holding existing longs.</p>
+      </div>
+      <% } else if (adxValue >= 25 && minusDI > plusDI) { %>
+      <div class="p-3 rounded-lg border-l-4 border-red-500 bg-red-500/10">
+        <p class="font-bold text-red-400">Strong Downtrend Confirmed</p>
+        <p class="text-xs text-slate-400">ADX above 25 with -DI dominant indicates a strong bearish trend. Consider short positions or reducing longs.</p>
+      </div>
+      <% } else if (adxValue < 20) { %>
+      <div class="p-3 rounded-lg border-l-4 border-slate-500 bg-slate-500/10">
+        <p class="font-bold text-slate-400">No Clear Trend</p>
+        <p class="text-xs text-slate-400">ADX below 20 indicates a ranging or consolidating market. Range-bound strategies may work better.</p>
+      </div>
+      <% } else { %>
+      <div class="p-3 rounded-lg border-l-4 border-amber-500 bg-amber-500/10">
+        <p class="font-bold text-amber-400">Trend Developing</p>
+        <p class="text-xs text-slate-400">ADX between 20-25 suggests a trend may be emerging. Watch for confirmation of direction.</p>
+      </div>
+      <% } %>
+
+      <div class="p-3 rounded-lg bg-slate-800">
+        <p class="text-sm text-slate-400 mb-2">Key ADX Levels:</p>
+        <ul class="text-xs space-y-1 text-slate-300">
+          <li><span class="text-slate-400">• ADX &lt; 20:</span> Weak/no trend - avoid trend following</li>
+          <li><span class="text-amber-400">• ADX 20-25:</span> Trend emerging - prepare for breakout</li>
+          <li><span class="text-emerald-400">• ADX 25-50:</span> Strong trend - trade with direction</li>
+          <li><span class="text-purple-400">• ADX &gt; 50:</span> Powerful trend - caution of exhaustion</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4"><%= symbol %> ADX & DI Lines</h3>
+    <div class="h-56"><canvas id="adxChart"></canvas></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">DI Comparison</h3>
+    <div class="h-56"><canvas id="diChart"></canvas></div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (technicals) { %>
+const adxValue = <%= adxValue %>;
+const plusDI = <%= plusDI %>;
+const minusDI = <%= minusDI %>;
+
+// ADX & DI Lines Chart
+<% if (chartData.length > 0) { %>
+const chartLabels = <%- JSON.stringify(chartData.slice(-20).map(d => {
+  const date = new Date(d.date);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+})) %>;
+<% } else { %>
+const chartLabels = ['Current'];
+<% } %>
+
+new Chart(document.getElementById('adxChart'), {
+  type: 'line',
+  data: {
+    labels: chartLabels.length > 1 ? chartLabels : ['Previous', 'Current'],
+    datasets: [
+      {
+        label: 'ADX',
+        data: chartLabels.length > 1 ? Array(chartLabels.length).fill(adxValue) : [adxValue * 0.95, adxValue],
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.3
+      },
+      {
+        label: '+DI',
+        data: chartLabels.length > 1 ? Array(chartLabels.length).fill(plusDI) : [plusDI * 0.95, plusDI],
+        borderColor: '#10b981',
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3
+      },
+      {
+        label: '-DI',
+        data: chartLabels.length > 1 ? Array(chartLabels.length).fill(minusDI) : [minusDI * 1.05, minusDI],
+        borderColor: '#ef4444',
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
+    scales: {
+      y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+
+// DI Comparison Bar Chart
+new Chart(document.getElementById('diChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Bullish (+DI)', 'Bearish (-DI)', 'ADX'],
+    datasets: [{
+      data: [plusDI, minusDI, adxValue],
+      backgroundColor: ['#10b981', '#ef4444', '#8b5cf6'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8' },
+        suggestedMax: 50
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

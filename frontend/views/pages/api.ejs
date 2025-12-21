@@ -1,0 +1,261 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'API Playground';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<h1 class="text-2xl font-bold text-amber-400">API PLAYGROUND</h1>
+<p class="text-slate-300 mt-1">Test API endpoints and explore documentation</p>
+</div>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+<div></div>
+<div class="flex gap-2">
+<button onclick="copyApiKey()" class="bloomberg-btn-secondary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+Copy API Key
+</button>
+<button onclick="regenerateKey()" class="bloomberg-btn-primary">Regenerate Key</button>
+</div>
+</div>
+
+<!-- API Key Section -->
+<div class="bloomberg-card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold text-white">Your API Key</h3>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Active</span>
+<span class="text-slate-400 text-sm">100 requests/min</span>
+</div>
+</div>
+<div class="flex gap-2">
+<code class="flex-1 p-3 rounded-lg bg-slate-950 text-slate-300 font-mono text-sm overflow-x-auto border border-slate-700" id="apiKeyDisplay">wp_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6</code>
+<button onclick="toggleKeyVisibility()" class="bloomberg-btn-secondary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+</button>
+</div>
+<p class="text-xs text-slate-400 mt-2">⚠️ Keep your API key secret. Never share it in public repositories.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Endpoint List -->
+<div class="space-y-4">
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-white mb-4">Endpoints</h3>
+<div class="space-y-2">
+<button onclick="selectEndpoint('portfolios')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors active">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono">GET</span>
+<span class="text-white">/portfolios</span>
+</div>
+</button>
+<button onclick="selectEndpoint('portfolio')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono">GET</span>
+<span class="text-white">/portfolios/{id}</span>
+</div>
+</button>
+<button onclick="selectEndpoint('holdings')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono">GET</span>
+<span class="text-white">/holdings/{id}</span>
+</div>
+</button>
+<button onclick="selectEndpoint('quote')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono">GET</span>
+<span class="text-white">/market/quote/{symbol}</span>
+</div>
+</button>
+<button onclick="selectEndpoint('analysis')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono">GET</span>
+<span class="text-white">/analysis/{id}</span>
+</div>
+</button>
+<button onclick="selectEndpoint('create')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded text-xs font-mono">POST</span>
+<span class="text-white">/portfolios</span>
+</div>
+</button>
+<button onclick="selectEndpoint('addHolding')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded text-xs font-mono">POST</span>
+<span class="text-white">/holdings/{id}</span>
+</div>
+</button>
+<button onclick="selectEndpoint('delete')" class="endpoint-btn w-full text-left p-3 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-mono">DELETE</span>
+<span class="text-white">/portfolios/{id}</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+
+<!-- Request/Response -->
+<div class="lg:col-span-2 space-y-4">
+<!-- Documentation -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-white mb-4" id="endpointTitle">GET /portfolios</h3>
+<p class="text-slate-400 text-sm mb-4" id="endpointDesc">Retrieve all portfolios for the authenticated user.</p>
+
+<div class="mb-4">
+<h4 class="font-medium text-white mb-2">Parameters</h4>
+<div class="bg-slate-800 rounded-lg p-3" id="endpointParams">
+<p class="text-sm text-slate-400">No parameters required</p>
+</div>
+</div>
+
+<div class="mb-4">
+<h4 class="font-medium text-white mb-2">Request Headers</h4>
+<pre class="bg-slate-950 text-slate-300 rounded-lg p-3 text-sm font-mono overflow-x-auto border border-slate-700">Authorization: Bearer wp_live_a1b2c3...
+Content-Type: application/json</pre>
+</div>
+</div>
+
+<!-- Try It -->
+<div class="bloomberg-card p-5">
+<div class="flex items-center justify-between mb-4">
+<h4 class="font-semibold text-white">Try It</h4>
+<button onclick="sendRequest()" class="bloomberg-btn-primary">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+Send Request
+</button>
+</div>
+
+<div class="mb-4">
+<label class="block text-sm font-medium text-slate-300 mb-1">URL</label>
+<input type="text" id="requestUrl" class="form-input font-mono text-sm" value="https://api.wealthpilot.com/v1/portfolios">
+</div>
+
+<div id="requestBody" class="hidden mb-4">
+<label class="block text-sm font-medium text-slate-300 mb-1">Request Body</label>
+<textarea id="bodyInput" class="form-input font-mono text-sm" rows="4">{
+  "name": "My Portfolio",
+  "description": "Growth focused portfolio"
+}</textarea>
+</div>
+</div>
+
+<!-- Response -->
+<div class="bloomberg-card p-5">
+<div class="flex items-center justify-between mb-4">
+<h4 class="font-semibold text-white">Response</h4>
+<div class="flex items-center gap-2">
+<span id="statusCode" class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono">200 OK</span>
+<span id="responseTime" class="text-slate-400 text-xs">124ms</span>
+</div>
+</div>
+<pre class="bg-slate-950 text-slate-300 rounded-lg p-4 text-sm font-mono overflow-x-auto max-h-64 border border-slate-700" id="responseOutput">{
+  "portfolios": [
+    {
+      "id": 1,
+      "name": "Main Portfolio",
+      "description": "Primary investment account",
+      "total_value": 276182.45,
+      "created_at": "2024-01-15T10:30:00Z",
+      "holdings_count": 12
+    },
+    {
+      "id": 2,
+      "name": "Retirement IRA",
+      "description": "Long-term retirement savings",
+      "total_value": 145280.00,
+      "created_at": "2024-02-20T14:15:00Z",
+      "holdings_count": 8
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "timestamp": "2024-12-10T15:30:00Z"
+  }
+}</pre>
+</div>
+</div>
+</div>
+
+<!-- Rate Limits -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-white mb-4">Rate Limits & Usage</h3>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div>
+<p class="text-slate-400 text-sm">Requests Today</p>
+<p class="text-2xl font-bold text-white">1,247</p>
+<div class="h-2 rounded-full bg-slate-700 mt-2"><div class="h-2 rounded-full bg-sky-500" style="width: 12%"></div></div>
+<p class="text-xs text-slate-400 mt-1">12% of 10,000 daily limit</p>
+</div>
+<div>
+<p class="text-slate-400 text-sm">Requests/Minute</p>
+<p class="text-2xl font-bold text-white">23</p>
+<p class="text-xs text-slate-400 mt-1">Limit: 100/min</p>
+</div>
+<div>
+<p class="text-slate-400 text-sm">Avg Response</p>
+<p class="text-2xl font-bold text-emerald-400">89ms</p>
+<p class="text-xs text-slate-400 mt-1">Last 24 hours</p>
+</div>
+<div>
+<p class="text-slate-400 text-sm">Uptime</p>
+<p class="text-2xl font-bold text-emerald-400">99.9%</p>
+<p class="text-xs text-slate-400 mt-1">Last 30 days</p>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script>
+const endpoints = {
+  portfolios: { method: 'GET', url: '/portfolios', desc: 'Retrieve all portfolios for the authenticated user.', params: 'No parameters required', body: false },
+  portfolio: { method: 'GET', url: '/portfolios/{id}', desc: 'Get a specific portfolio by ID.', params: '<code>id</code> - Portfolio ID (integer)', body: false },
+  holdings: { method: 'GET', url: '/holdings/{id}', desc: 'Get all holdings for a portfolio.', params: '<code>id</code> - Portfolio ID (integer)', body: false },
+  quote: { method: 'GET', url: '/market/quote/{symbol}', desc: 'Get real-time quote for a stock symbol.', params: '<code>symbol</code> - Stock ticker (string)', body: false },
+  analysis: { method: 'GET', url: '/analysis/{id}', desc: 'Get AI-powered portfolio analysis.', params: '<code>id</code> - Portfolio ID (integer)', body: false },
+  create: { method: 'POST', url: '/portfolios', desc: 'Create a new portfolio.', params: 'Request body required', body: true },
+  addHolding: { method: 'POST', url: '/holdings/{id}', desc: 'Add a holding to a portfolio.', params: '<code>id</code> - Portfolio ID, plus request body', body: true },
+  delete: { method: 'DELETE', url: '/portfolios/{id}', desc: 'Delete a portfolio.', params: '<code>id</code> - Portfolio ID (integer)', body: false }
+};
+
+function selectEndpoint(key) {
+  const ep = endpoints[key];
+  document.querySelectorAll('.endpoint-btn').forEach(b => b.classList.remove('active', 'ring-2', 'ring-sky-500'));
+  event.currentTarget.classList.add('active', 'ring-2', 'ring-sky-500');
+  
+  document.getElementById('endpointTitle').textContent = ep.method + ' ' + ep.url;
+  document.getElementById('endpointDesc').textContent = ep.desc;
+  document.getElementById('endpointParams').innerHTML = ep.params;
+  document.getElementById('requestUrl').value = 'https://api.wealthpilot.com/v1' + ep.url;
+  document.getElementById('requestBody').classList.toggle('hidden', !ep.body);
+}
+
+function sendRequest() {
+  document.getElementById('statusCode').textContent = '200 OK';
+  document.getElementById('responseTime').textContent = Math.floor(Math.random() * 100 + 50) + 'ms';
+  showToast('Request sent successfully!', 'success');
+}
+
+function copyApiKey() {
+  navigator.clipboard.writeText('wp_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6');
+  showToast('API key copied!', 'success');
+}
+
+function regenerateKey() {
+  if (confirm('Are you sure? This will invalidate your current key.')) {
+    showToast('New API key generated!', 'success');
+  }
+}
+
+let keyVisible = true;
+function toggleKeyVisibility() {
+  const display = document.getElementById('apiKeyDisplay');
+  keyVisible = !keyVisible;
+  display.textContent = keyVisible ? 'wp_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6' : '••••••••••••••••••••••••••••••••••••';
+}
+</script>
+<%- include('../partials/footer') %>

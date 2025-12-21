@@ -1,0 +1,1599 @@
+<%- include('../partials/header') %>
+
+<div class="earnings-calendar-page">
+
+  <!-- Hero Header -->
+  <div class="hero-header">
+    <div class="container">
+      <div class="header-content">
+        <div class="header-left">
+          <div class="icon-wrapper">
+            <svg class="header-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="page-title">Earnings Calendar</h1>
+            <p class="page-subtitle">Track company earnings announcements and results</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <select id="holdings-filter" class="filter-select">
+            <option value="all">All Stocks</option>
+            <option value="holdings">My Holdings</option>
+            <option value="watchlist">Watchlist</option>
+          </select>
+          <select id="period-filter" class="filter-select">
+            <option value="7">This Week</option>
+            <option value="30" selected>Next 30 Days</option>
+            <option value="90">This Quarter</option>
+          </select>
+          <button id="apply-filters-btn" class="btn btn-primary">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            Get Results
+          </button>
+          <button id="export-btn" class="btn btn-secondary">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Export
+          </button>
+          <button id="refresh-btn" class="btn btn-secondary">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid with Mini Calendar -->
+  <div class="container">
+    <div class="stats-calendar-grid">
+      <!-- Stats Cards -->
+      <div class="stats-cards">
+        <div class="stat-card stat-today">
+        <div class="stat-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Today</span>
+          <span class="stat-value" id="stat-today">-</span>
+          <span class="stat-badge">Earnings</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-tomorrow">
+        <div class="stat-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Tomorrow</span>
+          <span class="stat-value" id="stat-tomorrow">-</span>
+          <span class="stat-badge">Scheduled</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-week">
+        <div class="stat-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">This Week</span>
+          <span class="stat-value" id="stat-week">-</span>
+          <span class="stat-badge">Upcoming</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-month">
+        <div class="stat-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">This Month</span>
+          <span class="stat-value" id="stat-month">-</span>
+          <span class="stat-badge">Total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini Calendar Widget -->
+    <div class="mini-calendar-widget">
+      <div class="mini-calendar-header">
+        <button id="mini-prev-month" class="mini-nav-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <span class="mini-current-month" id="mini-current-month">December 2025</span>
+        <button id="mini-next-month" class="mini-nav-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="mini-calendar-weekdays">
+        <div class="mini-weekday">S</div>
+        <div class="mini-weekday">M</div>
+        <div class="mini-weekday">T</div>
+        <div class="mini-weekday">W</div>
+        <div class="mini-weekday">T</div>
+        <div class="mini-weekday">F</div>
+        <div class="mini-weekday">S</div>
+      </div>
+
+      <div class="mini-calendar-days" id="mini-calendar-days">
+        <!-- Mini calendar days will be inserted here -->
+      </div>
+
+      <div class="mini-calendar-footer">
+        <div class="mini-legend">
+          <span class="mini-legend-dot ex"></span>
+          <span class="mini-legend-text">Ex-Date</span>
+        </div>
+        <div class="mini-legend">
+          <span class="mini-legend-dot pay"></span>
+          <span class="mini-legend-text">Payment</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Controls Bar -->
+  <div class="container">
+    <div class="controls-bar">
+      <!-- Search -->
+      <div class="search-wrapper">
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input type="text" id="search-input" placeholder="Search stocks by symbol or company name..." class="search-input">
+        <button id="clear-search" class="clear-search hidden">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- View Toggle -->
+      <div class="view-toggle">
+        <button class="view-btn active" data-view="upcoming">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+          </svg>
+          List
+        </button>
+        <button class="view-btn" data-view="calendar">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          Calendar
+        </button>
+        <button class="view-btn" data-view="tracked">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+          </svg>
+          My Holdings
+        </button>
+      </div>
+
+      <!-- Sort Options -->
+      <div class="sort-wrapper">
+        <select id="sort-select" class="sort-select">
+          <option value="date-asc">Ex-Date (Nearest First)</option>
+          <option value="date-desc">Ex-Date (Latest First)</option>
+          <option value="amount-desc">Earnings Amount (High to Low)</option>
+          <option value="amount-asc">Earnings Amount (Low to High)</option>
+          <option value="yield-desc">Yield (High to Low)</option>
+          <option value="yield-asc">Yield (Low to High)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div id="earnings-content" style="padding: 2rem 0;">
+      Loading earnings data...
+    </div>  </div>
+</div>
+
+<!-- Earnings Details Modal -->
+<div id="earnings-modal" class="modal-overlay hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-container">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeEarningsModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <div class="modal-header">
+        <div class="modal-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="modal-title" id="modal-title">Earnings Details</h3>
+      </div>
+
+      <div class="modal-body" id="modal-body">
+        <!-- Modal content will be inserted here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast hidden">
+  <div class="toast-icon">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+  </div>
+  <span id="toast-message">Success!</span>
+</div>
+
+<style>
+  /* Variables */
+  :root {
+    --primary: #f59e0b;
+    --primary-dark: #d97706;
+    --primary-light: #fbbf24;
+    --secondary: #3b82f6;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --info: #06b6d4;
+
+    --bg-dark: #0a0e17;
+    --bg-darker: #050812;
+    --bg-card: #1a1f2e;
+    --bg-card-hover: #252b3d;
+
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+
+    --border-color: #2d3748;
+    --border-light: #374151;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Base Styles */
+  .earnings-calendar-page {
+    min-height: 100vh;
+    background: var(--bg-dark);
+    padding-bottom: 4rem;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  /* Hero Header */
+  .hero-header {
+    background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+    border-bottom: 1px solid var(--border-color);
+    padding: 2.5rem 0;
+    margin-bottom: 2rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+  }
+
+  .header-icon {
+    width: 32px;
+    height: 32px;
+    color: white;
+  }
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    outline: none;
+  }
+
+  .btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+  }
+
+  .btn-secondary:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--primary);
+  }
+
+  /* Stats Grid with Mini Calendar */
+  .stats-calendar-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+  }
+
+  .stat-card:hover::before {
+    opacity: 1;
+  }
+
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .stat-today .stat-icon {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+
+  .stat-week .stat-icon {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  .stat-month .stat-icon {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+  }
+
+  .stat-total .stat-icon {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--primary);
+  }
+
+  .stat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .stat-badge {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Controls Bar */
+  .controls-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* Search */
+  .search-wrapper {
+    flex: 1;
+    min-width: 300px;
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 1rem 3rem 1rem 3.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: var(--transition);
+    outline: none;
+  }
+
+  .search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+  }
+
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .clear-search {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-darker);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+
+  .clear-search:hover {
+    background: var(--danger);
+    color: white;
+  }
+
+  .clear-search svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* View Toggle */
+  .view-toggle {
+    display: flex;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .view-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    border-right: 1px solid var(--border-color);
+    position: relative;
+  }
+
+  .view-btn:last-child {
+    border-right: none;
+  }
+
+  .view-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .view-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--primary);
+  }
+
+  .view-btn.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #000;
+  }
+
+  /* Sort */
+  .sort-wrapper {
+    position: relative;
+  }
+
+  .sort-select {
+    padding: 0.75rem 3rem 0.75rem 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 20px;
+  }
+
+  .sort-select:hover {
+    border-color: var(--primary);
+  }
+
+  .sort-select option {
+    background: var(--bg-card);
+    color: var(--text-primary);
+  }
+
+  /* Loading State */
+  .loading-state {
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  .skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .skeleton-card {
+    height: 250px;
+    background: linear-gradient(
+      90deg,
+      var(--bg-card) 0%,
+      var(--bg-card-hover) 50%,
+      var(--bg-card) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+  }
+
+  @keyframes skeleton-loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .loading-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  /* Content Views */
+  .content-view {
+    display: none;
+  }
+
+  .content-view:not(.hidden) {
+    display: block;
+  }
+
+  .view-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .view-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .results-count {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+  }
+
+  /* Earningss Grid */
+  .earningss-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .earnings-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .earnings-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .earnings-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary);
+  }
+
+  .earnings-card:hover::before {
+    opacity: 1;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-symbol-info {
+    flex: 1;
+  }
+
+  .card-symbol {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .card-company {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+  }
+
+  .frequency-badge {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-quarterly {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+  }
+
+  .badge-monthly {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+  }
+
+  .badge-annual {
+    background: rgba(168, 85, 247, 0.15);
+    color: #a855f7;
+  }
+
+  .card-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .metric-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .metric-value.amount {
+    color: var(--primary);
+  }
+
+  .metric-value.yield {
+    color: var(--success);
+  }
+
+  .card-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .date-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.9rem;
+  }
+
+  .date-label {
+    color: var(--text-secondary);
+  }
+
+  .date-value {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .date-value.highlight {
+    color: var(--primary);
+  }
+
+  .days-until {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .empty-state.hidden {
+    display: none;
+  }
+
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    color: var(--text-muted);
+    margin: 0 auto 1.5rem;
+    opacity: 0.5;
+  }
+
+  .empty-state h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .modal-overlay:not(.hidden) {
+    display: flex;
+  }
+
+  .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .modal-container {
+    position: relative;
+    z-index: 1001;
+    width: 100%;
+    max-width: 600px;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-darker);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    z-index: 10;
+  }
+
+  .modal-close:hover {
+    background: var(--danger);
+    color: white;
+    transform: rotate(90deg);
+  }
+
+  .modal-close svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .modal-header {
+    padding: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .modal-icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .modal-body {
+    padding: 2rem;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--success);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    color: var(--text-primary);
+    font-weight: 600;
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .toast.hidden {
+    display: none;
+  }
+
+  .toast-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--success);
+  }
+
+  .toast-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .container {
+      padding: 0 1rem;
+    }
+
+    .hero-header {
+      padding: 1.5rem 0;
+    }
+
+    .header-content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+    }
+
+    .stats-calendar-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .mini-calendar-widget {
+      position: static;
+    }
+
+    .controls-bar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-wrapper {
+      min-width: auto;
+    }
+
+    .view-toggle {
+      width: 100%;
+    }
+
+    .view-btn {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .sort-wrapper {
+      width: 100%;
+    }
+
+    .sort-select {
+      width: 100%;
+    }
+
+    .earningss-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .modal-container {
+      margin: 1rem;
+    }
+
+    .toast {
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+    }
+  }
+
+  /* Mini Calendar Widget */
+  .mini-calendar-widget {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .mini-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .mini-nav-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-darker);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+
+  .mini-nav-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #000;
+  }
+
+  .mini-nav-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .mini-current-month {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    flex: 1;
+    text-align: center;
+  }
+
+  .mini-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mini-weekday {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0.25rem;
+  }
+
+  .mini-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .mini-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-darker);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    padding: 0.25rem;
+  }
+
+  .mini-day:hover {
+    border-color: var(--primary);
+    transform: scale(1.1);
+    z-index: 10;
+  }
+
+  .mini-day.other-month {
+    opacity: 0.3;
+  }
+
+  .mini-day.today {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .mini-day.has-earningss {
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .mini-day-dots {
+    display: flex;
+    gap: 1px;
+    margin-top: 2px;
+  }
+
+  .mini-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+  }
+
+  .mini-dot.ex {
+    background: #3b82f6;
+  }
+
+  .mini-dot.pay {
+    background: #10b981;
+  }
+
+  .mini-calendar-footer {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .mini-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mini-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .mini-legend-dot.ex {
+    background: #3b82f6;
+  }
+
+  .mini-legend-dot.pay {
+    background: #10b981;
+  }
+
+  .mini-legend-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Calendar View */
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+
+  .nav-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .nav-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .current-month {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 200px;
+    text-align: center;
+  }
+
+  .calendar-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .weekday {
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+  }
+
+  .calendar-day {
+    aspect-ratio: 1;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 80px;
+    background: var(--bg-darker);
+  }
+
+  .calendar-day:hover {
+    border-color: var(--primary);
+    transform: scale(1.05);
+    z-index: 10;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .calendar-day.other-month {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .calendar-day.today {
+    border-color: var(--primary);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .calendar-day.has-earningss {
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .calendar-day.has-earningss:hover {
+    background: rgba(245, 158, 11, 0.15);
+  }
+
+  .day-number {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-day.today .day-number {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .earnings-indicators {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    width: 100%;
+  }
+
+  .earnings-dot {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--primary);
+  }
+
+  .earnings-dot.ex-date {
+    background: #3b82f6;
+  }
+
+  .earnings-dot.payment-date {
+    background: #10b981;
+  }
+
+  .earnings-count {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: auto;
+    font-weight: 600;
+  }
+
+  .calendar-legend {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .legend-dot {
+    width: 20px;
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  .legend-dot.ex-date {
+    background: #3b82f6;
+  }
+
+  .legend-dot.payment-date {
+    background: #10b981;
+  }
+
+  /* Day Details Modal */
+  .day-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .day-earnings-item {
+    background: rgba(26, 31, 46, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .day-earnings-item:hover {
+    border-color: var(--primary);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .day-earnings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .day-earnings-symbol {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  .day-earnings-company {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+  }
+
+  .day-earnings-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .day-earnings-metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .day-earnings-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .day-earnings-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: 'Monaco', 'Courier New', monospace;
+  }
+
+  /* Utility */
+  .hidden {
+    display: none !important;
+  }
+</style>
+
+<script src="/js/earnings-calendar.js"></script>
+
+<%- include('../partials/footer') %>

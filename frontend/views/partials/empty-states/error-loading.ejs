@@ -1,0 +1,37 @@
+<div class="empty-state empty-state-error empty-state-compact fade-in" role="alert">
+  <div class="empty-state-icon">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+  </div>
+
+  <div class="empty-state-content">
+    <h3 class="empty-state-title">Unable to Load Data</h3>
+    <p class="empty-state-description">
+      <%= typeof errorMessage !== 'undefined' ? errorMessage : 'Something went wrong while loading this content. Please try again.' %>
+    </p>
+
+    <div class="empty-state-actions">
+      <button onclick="location.reload()" class="empty-state-action-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Try Again
+      </button>
+      <a href="/" class="empty-state-action-secondary">
+        Go Home
+      </a>
+    </div>
+  </div>
+
+  <div class="empty-state-help">
+    <div class="empty-state-help-links">
+      <a href="/help" class="empty-state-help-link">
+        Contact Support
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>

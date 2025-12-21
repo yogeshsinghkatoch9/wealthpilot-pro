@@ -1,0 +1,229 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeGoals = goals || [];
+const safeTheme = theme || 'dark';
+const safeFmt = fmt || { money: (val) => '$' + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) };
+
+// Calculate summary metrics
+const totalGoals = safeGoals.length;
+const completedGoals = safeGoals.filter(g => (g.progress || 0) >= 100).length;
+const totalTarget = safeGoals.reduce((sum, g) => sum + (g.target_amount || 0), 0);
+const totalCurrent = safeGoals.reduce((sum, g) => sum + (g.current_amount || 0), 0);
+const avgProgress = totalGoals > 0 ? (safeGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / totalGoals).toFixed(1) : 0;
+const onTrackGoals = safeGoals.filter(g => {
+  const daysLeft = g.daysRemaining;
+  const progress = g.progress || 0;
+  if (!daysLeft || daysLeft < 0) return progress >= 100;
+  const targetDate = new Date(g.target_date);
+  const startDate = new Date(g.created_at || Date.now());
+  const totalDays = Math.ceil((targetDate - startDate) / (1000 * 60 * 60 * 24));
+  const expectedProgress = totalDays > 0 ? ((totalDays - daysLeft) / totalDays * 100) : 0;
+  return progress >= expectedProgress * 0.9; // 90% of expected progress = on track
+}).length;
+%>
+<%- include('../partials/header', { pageTitle: 'Goals' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b border-amber-400/20 px-4 py-2">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <h1 class="text-xl font-bold text-amber-400 tracking-tight">FINANCIAL GOALS</h1>
+      <span class="text-slate-500 text-sm font-mono"><%= new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() %></span>
+    </div>
+    <button onclick="openModal('goalModal')" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      NEW GOAL
+    </button>
+  </div>
+</div>
+
+<!-- KPI Summary Bar -->
+<div class="bg-slate-950 border-b border-slate-800 px-4 py-3">
+  <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-6 gap-4">
+    <div class="space-y-1">
+      <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">Total Goals</div>
+      <div class="text-white text-lg font-mono font-bold"><%= totalGoals %></div>
+    </div>
+    <div class="space-y-1">
+      <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">Completed</div>
+      <div class="text-emerald-400 text-lg font-mono font-bold"><%= completedGoals %></div>
+    </div>
+    <div class="space-y-1">
+      <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">On Track</div>
+      <div class="text-amber-400 text-lg font-mono font-bold"><%= onTrackGoals %></div>
+    </div>
+    <div class="space-y-1">
+      <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">Avg Progress</div>
+      <div class="text-white text-lg font-mono font-bold"><%= avgProgress %>%</div>
+    </div>
+    <div class="space-y-1">
+      <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">Total Target</div>
+      <div class="text-white text-lg font-mono font-bold"><%= safeFmt.money(totalTarget) %></div>
+    </div>
+    <div class="space-y-1">
+      <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">Total Saved</div>
+      <div class="text-emerald-400 text-lg font-mono font-bold"><%= safeFmt.money(totalCurrent) %></div>
+    </div>
+  </div>
+</div>
+
+<main class="bg-slate-950 min-h-screen p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <% if (safeGoals.length === 0) { %>
+      <div class="bloomberg-card p-12 text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-lg font-semibold text-white mb-2 font-mono">NO GOALS DEFINED</h3>
+        <p class="text-slate-400 text-sm">Create your first financial goal to start tracking progress</p>
+      </div>
+    <% } else { %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% safeGoals.forEach(g => {
+          const progress = g.progress || 0;
+          const currentAmount = g.current_amount || 0;
+          const targetAmount = g.target_amount || 0;
+          const priority = g.priority || 'medium';
+          const category = g.category || 'General';
+          const daysRemaining = g.daysRemaining;
+
+          // Determine if goal is on track
+          let isOnTrack = true;
+          let statusColor = 'text-emerald-400';
+
+          if (progress >= 100) {
+            statusColor = 'text-emerald-400';
+          } else if (daysRemaining !== null && daysRemaining !== undefined) {
+            const targetDate = new Date(g.target_date);
+            const startDate = new Date(g.created_at || Date.now());
+            const totalDays = Math.ceil((targetDate - startDate) / (1000 * 60 * 60 * 24));
+            const expectedProgress = totalDays > 0 ? ((totalDays - daysRemaining) / totalDays * 100) : 0;
+            isOnTrack = progress >= expectedProgress * 0.9;
+            statusColor = isOnTrack ? 'text-emerald-400' : 'text-red-400';
+          }
+        %>
+          <div class="bloomberg-card p-5">
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="<%= priority === 'high' ? 'bg-red-500/20 text-red-400' : priority === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400' %> text-xs font-mono px-2 py-0.5 rounded border <%= priority === 'high' ? 'border-red-500/30' : priority === 'medium' ? 'border-amber-500/30' : 'border-blue-500/30' %>">
+                    <%= priority ? priority.toUpperCase() : 'MEDIUM' %>
+                  </span>
+                  <span class="text-slate-500 text-xs font-mono">
+                    <%= category.toUpperCase() %>
+                  </span>
+                </div>
+                <h3 class="text-lg font-semibold text-white font-mono"><%= g.name %></h3>
+              </div>
+              <button onclick="deleteGoal('<%= g.id %>')" class="p-2 text-slate-500 hover:text-red-400 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Progress Section -->
+            <div class="mb-4 space-y-3">
+              <div class="flex justify-between items-baseline">
+                <span class="text-slate-400 text-sm font-mono">CURRENT</span>
+                <span class="text-white text-lg font-mono font-bold"><%= safeFmt.money(currentAmount) %></span>
+              </div>
+
+              <div class="relative">
+                <div class="h-2 bg-slate-800 rounded-sm overflow-hidden">
+                  <div class="h-full transition-all duration-500 <%= progress >= 100 ? 'bg-emerald-400' : 'bg-amber-400' %>" style="width: <%= Math.min(100, progress) %>%"></div>
+                </div>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="text-slate-500 text-xs font-mono">TARGET: <%= safeFmt.money(targetAmount) %></span>
+                  <span class="<%= statusColor %> text-sm font-mono font-bold"><%= progress.toFixed(1) %>%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800">
+              <div>
+                <p class="text-slate-500 text-xs font-mono uppercase tracking-wide mb-1">Target Date</p>
+                <p class="text-white text-sm font-mono">
+                  <%= g.target_date ? new Date(g.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'NOT SET' %>
+                </p>
+              </div>
+              <div>
+                <p class="text-slate-500 text-xs font-mono uppercase tracking-wide mb-1">Days Left</p>
+                <p class="<%= daysRemaining !== null && daysRemaining !== undefined ? (daysRemaining < 30 ? 'text-red-400' : 'text-white') : 'text-slate-500' %> text-sm font-mono font-bold">
+                  <%= daysRemaining !== null && daysRemaining !== undefined ? daysRemaining : '-' %>
+                </p>
+              </div>
+            </div>
+
+            <!-- Status Indicator -->
+            <div class="mt-3 pt-3 border-t border-slate-800">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-500 text-xs font-mono uppercase">Status</span>
+                <span class="<%= statusColor %> text-xs font-mono font-bold">
+                  <%= progress >= 100 ? 'COMPLETED' : (isOnTrack ? 'ON TRACK' : 'BEHIND') %>
+                </span>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</main>
+<!-- Bloomberg Modal -->
+<div id="goalModal" class="modal">
+  <div class="modal-content bloomberg-card">
+    <div class="modal-header bg-black border-b border-amber-400/20">
+      <h3 class="text-amber-400 font-mono font-bold uppercase tracking-tight">Create New Goal</h3>
+      <button onclick="closeModal('goalModal')" class="modal-close text-slate-400 hover:text-white">&times;</button>
+    </div>
+    <form onsubmit="return handleCreateGoal(event)">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Goal Name</label>
+          <input type="text" name="name" required class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20" placeholder="e.g., Retirement Fund">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Category</label>
+          <select name="category" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20">
+            <option>Retirement</option>
+            <option>Emergency</option>
+            <option>Education</option>
+            <option>Home</option>
+            <option>Travel</option>
+            <option>General</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Target Amount</label>
+            <input type="number" name="target_amount" required class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20" placeholder="1000000" step="0.01">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Monthly Contribution</label>
+            <input type="number" name="monthly_contribution" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20" placeholder="500" step="0.01">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Target Date</label>
+            <input type="date" name="target_date" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Priority</label>
+            <select name="priority" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20">
+              <option value="1">High</option>
+              <option value="2">Medium</option>
+              <option value="3">Low</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="bloomberg-btn bloomberg-btn-primary w-full">CREATE GOAL</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>async function handleCreateGoal(e){e.preventDefault();const f=e.target;const priorityMap={1:'high',2:'medium',3:'low'};await fetch('/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:f.name.value,category:f.category.value,targetAmount:parseFloat(f.target_amount.value),targetDate:f.target_date.value,priority:priorityMap[parseInt(f.priority.value)]})});location.reload();return false}async function deleteGoal(id){if(!confirm('Delete?'))return;await fetch('/api/goals/'+id,{method:'DELETE'});location.reload()}</script>
+<%- include('../partials/footer') %>

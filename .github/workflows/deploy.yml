@@ -1,0 +1,112 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /app
+
+            # Clone or pull latest code
+            if [ -d "wealthpilot-pro" ]; then
+              cd wealthpilot-pro
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git wealthpilot-pro
+              cd wealthpilot-pro
+            fi
+
+            # Create .env file for backend
+            cat > .env << 'ENVEOF'
+            NODE_ENV=production
+            PORT=4000
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+            # API Keys
+            ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
+            FMP_API_KEY=${{ secrets.FMP_API_KEY }}
+            POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }}
+            NASDAQ_API_KEY=${{ secrets.NASDAQ_API_KEY }}
+            INTRINIO_API_KEY=${{ secrets.INTRINIO_API_KEY }}
+            STOCKDATA_API_KEY=${{ secrets.STOCKDATA_API_KEY }}
+            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
+            IEX_API_KEY=${{ secrets.IEX_API_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            MARKETAUX_API_KEY=${{ secrets.MARKETAUX_API_KEY }}
+
+            # URLs
+            FRONTEND_URL=http://${{ secrets.EC2_HOST }}:3000
+            API_URL=http://${{ secrets.EC2_HOST }}:4000
+            CORS_ORIGIN=http://${{ secrets.EC2_HOST }}:3000
+            ENVEOF
+
+            # Create docker-compose.aws.yml if not exists
+            cat > docker-compose.aws.yml << 'COMPOSEEOF'
+            version: '3.8'
+
+            services:
+              backend:
+                build:
+                  context: ./backend
+                  dockerfile: Dockerfile.prod
+                container_name: wealthpilot-backend
+                restart: always
+                env_file:
+                  - .env
+                environment:
+                  - PORT=4000
+                ports:
+                  - "4000:4000"
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+
+              frontend:
+                build:
+                  context: ./frontend
+                  dockerfile: Dockerfile.prod
+                container_name: wealthpilot-frontend
+                restart: always
+                environment:
+                  - NODE_ENV=production
+                  - PORT=3000
+                  - API_URL=http://backend:4000
+                ports:
+                  - "3000:3000"
+                depends_on:
+                  - backend
+            COMPOSEEOF
+
+            # Stop existing containers
+            docker-compose -f docker-compose.aws.yml down || true
+
+            # Build and start containers
+            docker-compose -f docker-compose.aws.yml up -d --build
+
+            # Wait for backend to be ready
+            sleep 15
+
+            # Run database migrations
+            docker exec wealthpilot-backend npx prisma migrate deploy || true
+            docker exec wealthpilot-backend npx prisma db push --accept-data-loss || true
+
+            # Show status
+            docker-compose -f docker-compose.aws.yml ps

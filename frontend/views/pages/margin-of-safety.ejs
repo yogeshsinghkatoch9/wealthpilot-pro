@@ -1,0 +1,172 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const pageTitle = 'Margin of Safety';
+%>
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<h1 class="text-2xl font-bold text-amber-400">Margin of Safety</h1>
+<p class="text-slate-400">Intrinsic value & DCF analysis</p>
+</div>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+<div class="flex gap-2">
+<input type="text" value="AAPL" class="form-input w-32 font-mono bg-slate-900 border-amber-400/30 text-white">
+<button class="bloomberg-btn">Calculate</button>
+</div>
+</div>
+
+<!-- Valuation Summary -->
+<div class="bloomberg-card p-5">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-bold text-xl">AAPL</div>
+<div class="flex-1">
+<h2 class="text-xl font-bold text-white">Apple Inc.</h2>
+<p class="text-slate-400 font-mono">Current Price: <span class="text-amber-400">$189.65</span></p>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+<div class="text-center">
+<p class="text-sm text-slate-400">DCF Fair Value</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">$218.40</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Margin of Safety</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">+15.2%</p>
+<p class="text-xs text-emerald-400">Undervalued</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Graham Number</p>
+<p class="text-3xl font-bold font-mono text-white">$142.80</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Peter Lynch Value</p>
+<p class="text-3xl font-bold font-mono text-sky-400">$205.60</p>
+</div>
+</div>
+</div>
+
+<!-- DCF Model -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">📊 DCF Valuation Model</h3>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div>
+<h4 class="text-sm font-medium <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Assumptions</h4>
+<div class="space-y-3">
+<div class="flex justify-between"><span>Revenue Growth (5Y)</span><span class="font-bold">6.5%</span></div>
+<div class="flex justify-between"><span>Terminal Growth</span><span class="font-bold">2.5%</span></div>
+<div class="flex justify-between"><span>Operating Margin</span><span class="font-bold">30.2%</span></div>
+<div class="flex justify-between"><span>Tax Rate</span><span class="font-bold">15.0%</span></div>
+<div class="flex justify-between"><span>WACC</span><span class="font-bold">9.2%</span></div>
+</div>
+</div>
+<div>
+<h4 class="text-sm font-medium <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Projected FCF ($B)</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>Year 1</span><span class="font-bold">$108.4</span></div>
+<div class="flex justify-between"><span>Year 2</span><span class="font-bold">$115.4</span></div>
+<div class="flex justify-between"><span>Year 3</span><span class="font-bold">$122.9</span></div>
+<div class="flex justify-between"><span>Year 4</span><span class="font-bold">$130.9</span></div>
+<div class="flex justify-between"><span>Year 5</span><span class="font-bold">$139.4</span></div>
+<div class="flex justify-between border-t pt-2 <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>"><span>Terminal Value</span><span class="font-bold">$2,128B</span></div>
+</div>
+</div>
+<div>
+<h4 class="text-sm font-medium <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Valuation</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>PV of FCF</span><span class="font-bold">$476.2B</span></div>
+<div class="flex justify-between"><span>PV of Terminal</span><span class="font-bold">$1,384B</span></div>
+<div class="flex justify-between"><span>Enterprise Value</span><span class="font-bold">$2,860B</span></div>
+<div class="flex justify-between"><span>- Net Debt</span><span class="font-bold">$81.2B</span></div>
+<div class="flex justify-between border-t pt-2 <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>"><span>Equity Value</span><span class="font-bold text-emerald-400">$3,378B</span></div>
+<div class="flex justify-between"><span>Per Share</span><span class="font-bold text-emerald-400">$218.40</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Multiple Valuation Methods -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Valuation Methods Comparison</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Method</th>
+<th class="px-4 py-3 text-center">Fair Value</th>
+<th class="px-4 py-3 text-center">vs Current</th>
+<th class="px-4 py-3 text-center">Margin of Safety</th>
+<th class="px-4 py-3 text-center">Rating</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">DCF (Base Case)</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$218.40</td>
+<td class="px-4 py-3 text-center text-emerald-400">+15.2%</td>
+<td class="px-4 py-3 text-center"><div class="h-2 rounded-full bg-emerald-500" style="width:75%"></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">BUY</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">DCF (Conservative)</td>
+<td class="px-4 py-3 text-center font-bold">$195.20</td>
+<td class="px-4 py-3 text-center text-emerald-400">+2.9%</td>
+<td class="px-4 py-3 text-center"><div class="h-2 rounded-full bg-amber-500" style="width:35%"></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs">HOLD</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">DCF (Optimistic)</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$248.60</td>
+<td class="px-4 py-3 text-center text-emerald-400">+31.1%</td>
+<td class="px-4 py-3 text-center"><div class="h-2 rounded-full bg-emerald-500" style="width:90%"></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">STRONG BUY</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Graham Number</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">$142.80</td>
+<td class="px-4 py-3 text-center text-red-400">-24.7%</td>
+<td class="px-4 py-3 text-center"><div class="h-2 rounded-full bg-red-500" style="width:0%"></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs">OVERVALUED</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Peter Lynch (PEG)</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$205.60</td>
+<td class="px-4 py-3 text-center text-emerald-400">+8.4%</td>
+<td class="px-4 py-3 text-center"><div class="h-2 rounded-full bg-emerald-500" style="width:55%"></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">BUY</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Sensitivity Analysis -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">📈 DCF Sensitivity Analysis</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">
+<th class="p-2"></th>
+<th class="p-2 text-center">WACC 8%</th>
+<th class="p-2 text-center">WACC 9%</th>
+<th class="p-2 text-center font-bold text-sky-400">WACC 9.2%</th>
+<th class="p-2 text-center">WACC 10%</th>
+<th class="p-2 text-center">WACC 11%</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> text-center">
+<tr><td class="p-2 text-left font-medium">Growth 8%</td><td class="p-2 text-emerald-400">$282</td><td class="p-2 text-emerald-400">$258</td><td class="p-2 text-emerald-400">$248</td><td class="p-2 text-emerald-400">$228</td><td class="p-2 text-emerald-400">$204</td></tr>
+<tr class="<%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>"><td class="p-2 text-left font-medium">Growth 7%</td><td class="p-2 text-emerald-400">$264</td><td class="p-2 text-emerald-400">$242</td><td class="p-2 text-emerald-400">$234</td><td class="p-2 text-emerald-400">$216</td><td class="p-2">$194</td></tr>
+<tr><td class="p-2 text-left font-bold text-sky-400">Growth 6.5%</td><td class="p-2 text-emerald-400">$254</td><td class="p-2 text-emerald-400">$232</td><td class="p-2 font-bold text-emerald-400 bg-emerald-500/20">$218</td><td class="p-2 text-emerald-400">$206</td><td class="p-2">$186</td></tr>
+<tr class="<%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>"><td class="p-2 text-left font-medium">Growth 6%</td><td class="p-2 text-emerald-400">$244</td><td class="p-2 text-emerald-400">$224</td><td class="p-2 text-emerald-400">$212</td><td class="p-2">$196</td><td class="p-2">$178</td></tr>
+<tr><td class="p-2 text-left font-medium">Growth 5%</td><td class="p-2 text-emerald-400">$226</td><td class="p-2 text-emerald-400">$208</td><td class="p-2">$198</td><td class="p-2">$184</td><td class="p-2 text-red-400">$168</td></tr>
+</tbody>
+</table>
+</div>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-2">Green = Above current price ($189.65) | Current assumptions highlighted</p>
+</div>
+</div></div></main>
+<%- include('../partials/footer') %>

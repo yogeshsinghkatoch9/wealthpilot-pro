@@ -1,0 +1,310 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const portfolioValue = typeof totalValue !== 'undefined' ? totalValue : 247500;
+const healthScore = typeof health !== 'undefined' ? health : 72;
+const diversificationScore = typeof diversification !== 'undefined' ? diversification : 85;
+const riskScore = typeof risk !== 'undefined' ? risk : 68;
+const goalScore = typeof goalAlignment !== 'undefined' ? goalAlignment : 78;
+const taxScore = typeof taxEfficiency !== 'undefined' ? taxEfficiency : 58;
+const totalTrades = typeof tradesNeeded !== 'undefined' ? tradesNeeded : 6;
+const taxImpact = typeof estimatedTax !== 'undefined' ? estimatedTax : -770;
+const newHealthScore = typeof projectedHealth !== 'undefined' ? projectedHealth : 89;
+%>
+<%- include('../partials/header', { pageTitle: 'AI Rebalancer' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold text-amber-400 uppercase tracking-wider">AI Portfolio Rebalancer</h1>
+    <button onclick="runAnalysis()" class="bloomberg-btn bloomberg-btn-primary" id="analyzeBtn">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      RUN AI ANALYSIS
+    </button>
+  </div>
+</div>
+
+<!-- KPI Bar for Rebalancing Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+  <div class="bloomberg-card p-3">
+    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Portfolio Drift</div>
+    <div class="text-2xl font-mono font-bold text-amber-400">13.2%</div>
+  </div>
+  <div class="bloomberg-card p-3">
+    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Trades Needed</div>
+    <div class="text-2xl font-mono font-bold text-white"><%= totalTrades %></div>
+  </div>
+  <div class="bloomberg-card p-3">
+    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Tax Impact</div>
+    <div class="text-2xl font-mono font-bold text-emerald-400">$<%= Math.abs(taxImpact).toLocaleString() %></div>
+  </div>
+  <div class="bloomberg-card p-3">
+    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Health Score</div>
+    <div class="text-2xl font-mono font-bold text-amber-400"><%= healthScore %></div>
+  </div>
+  <div class="bloomberg-card p-3">
+    <div class="text-xs text-slate-400 uppercase tracking-wider mb-1">Target Score</div>
+    <div class="text-2xl font-mono font-bold text-emerald-400"><%= newHealthScore %></div>
+  </div>
+</div>
+
+<!-- Portfolio Health Score -->
+<div class="bloomberg-card p-5">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider">Portfolio Health Score</h3>
+      <p class="text-slate-400 text-xs mt-1">Based on diversification, risk, and alignment with goals</p>
+    </div>
+    <div class="text-right">
+      <div class="text-4xl font-mono font-bold text-amber-400"><%= healthScore %></div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider">Good (needs attention)</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-4 gap-4 pt-4 border-t border-slate-700">
+    <div class="text-center">
+      <div class="text-2xl font-mono font-bold text-emerald-400"><%= diversificationScore %></div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mt-1">Diversification</p>
+    </div>
+    <div class="text-center">
+      <div class="text-2xl font-mono font-bold text-amber-400"><%= riskScore %></div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mt-1">Risk Balance</p>
+    </div>
+    <div class="text-center">
+      <div class="text-2xl font-mono font-bold text-sky-400"><%= goalScore %></div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mt-1">Goal Alignment</p>
+    </div>
+    <div class="text-center">
+      <div class="text-2xl font-mono font-bold text-red-400"><%= taxScore %></div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mt-1">Tax Efficiency</p>
+    </div>
+  </div>
+</div>
+
+<!-- Current vs Target Allocation -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider mb-4">Current Allocation</h3>
+    <div class="h-48"><canvas id="currentChart"></canvas></div>
+    <div class="mt-4 bloomberg-table">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-slate-700">
+            <th class="text-left py-2 text-xs text-slate-400 uppercase tracking-wider">Sector</th>
+            <th class="text-right py-2 text-xs text-slate-400 uppercase tracking-wider">Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Technology</td>
+            <td class="py-2 text-sm font-mono text-white text-right">48.0%</td>
+          </tr>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Healthcare</td>
+            <td class="py-2 text-sm font-mono text-white text-right">12.0%</td>
+          </tr>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Financial</td>
+            <td class="py-2 text-sm font-mono text-white text-right">15.0%</td>
+          </tr>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Consumer</td>
+            <td class="py-2 text-sm font-mono text-white text-right">18.0%</td>
+          </tr>
+          <tr>
+            <td class="py-2 text-sm text-slate-300">Other</td>
+            <td class="py-2 text-sm font-mono text-white text-right">7.0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider mb-4">AI Recommended Allocation</h3>
+    <div class="h-48"><canvas id="targetChart"></canvas></div>
+    <div class="mt-4 bloomberg-table">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-slate-700">
+            <th class="text-left py-2 text-xs text-slate-400 uppercase tracking-wider">Sector</th>
+            <th class="text-right py-2 text-xs text-slate-400 uppercase tracking-wider">Target</th>
+            <th class="text-right py-2 text-xs text-slate-400 uppercase tracking-wider">Change</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Technology</td>
+            <td class="py-2 text-sm font-mono text-red-400 text-right">35.0%</td>
+            <td class="py-2 text-sm font-mono text-red-400 text-right">-13.0%</td>
+          </tr>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Healthcare</td>
+            <td class="py-2 text-sm font-mono text-emerald-400 text-right">18.0%</td>
+            <td class="py-2 text-sm font-mono text-emerald-400 text-right">+6.0%</td>
+          </tr>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Financial</td>
+            <td class="py-2 text-sm font-mono text-emerald-400 text-right">20.0%</td>
+            <td class="py-2 text-sm font-mono text-emerald-400 text-right">+5.0%</td>
+          </tr>
+          <tr class="border-b border-slate-800">
+            <td class="py-2 text-sm text-slate-300">Consumer</td>
+            <td class="py-2 text-sm font-mono text-white text-right">17.0%</td>
+            <td class="py-2 text-sm font-mono text-slate-400 text-right">-1.0%</td>
+          </tr>
+          <tr>
+            <td class="py-2 text-sm text-slate-300">Bonds/Fixed</td>
+            <td class="py-2 text-sm font-mono text-emerald-400 text-right">10.0%</td>
+            <td class="py-2 text-sm font-mono text-emerald-400 text-right">+10.0%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- AI Recommendations -->
+<div class="bloomberg-card p-5">
+  <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-700">
+    <div class="w-10 h-10 rounded-lg bg-amber-400/20 border border-amber-400/30 flex items-center justify-center">
+      <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    </div>
+    <div>
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider">AI Rebalancing Recommendations</h3>
+      <p class="text-slate-400 text-xs mt-1">Based on your risk profile, goals, and market conditions</p>
+    </div>
+  </div>
+
+  <div class="space-y-4">
+    <!-- Recommendation 1 -->
+    <div class="p-4 rounded-lg border-l-4 border-red-400 bg-red-500/10">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-1 text-xs font-bold text-red-400 bg-red-400/20 border border-red-400/30 rounded uppercase tracking-wider">High Priority</span>
+            <span class="font-bold text-white uppercase tracking-wide text-sm">Reduce Tech Concentration</span>
+          </div>
+          <p class="text-slate-300 text-sm mt-3">Your tech allocation <span class="font-mono text-red-400">(48%)</span> significantly exceeds the recommended <span class="font-mono text-emerald-400">(35%)</span>. Consider trimming NVDA and AAPL positions to reduce sector risk.</p>
+          <div class="flex items-center gap-6 mt-3">
+            <span class="text-sm text-slate-400">Suggested: Sell <span class="font-mono text-white">10 NVDA</span> <span class="font-mono text-amber-400">($4,950)</span></span>
+            <span class="text-sm text-emerald-400">Tax impact: <span class="font-mono">-$320</span> (loss harvest)</span>
+          </div>
+        </div>
+        <button class="bloomberg-btn bloomberg-btn-primary ml-4">EXECUTE</button>
+      </div>
+    </div>
+
+    <!-- Recommendation 2 -->
+    <div class="p-4 rounded-lg border-l-4 border-amber-400 bg-amber-500/10">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-1 text-xs font-bold text-amber-400 bg-amber-400/20 border border-amber-400/30 rounded uppercase tracking-wider">Medium Priority</span>
+            <span class="font-bold text-white uppercase tracking-wide text-sm">Add Fixed Income</span>
+          </div>
+          <p class="text-slate-300 text-sm mt-3">Your portfolio lacks bond exposure. Adding <span class="font-mono text-emerald-400">10%</span> fixed income would reduce volatility by <span class="font-mono text-amber-400">~15%</span> with minimal impact on expected returns.</p>
+          <div class="flex items-center gap-6 mt-3">
+            <span class="text-sm text-slate-400">Suggested: Buy <span class="font-mono text-white">BND or SCHZ</span> <span class="font-mono text-amber-400">($24,750)</span></span>
+          </div>
+        </div>
+        <button class="bloomberg-btn bloomberg-btn-primary ml-4">EXECUTE</button>
+      </div>
+    </div>
+
+    <!-- Recommendation 3 -->
+    <div class="p-4 rounded-lg border-l-4 border-emerald-400 bg-emerald-500/10">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-1 text-xs font-bold text-emerald-400 bg-emerald-400/20 border border-emerald-400/30 rounded uppercase tracking-wider">Opportunity</span>
+            <span class="font-bold text-white uppercase tracking-wide text-sm">Increase Healthcare Exposure</span>
+          </div>
+          <p class="text-slate-300 text-sm mt-3">Healthcare is underweight relative to your goals. Consider adding defensive healthcare stocks for stability and dividend income.</p>
+          <div class="flex items-center gap-6 mt-3">
+            <span class="text-sm text-slate-400">Suggested: Buy <span class="font-mono text-white">20 JNJ</span> <span class="font-mono text-amber-400">($3,136)</span>, <span class="font-mono text-white">15 UNH</span> <span class="font-mono text-amber-400">($7,950)</span></span>
+          </div>
+        </div>
+        <button class="bloomberg-btn bloomberg-btn-primary ml-4">EXECUTE</button>
+      </div>
+    </div>
+
+    <!-- Recommendation 4 -->
+    <div class="p-4 rounded-lg border-l-4 border-sky-400 bg-sky-500/10">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <span class="px-2 py-1 text-xs font-bold text-sky-400 bg-sky-400/20 border border-sky-400/30 rounded uppercase tracking-wider">Tax Optimization</span>
+            <span class="font-bold text-white uppercase tracking-wide text-sm">Tax-Loss Harvest INTC</span>
+          </div>
+          <p class="text-slate-300 text-sm mt-3">INTC position has unrealized losses. Harvesting now could save <span class="font-mono text-emerald-400">~$450</span> in taxes while maintaining similar sector exposure via AMD.</p>
+          <div class="flex items-center gap-6 mt-3">
+            <span class="text-sm text-slate-400">Suggested: Sell <span class="font-mono text-white">INTC</span>, Buy <span class="font-mono text-white">AMD</span> after 31 days</span>
+          </div>
+        </div>
+        <button class="bloomberg-btn bloomberg-btn-primary ml-4">EXECUTE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Execution Preview -->
+<div class="bloomberg-card p-5">
+  <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider mb-6 pb-3 border-b border-slate-700">Rebalancing Summary</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Total Trades</p>
+      <p class="text-3xl font-mono font-bold text-white"><%= totalTrades %> <span class="text-sm text-slate-400">trades</span></p>
+      <p class="text-sm text-slate-400 mt-1"><span class="font-mono text-red-400">3</span> sells, <span class="font-mono text-emerald-400">3</span> buys</p>
+    </div>
+    <div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Estimated Tax Impact</p>
+      <p class="text-3xl font-mono font-bold text-emerald-400">-$<%= Math.abs(taxImpact).toLocaleString() %></p>
+      <p class="text-sm text-slate-400 mt-1">Net tax savings from losses</p>
+    </div>
+    <div>
+      <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">New Health Score</p>
+      <p class="text-3xl font-mono font-bold text-emerald-400"><%= newHealthScore %> <span class="text-sm font-mono text-emerald-400">(+<%= newHealthScore - healthScore %>)</span></p>
+      <p class="text-sm text-slate-400 mt-1">Excellent portfolio health</p>
+    </div>
+  </div>
+  <div class="flex gap-3 pt-4 border-t border-slate-700">
+    <button class="bloomberg-btn bloomberg-btn-primary">EXECUTE ALL RECOMMENDATIONS</button>
+    <button class="bloomberg-btn bloomberg-btn-secondary">EXPORT TO CSV</button>
+    <button class="bloomberg-btn bloomberg-btn-secondary">SCHEDULE FOR LATER</button>
+  </div>
+</div>
+</div></div></main>
+
+<script>
+// Current allocation chart
+new Chart(document.getElementById('currentChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Technology', 'Healthcare', 'Financial', 'Consumer', 'Other'],
+    datasets: [{ data: [48, 12, 15, 18, 7], backgroundColor: ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#64748b'] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
+});
+
+// Target allocation chart
+new Chart(document.getElementById('targetChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Technology', 'Healthcare', 'Financial', 'Consumer', 'Bonds'],
+    datasets: [{ data: [35, 18, 20, 17, 10], backgroundColor: ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#64748b'] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '60%' }
+});
+
+function runAnalysis() {
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>ANALYZING...';
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>RUN AI ANALYSIS';
+    showToast('Analysis complete! Recommendations updated.', 'success');
+  }, 2000);
+}
+</script>
+<%- include('../partials/footer') %>

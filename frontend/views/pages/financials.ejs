@@ -1,0 +1,194 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Financial Statements' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b-2 border-amber-400 px-6 py-3 -mx-6 -mt-6 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 tracking-wide">FINANCIAL STATEMENTS</h1>
+      <p class="text-slate-400 text-sm mt-1">Income, balance sheet & cash flow</p>
+    </div>
+    <div class="flex gap-2">
+      <input type="text" value="AAPL" class="bg-slate-900 border border-slate-700 text-amber-400 px-3 py-2 rounded font-mono text-sm focus:outline-none focus:border-amber-400 w-24">
+      <select class="bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 rounded text-sm focus:outline-none focus:border-amber-400 w-32">
+        <option>Annual</option>
+        <option selected>Quarterly</option>
+      </select>
+      <button class="bloomberg-btn">Lookup</button>
+    </div>
+  </div>
+</div>
+
+<!-- Company Header -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-l-4 border-amber-400">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-black font-bold text-xl">AAPL</div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-amber-400">Apple Inc.</h2>
+      <p class="text-slate-400">Fiscal Year End: September</p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm text-slate-400 uppercase tracking-wide">Market Cap</p>
+      <p class="text-xl font-bold text-amber-400 font-mono">$2.94T</p>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-2 border-b border-amber-400/30 pb-2">
+  <button class="bloomberg-btn bloomberg-btn-active" onclick="showTab('income')">INCOME STATEMENT</button>
+  <button class="bloomberg-btn" onclick="showTab('balance')">BALANCE SHEET</button>
+  <button class="bloomberg-btn" onclick="showTab('cashflow')">CASH FLOW</button>
+</div>
+
+<!-- Income Statement -->
+<div id="income" class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-amber-400/30 bg-black">
+    <h3 class="font-semibold text-amber-400 uppercase tracking-wide">Income Statement (in millions)</h3>
+  </div>
+  <table class="bloomberg-table w-full text-sm">
+    <thead>
+      <tr class="bg-slate-900 text-slate-400 text-left">
+        <th class="px-4 py-3 uppercase tracking-wide">ITEM</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wide">Q4 2024</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wide">Q3 2024</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wide">Q2 2024</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wide">Q1 2024</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wide">YOY</th>
+      </tr>
+    </thead>
+    <tbody class="text-slate-200">
+      <tr class="border-b border-slate-700/50 bg-amber-500/5">
+        <td class="px-4 py-3 font-bold text-amber-400">Revenue</td>
+        <td class="px-4 py-3 text-right font-bold font-mono text-amber-400">$94,930</td>
+        <td class="px-4 py-3 text-right font-mono">$85,777</td>
+        <td class="px-4 py-3 text-right font-mono">$90,753</td>
+        <td class="px-4 py-3 text-right font-mono">$119,575</td>
+        <td class="px-4 py-3 text-right text-emerald-400 font-mono">+6.1%</td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 pl-6 text-slate-300">Cost of Revenue</td>
+        <td class="px-4 py-3 text-right font-mono">$52,284</td>
+        <td class="px-4 py-3 text-right font-mono">$46,115</td>
+        <td class="px-4 py-3 text-right font-mono">$49,448</td>
+        <td class="px-4 py-3 text-right font-mono">$65,459</td>
+        <td class="px-4 py-3 text-right font-mono">+5.2%</td>
+      </tr>
+      <tr class="border-b border-slate-700/50 bg-emerald-500/5">
+        <td class="px-4 py-3 font-bold text-emerald-400">Gross Profit</td>
+        <td class="px-4 py-3 text-right font-bold text-emerald-400 font-mono">$42,646</td>
+        <td class="px-4 py-3 text-right font-mono">$39,662</td>
+        <td class="px-4 py-3 text-right font-mono">$41,305</td>
+        <td class="px-4 py-3 text-right font-mono">$54,116</td>
+        <td class="px-4 py-3 text-right text-emerald-400 font-mono">+7.2%</td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 pl-6 text-slate-300">R&D Expenses</td>
+        <td class="px-4 py-3 text-right font-mono">$7,738</td>
+        <td class="px-4 py-3 text-right font-mono">$7,485</td>
+        <td class="px-4 py-3 text-right font-mono">$7,458</td>
+        <td class="px-4 py-3 text-right font-mono">$7,696</td>
+        <td class="px-4 py-3 text-right text-red-400 font-mono">+8.4%</td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 pl-6 text-slate-300">SG&A Expenses</td>
+        <td class="px-4 py-3 text-right font-mono">$6,278</td>
+        <td class="px-4 py-3 text-right font-mono">$6,157</td>
+        <td class="px-4 py-3 text-right font-mono">$6,240</td>
+        <td class="px-4 py-3 text-right font-mono">$6,786</td>
+        <td class="px-4 py-3 text-right text-red-400 font-mono">+4.2%</td>
+      </tr>
+      <tr class="border-b border-slate-700/50 bg-emerald-500/5">
+        <td class="px-4 py-3 font-bold text-emerald-400">Operating Income</td>
+        <td class="px-4 py-3 text-right font-bold text-emerald-400 font-mono">$28,630</td>
+        <td class="px-4 py-3 text-right font-mono">$26,020</td>
+        <td class="px-4 py-3 text-right font-mono">$27,607</td>
+        <td class="px-4 py-3 text-right font-mono">$39,634</td>
+        <td class="px-4 py-3 text-right text-emerald-400 font-mono">+8.1%</td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 pl-6 text-slate-300">Interest/Other</td>
+        <td class="px-4 py-3 text-right font-mono">$448</td>
+        <td class="px-4 py-3 text-right font-mono">$268</td>
+        <td class="px-4 py-3 text-right font-mono">$382</td>
+        <td class="px-4 py-3 text-right font-mono">$281</td>
+        <td class="px-4 py-3 text-right font-mono">—</td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 pl-6 text-slate-300">Income Tax</td>
+        <td class="px-4 py-3 text-right font-mono">$4,528</td>
+        <td class="px-4 py-3 text-right font-mono">$4,042</td>
+        <td class="px-4 py-3 text-right font-mono">$4,362</td>
+        <td class="px-4 py-3 text-right font-mono">$6,294</td>
+        <td class="px-4 py-3 text-right font-mono">+5.8%</td>
+      </tr>
+      <tr class="bg-amber-500/10 border-b border-amber-400/30">
+        <td class="px-4 py-3 font-bold text-amber-400">Net Income</td>
+        <td class="px-4 py-3 text-right font-bold text-amber-400 font-mono">$24,550</td>
+        <td class="px-4 py-3 text-right font-bold font-mono">$22,246</td>
+        <td class="px-4 py-3 text-right font-bold font-mono">$23,627</td>
+        <td class="px-4 py-3 text-right font-bold font-mono">$33,621</td>
+        <td class="px-4 py-3 text-right text-emerald-400 font-bold font-mono">+8.8%</td>
+      </tr>
+      <tr class="bg-amber-500/10">
+        <td class="px-4 py-3 font-bold text-amber-400">EPS (Diluted)</td>
+        <td class="px-4 py-3 text-right font-bold text-amber-400 font-mono">$1.64</td>
+        <td class="px-4 py-3 text-right font-bold font-mono">$1.40</td>
+        <td class="px-4 py-3 text-right font-bold font-mono">$1.53</td>
+        <td class="px-4 py-3 text-right font-bold font-mono">$2.18</td>
+        <td class="px-4 py-3 text-right text-emerald-400 font-bold font-mono">+10.8%</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Key Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+  <div class="bloomberg-card p-4">
+    <p class="text-slate-400 text-sm uppercase tracking-wide">Gross Margin</p>
+    <p class="text-2xl font-bold text-emerald-400 font-mono">44.9%</p>
+    <p class="text-xs text-emerald-400">↑ +0.4% YoY</p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <p class="text-slate-400 text-sm uppercase tracking-wide">Operating Margin</p>
+    <p class="text-2xl font-bold text-emerald-400 font-mono">30.2%</p>
+    <p class="text-xs text-emerald-400">↑ +0.6% YoY</p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <p class="text-slate-400 text-sm uppercase tracking-wide">Net Margin</p>
+    <p class="text-2xl font-bold text-emerald-400 font-mono">25.9%</p>
+    <p class="text-xs text-emerald-400">↑ +0.7% YoY</p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <p class="text-slate-400 text-sm uppercase tracking-wide">ROE</p>
+    <p class="text-2xl font-bold text-emerald-400 font-mono">147.2%</p>
+    <p class="text-xs text-emerald-400">Excellent</p>
+  </div>
+</div>
+
+<!-- Revenue Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide">Quarterly Revenue & Net Income</h3>
+  <div class="h-64"><canvas id="revenueChart"></canvas></div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Q1 24','Q2 24','Q3 24','Q4 24'],
+    datasets: [
+      { label: 'Revenue', data: [119.6,90.8,85.8,94.9], backgroundColor: '#0ea5e9', yAxisID: 'y' },
+      { label: 'Net Income', data: [33.6,23.6,22.2,24.6], backgroundColor: '#8b5cf6', yAxisID: 'y' }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+function showTab(tab) { showToast('Tab: ' + tab, 'info'); }
+</script>
+<%- include('../partials/footer') %>

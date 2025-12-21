@@ -1,0 +1,590 @@
+<%- include('../partials/header', { pageTitle: 'Sentiment Analysis' }) %>
+
+<style>
+  /* Modern animations and effects */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .live-pulse {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  .glass-card {
+    background: <%= theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.05)' %>;
+    backdrop-filter: blur(10px);
+    border: 1px solid <%= theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)' %>;
+  }
+
+  .glass-card:hover {
+    background: <%= theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.08)' %>;
+    border-color: <%= theme === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)' %>;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+
+  .score-circle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-circle::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .tab-btn {
+    transition: all 0.3s ease;
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .article-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .article-hover:hover {
+    transform: translateX(8px);
+    box-shadow: 0 10px 30px <%= theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.3)' %>;
+  }
+
+  .stat-number {
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+
+<% if (sentimentData) { %>
+
+<!-- Hero Section -->
+<div class="gradient-hero rounded-2xl p-8 mb-6 relative overflow-hidden fade-in-up" style="animation-delay: 0s;">
+  <div class="relative z-10">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h1 class="text-4xl md:text-5xl font-bold text-white">Sentiment Analysis</h1>
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white bg-opacity-20 backdrop-blur-sm">
+            <div class="live-pulse"></div>
+            <span class="text-white text-sm font-semibold">LIVE</span>
+          </div>
+        </div>
+        <p class="text-white text-opacity-90 text-lg">Real-time market sentiment for <span class="font-bold"><%= symbol %></span></p>
+      </div>
+
+      <div class="flex gap-2">
+        <input type="text" id="symbolInput" placeholder="Enter ticker..." value="<%= symbol %>"
+               class="px-4 py-2.5 rounded-xl bg-white bg-opacity-20 backdrop-blur-sm text-white placeholder-white placeholder-opacity-60 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 font-mono uppercase w-32">
+        <button onclick="analyzeSymbol()" class="px-6 py-2.5 rounded-xl bg-white text-purple-600 font-semibold hover:bg-opacity-90 transition-all">
+          Analyze
+        </button>
+      </div>
+    </div>
+
+    <!-- Overall Score Display -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Score Circle -->
+      <div class="flex justify-center items-center">
+        <div class="score-circle w-40 h-40 rounded-full bg-<%= theme === 'light' ? 'white' : 'gray-900' %> flex flex-col items-center justify-center shadow-2xl">
+          <div class="text-6xl font-black <%= theme === 'light' ? 'text-purple-600' : 'text-white' %> stat-number">
+            <%= sentimentData.overall.score.toFixed(0) %>
+          </div>
+          <div class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-xs font-semibold mt-1">OVERALL SCORE</div>
+        </div>
+      </div>
+
+      <!-- Sentiment Badge & Details -->
+      <div class="md:col-span-2 flex flex-col justify-center space-y-4">
+        <div>
+          <div class="text-white text-sm font-semibold mb-3 opacity-90">MARKET SENTIMENT</div>
+          <%
+            const sentiment = sentimentData.overall.sentiment;
+            let badgeClass = 'bg-gray-600';
+            let icon = '➖';
+            if (sentiment.includes('BULLISH') && !sentiment.includes('SLIGHTLY')) {
+              badgeClass = 'bg-gradient-to-r from-emerald-500 to-green-500';
+              icon = '📈';
+            } else if (sentiment.includes('BULLISH')) {
+              badgeClass = 'bg-gradient-to-r from-blue-500 to-cyan-500';
+              icon = '↗️';
+            } else if (sentiment.includes('BEARISH') && !sentiment.includes('SLIGHTLY')) {
+              badgeClass = 'bg-gradient-to-r from-red-500 to-pink-500';
+              icon = '📉';
+            } else if (sentiment.includes('BEARISH')) {
+              badgeClass = 'bg-gradient-to-r from-orange-500 to-amber-500';
+              icon = '↘️';
+            }
+          %>
+          <div class="inline-flex items-center gap-3 px-6 py-3 rounded-full <%= badgeClass %> text-white shadow-lg">
+            <span class="text-2xl"><%= icon %></span>
+            <span class="text-lg font-bold"><%= sentiment %></span>
+          </div>
+        </div>
+
+        <!-- Source Breakdown -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+            <div class="text-white text-opacity-80 text-xs font-semibold mb-1">📰 NEWS SENTIMENT</div>
+            <div class="text-white text-3xl font-bold stat-number mb-1"><%= sentimentData.sources.news.score.toFixed(1) %></div>
+            <div class="text-white text-opacity-70 text-xs">
+              <%= sentimentData.sources.news.articles.length %> articles analyzed
+            </div>
+          </div>
+
+          <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+            <div class="text-white text-opacity-80 text-xs font-semibold mb-1">👥 ANALYST RATINGS</div>
+            <div class="text-white text-3xl font-bold stat-number mb-1"><%= sentimentData.sources.analyst.score.toFixed(1) %></div>
+            <div class="text-white text-opacity-70 text-xs">
+              <%= sentimentData.sources.analyst.ratings.length %> ratings
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decorative elements -->
+  <div class="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -mr-48 -mt-48"></div>
+  <div class="absolute bottom-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -ml-32 -mb-32"></div>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-2 mb-6 overflow-x-auto pb-2 fade-in-up" style="animation-delay: 0.1s;">
+  <button class="tab-btn active px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap" data-tab="news" onclick="switchTab('news')">
+    📰 News Feed
+  </button>
+  <button class="tab-btn px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="analysts" onclick="switchTab('analysts')">
+    👥 Analyst Ratings
+  </button>
+  <button class="tab-btn px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="trend" onclick="switchTab('trend')">
+    📊 Trend Analysis
+  </button>
+  <button class="tab-btn px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="insights" onclick="switchTab('insights')">
+    💡 Insights
+  </button>
+</div>
+
+<!-- Tab Content -->
+<div>
+  <!-- News Tab -->
+  <div id="news-tab" class="tab-content">
+    <div class="card p-6 mb-6 fade-in-up" style="animation-delay: 0.2s;">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Latest News</h2>
+        <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500 bg-opacity-20 border border-emerald-500 border-opacity-30">
+          <div class="live-pulse"></div>
+          <span class="text-emerald-400 text-sm font-semibold">Alpha Vantage Live</span>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <% sentimentData.sources.news.articles.slice(0, 8).forEach((article, idx) => {
+          const scoreColor = article.sentimentScore >= 70 ? 'emerald' :
+                             article.sentimentScore >= 55 ? 'blue' :
+                             article.sentimentScore <= 30 ? 'red' :
+                             article.sentimentScore <= 45 ? 'orange' : 'gray';
+        %>
+        <div class="article-hover glass-card rounded-2xl p-5" style="animation-delay: <%= idx * 0.05 %>s;">
+          <div class="flex items-start gap-4">
+            <!-- Score Badge -->
+            <div class="flex-shrink-0">
+              <div class="w-20 h-20 rounded-xl bg-<%= scoreColor %>-500 flex flex-col items-center justify-center text-white shadow-lg">
+                <span class="text-3xl font-bold stat-number"><%= article.sentimentScore %></span>
+                <span class="text-[9px] uppercase opacity-80 font-semibold"><%= article.sentiment.split(' ')[0] %></span>
+              </div>
+            </div>
+
+            <!-- Article Content -->
+            <div class="flex-1 min-w-0">
+              <a href="<%= article.url %>" target="_blank" class="block group">
+                <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold text-lg mb-2 group-hover:text-<%= scoreColor %>-500 transition-colors line-clamp-2">
+                  <%= article.title %>
+                </h3>
+              </a>
+
+              <div class="flex flex-wrap items-center gap-3 text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-2">
+                <span class="flex items-center gap-1">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <%= article.source %>
+                </span>
+                <% if (article.publishedAt) { %>
+                  <span>•</span>
+                  <span><%= new Date(article.publishedAt).toLocaleDateString() %></span>
+                <% } %>
+                <% if (article.relevanceScore) { %>
+                  <span>•</span>
+                  <span class="text-<%= scoreColor %>-500 font-medium">Relevance: <%= (article.relevanceScore * 100).toFixed(0) %>%</span>
+                <% } %>
+              </div>
+
+              <% if (article.summary) { %>
+                <p class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> text-sm line-clamp-2"><%= article.summary %></p>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analysts Tab -->
+  <div id="analysts-tab" class="tab-content" style="display: none;">
+    <div class="card p-6 mb-6 fade-in-up">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Analyst Ratings</h2>
+        <span class="px-4 py-2 rounded-full bg-purple-500 bg-opacity-20 border border-purple-500 border-opacity-30 text-purple-400 text-sm font-semibold">
+          💾 Database • <%= sentimentData.sources.analyst.ratings.length %> ratings
+        </span>
+      </div>
+
+      <% if (sentimentData.sources.analyst.ratings && sentimentData.sources.analyst.ratings.length > 0) { %>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b <%= theme === 'light' ? 'border-gray-200' : 'border-gray-700' %>">
+                <th class="text-left py-4 px-4 <%= theme === 'light' ? 'text-gray-900' : 'text-gray-300' %> font-semibold text-sm">FIRM</th>
+                <th class="text-left py-4 px-4 <%= theme === 'light' ? 'text-gray-900' : 'text-gray-300' %> font-semibold text-sm">RATING</th>
+                <th class="text-right py-4 px-4 <%= theme === 'light' ? 'text-gray-900' : 'text-gray-300' %> font-semibold text-sm">PRICE TARGET</th>
+                <th class="text-right py-4 px-4 <%= theme === 'light' ? 'text-gray-900' : 'text-gray-300' %> font-semibold text-sm">DATE</th>
+                <th class="text-center py-4 px-4 <%= theme === 'light' ? 'text-gray-900' : 'text-gray-300' %> font-semibold text-sm">SCORE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% sentimentData.sources.analyst.ratings.slice(0, 10).forEach((rating, idx) => {
+                const scoreColor = rating.score >= 70 ? 'emerald' : rating.score >= 50 ? 'blue' : 'orange';
+              %>
+              <tr class="border-b <%= theme === 'light' ? 'border-gray-100 hover:bg-gray-50' : 'border-gray-800 hover:bg-gray-800 hover:bg-opacity-50' %> transition-colors" style="animation-delay: <%= idx * 0.03 %>s;">
+                <td class="py-4 px-4 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">
+                  <%= rating.firm %>
+                </td>
+                <td class="py-4 px-4">
+                  <span class="px-3 py-1.5 rounded-full bg-<%= scoreColor %>-500 bg-opacity-20 text-<%= scoreColor %>-400 text-sm font-semibold">
+                    <%= rating.rating %>
+                  </span>
+                </td>
+                <td class="py-4 px-4 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> font-semibold stat-number">
+                  <%= rating.priceTarget ? fmt.currency(rating.priceTarget) : '—' %>
+                </td>
+                <td class="py-4 px-4 text-right <%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm">
+                  <%= new Date(rating.date).toLocaleDateString() %>
+                </td>
+                <td class="py-4 px-4 text-center">
+                  <span class="text-<%= scoreColor %>-400 font-bold text-lg stat-number"><%= rating.score %></span>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="text-center py-12">
+          <div class="w-20 h-20 rounded-full bg-<%= theme === 'light' ? 'gray-100' : 'gray-800' %> flex items-center justify-center mx-auto mb-4">
+            <span class="text-4xl">📋</span>
+          </div>
+          <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %>">No analyst ratings available</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Trend Tab -->
+  <div id="trend-tab" class="tab-content" style="display: none;">
+    <div class="card p-6 mb-6 fade-in-up">
+      <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">Sentiment Trend (30 Days)</h2>
+      <div class="bg-<%= theme === 'light' ? 'gray-50' : 'gray-900' %> rounded-xl p-6 mb-6">
+        <canvas id="sentimentChart" height="300"></canvas>
+      </div>
+
+      <!-- Trend Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-card rounded-xl p-6">
+          <div class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold mb-2">TREND DIRECTION</div>
+          <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> text-3xl font-bold">
+            <%= (sentimentData.overall.trend || 'stable').toUpperCase() %>
+          </div>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <div class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold mb-2">AVERAGE SCORE</div>
+          <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> text-3xl font-bold stat-number">
+            <%
+              const avgScore = sentimentData.sentimentHistory.reduce((a, b) => a + b.sentiment, 0) / sentimentData.sentimentHistory.length;
+            %>
+            <%= avgScore.toFixed(1) %>
+          </div>
+        </div>
+        <div class="glass-card rounded-xl p-6">
+          <div class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold mb-2">VOLATILITY</div>
+          <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> text-3xl font-bold stat-number">
+            <%
+              const scores = sentimentData.sentimentHistory.map(h => h.sentiment);
+              const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+              const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scores.length;
+              const volatility = Math.sqrt(variance);
+            %>
+            <%= volatility.toFixed(1) %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights Tab -->
+  <div id="insights-tab" class="tab-content" style="display: none;">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Correlation -->
+      <div class="card p-6 fade-in-up">
+        <h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">Sentiment-Price Correlation</h3>
+        <div class="flex justify-center mb-6">
+          <div class="score-circle w-32 h-32 rounded-full bg-<%= theme === 'light' ? 'gray-100' : 'gray-800' %> flex flex-col items-center justify-center">
+            <div class="text-4xl font-bold text-purple-500 stat-number">
+              <%= sentimentData.correlation.coefficient %>
+            </div>
+            <div class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-xs font-semibold mt-1">COEFFICIENT</div>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center p-4 bg-emerald-500 bg-opacity-10 rounded-xl">
+            <span class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> font-medium">High Sentiment Return</span>
+            <span class="text-emerald-400 font-bold text-xl stat-number">+<%= sentimentData.correlation.highSentimentReturn.toFixed(1) %>%</span>
+          </div>
+          <div class="flex justify-between items-center p-4 bg-red-500 bg-opacity-10 rounded-xl">
+            <span class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> font-medium">Low Sentiment Return</span>
+            <span class="text-red-400 font-bold text-xl stat-number"><%= sentimentData.correlation.lowSentimentReturn.toFixed(1) %>%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Sources -->
+      <div class="card p-6 fade-in-up">
+        <h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">Data Sources</h3>
+        <div class="space-y-4">
+          <div class="bg-gradient-to-r from-emerald-500 to-green-500 bg-opacity-10 rounded-xl p-4 border border-emerald-500 border-opacity-20">
+            <div class="flex items-start gap-3">
+              <div class="live-pulse mt-1"></div>
+              <div class="flex-1">
+                <div class="text-emerald-400 font-bold mb-1">Alpha Vantage News API</div>
+                <div class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> text-sm">Real-time news sentiment from professional sources</div>
+                <div class="text-emerald-400 text-xs mt-2 font-semibold">
+                  <%= sentimentData.sources.news.articles.length %> articles • Updated live
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-r from-purple-500 to-pink-500 bg-opacity-10 rounded-xl p-4 border border-purple-500 border-opacity-20">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"/>
+              </svg>
+              <div class="flex-1">
+                <div class="text-purple-400 font-bold mb-1">Analyst Ratings Database</div>
+                <div class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> text-sm">Professional analyst ratings and price targets</div>
+                <div class="text-purple-400 text-xs mt-2 font-semibold">
+                  <%= sentimentData.sources.analyst.ratings.length %> ratings • Last 30 days
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-r from-blue-500 to-cyan-500 bg-opacity-10 rounded-xl p-4 border border-blue-500 border-opacity-20">
+            <div class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> text-sm font-medium">
+              <strong class="text-blue-400">Calculation:</strong> Overall sentiment = 50% News + 50% Analyst Ratings
+            </div>
+            <div class="text-blue-400 text-xs mt-2 font-semibold">Cache TTL: 5 minutes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% } else { %>
+<!-- Error State -->
+<div class="card p-16 text-center">
+  <div class="max-w-md mx-auto">
+    <div class="w-24 h-24 rounded-full bg-<%= theme === 'light' ? 'amber-100' : 'amber-900' %> bg-opacity-20 flex items-center justify-center mx-auto mb-6">
+      <span class="text-5xl">⚠️</span>
+    </div>
+    <h3 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">
+      Unable to Load Sentiment Data
+    </h3>
+    <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-6">
+      Please try again or search for a different symbol
+    </p>
+    <button onclick="location.reload()" class="px-6 py-3 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-all">
+      Retry
+    </button>
+  </div>
+</div>
+<% } %>
+
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Tab Switching
+function switchTab(tabName) {
+  // Update buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tabName) {
+      btn.classList.add('active');
+      btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      btn.style.color = 'white';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = '';
+      btn.style.color = '';
+    }
+  });
+
+  // Show/hide content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.style.display = 'none';
+  });
+  document.getElementById(tabName + '-tab').style.display = 'block';
+}
+
+// Symbol search
+function analyzeSymbol() {
+  const symbol = document.getElementById('symbolInput').value.toUpperCase().trim();
+  if (symbol) {
+    window.location.href = `/sentiment?symbol=${symbol}`;
+  }
+}
+
+document.getElementById('symbolInput')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') analyzeSymbol();
+});
+
+<% if (sentimentData) { %>
+// Sentiment trend chart
+new Chart(document.getElementById('sentimentChart'), {
+  type: 'line',
+  data: {
+    labels: <%- JSON.stringify(sentimentData.sentimentHistory.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))) %>,
+    datasets: [{
+      label: 'Sentiment Score',
+      data: <%- JSON.stringify(sentimentData.sentimentHistory.map(d => d.sentiment)) %>,
+      borderColor: '#667eea',
+      backgroundColor: 'rgba(102, 126, 234, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#667eea',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        padding: 14,
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#667eea',
+        borderWidth: 2,
+        displayColors: false,
+        callbacks: {
+          label: (context) => `Sentiment: ${context.parsed.y.toFixed(1)}/100`
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        min: 0,
+        max: 100,
+        grid: {
+          color: '<%= theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)' %>',
+          drawBorder: false
+        },
+        ticks: {
+          color: '<%= theme === 'light' ? '#6b7280' : '#9ca3af' %>',
+          font: { size: 12, weight: '500' }
+        }
+      },
+      x: {
+        grid: {
+          color: '<%= theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)' %>',
+          drawBorder: false
+        },
+        ticks: {
+          color: '<%= theme === 'light' ? '#6b7280' : '#9ca3af' %>',
+          font: { size: 11 },
+          maxRotation: 0
+        }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    }
+  }
+});
+<% } %>
+</script>
+
+<%- include('../partials/footer') %>

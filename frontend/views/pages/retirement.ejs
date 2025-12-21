@@ -1,0 +1,326 @@
+<%- include('../partials/header', { pageTitle: 'Retirement Planner' }) %>
+
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Retirement Planner</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Monte Carlo simulation to project your retirement success</p></div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Inputs -->
+<div class="card p-5 lg:col-span-1">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Your Inputs</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Current Age</label>
+<input type="number" id="currentAge" value="35" min="18" max="80" class="form-input">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Retirement Age</label>
+<input type="number" id="retireAge" value="65" min="50" max="85" class="form-input">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Life Expectancy</label>
+<input type="number" id="lifeExpect" value="90" min="70" max="100" class="form-input">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Current Portfolio ($)</label>
+<input type="number" id="currentPortfolio" value="<%= Math.round((portfolioValue || 100000)) %>" class="form-input">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Monthly Contribution ($)</label>
+<input type="number" id="monthlyContrib" value="1000" class="form-input">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Monthly Spending in Retirement ($)</label>
+<input type="number" id="monthlySpend" value="5000" class="form-input">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Expected Return (%)</label>
+<input type="range" id="expectedReturn" value="7" min="3" max="12" step="0.5" class="w-full" oninput="document.getElementById('returnLabel').textContent = this.value + '%'">
+<div class="flex justify-between text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><span>3%</span><span id="returnLabel">7%</span><span>12%</span></div>
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Volatility (%)</label>
+<input type="range" id="volatility" value="15" min="5" max="30" step="1" class="w-full" oninput="document.getElementById('volLabel').textContent = this.value + '%'">
+<div class="flex justify-between text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><span>5%</span><span id="volLabel">15%</span><span>30%</span></div>
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Simulations</label>
+<select id="simCount" class="form-input">
+<option value="1000">1,000 (Fast)</option>
+<option value="5000" selected>5,000 (Balanced)</option>
+<option value="10000">10,000 (Accurate)</option>
+</select>
+</div>
+<button onclick="runSimulation()" class="btn-primary w-full" id="simBtn">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+Run Simulation
+</button>
+</div>
+</div>
+
+<!-- Results -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Success Rate -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Retirement Success Probability</h3>
+<span id="successBadge" class="badge-success text-lg px-4 py-1">--</span>
+</div>
+<div class="relative h-8 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden">
+<div id="successBar" class="absolute h-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 transition-all duration-1000" style="width: 0%"></div>
+<div id="successMarker" class="absolute h-full w-1 bg-white shadow-lg transition-all duration-1000" style="left: 0%"></div>
+</div>
+<div class="flex justify-between text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-2">
+<span>0% - High Risk</span>
+<span>50% - Uncertain</span>
+<span>100% - Confident</span>
+</div>
+</div>
+
+<!-- Chart -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Projected Portfolio Value</h3>
+<div class="h-72"><canvas id="projectionChart"></canvas></div>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Best Case</p>
+<p id="bestCase" class="text-xl font-bold text-emerald-400">--</p>
+</div>
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Median</p>
+<p id="medianCase" class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+</div>
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Worst Case</p>
+<p id="worstCase" class="text-xl font-bold text-red-400">--</p>
+</div>
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Avg at Death</p>
+<p id="avgDeath" class="text-xl font-bold text-purple-400">--</p>
+</div>
+</div>
+
+<!-- Insights -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Insights</h3>
+<div id="insights" class="space-y-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">
+<p class="text-sm">Run a simulation to see personalized insights.</p>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script>
+let projectionChart = null;
+
+function runSimulation() {
+  const btn = document.getElementById('simBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Running...';
+  
+  // Get inputs
+  const currentAge = parseInt(document.getElementById('currentAge').value);
+  const retireAge = parseInt(document.getElementById('retireAge').value);
+  const lifeExpect = parseInt(document.getElementById('lifeExpect').value);
+  const currentPortfolio = parseFloat(document.getElementById('currentPortfolio').value);
+  const monthlyContrib = parseFloat(document.getElementById('monthlyContrib').value);
+  const monthlySpend = parseFloat(document.getElementById('monthlySpend').value);
+  const expectedReturn = parseFloat(document.getElementById('expectedReturn').value) / 100;
+  const volatility = parseFloat(document.getElementById('volatility').value) / 100;
+  const simCount = parseInt(document.getElementById('simCount').value);
+  
+  // Run Monte Carlo simulation
+  setTimeout(() => {
+    const results = monteCarloSimulation(
+      currentAge, retireAge, lifeExpect,
+      currentPortfolio, monthlyContrib, monthlySpend,
+      expectedReturn, volatility, simCount
+    );
+    
+    displayResults(results, retireAge, lifeExpect);
+    
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>Run Simulation';
+  }, 100);
+}
+
+function monteCarloSimulation(currentAge, retireAge, lifeExpect, portfolio, monthlyContrib, monthlySpend, expReturn, volatility, numSims) {
+  const yearsToRetire = retireAge - currentAge;
+  const yearsInRetire = lifeExpect - retireAge;
+  const totalYears = lifeExpect - currentAge;
+  
+  const monthlyReturn = expReturn / 12;
+  const monthlyVol = volatility / Math.sqrt(12);
+  
+  const allPaths = [];
+  let successCount = 0;
+  const finalValues = [];
+  
+  for (let sim = 0; sim < numSims; sim++) {
+    let value = portfolio;
+    const path = [value];
+    let failed = false;
+    
+    // Accumulation phase
+    for (let month = 0; month < yearsToRetire * 12; month++) {
+      const randomReturn = gaussianRandom(monthlyReturn, monthlyVol);
+      value = value * (1 + randomReturn) + monthlyContrib;
+      if (month % 12 === 11) path.push(value);
+    }
+    
+    // Withdrawal phase
+    for (let month = 0; month < yearsInRetire * 12; month++) {
+      const randomReturn = gaussianRandom(monthlyReturn * 0.8, monthlyVol * 0.7); // More conservative in retirement
+      value = value * (1 + randomReturn) - monthlySpend;
+      if (month % 12 === 11) path.push(Math.max(0, value));
+      if (value <= 0) {
+        failed = true;
+        value = 0;
+      }
+    }
+    
+    if (!failed) successCount++;
+    finalValues.push(value);
+    
+    // Store some paths for visualization
+    if (allPaths.length < 100 || sim % (numSims / 100) === 0) {
+      allPaths.push(path);
+    }
+  }
+  
+  finalValues.sort((a, b) => a - b);
+  
+  return {
+    successRate: successCount / numSims,
+    paths: allPaths,
+    percentile5: finalValues[Math.floor(numSims * 0.05)],
+    percentile25: finalValues[Math.floor(numSims * 0.25)],
+    median: finalValues[Math.floor(numSims * 0.5)],
+    percentile75: finalValues[Math.floor(numSims * 0.75)],
+    percentile95: finalValues[Math.floor(numSims * 0.95)],
+    avgFinal: finalValues.reduce((a, b) => a + b, 0) / numSims,
+    yearsToRetire,
+    yearsInRetire
+  };
+}
+
+function gaussianRandom(mean, std) {
+  const u1 = Math.random();
+  const u2 = Math.random();
+  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  return mean + std * z;
+}
+
+function displayResults(results, retireAge, lifeExpect) {
+  const successPct = Math.round(results.successRate * 100);
+  
+  // Update success rate
+  document.getElementById('successBadge').textContent = successPct + '%';
+  document.getElementById('successBadge').className = `badge-${successPct >= 80 ? 'success' : successPct >= 50 ? 'warning' : 'danger'} text-lg px-4 py-1`;
+  document.getElementById('successBar').style.width = '100%';
+  document.getElementById('successMarker').style.left = successPct + '%';
+  
+  // Update stats
+  document.getElementById('bestCase').textContent = '$' + formatCompact(results.percentile95);
+  document.getElementById('medianCase').textContent = '$' + formatCompact(results.median);
+  document.getElementById('worstCase').textContent = '$' + formatCompact(results.percentile5);
+  document.getElementById('avgDeath').textContent = '$' + formatCompact(results.avgFinal);
+  
+  // Update chart
+  renderProjectionChart(results, retireAge, lifeExpect);
+  
+  // Update insights
+  const insights = [];
+  if (successPct >= 90) {
+    insights.push('✅ Excellent! You have a very high probability of a comfortable retirement.');
+  } else if (successPct >= 75) {
+    insights.push('👍 Good position. Consider small adjustments for more security.');
+  } else if (successPct >= 50) {
+    insights.push('⚠️ Moderate risk. You may need to increase savings or reduce spending.');
+  } else {
+    insights.push('🚨 High risk of running out of money. Significant changes needed.');
+  }
+  
+  if (results.percentile5 <= 0) {
+    insights.push('📉 In worst-case scenarios, your portfolio depletes before life expectancy.');
+  }
+  
+  const monthlySpend = parseFloat(document.getElementById('monthlySpend').value);
+  const safeWithdrawal = results.median * 0.04 / 12;
+  if (monthlySpend > safeWithdrawal) {
+    insights.push(`💡 Consider reducing monthly spending to $${formatCompact(safeWithdrawal)} for the 4% rule.`);
+  }
+  
+  if (successPct < 80) {
+    const extraContrib = Math.round((80 - successPct) * 50);
+    insights.push(`📈 Adding $${extraContrib}/month could significantly improve your outlook.`);
+  }
+  
+  document.getElementById('insights').innerHTML = insights.map(i => `<p class="text-sm">${i}</p>`).join('');
+}
+
+function renderProjectionChart(results, retireAge, lifeExpect) {
+  const ctx = document.getElementById('projectionChart');
+  if (projectionChart) projectionChart.destroy();
+  
+  const currentAge = parseInt(document.getElementById('currentAge').value);
+  const labels = [];
+  for (let age = currentAge; age <= lifeExpect; age++) labels.push(age);
+  
+  // Calculate percentile bands
+  const p5 = [], p25 = [], p50 = [], p75 = [], p95 = [];
+  const numYears = labels.length;
+  
+  for (let i = 0; i < numYears; i++) {
+    const yearValues = results.paths.map(p => p[i] || 0).sort((a, b) => a - b);
+    const n = yearValues.length;
+    p5.push(yearValues[Math.floor(n * 0.05)]);
+    p25.push(yearValues[Math.floor(n * 0.25)]);
+    p50.push(yearValues[Math.floor(n * 0.5)]);
+    p75.push(yearValues[Math.floor(n * 0.75)]);
+    p95.push(yearValues[Math.floor(n * 0.95)]);
+  }
+  
+  projectionChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: '95th Percentile', data: p95, borderColor: 'rgba(16, 185, 129, 0.5)', backgroundColor: 'transparent', borderDash: [5, 5], pointRadius: 0 },
+        { label: '75th Percentile', data: p75, borderColor: 'rgba(16, 185, 129, 0.3)', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: '+1', pointRadius: 0 },
+        { label: 'Median', data: p50, borderColor: '#0ea5e9', backgroundColor: 'rgba(14, 165, 233, 0.2)', fill: false, borderWidth: 3, pointRadius: 0 },
+        { label: '25th Percentile', data: p25, borderColor: 'rgba(239, 68, 68, 0.3)', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: '+1', pointRadius: 0 },
+        { label: '5th Percentile', data: p5, borderColor: 'rgba(239, 68, 68, 0.5)', backgroundColor: 'transparent', borderDash: [5, 5], pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        annotation: {
+          annotations: {
+            retireLine: { type: 'line', xMin: retireAge, xMax: retireAge, borderColor: '#8b5cf6', borderWidth: 2, borderDash: [6, 6], label: { display: true, content: 'Retire', position: 'start' } }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Age' }, grid: { color: '<%= theme === "light" ? "#e5e7eb" : "#334155" %>' } },
+        y: { title: { display: true, text: 'Portfolio Value' }, grid: { color: '<%= theme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { callback: v => '$' + formatCompact(v) } }
+      }
+    }
+  });
+}
+
+function formatCompact(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+  return n.toFixed(0);
+}
+
+// Run initial simulation
+runSimulation();
+</script>
+<%- include('../partials/footer') %>

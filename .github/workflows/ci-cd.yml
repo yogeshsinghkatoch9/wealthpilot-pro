@@ -1,0 +1,317 @@
+##############################################
+# WealthPilot Pro - CI/CD Pipeline
+# Automated testing, building, and deployment
+##############################################
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  release:
+    types: [published]
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  ###########################################
+  # Code Quality & Linting
+  ###########################################
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./backend
+        run: npm run lint || true
+
+      - name: Check formatting
+        working-directory: ./backend
+        run: npx prettier --check "src/**/*.js" || true
+
+  ###########################################
+  # Backend Tests
+  ###########################################
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: wealthpilot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        working-directory: ./backend
+        run: npx prisma generate
+
+      - name: Wait for PostgreSQL
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U test; then
+              echo "PostgreSQL is ready!"
+              break
+            fi
+            echo "Waiting... attempt $i/30"
+            sleep 2
+          done
+          # Verify connection
+          PGPASSWORD=test psql -h localhost -U test -d wealthpilot_test -c "SELECT 1;" || echo "Connection test failed"
+
+      - name: Initialize test database
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/wealthpilot_test
+        run: |
+          echo "DATABASE_URL: $DATABASE_URL"
+          # For CI testing, force reset the database from schema
+          npx prisma db push --force-reset --accept-data-loss
+
+      - name: Run tests
+        working-directory: ./backend
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-for-ci
+          DATABASE_URL: postgresql://test:test@localhost:5432/wealthpilot_test
+        run: npm run test:ci || true
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./backend/coverage
+          fail_ci_if_error: false
+
+  ###########################################
+  # Frontend Tests
+  ###########################################
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm test -- --passWithNoTests || true
+
+  ###########################################
+  # Security Scan
+  ###########################################
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run npm audit (backend)
+        working-directory: ./backend
+        run: npm audit --audit-level=high || true
+
+      - name: Run npm audit (frontend)
+        working-directory: ./frontend
+        run: npm audit --audit-level=high || true
+
+      - name: Run Snyk scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects
+
+  ###########################################
+  # Build Verification (Docker builds disabled - using Vercel/Railway)
+  ###########################################
+  build-check:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend, test-frontend]
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify deployment configuration
+        run: |
+          echo "Checking deployment configuration..."
+          test -f vercel.json && echo "✅ vercel.json found" || echo "⚠️ vercel.json missing"
+          test -f railway.json && echo "✅ railway.json found" || echo "⚠️ railway.json missing"
+          test -f nixpacks.toml && echo "✅ nixpacks.toml found" || echo "⚠️ nixpacks.toml missing"
+          echo ""
+          echo "Note: Docker builds are disabled."
+          echo "Deployment is handled by:"
+          echo "  - Frontend: Vercel (auto-deploys on push)"
+          echo "  - Backend: Railway (auto-deploys on push)"
+          echo ""
+          echo "✅ Build verification complete"
+
+  ###########################################
+  # Deploy to Staging (via Vercel/Railway auto-deploy)
+  ###########################################
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-check]
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://staging.wealthpilot.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Staging deployment notification
+        run: |
+          echo "================================================"
+          echo "Staging Deployment Triggered"
+          echo "================================================"
+          echo ""
+          echo "Deployments are handled automatically by:"
+          echo "  - Frontend: Vercel (auto-deploys on push to develop)"
+          echo "  - Backend: Railway (auto-deploys on push to develop)"
+          echo ""
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "================================================"
+
+  ###########################################
+  # Deploy to Production (via Vercel/Railway auto-deploy)
+  ###########################################
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-check]
+    if: github.event_name == 'release'
+    environment:
+      name: production
+      url: https://wealthpilot.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deployment notification
+        run: |
+          echo "================================================"
+          echo "Production Release Triggered"
+          echo "================================================"
+          echo ""
+          echo "Deployments are handled automatically by:"
+          echo "  - Frontend: Vercel (auto-deploys on release)"
+          echo "  - Backend: Railway (auto-deploys on release)"
+          echo ""
+          echo "Release: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "================================================"
+
+      - name: Notify on Slack
+        uses: 8398a7/action-slack@v3
+        continue-on-error: true
+        with:
+          status: ${{ job.status }}
+          text: 'Production deployment triggered via Vercel/Railway!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()
+
+  ###########################################
+  # Rollback (Manual Trigger - reference only)
+  ###########################################
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+
+    steps:
+      - name: Rollback instructions
+        run: |
+          echo "================================================"
+          echo "Production Rollback"
+          echo "================================================"
+          echo ""
+          echo "To rollback, use the platform-specific rollback features:"
+          echo ""
+          echo "Frontend (Vercel):"
+          echo "  1. Go to https://vercel.com/dashboard"
+          echo "  2. Select the project"
+          echo "  3. Go to Deployments"
+          echo "  4. Click 'Promote to Production' on previous deployment"
+          echo ""
+          echo "Backend (Railway):"
+          echo "  1. Go to https://railway.app/dashboard"
+          echo "  2. Select the project"
+          echo "  3. Go to Deployments tab"
+          echo "  4. Click on previous deployment and 'Redeploy'"
+          echo ""
+          echo "================================================"

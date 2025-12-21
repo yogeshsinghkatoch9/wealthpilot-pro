@@ -1,0 +1,239 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const rsiData = typeof technicals !== 'undefined' && technicals ? technicals : {};
+const currentRsi = rsiData.rsi || 50;
+const rsiHistory = rsiData.history || [];
+const price = rsiData.price || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%'; }
+
+// RSI interpretation
+let rsiSignal = 'NEUTRAL';
+let signalColor = 'amber';
+let rsiZone = 'Neutral Zone';
+if (currentRsi >= 70) {
+  rsiSignal = 'OVERBOUGHT';
+  signalColor = 'red';
+  rsiZone = 'Overbought (>70)';
+} else if (currentRsi >= 60) {
+  rsiSignal = 'BULLISH';
+  signalColor = 'emerald';
+  rsiZone = 'Bullish Momentum';
+} else if (currentRsi <= 30) {
+  rsiSignal = 'OVERSOLD';
+  signalColor = 'emerald';
+  rsiZone = 'Oversold (<30)';
+} else if (currentRsi <= 40) {
+  rsiSignal = 'BEARISH';
+  signalColor = 'red';
+  rsiZone = 'Bearish Momentum';
+}
+%>
+<%- include('../partials/header', { pageTitle: 'RSI Indicator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">RSI INDICATOR</h1>
+      <p class="text-slate-400 mt-1">Relative Strength Index Analysis</p>
+    </div>
+    <form method="GET" action="/rsi" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<!-- RSI Overview -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-<%= signalColor %>-900/20 to-slate-900">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-amber-400"><%= symbol %></h2>
+      <p class="text-slate-400">Current Price: <span class="font-mono text-white"><%= formatPrice(price) %></span></p>
+    </div>
+    <div class="text-center px-4">
+      <p class="text-sm text-slate-400">RSI (14)</p>
+      <p class="text-3xl font-bold text-<%= signalColor %>-400"><%= currentRsi.toFixed(1) %></p>
+    </div>
+    <div class="text-center px-4">
+      <p class="text-sm text-slate-400">Signal</p>
+      <p class="text-xl font-bold text-<%= signalColor %>-400"><%= rsiSignal %></p>
+    </div>
+  </div>
+</div>
+
+<!-- RSI Gauge -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">RSI Gauge</h3>
+  <div class="relative h-8 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full overflow-hidden">
+    <div class="absolute inset-y-0 left-0 w-[30%] border-r-2 border-white/30 flex items-center justify-center">
+      <span class="text-xs font-bold text-white drop-shadow">OVERSOLD</span>
+    </div>
+    <div class="absolute inset-y-0 left-[30%] right-[30%] flex items-center justify-center">
+      <span class="text-xs font-bold text-white drop-shadow">NEUTRAL</span>
+    </div>
+    <div class="absolute inset-y-0 right-0 w-[30%] border-l-2 border-white/30 flex items-center justify-center">
+      <span class="text-xs font-bold text-white drop-shadow">OVERBOUGHT</span>
+    </div>
+    <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-slate-900 shadow-lg transition-all duration-500" style="left: calc(<%= currentRsi %>% - 8px);"></div>
+  </div>
+  <div class="flex justify-between text-sm text-slate-400 mt-2">
+    <span>0</span>
+    <span>30</span>
+    <span>50</span>
+    <span>70</span>
+    <span>100</span>
+  </div>
+</div>
+
+<!-- RSI Zones -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="bloomberg-card p-5 <%= currentRsi <= 30 ? 'ring-2 ring-emerald-500' : '' %>">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+      <h4 class="font-semibold text-emerald-400">Oversold Zone</h4>
+    </div>
+    <p class="text-sm text-slate-400">RSI below 30 indicates oversold conditions. The asset may be undervalued and due for a bounce.</p>
+    <p class="mt-2 font-mono text-lg text-emerald-400">RSI < 30</p>
+  </div>
+
+  <div class="bloomberg-card p-5 <%= currentRsi > 30 && currentRsi < 70 ? 'ring-2 ring-amber-500' : '' %>">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+      </div>
+      <h4 class="font-semibold text-amber-400">Neutral Zone</h4>
+    </div>
+    <p class="text-sm text-slate-400">RSI between 30-70 indicates neutral momentum. Watch for breakouts above 70 or below 30.</p>
+    <p class="mt-2 font-mono text-lg text-amber-400">30 < RSI < 70</p>
+  </div>
+
+  <div class="bloomberg-card p-5 <%= currentRsi >= 70 ? 'ring-2 ring-red-500' : '' %>">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+      </div>
+      <h4 class="font-semibold text-red-400">Overbought Zone</h4>
+    </div>
+    <p class="text-sm text-slate-400">RSI above 70 indicates overbought conditions. The asset may be overvalued and due for a pullback.</p>
+    <p class="mt-2 font-mono text-lg text-red-400">RSI > 70</p>
+  </div>
+</div>
+
+<!-- RSI Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">RSI Chart</h3>
+  <div class="h-64"><canvas id="rsiChart"></canvas></div>
+</div>
+
+<!-- Trading Signals -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">RSI Trading Signals</h3>
+  <div class="space-y-3">
+    <div class="p-3 rounded-lg border-l-4 border-<%= signalColor %>-500 bg-<%= signalColor %>-500/10">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-bold text-<%= signalColor %>-400">Current Signal: <%= rsiSignal %></p>
+          <p class="text-xs text-slate-400"><%= rsiZone %></p>
+        </div>
+        <span class="text-2xl font-mono text-<%= signalColor %>-400"><%= currentRsi.toFixed(1) %></span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="p-3 rounded-lg bg-slate-800 border border-slate-700">
+        <p class="text-sm text-slate-400">Buy Signal</p>
+        <p class="text-white">RSI crosses above 30 from oversold territory</p>
+      </div>
+      <div class="p-3 rounded-lg bg-slate-800 border border-slate-700">
+        <p class="text-sm text-slate-400">Sell Signal</p>
+        <p class="text-white">RSI crosses below 70 from overbought territory</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Generate sample RSI data for visualization
+const rsiValue = <%= currentRsi %>;
+const labels = [];
+const rsiData = [];
+const now = new Date();
+
+for (let i = 29; i >= 0; i--) {
+  const date = new Date(now);
+  date.setDate(date.getDate() - i);
+  labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  // Simulate RSI fluctuation around current value
+  const fluctuation = (Math.random() - 0.5) * 20;
+  rsiData.push(Math.max(10, Math.min(90, rsiValue + fluctuation)));
+}
+// Set last value to actual RSI
+rsiData[rsiData.length - 1] = rsiValue;
+
+new Chart(document.getElementById('rsiChart'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'RSI (14)',
+      data: rsiData,
+      borderColor: '#f59e0b',
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      borderWidth: 2,
+      fill: true,
+      pointRadius: 0,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      annotation: {
+        annotations: {
+          overbought: {
+            type: 'line',
+            yMin: 70,
+            yMax: 70,
+            borderColor: '#ef4444',
+            borderWidth: 2,
+            borderDash: [5, 5]
+          },
+          oversold: {
+            type: 'line',
+            yMin: 30,
+            yMax: 30,
+            borderColor: '#10b981',
+            borderWidth: 2,
+            borderDash: [5, 5]
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        min: 0,
+        max: 100,
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', maxTicksLimit: 10 }
+      }
+    }
+  }
+});
+</script>
+<%- include('../partials/footer') %>

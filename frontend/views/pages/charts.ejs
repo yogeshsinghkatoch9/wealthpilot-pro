@@ -1,0 +1,803 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Stock Charts';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<style>
+  /* Modern animations */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+  .live-pulse {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+
+  .glass-card {
+    background: <%= safeTheme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.05)' %>;
+    backdrop-filter: blur(10px);
+    border: 1px solid <%= safeTheme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)' %>;
+    transition: all 0.3s ease;
+  }
+
+  .glass-card:hover {
+    background: <%= safeTheme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.08)' %>;
+    border-color: <%= safeTheme === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)' %>;
+    transform: translateY(-2px);
+  }
+
+  .tab-btn {
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  }
+
+  .indicator-badge {
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.3s ease;
+  }
+
+  .indicator-badge.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+  }
+
+  .stat-number {
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-bar {
+    height: 10px;
+    background: <%= safeTheme === 'light' ? '#e5e7eb' : '#374151' %>;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+  }
+
+  .support-resistance-line {
+    position: relative;
+    height: 1px;
+    transition: all 0.3s ease;
+  }
+
+  .support-resistance-line:hover {
+    height: 2px;
+  }
+
+  .metric-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .metric-card:hover::after {
+    opacity: 1;
+  }
+
+  .chart-container {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+</style>
+
+<!-- Hero Section -->
+<div class="gradient-hero rounded-2xl p-8 mb-6 relative overflow-hidden fade-in-up" style="animation-delay: 0s;">
+  <div class="relative z-10">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <h1 class="text-4xl md:text-5xl font-bold text-white">Stock Charts</h1>
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white bg-opacity-20 backdrop-blur-sm">
+            <div class="live-pulse"></div>
+            <span class="text-white text-sm font-semibold">LIVE</span>
+          </div>
+        </div>
+        <p class="text-white text-opacity-90 text-lg">Interactive candlestick charts with technical indicators</p>
+      </div>
+
+      <!-- Symbol Input -->
+      <div class="flex items-center gap-3">
+        <input type="text" id="symbolInput" value="<%= symbol %>" placeholder="Enter symbol"
+               class="px-4 py-2.5 rounded-xl bg-white bg-opacity-20 backdrop-blur-sm text-white placeholder-white placeholder-opacity-60 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 font-mono uppercase w-32">
+        <button onclick="loadChartFromInput()" class="px-6 py-2.5 rounded-xl bg-white text-purple-600 font-semibold hover:bg-opacity-90 transition-all">
+          Load
+        </button>
+      </div>
+    </div>
+
+    <!-- Stock Header -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Company Info -->
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center border border-white border-opacity-20">
+          <span id="symbolIcon" class="text-white font-bold text-2xl"><%= symbol.slice(0, 4) %></span>
+        </div>
+        <div>
+          <h2 id="companyName" class="text-2xl font-bold text-white"><%= symbol %></h2>
+          <p class="text-white text-opacity-70 text-sm">NASDAQ • Technology</p>
+        </div>
+      </div>
+
+      <!-- Price Info -->
+      <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
+        <p id="currentPrice" class="text-4xl font-bold stat-number text-white mb-1">
+          <%= quote ? '$' + quote.price.toFixed(2) : '$0.00' %>
+        </p>
+        <p id="priceChange" class="<%= quote && quote.change >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold stat-number">
+          <%= quote ? (quote.change >= 0 ? '+' : '') + '$' + quote.change.toFixed(2) + ' (' + (quote.changePercent >= 0 ? '+' : '') + quote.changePercent.toFixed(2) + '%)' : '$0.00 (0.00%)' %>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Decorative elements -->
+  <div class="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -mr-48 -mt-48"></div>
+  <div class="absolute bottom-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -ml-32 -mb-32"></div>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 fade-in-up" style="animation-delay: 0.1s;">
+  <div class="glass-card rounded-xl p-4 metric-card">
+    <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-1">Open</div>
+    <div id="statOpen" class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-xl stat-number">
+      <%= quote ? '$' + (quote.open || quote.price).toFixed(2) : '$0.00' %>
+    </div>
+  </div>
+
+  <div class="glass-card rounded-xl p-4 metric-card">
+    <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-1">High</div>
+    <div id="statHigh" class="text-emerald-400 font-bold text-xl stat-number">
+      <%= quote ? '$' + (quote.high || quote.price).toFixed(2) : '$0.00' %>
+    </div>
+  </div>
+
+  <div class="glass-card rounded-xl p-4 metric-card">
+    <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-1">Low</div>
+    <div id="statLow" class="text-red-400 font-bold text-xl stat-number">
+      <%= quote ? '$' + (quote.low || quote.price).toFixed(2) : '$0.00' %>
+    </div>
+  </div>
+
+  <div class="glass-card rounded-xl p-4 metric-card">
+    <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-1">Volume</div>
+    <div id="statVolume" class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-xl stat-number">
+      <%= quote && quote.volume ? (quote.volume / 1000000).toFixed(1) + 'M' : 'N/A' %>
+    </div>
+  </div>
+</div>
+
+<!-- Chart Controls -->
+<div class="card p-6 mb-6 fade-in-up" style="animation-delay: 0.2s;">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <!-- Chart Types -->
+    <div>
+      <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-2 font-semibold">CHART TYPE</div>
+      <div class="flex gap-2">
+        <button onclick="setChartType('candlestick')" class="tab-btn active px-4 py-2 rounded-xl font-semibold text-sm" data-type="candlestick">
+          📊 Candlestick
+        </button>
+        <button onclick="setChartType('line')" class="tab-btn px-4 py-2 rounded-xl font-semibold text-sm <%= safeTheme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-type="line">
+          📈 Line
+        </button>
+        <button onclick="setChartType('area')" class="tab-btn px-4 py-2 rounded-xl font-semibold text-sm <%= safeTheme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-type="area">
+          📉 Area
+        </button>
+      </div>
+    </div>
+
+    <!-- Timeframe -->
+    <div>
+      <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-2 font-semibold">TIMEFRAME</div>
+      <select id="timeframe" onchange="loadChart()" class="px-4 py-2 rounded-xl <%= safeTheme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold text-sm border-0 focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <option value="1D">1 Day</option>
+        <option value="1W">1 Week</option>
+        <option value="1M" selected>1 Month</option>
+        <option value="3M">3 Months</option>
+        <option value="1Y">1 Year</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Technical Indicators -->
+  <div>
+    <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> mb-2 font-semibold">TECHNICAL INDICATORS</div>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="toggleIndicator('sma')" class="indicator-badge <%= safeTheme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-gray-800 hover:bg-gray-700 text-gray-300' %>" data-ind="sma">
+        SMA (20)
+      </button>
+      <button onclick="toggleIndicator('ema')" class="indicator-badge <%= safeTheme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-gray-800 hover:bg-gray-700 text-gray-300' %>" data-ind="ema">
+        EMA (12)
+      </button>
+      <button onclick="toggleIndicator('bollinger')" class="indicator-badge <%= safeTheme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-gray-800 hover:bg-gray-700 text-gray-300' %>" data-ind="bollinger">
+        Bollinger Bands
+      </button>
+      <button onclick="toggleIndicator('volume')" class="indicator-badge active" data-ind="volume">
+        Volume
+      </button>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="mt-6 chart-container bg-<%= safeTheme === 'light' ? 'gray-50' : 'gray-900' %> p-6">
+    <div class="h-96" id="chartContainer">
+      <canvas id="priceChart"></canvas>
+    </div>
+    <div class="h-24 mt-4" id="volumeContainer">
+      <canvas id="volumeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Technical Indicators Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 fade-in-up" style="animation-delay: 0.3s;">
+  <!-- RSI -->
+  <div class="glass-card rounded-xl p-5 metric-card">
+    <div class="flex items-center justify-between mb-3">
+      <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold">RSI (14)</span>
+      <span id="rsiValue" class="font-bold text-2xl stat-number text-amber-400">58.3</span>
+    </div>
+    <div class="progress-bar mb-2">
+      <div id="rsiBar" class="progress-fill bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500" style="width: 58.3%"></div>
+    </div>
+    <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-gray-500' %> mt-1">Neutral Zone</p>
+  </div>
+
+  <!-- MACD -->
+  <div class="glass-card rounded-xl p-5 metric-card">
+    <div class="flex items-center justify-between mb-3">
+      <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold">MACD</span>
+      <span id="macdValue" class="font-bold text-2xl stat-number text-emerald-400">+2.45</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-gray-500' %> stat-number">Signal: 1.82</span>
+      <span class="text-xs px-2 py-1 rounded-full bg-emerald-500 bg-opacity-20 text-emerald-400 font-semibold">Bullish</span>
+    </div>
+  </div>
+
+  <!-- 52W Range -->
+  <div class="glass-card rounded-xl p-5 metric-card">
+    <div class="flex items-center justify-between mb-3">
+      <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold">52W Range</span>
+      <span class="font-bold text-2xl stat-number <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">73%</span>
+    </div>
+    <div class="progress-bar mb-2 relative">
+      <div class="absolute h-full w-1 bg-gradient-to-b from-purple-500 to-blue-500 rounded-full" style="left: 73%"></div>
+    </div>
+    <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-gray-500' %> mt-1 stat-number">$142.00 - $199.62</p>
+  </div>
+
+  <!-- Average Volume -->
+  <div class="glass-card rounded-xl p-5 metric-card">
+    <div class="flex items-center justify-between mb-3">
+      <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm font-semibold">Avg Volume</span>
+      <span class="font-bold text-2xl stat-number <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">48.2M</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-xs px-2 py-1 rounded-full bg-emerald-500 bg-opacity-20 text-emerald-400 font-semibold">+8.5% vs avg</span>
+    </div>
+  </div>
+</div>
+
+<!-- Support & Resistance -->
+<div class="card p-6 fade-in-up" style="animation-delay: 0.4s;">
+  <h3 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">Support & Resistance Levels</h3>
+
+  <div class="space-y-3">
+    <!-- R3 -->
+    <div class="flex items-center justify-between p-3 rounded-xl <%= safeTheme === 'light' ? 'bg-red-50' : 'bg-red-900 bg-opacity-10' %> border border-red-500 border-opacity-20">
+      <span class="text-red-400 font-bold text-sm">R3</span>
+      <div class="flex-1 mx-4 support-resistance-line bg-gradient-to-r from-red-500 to-transparent opacity-30"></div>
+      <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold stat-number">$195.00</span>
+    </div>
+
+    <!-- R2 -->
+    <div class="flex items-center justify-between p-3 rounded-xl <%= safeTheme === 'light' ? 'bg-red-50' : 'bg-red-900 bg-opacity-10' %> border border-red-500 border-opacity-20">
+      <span class="text-red-400 font-bold text-sm">R2</span>
+      <div class="flex-1 mx-4 support-resistance-line bg-gradient-to-r from-red-500 to-transparent opacity-30"></div>
+      <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold stat-number">$190.50</span>
+    </div>
+
+    <!-- R1 -->
+    <div class="flex items-center justify-between p-3 rounded-xl <%= safeTheme === 'light' ? 'bg-red-50' : 'bg-red-900 bg-opacity-10' %> border border-red-500 border-opacity-20">
+      <span class="text-red-400 font-bold text-sm">R1</span>
+      <div class="flex-1 mx-4 support-resistance-line bg-gradient-to-r from-red-500 to-transparent opacity-30"></div>
+      <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold stat-number">$187.80</span>
+    </div>
+
+    <!-- Current Price -->
+    <div class="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 bg-opacity-20 border-2 border-purple-500">
+      <span class="text-purple-400 font-bold text-lg">CURRENT</span>
+      <div class="flex-1 mx-4 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500"></div>
+      <span class="text-purple-400 font-bold text-lg stat-number">$185.50</span>
+    </div>
+
+    <!-- S1 -->
+    <div class="flex items-center justify-between p-3 rounded-xl <%= safeTheme === 'light' ? 'bg-emerald-50' : 'bg-emerald-900 bg-opacity-10' %> border border-emerald-500 border-opacity-20">
+      <span class="text-emerald-400 font-bold text-sm">S1</span>
+      <div class="flex-1 mx-4 support-resistance-line bg-gradient-to-r from-emerald-500 to-transparent opacity-30"></div>
+      <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold stat-number">$182.20</span>
+    </div>
+
+    <!-- S2 -->
+    <div class="flex items-center justify-between p-3 rounded-xl <%= safeTheme === 'light' ? 'bg-emerald-50' : 'bg-emerald-900 bg-opacity-10' %> border border-emerald-500 border-opacity-20">
+      <span class="text-emerald-400 font-bold text-sm">S2</span>
+      <div class="flex-1 mx-4 support-resistance-line bg-gradient-to-r from-emerald-500 to-transparent opacity-30"></div>
+      <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold stat-number">$178.50</span>
+    </div>
+
+    <!-- S3 -->
+    <div class="flex items-center justify-between p-3 rounded-xl <%= safeTheme === 'light' ? 'bg-emerald-50' : 'bg-emerald-900 bg-opacity-10' %> border border-emerald-500 border-opacity-20">
+      <span class="text-emerald-400 font-bold text-sm">S3</span>
+      <div class="flex-1 mx-4 support-resistance-line bg-gradient-to-r from-emerald-500 to-transparent opacity-30"></div>
+      <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold stat-number">$175.00</span>
+    </div>
+  </div>
+</div>
+
+</div></div></main>
+
+<select id="symbolSelect" onchange="loadChart()" style="display:none;">
+  <option value="<%= symbol %>" selected><%= symbol %></option>
+</select>
+
+<script>
+// Get initial data from server
+const initialSymbol = '<%= symbol %>';
+const initialQuote = <%- quote ? JSON.stringify(quote) : 'null' %>;
+
+let currentSymbol = initialSymbol;
+let currentQuote = initialQuote;
+let historicalData = [];
+let priceChart = null;
+let volumeChart = null;
+let chartType = 'candlestick';
+let indicators = { sma: false, ema: false, bollinger: false, volume: true };
+
+async function fetchHistoricalData(symbol, days) {
+  try {
+    const response = await fetch(`/api/market/history/${symbol}?days=${days}`, {
+      credentials: 'include'
+    });
+    if (!response.ok) throw new Error('Failed to fetch historical data');
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    console.error('Error fetching historical data:', error);
+    return [];
+  }
+}
+
+async function fetchLiveQuote(symbol) {
+  try {
+    const response = await fetch(`/api/market/quote/${symbol}`, {
+      credentials: 'include'
+    });
+    if (!response.ok) throw new Error('Failed to fetch quote');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching quote:', error);
+    return null;
+  }
+}
+
+function calculateSMA(data, period) {
+  return data.map((_, i, arr) => {
+    if (i < period - 1) return null;
+    const slice = arr.slice(i - period + 1, i + 1);
+    return slice.reduce((sum, d) => sum + d.close, 0) / period;
+  });
+}
+
+function calculateEMA(data, period) {
+  const k = 2 / (period + 1);
+  const ema = [data[0].close];
+  for (let i = 1; i < data.length; i++) {
+    ema.push(data[i].close * k + ema[i - 1] * (1 - k));
+  }
+  return ema;
+}
+
+function calculateBollinger(data, period = 20, stdDev = 2) {
+  const sma = calculateSMA(data, period);
+  const upper = [], lower = [];
+  data.forEach((_, i, arr) => {
+    if (i < period - 1) {
+      upper.push(null);
+      lower.push(null);
+      return;
+    }
+    const slice = arr.slice(i - period + 1, i + 1);
+    const mean = sma[i];
+    const variance = slice.reduce((sum, d) => sum + Math.pow(d.close - mean, 2), 0) / period;
+    const std = Math.sqrt(variance);
+    upper.push(mean + stdDev * std);
+    lower.push(mean - stdDev * std);
+  });
+  return { sma, upper, lower };
+}
+
+async function loadChart() {
+  const symbol = document.getElementById('symbolSelect').value;
+  const timeframe = document.getElementById('timeframe').value;
+
+  const quote = await fetchLiveQuote(symbol);
+  if (!quote) {
+    console.error('Failed to load quote for', symbol);
+    return;
+  }
+
+  currentSymbol = symbol;
+  currentQuote = quote;
+
+  document.getElementById('symbolIcon').textContent = symbol.slice(0, 4);
+  document.getElementById('companyName').textContent = symbol;
+  document.getElementById('currentPrice').textContent = '$' + quote.price.toFixed(2);
+
+  const changeText = (quote.change >= 0 ? '+' : '') + '$' + quote.change.toFixed(2) + ' (' + (quote.changePercent >= 0 ? '+' : '') + quote.changePercent.toFixed(2) + '%)';
+  document.getElementById('priceChange').textContent = changeText;
+  document.getElementById('priceChange').className = quote.change >= 0 ? 'text-emerald-400 font-semibold stat-number' : 'text-red-400 font-semibold stat-number';
+
+  document.getElementById('statOpen').textContent = '$' + (quote.open || quote.price).toFixed(2);
+  document.getElementById('statHigh').textContent = '$' + (quote.high || quote.price).toFixed(2);
+  document.getElementById('statLow').textContent = '$' + (quote.low || quote.price).toFixed(2);
+  document.getElementById('statVolume').textContent = quote.volume ? (quote.volume / 1000000).toFixed(1) + 'M' : 'N/A';
+
+  const days = { '1D': 1, '1W': 7, '1M': 30, '3M': 90, '1Y': 365 }[timeframe];
+  const data = await fetchHistoricalData(symbol, days);
+
+  if (data.length > 0) {
+    historicalData = data;
+    renderChart(data);
+    updateTechnicalIndicators(data, quote);
+  }
+}
+
+function renderChart(data) {
+  const canvas = document.getElementById('priceChart');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (priceChart) priceChart.destroy();
+
+  const labels = data.map(d => {
+    const dateObj = typeof d.date === 'string' ? new Date(d.date) : d.date;
+    return dateObj.toLocaleDateString();
+  });
+
+  const datasets = [];
+
+  if (chartType === 'candlestick') {
+    datasets.push({
+      label: 'Price',
+      data: data.map(d => d.close),
+      borderColor: '#667eea',
+      backgroundColor: data.map(d => d.close >= d.open ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+      borderWidth: 2,
+      fill: false,
+      pointRadius: 0
+    });
+  } else if (chartType === 'line') {
+    datasets.push({
+      label: 'Price',
+      data: data.map(d => d.close),
+      borderColor: '#667eea',
+      borderWidth: 3,
+      fill: false,
+      pointRadius: 0,
+      tension: 0.4
+    });
+  } else {
+    datasets.push({
+      label: 'Price',
+      data: data.map(d => d.close),
+      borderColor: '#667eea',
+      backgroundColor: 'rgba(102, 126, 234, 0.2)',
+      borderWidth: 3,
+      fill: true,
+      pointRadius: 0,
+      tension: 0.4
+    });
+  }
+
+  if (indicators.sma) {
+    const sma = calculateSMA(data, 20);
+    datasets.push({
+      label: 'SMA(20)',
+      data: sma,
+      borderColor: '#f59e0b',
+      borderWidth: 2,
+      fill: false,
+      pointRadius: 0,
+      borderDash: [5, 5]
+    });
+  }
+
+  if (indicators.ema) {
+    const ema = calculateEMA(data, 12);
+    datasets.push({
+      label: 'EMA(12)',
+      data: ema,
+      borderColor: '#8b5cf6',
+      borderWidth: 2,
+      fill: false,
+      pointRadius: 0
+    });
+  }
+
+  if (indicators.bollinger) {
+    const bb = calculateBollinger(data);
+    datasets.push({
+      label: 'BB Upper',
+      data: bb.upper,
+      borderColor: 'rgba(239, 68, 68, 0.5)',
+      borderWidth: 1,
+      fill: false,
+      pointRadius: 0
+    });
+    datasets.push({
+      label: 'BB Lower',
+      data: bb.lower,
+      borderColor: 'rgba(16, 185, 129, 0.5)',
+      borderWidth: 1,
+      fill: '-1',
+      backgroundColor: 'rgba(100, 116, 139, 0.1)',
+      pointRadius: 0
+    });
+  }
+
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: '<%= safeTheme === 'light' ? '#374151' : '#e5e7eb' %>', font: { size: 12, weight: '600' } }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          padding: 12,
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#667eea',
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '<%= safeTheme === 'light' ? 'rgba(0, 0, 0, 0.05)' : '#334155' %>' },
+          ticks: { color: '<%= safeTheme === 'light' ? '#6b7280' : '#9ca3af' %>' }
+        },
+        y: {
+          position: 'right',
+          grid: { color: '<%= safeTheme === 'light' ? 'rgba(0, 0, 0, 0.05)' : '#334155' %>' },
+          ticks: { color: '<%= safeTheme === 'light' ? '#6b7280' : '#9ca3af' %>' }
+        }
+      }
+    }
+  });
+
+  if (indicators.volume) {
+    const volumeCanvas = document.getElementById('volumeChart');
+    if (!volumeCanvas) return;
+    const vctx = volumeCanvas.getContext('2d');
+    if (volumeChart) volumeChart.destroy();
+
+    volumeChart = new Chart(vctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Volume',
+          data: data.map(d => d.volume),
+          backgroundColor: data.map(d => d.close >= d.open ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)')
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false }
+        }
+      }
+    });
+    document.getElementById('volumeContainer').style.display = 'block';
+  } else {
+    document.getElementById('volumeContainer').style.display = 'none';
+  }
+}
+
+function setChartType(type) {
+  chartType = type;
+  document.querySelectorAll('[data-type]').forEach(btn => {
+    btn.classList.remove('active');
+    btn.style.background = '';
+    btn.style.color = '';
+  });
+  const activeBtn = document.querySelector(`[data-type="${type}"]`);
+  activeBtn.classList.add('active');
+  activeBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  activeBtn.style.color = 'white';
+  loadChart();
+}
+
+function toggleIndicator(ind) {
+  indicators[ind] = !indicators[ind];
+  const btn = document.querySelector(`[data-ind="${ind}"]`);
+  btn.classList.toggle('active');
+  loadChart();
+}
+
+async function loadChartFromInput() {
+  const symbol = document.getElementById('symbolInput').value.trim().toUpperCase();
+  if (symbol) {
+    window.location.href = `/charts?symbol=${symbol}`;
+  }
+}
+
+function calculateRSI(data, period = 14) {
+  const gains = [];
+  const losses = [];
+  for (let i = 1; i < data.length; i++) {
+    const change = data[i].close - data[i - 1].close;
+    gains.push(change > 0 ? change : 0);
+    losses.push(change < 0 ? Math.abs(change) : 0);
+  }
+  const avgGain = gains.slice(-period).reduce((a, b) => a + b, 0) / period;
+  const avgLoss = losses.slice(-period).reduce((a, b) => a + b, 0) / period;
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+function calculateMACD(data) {
+  const ema12 = calculateEMA(data, 12);
+  const ema26 = calculateEMA(data, 26);
+  return ema12[ema12.length - 1] - ema26[ema26.length - 1];
+}
+
+function calculate52WRange(data, currentPrice) {
+  const year = data.slice(-252);
+  const low52w = Math.min(...year.map(d => d.low));
+  const high52w = Math.max(...year.map(d => d.high));
+  const range = high52w - low52w;
+  const position = ((currentPrice - low52w) / range) * 100;
+  return { low52w, high52w, position };
+}
+
+function calculateSupportResistance(data, currentPrice) {
+  const high = Math.max(...data.map(d => d.high));
+  const low = Math.min(...data.map(d => d.low));
+  return {
+    r3: currentPrice + (high - low) * 1.5,
+    r2: currentPrice + (high - low),
+    r1: currentPrice + (high - low) * 0.5,
+    s1: currentPrice - (high - low) * 0.5,
+    s2: currentPrice - (high - low),
+    s3: currentPrice - (high - low) * 1.5
+  };
+}
+
+function updateTechnicalIndicators(data, quote) {
+  if (!data || data.length === 0) return;
+
+  const rsi = calculateRSI(data);
+  document.getElementById('rsiValue').textContent = rsi.toFixed(1);
+  document.getElementById('rsiBar').style.width = rsi + '%';
+
+  const macd = calculateMACD(data);
+  const macdEl = document.getElementById('macdValue');
+  macdEl.textContent = (macd >= 0 ? '+' : '') + macd.toFixed(2);
+  macdEl.className = macd >= 0 ? 'font-bold text-2xl stat-number text-emerald-400' : 'font-bold text-2xl stat-number text-red-400';
+
+  const range52w = calculate52WRange(data, quote.price);
+
+  const avgVolume = data.reduce((sum, d) => sum + d.volume, 0) / data.length;
+  const volumeCompare = ((quote.volume - avgVolume) / avgVolume) * 100;
+
+  const sr = calculateSupportResistance(data, quote.price);
+  updateSupportResistanceLevels(sr, quote.price);
+}
+
+function updateSupportResistanceLevels(sr, currentPrice) {
+  // Update Support & Resistance levels in the UI
+  // (Implementation depends on your specific DOM structure)
+}
+
+async function initializeChart() {
+  if (initialQuote) {
+    currentQuote = initialQuote;
+    document.getElementById('symbolIcon').textContent = initialSymbol.slice(0, 4);
+    document.getElementById('companyName').textContent = initialSymbol;
+    document.getElementById('currentPrice').textContent = '$' + initialQuote.price.toFixed(2);
+
+    const changeText = (initialQuote.change >= 0 ? '+' : '') + '$' + initialQuote.change.toFixed(2) + ' (' + (initialQuote.changePercent >= 0 ? '+' : '') + initialQuote.changePercent.toFixed(2) + '%)';
+    document.getElementById('priceChange').textContent = changeText;
+    document.getElementById('priceChange').className = initialQuote.change >= 0 ? 'text-emerald-400 font-semibold stat-number' : 'text-red-400 font-semibold stat-number';
+
+    document.getElementById('statOpen').textContent = '$' + (initialQuote.open || initialQuote.price).toFixed(2);
+    document.getElementById('statHigh').textContent = '$' + (initialQuote.high || initialQuote.price).toFixed(2);
+    document.getElementById('statLow').textContent = '$' + (initialQuote.low || initialQuote.price).toFixed(2);
+    document.getElementById('statVolume').textContent = initialQuote.volume ? (initialQuote.volume / 1000000).toFixed(1) + 'M' : 'N/A';
+  }
+
+  const timeframe = document.getElementById('timeframe').value;
+  const days = { '1D': 1, '1W': 7, '1M': 30, '3M': 90, '1Y': 365 }[timeframe];
+  const data = await fetchHistoricalData(initialSymbol, days);
+
+  if (data.length > 0) {
+    historicalData = data;
+    renderChart(data);
+    if (initialQuote) {
+      updateTechnicalIndicators(data, initialQuote);
+    }
+  }
+}
+
+initializeChart();
+</script>
+
+<%- include('../partials/footer') %>

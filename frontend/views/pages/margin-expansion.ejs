@@ -1,0 +1,186 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Margin Expansion';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b-2 border-amber-400 px-6 py-4 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 font-mono">MARGIN EXPANSION</h1>
+<p class="text-slate-400 text-sm mt-1">Operating leverage & margin trends</p>
+</div>
+<div class="flex gap-2">
+<select class="bloomberg-btn w-36">
+<option selected>My Holdings</option>
+<option>Watchlist</option>
+</select>
+<select class="bloomberg-btn w-28">
+<option>3 Years</option>
+<option selected>5 Years</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- Margin Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-emerald-900/20 to-sky-900/20">
+<h3 class="font-semibold text-amber-400 mb-4">Portfolio Margin Trends</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm text-slate-400">Avg Gross Margin</p>
+<p class="text-2xl font-bold font-mono text-emerald-400">58.4%</p>
+<p class="text-xs font-mono text-emerald-400">+2.8% vs 5Y avg</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Avg Op Margin</p>
+<p class="text-2xl font-bold font-mono text-sky-400">28.2%</p>
+<p class="text-xs font-mono text-emerald-400">+4.2% vs 5Y avg</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Avg Net Margin</p>
+<p class="text-2xl font-bold font-mono text-white">22.8%</p>
+<p class="text-xs font-mono text-emerald-400">+3.4% vs 5Y avg</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Expanding</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">9</p>
+<p class="text-xs text-emerald-400">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Contracting</p>
+<p class="text-3xl font-bold font-mono text-red-400">3</p>
+<p class="text-xs text-red-400">holdings</p>
+</div>
+</div>
+</div>
+
+<!-- Holdings Margin Trends -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b border-amber-400/30">
+<h3 class="font-semibold text-amber-400">Holdings Margin Analysis (5Y)</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="bg-slate-900 text-slate-400 text-left">
+<th class="px-4 py-3">Company</th>
+<th class="px-4 py-3 text-center">Gross Margin</th>
+<th class="px-4 py-3 text-center">5Y Δ</th>
+<th class="px-4 py-3 text-center">Op Margin</th>
+<th class="px-4 py-3 text-center">5Y Δ</th>
+<th class="px-4 py-3 text-center">Net Margin</th>
+<th class="px-4 py-3 text-center">5Y Δ</th>
+<th class="px-4 py-3 text-center">Trend</th>
+</tr>
+</thead>
+<tbody class="text-white">
+<tr class="border-b border-slate-700/50 bg-emerald-500/5">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3 text-center font-bold font-mono">74.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+12.4%</td>
+<td class="px-4 py-3 text-center font-bold font-mono">62.4%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+28.2%</td>
+<td class="px-4 py-3 text-center font-bold font-mono">53.6%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+24.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">↑ Strong</span></td>
+</tr>
+<tr class="border-b border-slate-700/50 bg-emerald-500/5">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">META</div><span class="font-medium">Meta</span></div></td>
+<td class="px-4 py-3 text-center font-bold font-mono">80.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+1.8%</td>
+<td class="px-4 py-3 text-center font-bold font-mono">41.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+8.4%</td>
+<td class="px-4 py-3 text-center font-bold font-mono">29.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+5.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">↑ Expand</span></td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center font-bold font-mono">44.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+2.4%</td>
+<td class="px-4 py-3 text-center font-bold font-mono">30.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+1.2%</td>
+<td class="px-4 py-3 text-center font-bold font-mono">25.4%</td>
+<td class="px-4 py-3 text-center font-mono">+0.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 text-xs">→ Stable</span></td>
+</tr>
+<tr class="border-b border-slate-700/50 bg-red-500/5">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">INTC</div><span class="font-medium">Intel</span></div></td>
+<td class="px-4 py-3 text-center font-bold font-mono">38.4%</td>
+<td class="px-4 py-3 text-center text-red-400 font-bold font-mono">-18.2%</td>
+<td class="px-4 py-3 text-center font-bold font-mono text-red-400">-2.8%</td>
+<td class="px-4 py-3 text-center text-red-400 font-bold font-mono">-32.4%</td>
+<td class="px-4 py-3 text-center font-bold font-mono text-red-400">-4.2%</td>
+<td class="px-4 py-3 text-center text-red-400 font-bold font-mono">-28.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs">↓ Contract</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Margin Insights -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="card p-5">
+<h4 class="font-bold text-emerald-400 mb-3">📈 Best Margin Expansion</h4>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">5Y operating margin change</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>NVDA</span><span class="font-bold text-emerald-400">+28.2%</span></div>
+<div class="flex justify-between"><span>META</span><span class="font-bold text-emerald-400">+8.4%</span></div>
+<div class="flex justify-between"><span>GOOGL</span><span class="font-bold text-emerald-400">+4.2%</span></div>
+</div>
+</div>
+<div class="card p-5">
+<h4 class="font-bold text-red-400 mb-3">⚠️ Margin Compression</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>INTC</span><span class="font-bold text-red-400">-32.4%</span></div>
+<div class="flex justify-between"><span>BA</span><span class="font-bold text-red-400">-18.4%</span></div>
+<div class="flex justify-between"><span>DIS</span><span class="font-bold text-red-400">-8.2%</span></div>
+</div>
+</div>
+<div class="card p-5">
+<h4 class="font-bold text-purple-400 mb-3">🎯 Highest Margins</h4>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Current operating margin</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>NVDA</span><span class="font-bold text-purple-400">62.4%</span></div>
+<div class="flex justify-between"><span>META</span><span class="font-bold text-purple-400">41.2%</span></div>
+<div class="flex justify-between"><span>MSFT</span><span class="font-bold text-purple-400">44.8%</span></div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">NVDA Margin Expansion (5Y)</h3>
+<div class="h-48"><canvas id="marginChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Op Margin vs 5Y Avg</h3>
+<div class="h-48"><canvas id="compChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('marginChart'), {
+  type: 'line',
+  data: { labels: ['2020','2021','2022','2023','2024'], datasets: [
+    { label: 'Gross', data: [62.4,64.2,56.8,72.8,74.8], borderColor: '#10b981', fill: false },
+    { label: 'Operating', data: [34.2,38.4,28.8,54.2,62.4], borderColor: '#8b5cf6', fill: false },
+    { label: 'Net', data: [28.8,32.4,24.2,48.4,53.6], borderColor: '#0ea5e9', fill: false }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('compChart'), {
+  type: 'bar',
+  data: { labels: ['NVDA','META','MSFT','GOOGL','AAPL','INTC'], datasets: [
+    { label: 'Current', data: [62.4,41.2,44.8,28.4,30.8,-2.8], backgroundColor: '#10b981' },
+    { label: '5Y Avg', data: [43.6,34.2,42.4,26.2,29.4,18.4], backgroundColor: '#94a3b8' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+<%- include('../partials/footer') %>

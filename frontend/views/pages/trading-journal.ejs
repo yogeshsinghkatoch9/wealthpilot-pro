@@ -1,0 +1,823 @@
+<%
+// Safe defaults for undefined variables
+const safeEntries = entries || [];
+const safeStats = stats || {};
+const safePortfolios = portfolios || [];
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  money: (val) => `$${Number(val || 0).toFixed(2)}`,
+  percent: (val) => `${Number(val || 0).toFixed(2)}%`,
+  compact: (val) => Number(val || 0).toLocaleString()
+};
+%>
+
+<%- include('../partials/header', { pageTitle: 'Trading Journal' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-1.5 h-8 bg-purple-400"></div>
+      <div>
+        <h1 class="text-lg font-bold text-white tracking-wide">TRADING JOURNAL</h1>
+        <p class="text-xs text-slate-400 font-mono">TRACK & ANALYZE YOUR TRADES</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="openNewEntryModal()" class="bloomberg-btn bloomberg-btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        NEW ENTRY
+      </button>
+      <button onclick="exportJournal()" class="bloomberg-btn">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        EXPORT
+      </button>
+    </div>
+  </div>
+</div>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-4">
+
+    <!-- Trading Statistics KPI Bar -->
+    <div class="bloomberg-kpi-bar">
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">TOTAL TRADES</div>
+        <div class="bloomberg-kpi-value text-purple-400 font-mono" id="totalTrades"><%= safeStats.totalTrades || 0 %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">WIN RATE</div>
+        <div class="bloomberg-kpi-value text-emerald-400 font-mono" id="winRate"><%= safeFmt.percent(safeStats.winRate || 0) %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">AVG PROFIT</div>
+        <div class="bloomberg-kpi-value text-sky-400 font-mono" id="avgProfit"><%= safeFmt.money(safeStats.avgProfit || 0) %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">PROFIT FACTOR</div>
+        <div class="bloomberg-kpi-value text-amber-400 font-mono" id="profitFactor"><%= (safeStats.profitFactor || 0).toFixed(2) %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">TOTAL P&L</div>
+        <div class="bloomberg-kpi-value <%= (safeStats.totalPnL || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono" id="totalPnL">
+          <%= safeFmt.money(safeStats.totalPnL || 0) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Equity Curve -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-amber-400">EQUITY CURVE</span>
+        </div>
+        <div class="p-4">
+          <canvas id="equityCurveChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Win/Loss Distribution -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-amber-400">WIN/LOSS DISTRIBUTION</span>
+        </div>
+        <div class="p-4">
+          <canvas id="winLossChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- More Analysis Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- P&L by Day of Week -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-sky-400">P&L BY DAY</span>
+        </div>
+        <div class="p-4">
+          <canvas id="dayOfWeekChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- P&L by Hour -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-purple-400">P&L BY HOUR</span>
+        </div>
+        <div class="p-4">
+          <canvas id="hourChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Performers -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-emerald-400">TOP PERFORMERS</span>
+        </div>
+        <div class="p-4 space-y-2" id="topPerformers">
+          <div class="text-slate-500 text-sm">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bloomberg-card">
+      <div class="flex flex-wrap gap-3 items-center">
+        <select id="portfolioFilter" class="bloomberg-input w-48" onchange="filterEntries()">
+          <option value="">ALL PORTFOLIOS</option>
+          <% safePortfolios.forEach(p => { %>
+          <option value="<%= p.id %>"><%= (p.name || '').toUpperCase() %></option>
+          <% }) %>
+        </select>
+        <select id="outcomeFilter" class="bloomberg-input w-32" onchange="filterEntries()">
+          <option value="">ALL OUTCOMES</option>
+          <option value="win">WIN</option>
+          <option value="loss">LOSS</option>
+          <option value="breakeven">BREAKEVEN</option>
+        </select>
+        <select id="setupFilter" class="bloomberg-input w-40" onchange="filterEntries()">
+          <option value="">ALL SETUPS</option>
+          <option value="breakout">BREAKOUT</option>
+          <option value="pullback">PULLBACK</option>
+          <option value="reversal">REVERSAL</option>
+          <option value="momentum">MOMENTUM</option>
+          <option value="swing">SWING</option>
+          <option value="scalp">SCALP</option>
+        </select>
+        <input type="date" id="startDate" class="bloomberg-input w-40" onchange="filterEntries()">
+        <input type="date" id="endDate" class="bloomberg-input w-40" onchange="filterEntries()">
+        <input
+          type="text"
+          id="symbolSearch"
+          class="bloomberg-input flex-1"
+          placeholder="SEARCH SYMBOL..."
+          onkeyup="filterEntries()"
+        >
+      </div>
+    </div>
+
+    <!-- Journal Entries Table -->
+    <div class="bloomberg-card overflow-hidden">
+      <div class="bloomberg-card-header">
+        <span class="text-amber-400">JOURNAL ENTRIES</span>
+        <span class="text-xs text-slate-500 font-mono" id="entriesCount">(<%= safeEntries.length %> entries)</span>
+      </div>
+
+      <div id="entriesContainer">
+        <% if (safeEntries.length === 0) { %>
+        <div class="p-12 text-center">
+          <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          </svg>
+          <h3 class="text-lg font-semibold text-white mb-2 tracking-wide">NO JOURNAL ENTRIES</h3>
+          <p class="text-slate-400 text-sm mb-4">Start tracking your trades to improve your performance</p>
+          <button onclick="openNewEntryModal()" class="bloomberg-btn bloomberg-btn-primary">
+            ADD YOUR FIRST ENTRY
+          </button>
+        </div>
+        <% } else { %>
+        <div class="overflow-x-auto">
+          <table class="bloomberg-table w-full">
+            <thead>
+              <tr>
+                <th class="text-left">DATE</th>
+                <th class="text-left">SYMBOL</th>
+                <th class="text-left">SETUP</th>
+                <th class="text-left">SIDE</th>
+                <th class="text-right">ENTRY</th>
+                <th class="text-right">EXIT</th>
+                <th class="text-right">SIZE</th>
+                <th class="text-right">P&L</th>
+                <th class="text-right">R:R</th>
+                <th class="text-center">OUTCOME</th>
+                <th class="text-left">NOTES</th>
+                <th class="text-center">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="entriesTableBody">
+              <% safeEntries.forEach((entry, idx) => {
+                const pnl = Number(entry.pnl || 0);
+                const pnlClass = pnl > 0 ? 'text-emerald-400' : pnl < 0 ? 'text-red-400' : 'text-slate-400';
+                const outcomeClass = entry.outcome === 'win' ? 'bg-emerald-500/20 text-emerald-400' :
+                                     entry.outcome === 'loss' ? 'bg-red-500/20 text-red-400' :
+                                     'bg-slate-500/20 text-slate-400';
+              %>
+              <tr class="bloomberg-table-row" data-entry-id="<%= entry.id %>">
+                <td class="font-mono text-sm"><%= new Date(entry.date || entry.entryDate).toLocaleDateString() %></td>
+                <td class="font-bold text-amber-400"><%= entry.symbol %></td>
+                <td class="text-xs uppercase"><%= entry.setup || 'N/A' %></td>
+                <td class="<%= entry.side === 'long' ? 'text-emerald-400' : 'text-red-400' %> uppercase text-xs">
+                  <%= entry.side || 'N/A' %>
+                </td>
+                <td class="text-right font-mono"><%= safeFmt.money(entry.entryPrice) %></td>
+                <td class="text-right font-mono"><%= safeFmt.money(entry.exitPrice) %></td>
+                <td class="text-right font-mono"><%= entry.shares || entry.quantity || 0 %></td>
+                <td class="text-right font-mono <%= pnlClass %>"><%= safeFmt.money(pnl) %></td>
+                <td class="text-right font-mono"><%= (entry.riskReward || 0).toFixed(2) %></td>
+                <td class="text-center">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold uppercase <%= outcomeClass %>">
+                    <%= entry.outcome || 'N/A' %>
+                  </span>
+                </td>
+                <td class="text-xs text-slate-400 max-w-[200px] truncate"><%= entry.notes || '-' %></td>
+                <td class="text-center">
+                  <button onclick="editEntry('<%= entry.id %>')" class="text-sky-400 hover:text-sky-300 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                  </button>
+                  <button onclick="deleteEntry('<%= entry.id %>')" class="text-red-400 hover:text-red-300 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- New Entry Modal -->
+<div id="newEntryModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4">
+  <div class="bloomberg-card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div class="bloomberg-card-header flex justify-between items-center">
+      <span class="text-amber-400" id="modalTitle">NEW JOURNAL ENTRY</span>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="entryForm" onsubmit="saveEntry(event)" class="p-4 space-y-4">
+      <input type="hidden" id="entryId" value="">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">SYMBOL *</label>
+          <input type="text" id="entrySymbol" class="bloomberg-input w-full" required placeholder="AAPL">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">DATE *</label>
+          <input type="datetime-local" id="entryDate" class="bloomberg-input w-full" required>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">SIDE *</label>
+          <select id="entrySide" class="bloomberg-input w-full" required>
+            <option value="long">LONG</option>
+            <option value="short">SHORT</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">SETUP</label>
+          <select id="entrySetup" class="bloomberg-input w-full">
+            <option value="">Select Setup</option>
+            <option value="breakout">Breakout</option>
+            <option value="pullback">Pullback</option>
+            <option value="reversal">Reversal</option>
+            <option value="momentum">Momentum</option>
+            <option value="swing">Swing</option>
+            <option value="scalp">Scalp</option>
+            <option value="earnings">Earnings Play</option>
+            <option value="gap">Gap Fill</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">TIMEFRAME</label>
+          <select id="entryTimeframe" class="bloomberg-input w-full">
+            <option value="1m">1 Minute</option>
+            <option value="5m">5 Minutes</option>
+            <option value="15m">15 Minutes</option>
+            <option value="1h">1 Hour</option>
+            <option value="4h">4 Hours</option>
+            <option value="1d" selected>Daily</option>
+            <option value="1w">Weekly</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ENTRY PRICE *</label>
+          <input type="number" step="0.01" id="entryPrice" class="bloomberg-input w-full" required placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">EXIT PRICE</label>
+          <input type="number" step="0.01" id="exitPrice" class="bloomberg-input w-full" placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">STOP LOSS</label>
+          <input type="number" step="0.01" id="stopLoss" class="bloomberg-input w-full" placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">TARGET</label>
+          <input type="number" step="0.01" id="targetPrice" class="bloomberg-input w-full" placeholder="0.00">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">SHARES/CONTRACTS *</label>
+          <input type="number" id="entryShares" class="bloomberg-input w-full" required placeholder="100">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">FEES/COMMISSIONS</label>
+          <input type="number" step="0.01" id="entryFees" class="bloomberg-input w-full" placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">PORTFOLIO</label>
+          <select id="entryPortfolio" class="bloomberg-input w-full">
+            <option value="">Select Portfolio</option>
+            <% safePortfolios.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.name %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">EMOTIONS BEFORE</label>
+          <select id="emotionsBefore" class="bloomberg-input w-full">
+            <option value="">Select</option>
+            <option value="confident">Confident</option>
+            <option value="calm">Calm</option>
+            <option value="excited">Excited</option>
+            <option value="anxious">Anxious</option>
+            <option value="fearful">Fearful</option>
+            <option value="greedy">Greedy</option>
+            <option value="fomo">FOMO</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">EMOTIONS AFTER</label>
+          <select id="emotionsAfter" class="bloomberg-input w-full">
+            <option value="">Select</option>
+            <option value="satisfied">Satisfied</option>
+            <option value="regretful">Regretful</option>
+            <option value="relieved">Relieved</option>
+            <option value="frustrated">Frustrated</option>
+            <option value="excited">Excited</option>
+            <option value="neutral">Neutral</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">TRADE THESIS</label>
+        <textarea id="tradeThesis" class="bloomberg-input w-full" rows="2" placeholder="Why did you enter this trade?"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs text-slate-400 mb-1">NOTES / LESSONS LEARNED</label>
+        <textarea id="entryNotes" class="bloomberg-input w-full" rows="3" placeholder="What did you learn from this trade?"></textarea>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">FOLLOWED PLAN?</label>
+          <select id="followedPlan" class="bloomberg-input w-full">
+            <option value="yes">Yes</option>
+            <option value="partial">Partially</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">RATING (1-5)</label>
+          <select id="tradeRating" class="bloomberg-input w-full">
+            <option value="5">5 - Excellent</option>
+            <option value="4">4 - Good</option>
+            <option value="3" selected>3 - Average</option>
+            <option value="2">2 - Poor</option>
+            <option value="1">1 - Bad</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-4">
+        <button type="button" onclick="closeModal()" class="bloomberg-btn">CANCEL</button>
+        <button type="submit" class="bloomberg-btn bloomberg-btn-primary">SAVE ENTRY</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Initialize data
+let journalEntries = <%= JSON.stringify(safeEntries) %>;
+let equityCurveChart, winLossChart, dayOfWeekChart, hourChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+  initCharts();
+  loadJournalData();
+});
+
+function initCharts() {
+  // Equity Curve Chart
+  const eqCtx = document.getElementById('equityCurveChart')?.getContext('2d');
+  if (eqCtx) {
+    equityCurveChart = new Chart(eqCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Equity',
+          data: [],
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', callback: v => '$' + v.toLocaleString() } }
+        }
+      }
+    });
+  }
+
+  // Win/Loss Distribution Chart
+  const wlCtx = document.getElementById('winLossChart')?.getContext('2d');
+  if (wlCtx) {
+    winLossChart = new Chart(wlCtx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'P&L',
+          data: [],
+          backgroundColor: [],
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748b' } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', callback: v => '$' + v } }
+        }
+      }
+    });
+  }
+
+  // Day of Week Chart
+  const dowCtx = document.getElementById('dayOfWeekChart')?.getContext('2d');
+  if (dowCtx) {
+    dayOfWeekChart = new Chart(dowCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        datasets: [{
+          label: 'P&L',
+          data: [0, 0, 0, 0, 0],
+          backgroundColor: ['#22c55e', '#22c55e', '#ef4444', '#22c55e', '#22c55e']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748b' } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+        }
+      }
+    });
+  }
+
+  // Hour Chart
+  const hourCtx = document.getElementById('hourChart')?.getContext('2d');
+  if (hourCtx) {
+    hourChart = new Chart(hourCtx, {
+      type: 'bar',
+      data: {
+        labels: ['9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM'],
+        datasets: [{
+          label: 'P&L',
+          data: [0, 0, 0, 0, 0, 0, 0],
+          backgroundColor: '#8b5cf6'
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748b' } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+        }
+      }
+    });
+  }
+}
+
+async function loadJournalData() {
+  try {
+    const res = await fetch('/api/journal');
+    const data = await res.json();
+
+    if (data.entries) {
+      journalEntries = data.entries;
+      updateCharts(journalEntries);
+      updateStats(data.stats || calculateStats(journalEntries));
+      updateTopPerformers(journalEntries);
+    }
+  } catch (err) {
+    console.error('Failed to load journal data:', err);
+  }
+}
+
+function calculateStats(entries) {
+  if (!entries.length) return {};
+
+  const wins = entries.filter(e => e.pnl > 0);
+  const losses = entries.filter(e => e.pnl < 0);
+  const totalPnL = entries.reduce((sum, e) => sum + (e.pnl || 0), 0);
+  const grossProfit = wins.reduce((sum, e) => sum + e.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((sum, e) => sum + e.pnl, 0));
+
+  return {
+    totalTrades: entries.length,
+    winRate: (wins.length / entries.length) * 100,
+    avgProfit: totalPnL / entries.length,
+    profitFactor: grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 999 : 0,
+    totalPnL
+  };
+}
+
+function updateStats(stats) {
+  document.getElementById('totalTrades').textContent = stats.totalTrades || 0;
+  document.getElementById('winRate').textContent = (stats.winRate || 0).toFixed(1) + '%';
+  document.getElementById('avgProfit').textContent = '$' + (stats.avgProfit || 0).toFixed(2);
+  document.getElementById('profitFactor').textContent = (stats.profitFactor || 0).toFixed(2);
+  const totalPnL = stats.totalPnL || 0;
+  const pnlEl = document.getElementById('totalPnL');
+  pnlEl.textContent = '$' + totalPnL.toFixed(2);
+  pnlEl.className = 'bloomberg-kpi-value font-mono ' + (totalPnL >= 0 ? 'text-emerald-400' : 'text-red-400');
+}
+
+function updateCharts(entries) {
+  // Update Equity Curve
+  if (equityCurveChart && entries.length > 0) {
+    const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let cumulative = 0;
+    const equityData = sorted.map(e => {
+      cumulative += e.pnl || 0;
+      return cumulative;
+    });
+    equityCurveChart.data.labels = sorted.map(e => new Date(e.date).toLocaleDateString());
+    equityCurveChart.data.datasets[0].data = equityData;
+    equityCurveChart.update();
+  }
+
+  // Update Win/Loss Distribution
+  if (winLossChart && entries.length > 0) {
+    const last20 = entries.slice(-20);
+    winLossChart.data.labels = last20.map((_, i) => i + 1);
+    winLossChart.data.datasets[0].data = last20.map(e => e.pnl || 0);
+    winLossChart.data.datasets[0].backgroundColor = last20.map(e => e.pnl >= 0 ? '#22c55e' : '#ef4444');
+    winLossChart.update();
+  }
+
+  // Update Day of Week
+  if (dayOfWeekChart && entries.length > 0) {
+    const byDay = [0, 0, 0, 0, 0];
+    entries.forEach(e => {
+      const day = new Date(e.date).getDay();
+      if (day >= 1 && day <= 5) byDay[day - 1] += e.pnl || 0;
+    });
+    dayOfWeekChart.data.datasets[0].data = byDay;
+    dayOfWeekChart.data.datasets[0].backgroundColor = byDay.map(v => v >= 0 ? '#22c55e' : '#ef4444');
+    dayOfWeekChart.update();
+  }
+
+  // Update Hour
+  if (hourChart && entries.length > 0) {
+    const byHour = [0, 0, 0, 0, 0, 0, 0];
+    entries.forEach(e => {
+      const hour = new Date(e.date).getHours();
+      if (hour >= 9 && hour <= 15) byHour[hour - 9] += e.pnl || 0;
+    });
+    hourChart.data.datasets[0].data = byHour;
+    hourChart.data.datasets[0].backgroundColor = byHour.map(v => v >= 0 ? '#8b5cf6' : '#ef4444');
+    hourChart.update();
+  }
+}
+
+function updateTopPerformers(entries) {
+  const container = document.getElementById('topPerformers');
+  if (!container) return;
+
+  // Group by symbol
+  const bySymbol = {};
+  entries.forEach(e => {
+    if (!bySymbol[e.symbol]) bySymbol[e.symbol] = { pnl: 0, trades: 0 };
+    bySymbol[e.symbol].pnl += e.pnl || 0;
+    bySymbol[e.symbol].trades++;
+  });
+
+  const sorted = Object.entries(bySymbol)
+    .sort((a, b) => b[1].pnl - a[1].pnl)
+    .slice(0, 5);
+
+  container.innerHTML = sorted.map(([symbol, data]) => `
+    <div class="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+      <span class="font-bold text-amber-400">${symbol}</span>
+      <span class="${data.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'} font-mono">
+        $${data.pnl.toFixed(2)}
+      </span>
+    </div>
+  `).join('') || '<div class="text-slate-500 text-sm">No data yet</div>';
+}
+
+function openNewEntryModal() {
+  document.getElementById('modalTitle').textContent = 'NEW JOURNAL ENTRY';
+  document.getElementById('entryForm').reset();
+  document.getElementById('entryId').value = '';
+  document.getElementById('entryDate').value = new Date().toISOString().slice(0, 16);
+  document.getElementById('newEntryModal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('newEntryModal').classList.add('hidden');
+}
+
+async function saveEntry(event) {
+  event.preventDefault();
+
+  const entryId = document.getElementById('entryId').value;
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  const exitPrice = parseFloat(document.getElementById('exitPrice').value) || 0;
+  const shares = parseInt(document.getElementById('entryShares').value) || 0;
+  const fees = parseFloat(document.getElementById('entryFees').value) || 0;
+  const side = document.getElementById('entrySide').value;
+
+  // Calculate P&L
+  let pnl = 0;
+  if (exitPrice > 0) {
+    if (side === 'long') {
+      pnl = (exitPrice - entryPrice) * shares - fees;
+    } else {
+      pnl = (entryPrice - exitPrice) * shares - fees;
+    }
+  }
+
+  // Calculate Risk/Reward
+  const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
+  const target = parseFloat(document.getElementById('targetPrice').value) || 0;
+  let riskReward = 0;
+  if (stopLoss > 0 && target > 0) {
+    const risk = Math.abs(entryPrice - stopLoss);
+    const reward = Math.abs(target - entryPrice);
+    riskReward = risk > 0 ? reward / risk : 0;
+  }
+
+  const entry = {
+    symbol: document.getElementById('entrySymbol').value.toUpperCase(),
+    date: document.getElementById('entryDate').value,
+    side,
+    setup: document.getElementById('entrySetup').value,
+    timeframe: document.getElementById('entryTimeframe').value,
+    entryPrice,
+    exitPrice,
+    stopLoss,
+    targetPrice: target,
+    shares,
+    fees,
+    pnl,
+    riskReward,
+    outcome: pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven',
+    portfolioId: document.getElementById('entryPortfolio').value,
+    emotionsBefore: document.getElementById('emotionsBefore').value,
+    emotionsAfter: document.getElementById('emotionsAfter').value,
+    thesis: document.getElementById('tradeThesis').value,
+    notes: document.getElementById('entryNotes').value,
+    followedPlan: document.getElementById('followedPlan').value,
+    rating: parseInt(document.getElementById('tradeRating').value)
+  };
+
+  try {
+    const url = entryId ? `/api/journal/${entryId}` : '/api/journal';
+    const method = entryId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+
+    if (res.ok) {
+      closeModal();
+      loadJournalData();
+      location.reload();
+    } else {
+      alert('Failed to save entry');
+    }
+  } catch (err) {
+    console.error('Save error:', err);
+    alert('Failed to save entry');
+  }
+}
+
+async function editEntry(id) {
+  const entry = journalEntries.find(e => e.id === id);
+  if (!entry) return;
+
+  document.getElementById('modalTitle').textContent = 'EDIT JOURNAL ENTRY';
+  document.getElementById('entryId').value = id;
+  document.getElementById('entrySymbol').value = entry.symbol;
+  document.getElementById('entryDate').value = new Date(entry.date).toISOString().slice(0, 16);
+  document.getElementById('entrySide').value = entry.side;
+  document.getElementById('entrySetup').value = entry.setup || '';
+  document.getElementById('entryTimeframe').value = entry.timeframe || '1d';
+  document.getElementById('entryPrice').value = entry.entryPrice;
+  document.getElementById('exitPrice').value = entry.exitPrice || '';
+  document.getElementById('stopLoss').value = entry.stopLoss || '';
+  document.getElementById('targetPrice').value = entry.targetPrice || '';
+  document.getElementById('entryShares').value = entry.shares;
+  document.getElementById('entryFees').value = entry.fees || '';
+  document.getElementById('entryPortfolio').value = entry.portfolioId || '';
+  document.getElementById('emotionsBefore').value = entry.emotionsBefore || '';
+  document.getElementById('emotionsAfter').value = entry.emotionsAfter || '';
+  document.getElementById('tradeThesis').value = entry.thesis || '';
+  document.getElementById('entryNotes').value = entry.notes || '';
+  document.getElementById('followedPlan').value = entry.followedPlan || 'yes';
+  document.getElementById('tradeRating').value = entry.rating || 3;
+
+  document.getElementById('newEntryModal').classList.remove('hidden');
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Delete this journal entry?')) return;
+
+  try {
+    const res = await fetch(`/api/journal/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      loadJournalData();
+      location.reload();
+    }
+  } catch (err) {
+    console.error('Delete error:', err);
+  }
+}
+
+function filterEntries() {
+  const portfolio = document.getElementById('portfolioFilter').value;
+  const outcome = document.getElementById('outcomeFilter').value;
+  const setup = document.getElementById('setupFilter').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  const symbol = document.getElementById('symbolSearch').value.toUpperCase();
+
+  const filtered = journalEntries.filter(e => {
+    if (portfolio && e.portfolioId !== portfolio) return false;
+    if (outcome && e.outcome !== outcome) return false;
+    if (setup && e.setup !== setup) return false;
+    if (startDate && new Date(e.date) < new Date(startDate)) return false;
+    if (endDate && new Date(e.date) > new Date(endDate)) return false;
+    if (symbol && !e.symbol.includes(symbol)) return false;
+    return true;
+  });
+
+  updateCharts(filtered);
+  updateStats(calculateStats(filtered));
+  document.getElementById('entriesCount').textContent = `(${filtered.length} entries)`;
+}
+
+async function exportJournal() {
+  try {
+    const res = await fetch('/api/journal/export?format=csv');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trading-journal-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  } catch (err) {
+    console.error('Export error:', err);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

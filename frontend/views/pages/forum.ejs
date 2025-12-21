@@ -1,0 +1,162 @@
+<%
+// Safe defaults for undefined variables
+const safeCategories = typeof categories !== 'undefined' ? categories : [];
+const safePosts = typeof posts !== 'undefined' ? posts : [];
+const safeSelectedCategory = typeof selectedCategory !== 'undefined' ? selectedCategory : null;
+%>
+<%- include('../partials/header', { pageTitle: 'Forum' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-[#000000] border-b border-[#f7931a]/20 -mx-6 -mt-6 px-6 py-4 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold text-[#f7931a] font-mono tracking-tight">COMMUNITY FORUM</h1>
+      <p class="text-sm text-slate-400 mt-1">Discuss investing strategies with the community</p>
+    </div>
+    <button onclick="openNewPost()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      NEW POST
+    </button>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+  <!-- Categories Sidebar -->
+  <div class="space-y-4">
+    <div class="bloomberg-card">
+      <div class="p-4 border-b border-[#f7931a]/20">
+        <h3 class="font-mono text-sm font-bold text-[#f7931a] tracking-wide">CATEGORIES</h3>
+      </div>
+      <ul class="p-2 space-y-1">
+        <li>
+          <a href="/forum" class="flex items-center gap-2 px-3 py-2 rounded font-mono text-sm <%= !safeSelectedCategory ? 'bg-[#f7931a]/10 text-[#f7931a] border border-[#f7931a]/30' : 'text-slate-300 hover:bg-slate-800/50' %> transition-colors">
+            ALL POSTS
+          </a>
+        </li>
+        <% safeCategories.forEach(cat => { %>
+        <li>
+          <a href="/forum?category=<%= cat.id %>" class="flex items-center justify-between gap-2 px-3 py-2 rounded font-mono text-sm <%= safeSelectedCategory === cat.id ? 'bg-[#f7931a]/10 text-[#f7931a] border border-[#f7931a]/30' : 'text-slate-300 hover:bg-slate-800/50' %> transition-colors">
+            <span><%= cat.name %></span>
+            <span class="text-xs text-slate-500 font-bold"><%= cat.post_count || 0 %></span>
+          </a>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Posts List -->
+  <div class="lg:col-span-3 space-y-3">
+    <% if (safePosts.length === 0) { %>
+    <div class="bloomberg-card p-8 text-center">
+      <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+      <h3 class="text-lg font-mono font-bold text-white mb-2">NO POSTS YET</h3>
+      <p class="text-slate-400 mb-4">Be the first to start a discussion!</p>
+      <button onclick="openNewPost()" class="bloomberg-btn bloomberg-btn-primary">CREATE FIRST POST</button>
+    </div>
+    <% } else { %>
+    <% safePosts.forEach(post => { %>
+    <a href="/forum/post/<%= post.id %>" class="bloomberg-card block hover:border-[#f7931a]/40 transition-all group">
+      <div class="p-5">
+        <div class="flex items-start gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-3">
+              <% if (post.is_pinned) { %>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-xs font-mono font-bold">PINNED</span>
+              <% } %>
+              <span class="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded text-xs font-mono"><%= post.category_name %></span>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2 group-hover:text-[#f7931a] transition-colors"><%= post.title %></h3>
+            <p class="text-slate-400 text-sm line-clamp-2 mb-3"><%= post.content.substring(0, 200) %><%= post.content.length > 200 ? '...' : '' %></p>
+            <div class="flex items-center gap-4 text-xs font-mono text-slate-500">
+              <span class="text-slate-400"><%= post.first_name %> <%= post.last_name %></span>
+              <span><%= new Date(post.created_at).toLocaleDateString() %></span>
+              <span><%= post.views || 0 %> views</span>
+              <span class="text-[#f7931a]"><%= post.replies || 0 %> replies</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </a>
+    <% }) %>
+    <% } %>
+  </div>
+</div>
+</div></div></main>
+
+<!-- New Post Modal -->
+<div id="postModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+  <div class="bloomberg-card w-full max-w-lg mx-4">
+    <!-- Modal Header -->
+    <div class="p-6 border-b border-[#f7931a]/20">
+      <h3 class="text-xl font-mono font-bold text-[#f7931a]">NEW FORUM POST</h3>
+    </div>
+
+    <!-- Modal Body -->
+    <form id="postForm" class="p-6 space-y-4">
+      <div>
+        <label class="block text-xs font-mono font-bold text-slate-400 mb-2 tracking-wide">CATEGORY</label>
+        <select name="categoryId" class="w-full px-4 py-2 bg-[#000000] border border-slate-700 rounded text-white font-mono text-sm focus:outline-none focus:border-[#f7931a] focus:ring-1 focus:ring-[#f7931a] transition-colors" required>
+          <% safeCategories.forEach(cat => { %>
+          <option value="<%= cat.id %>"><%= cat.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-mono font-bold text-slate-400 mb-2 tracking-wide">TITLE</label>
+        <input type="text" name="title" class="w-full px-4 py-2 bg-[#000000] border border-slate-700 rounded text-white font-mono text-sm focus:outline-none focus:border-[#f7931a] focus:ring-1 focus:ring-[#f7931a] transition-colors" placeholder="Post title" required>
+      </div>
+      <div>
+        <label class="block text-xs font-mono font-bold text-slate-400 mb-2 tracking-wide">CONTENT</label>
+        <textarea name="content" class="w-full px-4 py-2 bg-[#000000] border border-slate-700 rounded text-white font-mono text-sm focus:outline-none focus:border-[#f7931a] focus:ring-1 focus:ring-[#f7931a] transition-colors resize-none" rows="6" placeholder="Share your thoughts..." required></textarea>
+      </div>
+    </form>
+
+    <!-- Modal Footer -->
+    <div class="p-6 border-t border-[#f7931a]/20 flex gap-3">
+      <button onclick="closePostModal()" class="bloomberg-btn bloomberg-btn-secondary flex-1">CANCEL</button>
+      <button onclick="submitPost()" class="bloomberg-btn bloomberg-btn-primary flex-1">POST</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openNewPost() {
+  document.getElementById('postModal').classList.remove('hidden');
+  document.getElementById('postModal').classList.add('flex');
+}
+
+function closePostModal() {
+  document.getElementById('postModal').classList.add('hidden');
+  document.getElementById('postModal').classList.remove('flex');
+}
+
+async function submitPost() {
+  const form = document.getElementById('postForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  try {
+    const res = await fetch('/api/forum/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showToast('Post created!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to create post', 'error');
+    }
+  } catch (e) {
+    showToast('Error creating post', 'error');
+  }
+  closePostModal();
+}
+</script>
+<%- include('../partials/footer') %>

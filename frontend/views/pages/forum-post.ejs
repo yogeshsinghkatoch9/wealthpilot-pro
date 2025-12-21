@@ -1,0 +1,90 @@
+<%- include('../partials/header', { pageTitle: post.title }) %>
+
+<a href="/forum" class="inline-flex items-center gap-2 <%= theme === 'light' ? 'text-gray-600 hover:text-gray-900' : 'text-slate-400 hover:text-white' %> mb-4">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+Back to Forum
+</a>
+
+<!-- Main Post -->
+<div class="card p-6">
+<div class="flex items-center gap-2 mb-3">
+<span class="px-2 py-0.5 <%= theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-slate-700 text-slate-300' %> rounded text-xs"><%= post.category_name %></span>
+<span class="<%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> text-sm"><%= post.views %> views</span>
+</div>
+<h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4"><%= post.title %></h1>
+<div class="prose max-w-none <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">
+<p class="whitespace-pre-wrap"><%= post.content %></p>
+</div>
+<div class="flex items-center gap-4 mt-6 pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white font-bold">
+<%= (post.first_name || 'A').charAt(0) %>
+</div>
+<div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= post.first_name %> <%= post.last_name %></p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= new Date(post.created_at).toLocaleString() %></p>
+</div>
+</div>
+</div>
+
+<!-- Replies -->
+<div class="space-y-4">
+<h2 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= replies.length %> Replies</h2>
+
+<% if (replies.length === 0) { %>
+<div class="card p-6 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">No replies yet. Be the first to respond!</p>
+</div>
+<% } else { %>
+<% replies.forEach(reply => { %>
+<div class="card p-5">
+<div class="flex items-start gap-4">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+<%= (reply.first_name || 'A').charAt(0) %>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= reply.first_name %> <%= reply.last_name %></span>
+<span class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= new Date(reply.created_at).toLocaleString() %></span>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> whitespace-pre-wrap"><%= reply.content %></p>
+</div>
+</div>
+</div>
+<% }) %>
+<% } %>
+
+<!-- Reply Form -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Add Reply</h3>
+<form id="replyForm">
+<textarea name="content" class="form-input mb-4" rows="4" placeholder="Write your reply..." required></textarea>
+<button type="submit" class="btn-primary">Post Reply</button>
+</form>
+</div>
+</div>
+</div></div></main>
+
+<script>
+document.getElementById('replyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const content = e.target.content.value;
+
+  try {
+    const res = await fetch('/api/forum/posts/<%= post.id %>/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    if (res.ok) {
+      showToast('Reply posted!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to post reply', 'error');
+    }
+  } catch (e) {
+    showToast('Error posting reply', 'error');
+  }
+});
+</script>
+<%- include('../partials/footer') %>

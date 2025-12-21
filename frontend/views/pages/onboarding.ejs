@@ -1,0 +1,398 @@
+<%
+  const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+  const safeStep = typeof step !== 'undefined' ? step : 1;
+%>
+<%- include('../partials/header', { pageTitle: 'Welcome to WealthPilot' }) %>
+
+<div class="min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full">
+    <!-- Progress Indicator -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Step <span id="currentStep">1</span> of 5</span>
+        <span class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span id="percentComplete">20</span>% Complete</span>
+      </div>
+      <div class="h-2 <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-500" style="width: 20%"></div>
+      </div>
+    </div>
+
+    <!-- Step Content Container -->
+    <div class="card p-8">
+      <!-- Step 1: Welcome -->
+      <div id="step1" class="step-content">
+        <div class="text-center mb-8">
+          <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h1 class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">Welcome to WealthPilot Pro</h1>
+          <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Let's set up your account to help you track and grow your investments.</p>
+        </div>
+
+        <div class="space-y-4 mb-8">
+          <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">What are your investment goals?</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <button onclick="selectGoal('growth')" class="goal-btn p-4 rounded-lg border-2 transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+              <div class="text-2xl mb-2">📈</div>
+              <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Growth</div>
+              <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Build wealth over time</div>
+            </button>
+            <button onclick="selectGoal('income')" class="goal-btn p-4 rounded-lg border-2 transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+              <div class="text-2xl mb-2">💰</div>
+              <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Income</div>
+              <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Generate passive income</div>
+            </button>
+            <button onclick="selectGoal('preservation')" class="goal-btn p-4 rounded-lg border-2 transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+              <div class="text-2xl mb-2">🛡️</div>
+              <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Preservation</div>
+              <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Protect existing wealth</div>
+            </button>
+            <button onclick="selectGoal('mixed')" class="goal-btn p-4 rounded-lg border-2 transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+              <div class="text-2xl mb-2">⚖️</div>
+              <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Balanced</div>
+              <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Mix of growth & income</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Risk Tolerance -->
+      <div id="step2" class="step-content hidden">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-500/20 flex items-center justify-center">
+            <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">Risk Tolerance</h2>
+          <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">How comfortable are you with investment volatility?</p>
+        </div>
+
+        <div class="space-y-4 mb-8">
+          <button onclick="selectRisk('conservative')" class="risk-btn w-full p-4 rounded-lg border-2 text-left transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-emerald-500' : 'border-slate-700 hover:border-emerald-500' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <span class="text-emerald-400 font-bold">1</span>
+              </div>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Conservative</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">I prefer stability over high returns. I don't want to see big swings in my portfolio.</div>
+              </div>
+            </div>
+          </button>
+
+          <button onclick="selectRisk('moderate')" class="risk-btn w-full p-4 rounded-lg border-2 text-left transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-sky-500/20 flex items-center justify-center">
+                <span class="text-sky-400 font-bold">2</span>
+              </div>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Moderate</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">I can handle some ups and downs for better long-term returns.</div>
+              </div>
+            </div>
+          </button>
+
+          <button onclick="selectRisk('aggressive')" class="risk-btn w-full p-4 rounded-lg border-2 text-left transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-amber-500' : 'border-slate-700 hover:border-amber-500' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <span class="text-amber-400 font-bold">3</span>
+              </div>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Aggressive</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">I'm comfortable with high volatility for maximum growth potential.</div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 3: Import Portfolio -->
+      <div id="step3" class="step-content hidden">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-sky-500/20 flex items-center justify-center">
+            <svg class="w-8 h-8 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">Import Your Portfolio</h2>
+          <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Start by importing your existing holdings or create a new portfolio.</p>
+        </div>
+
+        <div class="space-y-4 mb-8">
+          <button onclick="importChoice('csv')" class="import-btn w-full p-4 rounded-lg border-2 text-left transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-emerald-500/20 flex items-center justify-center text-2xl">📄</div>
+              <div class="flex-1">
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Upload CSV File</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Import from a spreadsheet with your holdings</div>
+              </div>
+              <svg class="w-5 h-5 <%= safeTheme === 'light' ? 'text-gray-400' : 'text-slate-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+
+          <button onclick="importChoice('manual')" class="import-btn w-full p-4 rounded-lg border-2 text-left transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-sky-500' : 'border-slate-700 hover:border-sky-500' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-sky-500/20 flex items-center justify-center text-2xl">✏️</div>
+              <div class="flex-1">
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Add Manually</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Enter your holdings one by one</div>
+              </div>
+              <svg class="w-5 h-5 <%= safeTheme === 'light' ? 'text-gray-400' : 'text-slate-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+
+          <button onclick="importChoice('skip')" class="import-btn w-full p-4 rounded-lg border-2 text-left transition-all <%= safeTheme === 'light' ? 'border-gray-200 hover:border-slate-500' : 'border-slate-700 hover:border-slate-600' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-slate-500/20 flex items-center justify-center text-2xl">⏭️</div>
+              <div class="flex-1">
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Skip for Now</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">I'll add my portfolio later</div>
+              </div>
+              <svg class="w-5 h-5 <%= safeTheme === 'light' ? 'text-gray-400' : 'text-slate-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 4: Set Up Alerts -->
+      <div id="step4" class="step-content hidden">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+            <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">Set Up Alerts</h2>
+          <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Get notified when important things happen with your investments.</p>
+        </div>
+
+        <div class="space-y-4 mb-8">
+          <label class="flex items-center justify-between p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %> cursor-pointer">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">📉</span>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Price Drop Alerts</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Alert when a stock drops 5% or more</div>
+              </div>
+            </div>
+            <input type="checkbox" id="alertPriceDrop" checked class="w-5 h-5 rounded text-sky-500 focus:ring-sky-500">
+          </label>
+
+          <label class="flex items-center justify-between p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %> cursor-pointer">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">📈</span>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Price Target Alerts</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Alert when a stock hits your target</div>
+              </div>
+            </div>
+            <input type="checkbox" id="alertPriceTarget" checked class="w-5 h-5 rounded text-sky-500 focus:ring-sky-500">
+          </label>
+
+          <label class="flex items-center justify-between p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %> cursor-pointer">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">💵</span>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Dividend Alerts</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Alert for upcoming dividend payments</div>
+              </div>
+            </div>
+            <input type="checkbox" id="alertDividends" checked class="w-5 h-5 rounded text-sky-500 focus:ring-sky-500">
+          </label>
+
+          <label class="flex items-center justify-between p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %> cursor-pointer">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">📊</span>
+              <div>
+                <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Earnings Alerts</div>
+                <div class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Alert before earnings announcements</div>
+              </div>
+            </div>
+            <input type="checkbox" id="alertEarnings" class="w-5 h-5 rounded text-sky-500 focus:ring-sky-500">
+          </label>
+        </div>
+      </div>
+
+      <!-- Step 5: All Done -->
+      <div id="step5" class="step-content hidden">
+        <div class="text-center mb-8">
+          <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">You're All Set!</h2>
+          <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Your WealthPilot account is ready. Here's what you can do next:</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <a href="/portfolios" class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors text-center">
+            <div class="text-2xl mb-2">💼</div>
+            <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Add Holdings</div>
+          </a>
+          <a href="/watchlist" class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors text-center">
+            <div class="text-2xl mb-2">👀</div>
+            <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Create Watchlist</div>
+          </a>
+          <a href="/market-overview" class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors text-center">
+            <div class="text-2xl mb-2">📊</div>
+            <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">View Markets</div>
+          </a>
+          <a href="/settings" class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors text-center">
+            <div class="text-2xl mb-2">⚙️</div>
+            <div class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Settings</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="flex items-center justify-between pt-4 border-t <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+        <button id="prevBtn" onclick="prevStep()" class="btn-ghost px-6 py-2 hidden">
+          <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+        <div class="flex-1"></div>
+        <button id="nextBtn" onclick="nextStep()" class="btn-primary px-6 py-2">
+          Continue
+          <svg class="w-5 h-5 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+        <a id="finishBtn" href="/" class="btn-primary px-6 py-2 hidden">
+          Go to Dashboard
+          <svg class="w-5 h-5 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Skip Onboarding Link -->
+    <div class="text-center mt-4">
+      <a href="/" class="text-sm <%= safeTheme === 'light' ? 'text-gray-500 hover:text-gray-700' : 'text-slate-500 hover:text-slate-300' %>">
+        Skip onboarding and go to dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .step-content.hidden { display: none; }
+  .goal-btn.selected, .risk-btn.selected, .import-btn.selected {
+    border-color: #0ea5e9 !important;
+    background: rgba(14, 165, 233, 0.1);
+  }
+</style>
+
+<script>
+let currentStep = 1;
+const totalSteps = 5;
+const onboardingData = {
+  goal: null,
+  riskTolerance: null,
+  importChoice: null,
+  alerts: {}
+};
+
+function updateProgress() {
+  document.getElementById('currentStep').textContent = currentStep;
+  document.getElementById('percentComplete').textContent = Math.round((currentStep / totalSteps) * 100);
+  document.getElementById('progressBar').style.width = `${(currentStep / totalSteps) * 100}%`;
+
+  // Show/hide navigation buttons
+  document.getElementById('prevBtn').classList.toggle('hidden', currentStep === 1);
+  document.getElementById('nextBtn').classList.toggle('hidden', currentStep === totalSteps);
+  document.getElementById('finishBtn').classList.toggle('hidden', currentStep !== totalSteps);
+}
+
+function showStep(step) {
+  // Hide all steps
+  document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+  // Show current step
+  document.getElementById(`step${step}`).classList.remove('hidden');
+  updateProgress();
+}
+
+function nextStep() {
+  if (currentStep < totalSteps) {
+    currentStep++;
+    showStep(currentStep);
+  }
+}
+
+function prevStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    showStep(currentStep);
+  }
+}
+
+function selectGoal(goal) {
+  onboardingData.goal = goal;
+  document.querySelectorAll('.goal-btn').forEach(btn => btn.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  setTimeout(nextStep, 300);
+}
+
+function selectRisk(risk) {
+  onboardingData.riskTolerance = risk;
+  document.querySelectorAll('.risk-btn').forEach(btn => btn.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  setTimeout(nextStep, 300);
+}
+
+function importChoice(choice) {
+  onboardingData.importChoice = choice;
+  document.querySelectorAll('.import-btn').forEach(btn => btn.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  if (choice === 'csv') {
+    window.location.href = '/portfolios?import=csv';
+    return;
+  } else if (choice === 'manual') {
+    window.location.href = '/portfolios?new=true';
+    return;
+  }
+
+  setTimeout(nextStep, 300);
+}
+
+// Save onboarding data
+async function saveOnboardingData() {
+  onboardingData.alerts = {
+    priceDrop: document.getElementById('alertPriceDrop').checked,
+    priceTarget: document.getElementById('alertPriceTarget').checked,
+    dividends: document.getElementById('alertDividends').checked,
+    earnings: document.getElementById('alertEarnings').checked
+  };
+
+  try {
+    await fetch('/api/settings/onboarding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(onboardingData)
+    });
+  } catch (e) {
+    console.error('Failed to save onboarding data:', e);
+  }
+}
+
+// Auto-save when reaching final step
+document.getElementById('finishBtn').addEventListener('click', saveOnboardingData);
+
+// Initialize
+showStep(1);
+</script>
+
+<%- include('../partials/footer') %>

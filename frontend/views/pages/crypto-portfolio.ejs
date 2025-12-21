@@ -1,0 +1,220 @@
+<%- include('../partials/header', { pageTitle: 'Crypto Portfolio' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Crypto Portfolio</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Track crypto assets, DeFi, and NFTs</p></div>
+<div class="flex gap-2">
+<button onclick="openAddModal()" class="btn-primary">+ Add Asset</button>
+</div>
+</div>
+
+<!-- Portfolio Summary -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Crypto Value</p>
+<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalValue || 0) %></p>
+<% const dayChange = totals.dayChange || 0; %>
+<p class="text-sm <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= dayChange >= 0 ? '+' : '' %><%= fmt.money(dayChange) %> (24h)</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total P/L</p>
+<% const totalGain = totals.totalGain || 0; const gainPct = totals.totalCost > 0 ? (totalGain / totals.totalCost * 100) : 0; %>
+<p class="text-3xl font-bold <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></p>
+<p class="text-sm <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Cost</p>
+<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalCost || 0) %></p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= holdings.length %> assets</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Best Performer</p>
+<% const bestHolding = holdings.length > 0 ? holdings.reduce((a, b) => (a.gain_pct || 0) > (b.gain_pct || 0) ? a : b, holdings[0]) : null; %>
+<% if (bestHolding) { %>
+<p class="text-3xl font-bold text-emerald-400"><%= bestHolding.symbol %></p>
+<p class="text-sm text-emerald-400">+<%= (bestHolding.gain_pct || 0).toFixed(2) %>%</p>
+<% } else { %>
+<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No holdings</p>
+<% } %>
+</div>
+</div>
+
+<!-- Holdings Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings (<%= holdings.length %>)</h3>
+</div>
+<% if (holdings.length === 0) { %>
+<div class="p-12 text-center">
+<svg class="w-16 h-16 mx-auto <%= theme === 'light' ? 'text-gray-300' : 'text-slate-600' %> mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+</svg>
+<h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No crypto holdings</h4>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">Add your first crypto asset to get started!</p>
+<button onclick="openAddModal()" class="btn-primary">Add Crypto Asset</button>
+</div>
+<% } else { %>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Asset</th>
+<th class="px-4 py-3">Price</th>
+<th class="px-4 py-3">24h</th>
+<th class="px-4 py-3">Holdings</th>
+<th class="px-4 py-3">Value</th>
+<th class="px-4 py-3">P/L</th>
+<th class="px-4 py-3">Actions</th>
+</tr>
+</thead>
+<tbody>
+<% holdings.forEach(h => {
+  const change24h = h.change_24h || 0;
+  const gain = h.market_value - h.cost_basis;
+  const gainPct = h.cost_basis > 0 ? (gain / h.cost_basis * 100) : 0;
+%>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold"><%= h.symbol.substring(0, 2).toUpperCase() %></div>
+<div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name || h.symbol %></p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.symbol %></p></div>
+</div>
+</td>
+<td class="px-4 py-4 font-mono <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.current_price || 0) %></td>
+<td class="px-4 py-4 <%= change24h >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= change24h >= 0 ? '+' : '' %><%= change24h.toFixed(2) %>%</td>
+<td class="px-4 py-4 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><%= h.quantity %> <%= h.symbol %></td>
+<td class="px-4 py-4 font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.market_value || 0) %></td>
+<td class="px-4 py-4 <%= gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gain >= 0 ? '+' : '' %><%= fmt.money(gain) %> (<%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(1) %>%)</td>
+<td class="px-4 py-4">
+<button onclick="deleteCrypto('<%= h.id %>')" class="text-red-400 hover:text-red-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+</button>
+</td>
+</tr>
+<% }) %>
+</tbody>
+</table>
+<% } %>
+</div>
+
+<% if (holdings.length > 0) { %>
+<!-- Allocation Chart -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Allocation</h3>
+<div class="h-48"><canvas id="cryptoAllocation"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Performance Summary</h3>
+<div class="space-y-3">
+<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total Invested</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium"><%= fmt.money(totals.totalCost || 0) %></span></div>
+<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Current Value</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium"><%= fmt.money(totals.totalValue || 0) %></span></div>
+<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total P/L</span><span class="<%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-medium"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></span></div>
+<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Return %</span><span class="<%= gainPct >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-medium"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%</span></div>
+</div>
+</div>
+</div>
+<% } %>
+
+</div></div></main>
+
+<!-- Add Crypto Modal -->
+<div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="card p-6 w-full max-w-md mx-4">
+<h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Add Crypto Asset</h3>
+<form id="addForm" class="space-y-4">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Symbol</label>
+<input type="text" name="symbol" class="form-input" placeholder="BTC" required>
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Name</label>
+<input type="text" name="name" class="form-input" placeholder="Bitcoin">
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Quantity</label>
+<input type="number" step="any" name="quantity" class="form-input" placeholder="0.5" required>
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Cost Basis</label>
+<input type="number" step="0.01" name="costBasis" class="form-input" placeholder="25000" required>
+</div>
+</div>
+</form>
+<div class="flex gap-3 mt-6">
+<button onclick="closeAddModal()" class="btn-ghost flex-1">Cancel</button>
+<button onclick="submitAdd()" class="btn-primary flex-1">Add</button>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function openAddModal() {
+  document.getElementById('addModal').classList.remove('hidden');
+  document.getElementById('addModal').classList.add('flex');
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').classList.add('hidden');
+  document.getElementById('addModal').classList.remove('flex');
+}
+
+async function submitAdd() {
+  const form = document.getElementById('addForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  try {
+    const res = await fetch('/api/crypto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showToast('Crypto added!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to add', 'error');
+    }
+  } catch (e) {
+    showToast('Error adding crypto', 'error');
+  }
+  closeAddModal();
+}
+
+async function deleteCrypto(id) {
+  if (!confirm('Delete this crypto holding?')) return;
+  try {
+    const res = await fetch('/api/crypto/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Deleted!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error deleting', 'error');
+  }
+}
+
+<% if (holdings.length > 0) { %>
+// Allocation Chart
+const holdingsData = <%- JSON.stringify(holdings) %>;
+const labels = holdingsData.map(h => h.symbol);
+const values = holdingsData.map(h => h.market_value || 0);
+const colors = ['#f59e0b', '#6366f1', '#0ea5e9', '#8b5cf6', '#10b981', '#f43f5e', '#ec4899', '#14b8a6'];
+
+new Chart(document.getElementById('cryptoAllocation'), {
+  type: 'doughnut',
+  data: {
+    labels: labels,
+    datasets: [{
+      data: values,
+      backgroundColor: colors.slice(0, labels.length)
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

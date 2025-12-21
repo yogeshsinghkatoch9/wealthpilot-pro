@@ -1,0 +1,74 @@
+<!-- Dashboard Skeleton Loading State -->
+<div class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Header Bar Skeleton -->
+    <div class="skeleton-card">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <div class="skeleton skeleton-line skeleton-w-1-4"></div>
+          <div class="skeleton skeleton-line-sm skeleton-w-1-5"></div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="skeleton skeleton-circle" style="width: 60px; height: 24px; border-radius: 12px;"></div>
+          <div class="skeleton skeleton-line-sm" style="width: 80px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Bar Skeleton -->
+    <div class="skeleton-kpi-bar">
+      <% for(let i = 0; i < 7; i++) { %>
+        <div class="skeleton-kpi-item">
+          <div class="skeleton skeleton-line-sm skeleton-w-2-3"></div>
+          <div class="skeleton skeleton-line-lg skeleton-w-3-4"></div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Chart Skeleton -->
+    <div class="skeleton-card">
+      <div class="skeleton-card-header">
+        <div class="skeleton skeleton-line skeleton-w-1-4"></div>
+        <div class="flex gap-2">
+          <% for(let i = 0; i < 6; i++) { %>
+            <div class="skeleton skeleton-rect" style="width: 40px; height: 28px;"></div>
+          <% } %>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="skeleton-chart"></div>
+      </div>
+    </div>
+
+    <!-- Stats Grid Skeleton -->
+    <div class="skeleton-stats-grid">
+      <% for(let i = 0; i < 4; i++) { %>
+        <div class="skeleton-stat-card">
+          <div class="skeleton skeleton-line-sm skeleton-w-1-2"></div>
+          <div class="skeleton skeleton-line-lg skeleton-w-3-4"></div>
+          <div class="skeleton skeleton-line-sm skeleton-w-1-3"></div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Holdings Table Skeleton -->
+    <div class="skeleton-card">
+      <div class="skeleton-card-header">
+        <div class="skeleton skeleton-line skeleton-w-1-5"></div>
+      </div>
+      <% for(let i = 0; i < 5; i++) { %>
+        <div class="skeleton-holdings-row">
+          <div class="skeleton skeleton-circle"></div>
+          <div class="skeleton skeleton-line skeleton-w-1-3"></div>
+          <div class="skeleton skeleton-line skeleton-w-1-2"></div>
+          <div class="skeleton skeleton-line skeleton-w-1-2"></div>
+          <div class="skeleton skeleton-line skeleton-w-1-2"></div>
+          <div class="skeleton skeleton-line skeleton-w-1-3"></div>
+          <div class="skeleton skeleton-rect" style="width: 60px; height: 32px;"></div>
+        </div>
+      <% } %>
+    </div>
+
+  </div>
+</div>

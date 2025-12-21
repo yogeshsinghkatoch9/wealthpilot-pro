@@ -1,0 +1,328 @@
+<%- include('../partials/header', { pageTitle: 'PDF Reports' }) %>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+          PDF Reports
+        </h1>
+        <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">
+          Generate professional portfolio reports
+        </p>
+      </div>
+    </div>
+
+    <!-- Report Templates Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <% if (templates && templates.length > 0) { %>
+        <% templates.forEach(template => { %>
+          <div class="bloomberg-card hover:border-amber-500/50 transition-all cursor-pointer group"
+               onclick="openReportModal('<%= template.id %>')">
+            <div class="p-6">
+              <!-- Icon and Badge -->
+              <div class="flex items-start justify-between mb-4">
+                <span class="text-4xl"><%= template.icon %></span>
+                <span class="px-2 py-1 text-xs font-mono bg-amber-500/20 text-amber-400 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  GENERATE
+                </span>
+              </div>
+
+              <!-- Template Info -->
+              <h3 class="text-lg font-mono font-semibold text-white mb-2">
+                <%= template.name %>
+              </h3>
+              <p class="text-sm font-mono text-slate-400">
+                <%= template.description %>
+              </p>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="col-span-4 text-center py-12">
+          <p class="text-slate-400 font-mono">No report templates available</p>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="bloomberg-card border-amber-500/30 bg-amber-500/10">
+      <div class="p-4 flex items-start gap-3">
+        <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <div>
+          <p class="font-mono font-semibold text-amber-400 mb-1">
+            PROFESSIONAL PDF REPORTS
+          </p>
+          <p class="text-sm font-mono text-slate-300">
+            All reports include charts, analytics, and detailed metrics. Reports are generated in real-time from your portfolio data.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Report Configuration Modal -->
+<div id="report-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+  <div class="bloomberg-card max-w-2xl w-full">
+    <div class="border-b border-slate-700 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-amber-400" id="modal-title">GENERATE REPORT</h3>
+      <p class="text-slate-400 text-sm mt-1 font-mono" id="modal-description"></p>
+    </div>
+
+    <form id="report-form" class="space-y-6">
+      <!-- Portfolio Selection -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Select Portfolio
+        </label>
+        <select name="portfolioId" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="">Choose a portfolio...</option>
+          <% if (portfolios && portfolios.length > 0) { %>
+            <% portfolios.forEach(p => { %>
+              <option value="<%= p.id %>"><%= p.name %></option>
+            <% }); %>
+          <% } %>
+        </select>
+      </div>
+
+      <!-- Dynamic Options Container -->
+      <div id="report-options"></div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 pt-4">
+        <button type="submit" class="bloomberg-btn bloomberg-btn-primary flex-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+          </svg>
+          GENERATE PDF
+        </button>
+        <button type="button" onclick="closeReportModal()" class="bloomberg-btn bloomberg-btn-secondary">
+          CANCEL
+        </button>
+      </div>
+    </form>
+
+    <!-- Loading State -->
+    <div id="report-loading" class="hidden text-center py-8">
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-amber-400 mx-auto mb-4"></div>
+      <p class="font-mono text-slate-300">Generating your report...</p>
+      <p class="font-mono text-sm text-slate-400 mt-2">This may take a few moments</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const reportTemplates = <%- JSON.stringify(templates || []) %>;
+let currentTemplate = null;
+
+function openReportModal(templateId) {
+  const template = reportTemplates.find(t => t.id === templateId);
+  if (!template) return;
+
+  currentTemplate = template;
+
+  // Update modal title and description
+  document.getElementById('modal-title').textContent = `GENERATE ${template.name.toUpperCase()}`;
+  document.getElementById('modal-description').textContent = template.description;
+
+  // Build dynamic options
+  const optionsContainer = document.getElementById('report-options');
+  optionsContainer.innerHTML = '';
+
+  if (template.options && template.options.length > 0) {
+    template.options.forEach(option => {
+      const optionHtml = buildOptionField(option);
+      optionsContainer.innerHTML += optionHtml;
+    });
+  }
+
+  // Show modal
+  document.getElementById('report-modal').classList.remove('hidden');
+  document.getElementById('report-form').classList.remove('hidden');
+  document.getElementById('report-loading').classList.add('hidden');
+}
+
+function closeReportModal() {
+  document.getElementById('report-modal').classList.add('hidden');
+  currentTemplate = null;
+  document.getElementById('report-form').reset();
+}
+
+function buildOptionField(option) {
+  const id = `option-${option.name}`;
+
+  switch (option.type) {
+    case 'boolean':
+      return `
+        <div>
+          <label class="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+            <span class="text-white font-mono">${option.label}</span>
+            <input type="checkbox" name="${option.name}" id="${id}" ${option.default ? 'checked' : ''} class="toggle-checkbox">
+          </label>
+        </div>
+      `;
+
+    case 'select':
+      const selectOptions = option.options.map(opt =>
+        `<option value="${opt}" ${opt === option.default ? 'selected' : ''}>${opt}</option>`
+      ).join('');
+      return `
+        <div>
+          <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+            ${option.label}
+          </label>
+          <select name="${option.name}" id="${id}" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+            ${selectOptions}
+          </select>
+        </div>
+      `;
+
+    case 'text':
+      return `
+        <div>
+          <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+            ${option.label}
+          </label>
+          <input type="text" name="${option.name}" id="${id}" value="${option.default || ''}" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+        </div>
+      `;
+
+    case 'number':
+      return `
+        <div>
+          <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+            ${option.label}
+          </label>
+          <input type="number" name="${option.name}" id="${id}" value="${option.default || ''}" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+        </div>
+      `;
+
+    default:
+      return '';
+  }
+}
+
+// Handle form submission
+document.getElementById('report-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  if (!currentTemplate) return;
+
+  const formData = new FormData(e.target);
+  const portfolioId = formData.get('portfolioId');
+
+  if (!portfolioId) {
+    showToast('Please select a portfolio', 'error');
+    return;
+  }
+
+  // Build options object
+  const options = {};
+  if (currentTemplate.options) {
+    currentTemplate.options.forEach(option => {
+      const value = formData.get(option.name);
+      if (option.type === 'boolean') {
+        options[option.name] = value === 'on';
+      } else if (option.type === 'number') {
+        options[option.name] = value ? parseInt(value) : option.default;
+      } else {
+        options[option.name] = value || option.default;
+      }
+    });
+  }
+
+  // Show loading state
+  document.getElementById('report-form').classList.add('hidden');
+  document.getElementById('report-loading').classList.remove('hidden');
+
+  try {
+    const response = await fetch('/api/reports/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        reportType: currentTemplate.id,
+        portfolioId,
+        options
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to generate report');
+    }
+
+    // Download the PDF
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentTemplate.id}-report-${Date.now()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    showToast('Report generated successfully!', 'success');
+    closeReportModal();
+
+  } catch (error) {
+    console.error('Report generation error:', error);
+    showToast(error.message || 'Failed to generate report', 'error');
+
+    // Show form again
+    document.getElementById('report-form').classList.remove('hidden');
+    document.getElementById('report-loading').classList.add('hidden');
+  }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !document.getElementById('report-modal').classList.contains('hidden')) {
+    closeReportModal();
+  }
+});
+</script>
+
+<style>
+.toggle-checkbox {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  background: #1e293b;
+  border: 2px solid #475569;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-checkbox:checked {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.toggle-checkbox::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s;
+}
+
+.toggle-checkbox:checked::after {
+  left: 22px;
+}
+</style>
+
+<%- include('../partials/footer') %>

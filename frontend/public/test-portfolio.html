@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio Creation Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">Portfolio Creation Test</h1>
+
+    <div class="bg-gray-800 p-6 rounded-lg mb-6">
+      <h2 class="text-xl font-bold mb-4">Debug Information</h2>
+      <div id="debugInfo" class="space-y-2 text-sm font-mono"></div>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-lg">
+      <h2 class="text-xl font-bold mb-4">Create Portfolio</h2>
+      <form id="testForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Name</label>
+          <input type="text" name="name" required class="w-full p-2 bg-gray-700 rounded" placeholder="Test Portfolio">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Description</label>
+          <input type="text" name="description" class="w-full p-2 bg-gray-700 rounded" placeholder="Optional">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Type</label>
+          <select name="portfolio_type" class="w-full p-2 bg-gray-700 rounded">
+            <option value="taxable">Taxable</option>
+            <option value="ira">IRA</option>
+            <option value="401k">401(k)</option>
+            <option value="roth">Roth IRA</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded font-bold">
+          CREATE PORTFOLIO
+        </button>
+      </form>
+
+      <div id="result" class="mt-6 p-4 rounded hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    // Check authentication
+    function checkAuth() {
+      const debug = document.getElementById('debugInfo');
+      const token = localStorage.getItem('wealthpilot_token');
+      const cookies = document.cookie;
+
+      debug.innerHTML = `
+        <p><strong>Token in localStorage:</strong> ${token ? '✓ Yes (' + token.substring(0, 20) + '...)' : '✗ No'}</p>
+        <p><strong>Cookies:</strong> ${cookies || 'None'}</p>
+        <p><strong>Current URL:</strong> ${window.location.href}</p>
+        <p><strong>Backend URL:</strong> http://localhost:4000/api</p>
+      `;
+
+      if (!token) {
+        // Try to get from cookie
+        const cookieToken = getCookie('token');
+        if (cookieToken) {
+          localStorage.setItem('wealthpilot_token', cookieToken);
+          debug.innerHTML += '<p class="text-green-500">✓ Copied token from cookie to localStorage</p>';
+        } else {
+          debug.innerHTML += '<p class="text-red-500">✗ No authentication token found! <a href="/login" class="underline">Go to login</a></p>';
+        }
+      }
+    }
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    // Handle form submission
+    document.getElementById('testForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const result = document.getElementById('result');
+      const formData = new FormData(e.target);
+      const data = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        portfolio_type: formData.get('portfolio_type')
+      };
+
+      const token = localStorage.getItem('wealthpilot_token') || getCookie('token');
+
+      if (!token) {
+        result.className = 'mt-6 p-4 rounded bg-red-900 text-red-200';
+        result.textContent = 'Error: No authentication token found. Please log in first.';
+        result.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        result.className = 'mt-6 p-4 rounded bg-blue-900 text-blue-200';
+        result.textContent = 'Creating portfolio...';
+        result.classList.remove('hidden');
+
+        console.log('Sending request:', data);
+
+        const response = await fetch('http://localhost:4000/api/portfolios', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        });
+
+        console.log('Response status:', response.status);
+
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+
+        if (response.ok) {
+          result.className = 'mt-6 p-4 rounded bg-green-900 text-green-200';
+          result.innerHTML = `
+            <p class="font-bold">✓ Portfolio created successfully!</p>
+            <p class="mt-2">ID: ${responseData.id}</p>
+            <p>Name: ${responseData.name}</p>
+            <a href="/portfolios" class="block mt-4 underline">Go to Portfolios</a>
+          `;
+          e.target.reset();
+        } else {
+          throw new Error(responseData.error || responseData.message || 'Unknown error');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        result.className = 'mt-6 p-4 rounded bg-red-900 text-red-200';
+        result.innerHTML = `
+          <p class="font-bold">✗ Error creating portfolio</p>
+          <p class="mt-2">${error.message}</p>
+        `;
+      }
+
+      result.classList.remove('hidden');
+    });
+
+    // Run checks on load
+    checkAuth();
+  </script>
+</body>
+</html>

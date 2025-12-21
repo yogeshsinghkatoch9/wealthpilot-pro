@@ -1,0 +1,198 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = 'Payout Ratio Analysis';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">PAYOUT RATIO ANALYSIS</h1>
+<p class="text-slate-400">Dividend sustainability & coverage metrics</p>
+</div>
+<div class="flex gap-2">
+<select class="form-input w-36 bg-slate-800 border-amber-400/30 text-white"><option selected>My Holdings</option><option>Dividend Stocks</option></select>
+<select class="form-input w-32 bg-slate-800 border-amber-400/30 text-white"><option selected>EPS Payout</option><option>FCF Payout</option></select>
+</div>
+</div>
+</div>
+
+<!-- Payout Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-emerald-900/20 to-amber-900/20">
+<h3 class="font-semibold text-amber-400 mb-4">PORTFOLIO PAYOUT OVERVIEW</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm text-slate-400">Avg EPS Payout</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">42.8%</p>
+<p class="text-xs text-emerald-400">Sustainable</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Avg FCF Payout</p>
+<p class="text-3xl font-bold font-mono text-sky-400">38.4%</p>
+<p class="text-xs">healthy coverage</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Safe (<60%)</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">10</p>
+<p class="text-xs">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">Elevated (60-80%)</p>
+<p class="text-3xl font-bold font-mono text-amber-400">4</p>
+<p class="text-xs">watch list</p>
+</div>
+<div class="text-center">
+<p class="text-sm text-slate-400">At Risk (>80%)</p>
+<p class="text-3xl font-bold font-mono text-red-400">2</p>
+<p class="text-xs text-red-400">unsustainable</p>
+</div>
+</div>
+</div>
+
+<!-- Payout Gauge Legend -->
+<div class="bloomberg-card p-4">
+<div class="flex items-center justify-between text-xs">
+<div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-emerald-500"></div><span>0-40% Very Safe</span></div>
+<div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-sky-500"></div><span>40-60% Safe</span></div>
+<div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-amber-500"></div><span>60-80% Elevated</span></div>
+<div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-red-500"></div><span>>80% At Risk</span></div>
+</div>
+</div>
+
+<!-- Holdings Payout Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings Payout Ratios</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3 text-center">Dividend</th>
+<th class="px-4 py-3 text-center">EPS</th>
+<th class="px-4 py-3 text-center">EPS Payout</th>
+<th class="px-4 py-3 text-center">FCF/Share</th>
+<th class="px-4 py-3 text-center">FCF Payout</th>
+<th class="px-4 py-3 text-center">5Y Avg</th>
+<th class="px-4 py-3 text-center">Safety</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center">$0.96</td>
+<td class="px-4 py-3 text-center">$6.42</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">15.0%</span></td>
+<td class="px-4 py-3 text-center">$7.28</td>
+<td class="px-4 py-3 text-center text-emerald-400">13.2%</td>
+<td class="px-4 py-3 text-center">18.4%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">Very Safe</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div><span class="font-medium">Microsoft</span></div></td>
+<td class="px-4 py-3 text-center">$3.00</td>
+<td class="px-4 py-3 text-center">$11.86</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">25.3%</span></td>
+<td class="px-4 py-3 text-center">$9.84</td>
+<td class="px-4 py-3 text-center text-emerald-400">30.5%</td>
+<td class="px-4 py-3 text-center">28.2%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">Very Safe</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div><span class="font-medium">J&J</span></div></td>
+<td class="px-4 py-3 text-center">$4.76</td>
+<td class="px-4 py-3 text-center">$10.12</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-bold">47.0%</span></td>
+<td class="px-4 py-3 text-center">$8.24</td>
+<td class="px-4 py-3 text-center text-sky-400">57.8%</td>
+<td class="px-4 py-3 text-center">52.4%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 text-xs">Safe</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">VZ</div><span class="font-medium">Verizon</span></div></td>
+<td class="px-4 py-3 text-center">$2.66</td>
+<td class="px-4 py-3 text-center">$4.72</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">56.4%</span></td>
+<td class="px-4 py-3 text-center">$3.84</td>
+<td class="px-4 py-3 text-center text-amber-400">69.3%</td>
+<td class="px-4 py-3 text-center">62.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs">Elevated</span></td>
+</tr>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">T</div><span class="font-medium">AT&T</span></div></td>
+<td class="px-4 py-3 text-center">$1.11</td>
+<td class="px-4 py-3 text-center">$2.18</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">50.9%</span></td>
+<td class="px-4 py-3 text-center">$1.42</td>
+<td class="px-4 py-3 text-center text-red-400">78.2%</td>
+<td class="px-4 py-3 text-center text-red-400">84.2%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs">At Risk</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Payout Insights -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="card p-5">
+<h4 class="font-bold text-emerald-400 mb-3">🛡️ Most Sustainable</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>AAPL</span><span class="font-bold text-emerald-400">15.0%</span></div>
+<div class="flex justify-between"><span>MSFT</span><span class="font-bold text-emerald-400">25.3%</span></div>
+<div class="flex justify-between"><span>GOOGL</span><span class="font-bold text-emerald-400">2.4%</span></div>
+</div>
+</div>
+<div class="card p-5">
+<h4 class="font-bold text-sky-400 mb-3">📈 Improving</h4>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Payout ratio declining (better coverage)</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>META</span><span class="font-bold text-emerald-400">↓ 8.4%</span></div>
+<div class="flex justify-between"><span>NVDA</span><span class="font-bold text-emerald-400">↓ 1.2%</span></div>
+</div>
+</div>
+<div class="card p-5">
+<h4 class="font-bold text-red-400 mb-3">⚠️ Watch List</h4>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">High or rising payout ratios</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>T</span><span class="font-bold text-red-400">78.2% FCF</span></div>
+<div class="flex justify-between"><span>VZ</span><span class="font-bold text-amber-400">69.3% FCF</span></div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">EPS vs FCF Payout Comparison</h3>
+<div class="h-48"><canvas id="compChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Payout Ratio Trend (JNJ)</h3>
+<div class="h-48"><canvas id="trendChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('compChart'), {
+  type: 'bar',
+  data: { labels: ['AAPL','MSFT','JNJ','VZ','T'], datasets: [
+    { label: 'EPS Payout', data: [15,25.3,47,56.4,50.9], backgroundColor: '#0ea5e9' },
+    { label: 'FCF Payout', data: [13.2,30.5,57.8,69.3,78.2], backgroundColor: '#8b5cf6' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: { labels: ['2020','2021','2022','2023','2024'], datasets: [
+    { label: 'EPS Payout', data: [44.2,46.8,48.2,46.4,47.0], borderColor: '#0ea5e9', fill: false },
+    { label: 'FCF Payout', data: [52.4,54.8,58.2,56.4,57.8], borderColor: '#8b5cf6', fill: false }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+<%- include('../partials/footer') %>

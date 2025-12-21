@@ -1,0 +1,251 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio Optimizer' }) %>
+
+<!-- Bloomberg-style Header Bar -->
+<div class="mb-6 pb-4 border-b border-amber-400/30">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 font-mono">PORTFOLIO OPTIMIZER</h1>
+<p class="text-slate-400 text-sm mt-1">Mean-variance optimization & efficient frontier</p>
+</div>
+<button onclick="runOptimization()" class="bloomberg-btn bloomberg-btn-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+Run Optimization
+</button>
+</div>
+</div>
+
+<!-- Optimization Settings -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">OPTIMIZATION GOAL</h3>
+<div class="space-y-3">
+<label class="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-amber-400/10 border-2 border-amber-400">
+<input type="radio" name="goal" value="sharpe" checked class="text-amber-400">
+<div><p class="font-medium text-white">Maximum Sharpe Ratio</p><p class="text-xs text-slate-400">Best risk-adjusted returns</p></div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-slate-800/50 border-2 border-transparent hover:border-slate-600">
+<input type="radio" name="goal" value="minvol" class="text-amber-400">
+<div><p class="font-medium text-white">Minimum Volatility</p><p class="text-xs text-slate-400">Lowest risk portfolio</p></div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-slate-800/50 border-2 border-transparent hover:border-slate-600">
+<input type="radio" name="goal" value="maxret" class="text-amber-400">
+<div><p class="font-medium text-white">Maximum Return</p><p class="text-xs text-slate-400">Target highest returns</p></div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg cursor-pointer bg-slate-800/50 border-2 border-transparent hover:border-slate-600">
+<input type="radio" name="goal" value="target" class="text-amber-400">
+<div><p class="font-medium text-white">Target Return</p><p class="text-xs text-slate-400">Specify desired return %</p></div>
+</label>
+</div>
+</div>
+
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">CONSTRAINTS</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-1">Max Position Size</label>
+<div class="flex items-center gap-2">
+<input type="range" id="maxPosition" min="10" max="100" value="40" class="flex-1" oninput="document.getElementById('maxPosVal').textContent = this.value + '%'">
+<span id="maxPosVal" class="w-12 text-right text-white font-mono">40%</span>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-1">Min Position Size</label>
+<div class="flex items-center gap-2">
+<input type="range" id="minPosition" min="0" max="20" value="5" class="flex-1" oninput="document.getElementById('minPosVal').textContent = this.value + '%'">
+<span id="minPosVal" class="w-12 text-right text-white font-mono">5%</span>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-1">Target Return (if applicable)</label>
+<div class="flex items-center gap-2">
+<input type="number" id="targetReturn" value="12" class="form-input w-20 font-mono">
+<span class="text-slate-400">% annually</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<input type="checkbox" id="allowShort" class="text-amber-400">
+<label for="allowShort" class="text-slate-300">Allow short selling</label>
+</div>
+</div>
+</div>
+
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">ASSETS TO INCLUDE</h3>
+<div class="space-y-2 max-h-64 overflow-y-auto">
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">AAPL</span><span class="ml-auto text-sm text-slate-400 font-mono">18%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">MSFT</span><span class="ml-auto text-sm text-slate-400 font-mono">15%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">NVDA</span><span class="ml-auto text-sm text-slate-400 font-mono">12%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">GOOGL</span><span class="ml-auto text-sm text-slate-400 font-mono">10%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">AMZN</span><span class="ml-auto text-sm text-slate-400 font-mono">10%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">META</span><span class="ml-auto text-sm text-slate-400 font-mono">8%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">BND</span><span class="ml-auto text-sm text-slate-400 font-mono">15%</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded hover:bg-slate-800">
+<input type="checkbox" checked class="text-amber-400"><span class="text-white font-mono">GLD</span><span class="ml-auto text-sm text-slate-400 font-mono">12%</span>
+</label>
+</div>
+</div>
+</div>
+
+<!-- Efficient Frontier -->
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">EFFICIENT FRONTIER</h3>
+<div class="h-80"><canvas id="frontierChart"></canvas></div>
+<div class="flex justify-center gap-6 mt-4">
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-sky-500"></div><span class="text-sm text-slate-400">Efficient Frontier</span></div>
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-sm text-slate-400">Current Portfolio</span></div>
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-sm text-slate-400">Optimal Portfolio</span></div>
+</div>
+</div>
+
+<!-- Optimization Results -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">CURRENT VS OPTIMIZED</h3>
+<div class="grid grid-cols-2 gap-4 mb-6">
+<div class="p-4 rounded-lg bg-slate-800/50">
+<p class="text-xs text-slate-400 mb-1 font-mono">Current</p>
+<div class="flex justify-between"><span class="text-slate-400">Return</span><span class="text-white font-bold font-mono">14.2%</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Volatility</span><span class="text-white font-bold font-mono">18.5%</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Sharpe</span><span class="text-white font-bold font-mono">0.65</span></div>
+</div>
+<div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+<p class="text-xs text-emerald-400 mb-1 font-mono">Optimized</p>
+<div class="flex justify-between"><span class="text-slate-400">Return</span><span class="text-emerald-400 font-bold font-mono">15.8%</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Volatility</span><span class="text-emerald-400 font-bold font-mono">16.2%</span></div>
+<div class="flex justify-between"><span class="text-slate-400">Sharpe</span><span class="text-emerald-400 font-bold font-mono">0.86</span></div>
+</div>
+</div>
+<div class="space-y-3">
+<p class="text-sm font-medium text-slate-300 font-mono">Recommended Changes</p>
+<div class="flex items-center justify-between p-2 rounded bg-emerald-500/10">
+<span class="text-white font-mono">BND</span>
+<span class="text-emerald-400 font-medium font-mono">+8% → 23%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-emerald-500/10">
+<span class="text-white font-mono">GLD</span>
+<span class="text-emerald-400 font-medium font-mono">+3% → 15%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-red-500/10">
+<span class="text-white font-mono">NVDA</span>
+<span class="text-red-400 font-medium font-mono">-7% → 5%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-red-500/10">
+<span class="text-white font-mono">META</span>
+<span class="text-red-400 font-medium font-mono">-4% → 4%</span>
+</div>
+</div>
+</div>
+
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">OPTIMIZED ALLOCATION</h3>
+<div class="h-64"><canvas id="allocationChart"></canvas></div>
+</div>
+</div>
+
+<!-- Apply Button -->
+<div class="bloomberg-card">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-lg font-semibold text-amber-400 font-mono">APPLY OPTIMIZED PORTFOLIO</h3>
+<p class="text-slate-400 text-sm">This will generate trades to rebalance your portfolio</p>
+</div>
+<div class="flex gap-3">
+<button class="bloomberg-btn bloomberg-btn-ghost">Export Analysis</button>
+<button onclick="applyOptimization()" class="bloomberg-btn bloomberg-btn-primary">Apply & Generate Trades</button>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function runOptimization() {
+  showToast('Running portfolio optimization...', 'info');
+  setTimeout(() => showToast('Optimization complete!', 'success'), 1500);
+}
+
+function applyOptimization() {
+  showToast('Generating rebalance trades...', 'info');
+  setTimeout(() => window.location.href = '/rebalancer', 1500);
+}
+
+// Efficient Frontier Chart
+const frontierData = [];
+for (let i = 0; i < 50; i++) {
+  const vol = 8 + i * 0.4;
+  const ret = 4 + Math.sqrt(vol - 8) * 6 + Math.random() * 0.5;
+  frontierData.push({ x: vol, y: ret });
+}
+
+new Chart(document.getElementById('frontierChart'), {
+  type: 'scatter',
+  data: {
+    datasets: [
+      {
+        label: 'Efficient Frontier',
+        data: frontierData,
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+        showLine: true,
+        tension: 0.4,
+        pointRadius: 0
+      },
+      {
+        label: 'Current Portfolio',
+        data: [{ x: 18.5, y: 14.2 }],
+        backgroundColor: '#f59e0b',
+        pointRadius: 10,
+        pointStyle: 'circle'
+      },
+      {
+        label: 'Optimal Portfolio',
+        data: [{ x: 16.2, y: 15.8 }],
+        backgroundColor: '#10b981',
+        pointRadius: 12,
+        pointStyle: 'star'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { title: { display: true, text: 'Volatility (%)' }, min: 5, max: 30 },
+      y: { title: { display: true, text: 'Expected Return (%)' }, min: 0, max: 25 }
+    }
+  }
+});
+
+// Allocation Chart
+new Chart(document.getElementById('allocationChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN', 'META', 'BND', 'GLD'],
+    datasets: [{
+      data: [18, 15, 5, 10, 10, 4, 23, 15],
+      backgroundColor: ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#eab308']
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'right' } }
+  }
+});
+</script>
+<%- include('../partials/footer') %>

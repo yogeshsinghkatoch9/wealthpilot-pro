@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auth Diagnostic Test</title>
+  <style>
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Courier New', monospace;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .section {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .title {
+      color: #f59e0b;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .success {
+      background: #10b98133;
+      border: 1px solid #10b981;
+      color: #10b981;
+    }
+    .error {
+      background: #ef444433;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+    }
+    button {
+      background: #f59e0b;
+      color: #0d1117;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #d97706;
+    }
+    pre {
+      background: #0d1117;
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .instruction {
+      background: #1e3a5f;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      margin: 20px 0;
+      color: #60a5fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="section">
+    <div class="title">🔍 Authentication Diagnostic Tool</div>
+    <p>This tool will help diagnose the 401 Unauthorized error</p>
+  </div>
+
+  <div class="section">
+    <div class="title">Step 1: Check Authentication Status</div>
+    <button onclick="checkAuth()">Check Auth Status</button>
+    <div id="authResult"></div>
+  </div>
+
+  <div class="section">
+    <div class="title">Step 2: Test Dashboard API</div>
+    <button onclick="testDashboard()">Test Dashboard API</button>
+    <div id="dashboardResult"></div>
+  </div>
+
+  <div class="section">
+    <div class="title">Step 3: Login (if needed)</div>
+    <button onclick="window.location='/login'">Go to Login Page</button>
+    <div class="instruction">
+      If authentication check shows you're NOT logged in, click the button above to login with:<br>
+      <strong>Email:</strong> demo@wealthpilot.com<br>
+      <strong>Password:</strong> demo123456
+    </div>
+  </div>
+
+  <script>
+    async function checkAuth() {
+      const result = document.getElementById('authResult');
+      result.innerHTML = '<p>Checking...</p>';
+
+      try {
+        const response = await fetch('/api/auth-check', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+
+        const isLoggedIn = data.hasCookie && data.isAuthenticated && data.hasToken;
+
+        result.innerHTML = `
+          <div class="status ${isLoggedIn ? 'success' : 'error'}">
+            <strong>Status: ${isLoggedIn ? '✅ LOGGED IN' : '❌ NOT LOGGED IN'}</strong>
+          </div>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+          ${!isLoggedIn ? '<div class="instruction">⚠️ You need to login! Use Step 3 below.</div>' : ''}
+        `;
+      } catch (error) {
+        result.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+      }
+    }
+
+    async function testDashboard() {
+      const result = document.getElementById('dashboardResult');
+      result.innerHTML = '<p>Testing dashboard API...</p>';
+
+      try {
+        const response = await fetch('/api/market-dashboard/all', {
+          credentials: 'include'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          result.innerHTML = `
+            <div class="status success">
+              <strong>✅ SUCCESS!</strong><br>
+              Components Online: ${data.summary.online}/${data.summary.total}
+            </div>
+            <pre>${JSON.stringify(data.summary, null, 2)}</pre>
+            <div class="instruction">
+              ✅ Dashboard API is working! Now go to:<br>
+              <a href="/market-dashboard" style="color: #f59e0b;">/market-dashboard</a>
+            </div>
+          `;
+        } else {
+          result.innerHTML = `
+            <div class="status error">
+              <strong>❌ FAILED: ${data.error}</strong><br>
+              ${data.message}
+            </div>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+            <div class="instruction">
+              ${data.error === 'Unauthorized' ?
+                '⚠️ You need to login! Use Step 3 above or clear your cookies and login again.' :
+                '⚠️ Server error. Check backend logs.'}
+            </div>
+          `;
+        }
+      } catch (error) {
+        result.innerHTML = `
+          <div class="status error">
+            <strong>❌ ERROR</strong><br>
+            ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    // Auto-run on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+    });
+  </script>
+</body>
+</html>

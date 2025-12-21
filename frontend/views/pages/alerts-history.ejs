@@ -1,0 +1,227 @@
+<%- include('../partials/header', { pageTitle: 'Alerts History' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Alerts History</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">View triggered and pending alerts</p></div>
+<a href="/alerts" class="btn-primary">+ New Alert</a>
+</div>
+
+<!-- Stats -->
+<%
+const activeAlerts = history.filter(h => h.status === 'active').length;
+const triggeredToday = history.filter(h => {
+  const today = new Date().toDateString();
+  return h.status === 'triggered' && new Date(h.triggered_at).toDateString() === today;
+}).length;
+const thisMonth = history.filter(h => {
+  const now = new Date();
+  const trigDate = new Date(h.triggered_at);
+  return h.status === 'triggered' && trigDate.getMonth() === now.getMonth() && trigDate.getFullYear() === now.getFullYear();
+}).length;
+const profitable = history.filter(h => h.profit_loss > 0).length;
+const total = history.filter(h => h.status === 'triggered').length;
+const successRate = total > 0 ? ((profitable / total) * 100).toFixed(0) : 0;
+%>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Active Alerts</p>
+<p class="text-2xl font-bold text-emerald-400"><%= activeAlerts %></p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Monitoring</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Triggered Today</p>
+<p class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= triggeredToday %></p>
+<p class="text-sm text-amber-400">alerts fired</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">This Month</p>
+<p class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= thisMonth %></p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total triggered</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Success Rate</p>
+<p class="text-2xl font-bold text-emerald-400"><%= successRate %>%</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Profitable trades</p>
+</div>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-2 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %> pb-4">
+<button onclick="showAlertTab('triggered')" class="alert-tab active" data-tab="triggered">🔔 Triggered</button>
+<button onclick="showAlertTab('active')" class="alert-tab" data-tab="active">⏳ Active</button>
+<button onclick="showAlertTab('expired')" class="alert-tab" data-tab="expired">⌛ Expired</button>
+</div>
+
+<!-- Triggered Alerts -->
+<div id="triggered-tab" class="alert-panel">
+<%
+const triggeredAlerts = history.filter(h => h.status === 'triggered');
+if (triggeredAlerts.length === 0) { %>
+<div class="text-center py-8">
+<svg class="w-16 h-16 mx-auto <%= theme === 'light' ? 'text-gray-300' : 'text-slate-600' %> mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+<h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No Triggered Alerts</h4>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Your triggered alerts will appear here</p>
+</div>
+<% } else { %>
+<div class="space-y-3">
+<% triggeredAlerts.forEach(alert => {
+  const colors = ['purple', 'sky', 'emerald', 'amber', 'red', 'indigo', 'pink'];
+  const colorIndex = alert.symbol ? alert.symbol.charCodeAt(0) % colors.length : 0;
+  const color = colors[colorIndex];
+  const borderColor = (alert.profit_loss || 0) >= 0 ? 'emerald' : 'red';
+  const trigDate = new Date(alert.triggered_at);
+%>
+<div class="card p-4 border-l-4 border-<%= borderColor %>-500">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white font-bold"><%= alert.symbol || '🔔' %></div>
+<div>
+<p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= alert.symbol %> <%= alert.alert_type === 'price_above' ? 'hit' : 'dropped to' %> $<%= (alert.triggered_price || 0).toFixed(2) %></p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= alert.alert_type %> • Target: $<%= (alert.target_value || 0).toFixed(2) %></p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold <%= (alert.profit_loss || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= (alert.profit_loss || 0) >= 0 ? '+' : '' %><%= fmt.money(alert.profit_loss || 0) %></p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= trigDate.toLocaleDateString() %>, <%= trigDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></p>
+</div>
+</div>
+<div class="mt-3 flex gap-2">
+<button onclick="dismissAlert('<%= alert.id %>')" class="btn-ghost btn-sm">Dismiss</button>
+<button onclick="reenableAlert('<%= alert.id %>')" class="btn-ghost btn-sm">Re-enable</button>
+</div>
+</div>
+<% }) %>
+</div>
+<% } %>
+</div>
+
+<!-- Active Alerts -->
+<div id="active-tab" class="alert-panel hidden">
+<%
+const activeAlertsTab = history.filter(h => h.status === 'active');
+if (activeAlertsTab.length === 0) { %>
+<div class="text-center py-8">
+<svg class="w-16 h-16 mx-auto <%= theme === 'light' ? 'text-gray-300' : 'text-slate-600' %> mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+<h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No Active Alerts</h4>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><a href="/alerts" class="text-sky-400">Create a new alert</a> to start monitoring</p>
+</div>
+<% } else { %>
+<div class="card overflow-hidden">
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3">Alert Type</th>
+<th class="px-4 py-3">Target</th>
+<th class="px-4 py-3">Current</th>
+<th class="px-4 py-3">Distance</th>
+<th class="px-4 py-3">Created</th>
+<th class="px-4 py-3"></th>
+</tr>
+</thead>
+<tbody>
+<% activeAlertsTab.forEach(alert => {
+  const distance = alert.current_price && alert.target_value ? (((alert.target_value - alert.current_price) / alert.current_price) * 100).toFixed(1) : 'N/A';
+  const typeColor = alert.alert_type === 'price_above' ? 'emerald' : alert.alert_type === 'price_below' ? 'red' : 'amber';
+%>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= alert.symbol %></td>
+<td class="px-4 py-3"><span class="px-2 py-1 rounded bg-<%= typeColor %>-500/20 text-<%= typeColor %>-400 text-xs"><%= alert.alert_type %></span></td>
+<td class="px-4 py-3">$<%= (alert.target_value || 0).toFixed(2) %></td>
+<td class="px-4 py-3">$<%= (alert.current_price || 0).toFixed(2) %></td>
+<td class="px-4 py-3 <%= Math.abs(parseFloat(distance)) < 5 ? 'text-amber-400' : 'text-sky-400' %>"><%= distance %>% away</td>
+<td class="px-4 py-3"><%= new Date(alert.created_at).toLocaleDateString() %></td>
+<td class="px-4 py-3">
+<button onclick="editAlert('<%= alert.id %>')" class="btn-ghost btn-sm">Edit</button>
+<button onclick="deleteAlert('<%= alert.id %>')" class="btn-ghost btn-sm text-red-400">Delete</button>
+</td>
+</tr>
+<% }) %>
+</tbody>
+</table>
+</div>
+<% } %>
+</div>
+
+<!-- Expired Alerts -->
+<div id="expired-tab" class="alert-panel hidden">
+<%
+const expiredAlerts = history.filter(h => h.status === 'expired');
+if (expiredAlerts.length === 0) { %>
+<div class="text-center py-8 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">
+<p class="text-4xl mb-2">⏰</p>
+<p>No expired alerts in the last 30 days</p>
+</div>
+<% } else { %>
+<div class="space-y-3">
+<% expiredAlerts.forEach(alert => { %>
+<div class="card p-4 border-l-4 border-slate-500 opacity-75">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= alert.symbol %> - <%= alert.alert_type %></p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Target: $<%= (alert.target_value || 0).toFixed(2) %> • Expired: <%= new Date(alert.expired_at).toLocaleDateString() %></p>
+</div>
+<button onclick="reenableAlert('<%= alert.id %>')" class="btn-ghost btn-sm">Re-enable</button>
+</div>
+</div>
+<% }) %>
+</div>
+<% } %>
+</div>
+</div></div></main>
+
+<style>
+.alert-tab { @apply px-4 py-2 rounded-lg text-sm font-medium transition-colors; }
+.alert-tab:not(.active) { @apply text-slate-400 hover:bg-slate-800; }
+.alert-tab.active { @apply bg-amber-500 text-white; }
+</style>
+
+<script>
+function showAlertTab(tab) {
+  document.querySelectorAll('.alert-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.alert-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tab + '-tab').classList.remove('hidden');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+}
+
+async function dismissAlert(id) {
+  try {
+    const res = await fetch('/api/alerts/' + id + '/dismiss', { method: 'PUT' });
+    if (res.ok) {
+      showToast('Alert dismissed', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error dismissing alert', 'error');
+  }
+}
+
+async function reenableAlert(id) {
+  try {
+    const res = await fetch('/api/alerts/' + id + '/reenable', { method: 'PUT' });
+    if (res.ok) {
+      showToast('Alert re-enabled', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error re-enabling alert', 'error');
+  }
+}
+
+async function deleteAlert(id) {
+  if (!confirm('Delete this alert?')) return;
+  try {
+    const res = await fetch('/api/alerts/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Alert deleted', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error deleting alert', 'error');
+  }
+}
+
+function editAlert(id) {
+  window.location.href = '/alerts?edit=' + id;
+}
+</script>
+<%- include('../partials/footer') %>

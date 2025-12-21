@@ -1,0 +1,380 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+const safeToken = typeof token !== 'undefined' ? token : '';
+%>
+<%- include('../partials/header', { pageTitle: 'Gross Margin Trends' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">Gross Margin Trends</h1>
+      <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Profitability analysis & margin expansion</p>
+    </div>
+    <div class="flex gap-2">
+      <select id="portfolioSelect" class="form-input w-48">
+        <option value="all" selected>All Holdings</option>
+        <% if (safePortfolios && safePortfolios.length > 0) { %>
+          <% safePortfolios.forEach(portfolio => { %>
+            <option value="<%= portfolio.id %>"><%= portfolio.name %></option>
+          <% }) %>
+        <% } %>
+      </select>
+      <select id="yearsSelect" class="form-input w-28">
+        <option value="5" selected>5 Years</option>
+        <option value="3">3 Years</option>
+        <option value="1">1 Year</option>
+      </select>
+      <button id="fetchBtn" class="btn-primary px-4 py-2 rounded">
+        <span id="btnText">Update</span>
+        <span id="btnSpinner" class="hidden">Loading...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Indicator -->
+<div id="loadingIndicator" class="hidden">
+  <div class="bloomberg-card p-8 text-center">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
+    <p class="text-slate-400">Fetching margin data...</p>
+  </div>
+</div>
+
+<!-- Data Container -->
+<div id="dataContainer">
+  <!-- Portfolio Margin Summary -->
+  <div class="bloomberg-card p-5 bg-gradient-to-r <%= safeTheme === 'light' ? 'from-emerald-50 to-sky-50' : 'from-emerald-900/20 to-sky-900/20' %>">
+    <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Margin Overview</h3>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="text-center">
+        <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Gross Margin</p>
+        <p id="avgGrossMargin" class="text-3xl font-bold font-mono text-emerald-400">--</p>
+        <p class="text-xs text-emerald-400">Loading...</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Operating Margin</p>
+        <p id="avgOperatingMargin" class="text-3xl font-bold font-mono text-sky-400">--</p>
+        <p class="text-xs text-sky-400">Strong</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Net Margin</p>
+        <p id="avgNetMargin" class="text-3xl font-bold font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+        <p class="text-xs">Excellent</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Margin Expanding</p>
+        <p id="marginExpanding" class="text-3xl font-bold text-emerald-400">0</p>
+        <p class="text-xs text-emerald-400">holdings</p>
+      </div>
+      <div class="text-center">
+        <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Margin Contracting</p>
+        <p id="marginContracting" class="text-3xl font-bold text-red-400">0</p>
+        <p class="text-xs text-red-400">holdings</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Holdings Margin Table -->
+  <div class="bloomberg-card overflow-hidden">
+    <div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings Margin Analysis</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+            <th class="px-4 py-3">Stock</th>
+            <th class="px-4 py-3 text-center">Gross Margin</th>
+            <th class="px-4 py-3 text-center">Op Margin</th>
+            <th class="px-4 py-3 text-center">Net Margin</th>
+            <th class="px-4 py-3 text-center">Change</th>
+            <th class="px-4 py-3 text-center">Trend</th>
+            <th class="px-4 py-3 text-center">vs Peers</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsTableBody" class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+          <tr>
+            <td colspan="7" class="text-center py-8 text-slate-400">
+              Select a portfolio and click Update to view margin data
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Margin Insights -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="card p-5">
+      <h4 class="font-bold text-emerald-400 mb-3">🏆 Highest Margins</h4>
+      <div id="highestMargins" class="space-y-2 text-slate-400">
+        Click Update to load data
+      </div>
+    </div>
+    <div class="card p-5">
+      <h4 class="font-bold text-sky-400 mb-3">📈 Biggest Expansion</h4>
+      <div id="biggestExpansion" class="space-y-2 text-slate-400">
+        Click Update to load data
+      </div>
+    </div>
+    <div class="card p-5">
+      <h4 class="font-bold text-red-400 mb-3">⚠️ Watch List</h4>
+      <div id="watchList" class="space-y-2 text-slate-400">
+        Click Update to load data
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Gross Margin by Holding</h3>
+      <div class="h-64"><canvas id="marginChart"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">
+        Margin Trend - <span id="trendSymbol">Select a stock</span>
+      </h3>
+      <div class="h-64"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global variables
+const API_URL = window.location.origin.replace('3000', '4000') + '/api';
+const TOKEN = '<%= safeToken %>';
+
+let marginChart = null;
+let trendChart = null;
+let currentData = null;
+
+// Initialize empty charts
+function initCharts() {
+  const ctx1 = document.getElementById('marginChart').getContext('2d');
+  marginChart = new Chart(ctx1, {
+    type: 'bar',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } }
+    }
+  });
+
+  const ctx2 = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(ctx2, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } }
+    }
+  });
+}
+
+// Fetch margin data
+async function fetchMarginData() {
+  const portfolioId = document.getElementById('portfolioSelect').value;
+  const years = document.getElementById('yearsSelect').value;
+
+  // Show loading
+  document.getElementById('loadingIndicator').classList.remove('hidden');
+  document.getElementById('dataContainer').style.opacity = '0.5';
+  document.getElementById('btnText').textContent = 'Loading...';
+
+  try {
+    const response = await fetch(
+      `${API_URL}/margins/portfolio/${portfolioId}?years=${years}`,
+      { headers: { 'Authorization': `Bearer ${TOKEN}` } }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    currentData = data;
+
+    // Update summary
+    document.getElementById('avgGrossMargin').textContent = data.summary.avgGrossMargin + '%';
+    document.getElementById('avgOperatingMargin').textContent = data.summary.avgOperatingMargin + '%';
+    document.getElementById('avgNetMargin').textContent = data.summary.avgNetMargin + '%';
+    document.getElementById('marginExpanding').textContent = data.summary.expanding;
+    document.getElementById('marginContracting').textContent = data.summary.contracting;
+
+    // Update table
+    updateTable(data.holdings);
+
+    // Update insights
+    updateInsights(data.insights);
+
+    // Update chart
+    updateMarginChart(data.holdings);
+
+    console.log('Margin data loaded successfully');
+
+  } catch (error) {
+    console.error('Error fetching margin data:', error);
+    alert('Failed to fetch margin data: ' + error.message);
+  } finally {
+    // Hide loading
+    document.getElementById('loadingIndicator').classList.add('hidden');
+    document.getElementById('dataContainer').style.opacity = '1';
+    document.getElementById('btnText').textContent = 'Update';
+  }
+}
+
+// Update table
+function updateTable(holdings) {
+  const tbody = document.getElementById('holdingsTableBody');
+  if (!holdings || holdings.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-400">No holdings found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = holdings.map(h => {
+    const trendColor = h.trend === 'Expanding' ? 'emerald' : h.trend === 'Contracting' ? 'red' : 'sky';
+    const changeColor = h.marginChange > 0 ? 'emerald' : h.marginChange < 0 ? 'red' : 'slate';
+    const vsPeersColor = h.vsPeers > 0 ? 'emerald' : h.vsPeers < 0 ? 'red' : 'sky';
+
+    return `
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/30 cursor-pointer" onclick="loadTrendChart('${h.symbol}')">
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+              ${h.symbol}
+            </div>
+            <span class="font-medium">${h.name}</span>
+          </div>
+        </td>
+        <td class="px-4 py-3 text-center font-bold font-mono text-${h.grossMargin > 50 ? 'emerald' : h.grossMargin > 30 ? 'sky' : 'amber'}-400">
+          ${h.grossMargin.toFixed(1)}%
+        </td>
+        <td class="px-4 py-3 text-center font-mono text-${h.operatingMargin > 30 ? 'emerald' : 'sky'}-400">
+          ${h.operatingMargin.toFixed(1)}%
+        </td>
+        <td class="px-4 py-3 text-center font-mono text-${h.netMargin > 20 ? 'emerald' : 'sky'}-400">
+          ${h.netMargin.toFixed(1)}%
+        </td>
+        <td class="px-4 py-3 text-center font-mono font-bold text-${changeColor}-400">
+          ${h.marginChange > 0 ? '+' : ''}${h.marginChange.toFixed(1)}%
+        </td>
+        <td class="px-4 py-3 text-center">
+          <span class="text-${trendColor}-400">${h.trend}</span>
+        </td>
+        <td class="px-4 py-3 text-center">
+          <span class="px-2 py-1 rounded bg-${vsPeersColor}-500/20 text-${vsPeersColor}-400 text-xs">
+            ${h.vsPeers > 0 ? '+' : ''}${h.vsPeers.toFixed(0)}% vs peers
+          </span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Update insights
+function updateInsights(insights) {
+  // Highest margins
+  const highestHTML = insights.highestMargins.map(h =>
+    `<div class="flex justify-between"><span>${h.symbol}</span><span class="font-bold text-emerald-400">${h.grossMargin.toFixed(1)}%</span></div>`
+  ).join('');
+  document.getElementById('highestMargins').innerHTML = highestHTML;
+
+  // Biggest expansion
+  const expansionHTML = insights.biggestExpansion.map(h =>
+    `<div class="flex justify-between"><span>${h.symbol}</span><span class="font-bold text-emerald-400">+${h.marginChange.toFixed(1)}%</span></div>`
+  ).join('');
+  document.getElementById('biggestExpansion').innerHTML = expansionHTML;
+
+  // Watch list
+  const watchListHTML = insights.watchList.map(h =>
+    `<div class="flex justify-between"><span>${h.symbol}</span><span class="font-bold text-red-400">${h.marginChange.toFixed(1)}%</span></div>`
+  ).join('');
+  document.getElementById('watchList').innerHTML = watchListHTML;
+}
+
+// Update margin chart
+function updateMarginChart(holdings) {
+  if (!holdings || holdings.length === 0) return;
+
+  const topHoldings = holdings.slice(0, 10);
+
+  marginChart.data.labels = topHoldings.map(h => h.symbol);
+  marginChart.data.datasets = [
+    {
+      label: 'Gross',
+      data: topHoldings.map(h => h.grossMargin.toFixed(1)),
+      backgroundColor: '#10b981'
+    },
+    {
+      label: 'Operating',
+      data: topHoldings.map(h => h.operatingMargin.toFixed(1)),
+      backgroundColor: '#0ea5e9'
+    },
+    {
+      label: 'Net',
+      data: topHoldings.map(h => h.netMargin.toFixed(1)),
+      backgroundColor: '#8b5cf6'
+    }
+  ];
+  marginChart.update();
+}
+
+// Load trend chart for a symbol
+async function loadTrendChart(symbol) {
+  const years = document.getElementById('yearsSelect').value;
+
+  try {
+    const response = await fetch(
+      `${API_URL}/margins/trend/${symbol}?years=${years}`,
+      { headers: { 'Authorization': `Bearer ${TOKEN}` } }
+    );
+
+    if (!response.ok) throw new Error('Failed to fetch trend data');
+
+    const data = await response.json();
+
+    document.getElementById('trendSymbol').textContent = symbol;
+
+    trendChart.data.labels = data.trendData.map(d => d.year);
+    trendChart.data.datasets = [
+      {
+        label: 'Gross Margin',
+        data: data.trendData.map(d => d.grossMargin),
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        fill: true
+      },
+      {
+        label: 'Operating Margin',
+        data: data.trendData.map(d => d.operatingMargin),
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+        fill: true
+      }
+    ];
+    trendChart.update();
+
+  } catch (error) {
+    console.error('Error loading trend chart:', error);
+  }
+}
+
+// Event listeners
+document.getElementById('fetchBtn').addEventListener('click', fetchMarginData);
+
+// Initialize
+window.addEventListener('load', () => {
+  initCharts();
+  // Auto-load data for default selection
+  fetchMarginData();
+});
+</script>
+
+<%- include('../partials/footer') %>

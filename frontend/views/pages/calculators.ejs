@@ -1,0 +1,663 @@
+<%
+// Safe defaults for undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const pageTitle = 'Calculators';
+%>
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-gradient-to-r from-orange-500 to-orange-600 border-b-2 border-orange-400 px-6 py-4 mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900 tracking-tight">FINANCIAL CALCULATORS</h1>
+      <p class="text-slate-800 text-sm mt-1">Advanced financial planning and analysis tools</p>
+    </div>
+    <div class="text-right">
+      <div class="text-slate-900 text-xs font-mono">SYSTEM: ACTIVE</div>
+      <div class="text-slate-800 text-xs font-mono"><%= new Date().toLocaleDateString() %></div>
+    </div>
+  </div>
+</div>
+
+<!-- Calculator Tabs -->
+<div class="flex flex-wrap gap-2 border-b-2 <%= safeTheme === 'light' ? 'border-slate-300' : 'border-slate-700' %> pb-4 mb-6">
+  <button onclick="showCalc('compound')" class="bloomberg-btn active" data-calc="compound">
+    <span class="font-mono">COMPOUND</span> <span class="text-xs">Interest Calculator</span>
+  </button>
+  <button onclick="showCalc('fire')" class="bloomberg-btn" data-calc="fire">
+    <span class="font-mono">FIRE</span> <span class="text-xs">Retirement Calculator</span>
+  </button>
+  <button onclick="showCalc('dca')" class="bloomberg-btn" data-calc="dca">
+    <span class="font-mono">DCA</span> <span class="text-xs">Investment Simulator</span>
+  </button>
+  <button onclick="showCalc('loan')" class="bloomberg-btn" data-calc="loan">
+    <span class="font-mono">LOAN</span> <span class="text-xs">Payoff Calculator</span>
+  </button>
+</div>
+
+<!-- Compound Interest Calculator -->
+<div id="compound-calc" class="calc-panel">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bloomberg-card">
+      <div class="border-b <%= safeTheme === 'light' ? 'border-slate-200' : 'border-slate-700' %> pb-3 mb-4">
+        <h3 class="text-lg font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">COMPOUND INTEREST CALCULATOR</h3>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> mt-1">Calculate investment growth over time</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">INITIAL INVESTMENT</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="ci-principal" value="10000" class="form-input pl-7 font-mono" oninput="calcCompound()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">MONTHLY CONTRIBUTION</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="ci-monthly" value="500" class="form-input pl-7 font-mono" oninput="calcCompound()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">ANNUAL RETURN RATE</label>
+          <div class="relative">
+            <input type="number" id="ci-rate" value="8" step="0.1" class="form-input pr-7 font-mono" oninput="calcCompound()">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">%</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">TIME PERIOD: <span id="ci-years-display" class="text-emerald-400">20</span> YEARS</label>
+          <input type="range" id="ci-years" min="1" max="50" value="20" class="w-full" oninput="document.getElementById('ci-years-display').textContent=this.value;calcCompound()">
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">COMPOUND FREQUENCY</label>
+          <select id="ci-freq" class="form-input font-mono" onchange="calcCompound()">
+            <option value="12">Monthly</option>
+            <option value="4">Quarterly</option>
+            <option value="1">Annually</option>
+            <option value="365">Daily</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="bloomberg-card border-2 border-emerald-500/30">
+        <h4 class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs mb-2 font-mono">FUTURE VALUE</h4>
+        <p id="ci-result" class="text-5xl font-bold text-emerald-400 font-mono">$294,510</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">TOTAL CONTRIBUTIONS</p>
+          <p id="ci-contributions" class="text-xl font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">$130,000</p>
+        </div>
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">INTEREST EARNED</p>
+          <p id="ci-interest" class="text-xl font-bold text-emerald-400 font-mono">$164,510</p>
+        </div>
+      </div>
+      <div class="bloomberg-card">
+        <h4 class="<%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-semibold mb-3 font-mono">GROWTH OVER TIME</h4>
+        <div class="h-48"><canvas id="ci-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FIRE Calculator -->
+<div id="fire-calc" class="calc-panel hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bloomberg-card">
+      <div class="border-b <%= safeTheme === 'light' ? 'border-slate-200' : 'border-slate-700' %> pb-3 mb-4">
+        <h3 class="text-lg font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">FIRE CALCULATOR</h3>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> mt-1">Financial Independence, Retire Early</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">CURRENT AGE</label>
+          <input type="number" id="fire-age" value="30" class="form-input font-mono" oninput="calcFIRE()">
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">CURRENT SAVINGS</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="fire-savings" value="50000" class="form-input pl-7 font-mono" oninput="calcFIRE()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">ANNUAL INCOME</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="fire-income" value="100000" class="form-input pl-7 font-mono" oninput="calcFIRE()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">ANNUAL EXPENSES</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="fire-expenses" value="50000" class="form-input pl-7 font-mono" oninput="calcFIRE()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">EXPECTED RETURN</label>
+          <div class="relative">
+            <input type="number" id="fire-return" value="7" step="0.1" class="form-input pr-7 font-mono" oninput="calcFIRE()">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">%</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">SAFE WITHDRAWAL RATE</label>
+          <div class="relative">
+            <input type="number" id="fire-swr" value="4" step="0.1" class="form-input pr-7 font-mono" oninput="calcFIRE()">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="bloomberg-card border-2 border-orange-500/50 bg-gradient-to-br from-orange-500/20 to-orange-600/10">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-12 h-12 rounded-full bg-orange-500/30 flex items-center justify-center">
+            <span class="text-2xl">🔥</span>
+          </div>
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono">RETIREMENT AGE</p>
+        </div>
+        <p id="fire-retire-age" class="text-6xl font-bold text-orange-400 font-mono mb-2">47</p>
+        <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-sm font-mono">IN <span id="fire-years" class="text-emerald-400 font-bold">17</span> YEARS</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">FIRE NUMBER</p>
+          <p id="fire-number" class="text-xl font-bold text-emerald-400 font-mono">$1,250,000</p>
+          <p class="text-xs <%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-500' %> mt-1 font-mono">25x expenses</p>
+        </div>
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">SAVINGS RATE</p>
+          <p id="fire-rate" class="text-xl font-bold text-emerald-400 font-mono">50%</p>
+          <p class="text-xs <%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-500' %> mt-1 font-mono">of income</p>
+        </div>
+      </div>
+      <div class="bloomberg-card">
+        <h4 class="<%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-semibold mb-3 font-mono">PATH TO FIRE</h4>
+        <div class="h-48"><canvas id="fire-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DCA Calculator -->
+<div id="dca-calc" class="calc-panel hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bloomberg-card">
+      <div class="border-b <%= safeTheme === 'light' ? 'border-slate-200' : 'border-slate-700' %> pb-3 mb-4">
+        <h3 class="text-lg font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">DCA SIMULATOR</h3>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> mt-1">Dollar Cost Averaging historical simulation</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">ASSET</label>
+          <select id="dca-asset" class="form-input font-mono" onchange="calcDCA()">
+            <option value="spy">S&P 500 (SPY)</option>
+            <option value="qqq">NASDAQ 100 (QQQ)</option>
+            <option value="btc">Bitcoin (BTC)</option>
+            <option value="eth">Ethereum (ETH)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">INVESTMENT PER PERIOD</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="dca-amount" value="500" class="form-input pl-7 font-mono" oninput="calcDCA()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">FREQUENCY</label>
+          <select id="dca-freq" class="form-input font-mono" onchange="calcDCA()">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Bi-Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">PERIOD: <span id="dca-years-display" class="text-emerald-400">5</span> YEARS</label>
+          <input type="range" id="dca-years" min="1" max="10" value="5" class="w-full" oninput="document.getElementById('dca-years-display').textContent=this.value;calcDCA()">
+        </div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="bloomberg-card border-2 border-emerald-500/30">
+        <h4 class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs mb-2 font-mono">PORTFOLIO VALUE</h4>
+        <p id="dca-value" class="text-5xl font-bold text-emerald-400 font-mono">$42,847</p>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">INVESTED</p>
+          <p id="dca-invested" class="text-lg font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">$30,000</p>
+        </div>
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">GAIN</p>
+          <p id="dca-gain" class="text-lg font-bold text-emerald-400 font-mono">+$12,847</p>
+        </div>
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">RETURN</p>
+          <p id="dca-return" class="text-lg font-bold text-emerald-400 font-mono">+42.8%</p>
+        </div>
+      </div>
+      <div class="bloomberg-card">
+        <h4 class="<%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-semibold mb-3 font-mono">DCA VS LUMP SUM</h4>
+        <div class="h-48"><canvas id="dca-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loan Calculator -->
+<div id="loan-calc" class="calc-panel hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bloomberg-card">
+      <div class="border-b <%= safeTheme === 'light' ? 'border-slate-200' : 'border-slate-700' %> pb-3 mb-4">
+        <h3 class="text-lg font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">LOAN PAYOFF CALCULATOR</h3>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> mt-1">Calculate loan amortization and payoff strategies</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">LOAN AMOUNT</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="loan-amount" value="350000" class="form-input pl-7 font-mono" oninput="calcLoan()">
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">INTEREST RATE</label>
+          <div class="relative">
+            <input type="number" id="loan-rate" value="6.5" step="0.1" class="form-input pr-7 font-mono" oninput="calcLoan()">
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">%</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">LOAN TERM</label>
+          <select id="loan-term" class="form-input font-mono" onchange="calcLoan()">
+            <option value="360" selected>30 years</option>
+            <option value="180">15 years</option>
+            <option value="120">10 years</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-slate-700' : 'text-slate-300' %> mb-1 font-mono">EXTRA MONTHLY PAYMENT</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= safeTheme === 'light' ? 'text-slate-500' : 'text-slate-400' %> font-mono">$</span>
+            <input type="number" id="loan-extra" value="200" class="form-input pl-7 font-mono" oninput="calcLoan()">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">MONTHLY PAYMENT</p>
+          <p id="loan-payment" class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-mono">$2,212</p>
+        </div>
+        <div class="bloomberg-card">
+          <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">TOTAL INTEREST</p>
+          <p id="loan-interest" class="text-2xl font-bold text-red-400 font-mono">$446,247</p>
+        </div>
+      </div>
+      <div class="bloomberg-card border-2 border-emerald-500/50 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10">
+        <h4 class="font-semibold text-emerald-400 mb-3 font-mono">WITH EXTRA PAYMENTS</h4>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">TIME SAVED</p>
+            <p id="loan-time-saved" class="text-xl font-bold text-emerald-400 font-mono">5.2 years</p>
+          </div>
+          <div>
+            <p class="<%= safeTheme === 'light' ? 'text-slate-600' : 'text-slate-400' %> text-xs font-mono mb-1">INTEREST SAVED</p>
+            <p id="loan-interest-saved" class="text-xl font-bold text-emerald-400 font-mono">$87,450</p>
+          </div>
+        </div>
+      </div>
+      <div class="bloomberg-card">
+        <h4 class="<%= safeTheme === 'light' ? 'text-slate-900' : 'text-white' %> font-semibold mb-3 font-mono">AMORTIZATION</h4>
+        <div class="h-48"><canvas id="loan-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Bloomberg Button Styles */
+.bloomberg-btn {
+  @apply px-4 py-3 rounded-sm text-sm font-medium transition-all border-2;
+  @apply <%= safeTheme === 'light' ? 'bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700' %>;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.bloomberg-btn.active {
+  @apply bg-orange-500 border-orange-400 text-slate-900;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+/* Bloomberg Card Styles */
+.bloomberg-card {
+  @apply <%= safeTheme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-800/50 border-slate-700' %>;
+  @apply border-2 p-5 rounded-sm;
+  box-shadow: 2px 2px 0 <%= safeTheme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.3)' %>;
+}
+
+/* Form Input Bloomberg Styles */
+.form-input {
+  @apply w-full px-3 py-2 border-2 rounded-sm;
+  @apply <%= safeTheme === 'light' ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-900 border-slate-700 text-white' %>;
+  @apply focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500;
+}
+
+/* Range Slider Bloomberg Style */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: <%= safeTheme === 'light' ? '#cbd5e1' : '#475569' %>;
+  outline: none;
+  border-radius: 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #f97316;
+  cursor: pointer;
+  border-radius: 0;
+  border: 2px solid #ea580c;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #f97316;
+  cursor: pointer;
+  border-radius: 0;
+  border: 2px solid #ea580c;
+}
+</style>
+
+<script>
+let charts = {};
+
+function showCalc(type) {
+  document.querySelectorAll('.calc-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.bloomberg-btn').forEach(t => t.classList.remove('active'));
+  document.getElementById(type + '-calc').classList.remove('hidden');
+  document.querySelector(`[data-calc="${type}"]`).classList.add('active');
+
+  if (type === 'compound') calcCompound();
+  else if (type === 'fire') calcFIRE();
+  else if (type === 'dca') calcDCA();
+  else if (type === 'loan') calcLoan();
+}
+
+function calcCompound() {
+  const P = parseFloat(document.getElementById('ci-principal').value) || 0;
+  const PMT = parseFloat(document.getElementById('ci-monthly').value) || 0;
+  const r = (parseFloat(document.getElementById('ci-rate').value) || 0) / 100;
+  const t = parseInt(document.getElementById('ci-years').value) || 1;
+  const n = parseInt(document.getElementById('ci-freq').value) || 12;
+
+  // FV = P(1+r/n)^(nt) + PMT[((1+r/n)^(nt)-1)/(r/n)]
+  const rate = r / n;
+  const periods = n * t;
+  const FV_principal = P * Math.pow(1 + rate, periods);
+  const FV_annuity = PMT * ((Math.pow(1 + rate, periods) - 1) / rate);
+  const FV = FV_principal + FV_annuity;
+  const contributions = P + (PMT * 12 * t);
+
+  document.getElementById('ci-result').textContent = '$' + Math.round(FV).toLocaleString();
+  document.getElementById('ci-contributions').textContent = '$' + Math.round(contributions).toLocaleString();
+  document.getElementById('ci-interest').textContent = '$' + Math.round(FV - contributions).toLocaleString();
+
+  // Chart
+  const labels = [];
+  const data = [];
+  const contrib = [];
+  let balance = P;
+  let totalContrib = P;
+
+  for (let year = 0; year <= t; year++) {
+    labels.push('Year ' + year);
+    data.push(Math.round(balance));
+    contrib.push(totalContrib);
+    balance = balance * (1 + r) + PMT * 12;
+    totalContrib += PMT * 12;
+  }
+
+  const ctx = document.getElementById('ci-chart');
+  if (charts.ci) charts.ci.destroy();
+  charts.ci = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Total Value', data, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, borderWidth: 2 },
+        { label: 'Contributions', data: contrib, borderColor: '#64748b', borderDash: [5,5], fill: false, borderWidth: 2 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'monospace' } }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '$' + (v/1000) + 'K',
+            font: { family: 'monospace' }
+          }
+        },
+        x: {
+          ticks: {
+            font: { family: 'monospace' }
+          }
+        }
+      }
+    }
+  });
+}
+
+function calcFIRE() {
+  const age = parseInt(document.getElementById('fire-age').value) || 30;
+  const savings = parseFloat(document.getElementById('fire-savings').value) || 0;
+  const income = parseFloat(document.getElementById('fire-income').value) || 0;
+  const expenses = parseFloat(document.getElementById('fire-expenses').value) || 0;
+  const returnRate = (parseFloat(document.getElementById('fire-return').value) || 7) / 100;
+  const swr = (parseFloat(document.getElementById('fire-swr').value) || 4) / 100;
+
+  const fireNumber = expenses / swr;
+  const annualSavings = income - expenses;
+  const savingsRate = income > 0 ? (annualSavings / income * 100) : 0;
+
+  // Calculate years to FIRE
+  let balance = savings;
+  let years = 0;
+  while (balance < fireNumber && years < 100) {
+    balance = balance * (1 + returnRate) + annualSavings;
+    years++;
+  }
+
+  document.getElementById('fire-number').textContent = '$' + Math.round(fireNumber).toLocaleString();
+  document.getElementById('fire-rate').textContent = savingsRate.toFixed(0) + '%';
+  document.getElementById('fire-retire-age').textContent = age + years;
+  document.getElementById('fire-years').textContent = years;
+
+  // Chart
+  const labels = [];
+  const data = [];
+  balance = savings;
+  for (let y = 0; y <= years + 5; y++) {
+    labels.push('Age ' + (age + y));
+    data.push(Math.round(balance));
+    balance = balance * (1 + returnRate) + annualSavings;
+  }
+
+  const ctx = document.getElementById('fire-chart');
+  if (charts.fire) charts.fire.destroy();
+  charts.fire = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Net Worth', data, borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.1)', fill: true, borderWidth: 2 },
+        { label: 'FIRE Number', data: Array(labels.length).fill(fireNumber), borderColor: '#ef4444', borderDash: [5,5], fill: false, borderWidth: 2 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'monospace' } }
+        }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '$' + (v/1000000).toFixed(1) + 'M',
+            font: { family: 'monospace' }
+          }
+        },
+        x: {
+          ticks: {
+            font: { family: 'monospace' }
+          }
+        }
+      }
+    }
+  });
+}
+
+function calcDCA() {
+  const amount = parseFloat(document.getElementById('dca-amount').value) || 500;
+  const years = parseInt(document.getElementById('dca-years').value) || 5;
+  const freq = document.getElementById('dca-freq').value;
+
+  const periodsPerYear = freq === 'weekly' ? 52 : freq === 'biweekly' ? 26 : 12;
+  const totalPeriods = periodsPerYear * years;
+  const invested = amount * totalPeriods;
+
+  // Simulate with avg 10% return
+  const periodReturn = Math.pow(1.10, 1/periodsPerYear) - 1;
+  let value = 0;
+  for (let i = 0; i < totalPeriods; i++) {
+    value = (value + amount) * (1 + periodReturn);
+  }
+
+  const gain = value - invested;
+  const returnPct = (gain / invested * 100);
+
+  document.getElementById('dca-value').textContent = '$' + Math.round(value).toLocaleString();
+  document.getElementById('dca-invested').textContent = '$' + Math.round(invested).toLocaleString();
+  document.getElementById('dca-gain').textContent = '+$' + Math.round(gain).toLocaleString();
+  document.getElementById('dca-return').textContent = '+' + returnPct.toFixed(1) + '%';
+
+  // Chart
+  const ctx = document.getElementById('dca-chart');
+  if (charts.dca) charts.dca.destroy();
+  charts.dca = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Invested', 'DCA Value', 'Lump Sum'],
+      datasets: [{
+        data: [invested, value, invested * Math.pow(1.10, years)],
+        backgroundColor: ['#64748b', '#34d399', '#0ea5e9']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: v => '$' + (v/1000) + 'K',
+            font: { family: 'monospace' }
+          }
+        },
+        x: {
+          ticks: {
+            font: { family: 'monospace' }
+          }
+        }
+      }
+    }
+  });
+}
+
+function calcLoan() {
+  const P = parseFloat(document.getElementById('loan-amount').value) || 0;
+  const annualRate = (parseFloat(document.getElementById('loan-rate').value) || 0) / 100;
+  const months = parseInt(document.getElementById('loan-term').value) || 360;
+  const extra = parseFloat(document.getElementById('loan-extra').value) || 0;
+
+  const r = annualRate / 12;
+  const payment = P * (r * Math.pow(1+r, months)) / (Math.pow(1+r, months) - 1);
+  const totalPaid = payment * months;
+  const totalInterest = totalPaid - P;
+
+  document.getElementById('loan-payment').textContent = '$' + Math.round(payment).toLocaleString();
+  document.getElementById('loan-interest').textContent = '$' + Math.round(totalInterest).toLocaleString();
+
+  // With extra payments
+  let balance = P;
+  let monthsWithExtra = 0;
+  let interestWithExtra = 0;
+  while (balance > 0) {
+    const interest = balance * r;
+    interestWithExtra += interest;
+    balance = balance + interest - payment - extra;
+    monthsWithExtra++;
+    if (monthsWithExtra > months) break;
+  }
+
+  const timeSaved = (months - monthsWithExtra) / 12;
+  const interestSaved = totalInterest - interestWithExtra;
+
+  document.getElementById('loan-time-saved').textContent = timeSaved.toFixed(1) + ' years';
+  document.getElementById('loan-interest-saved').textContent = '$' + Math.round(interestSaved).toLocaleString();
+
+  // Chart
+  const ctx = document.getElementById('loan-chart');
+  if (charts.loan) charts.loan.destroy();
+  charts.loan = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Principal', 'Interest'],
+      datasets: [{
+        data: [P, totalInterest],
+        backgroundColor: ['#34d399', '#ef4444']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'monospace' } }
+        }
+      }
+    }
+  });
+}
+
+// Initialize
+calcCompound();
+</script>
+<%- include('../partials/footer') %>

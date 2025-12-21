@@ -1,0 +1,296 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Options Tracker' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">OPTIONS TRACKER</h1>
+<p class="text-slate-400">Track options positions and calculate Greeks</p>
+</div>
+<div class="flex gap-2">
+<button onclick="showOptionsCalc()" class="bloomberg-btn-secondary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+Calculator
+</button>
+<button onclick="showAddOptionModal()" class="bloomberg-btn-primary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+Add Position
+</button>
+</div>
+</div>
+</div>
+
+<!-- Portfolio Greeks -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="bloomberg-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Delta (Δ)</p>
+<p class="text-xl font-bold font-mono text-emerald-400">+45.2</p>
+<p class="text-xs text-slate-400">Bullish exposure</p>
+</div>
+<div class="bloomberg-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Gamma (Γ)</p>
+<p class="text-xl font-bold font-mono text-purple-400">+2.8</p>
+<p class="text-xs text-slate-400">Delta sensitivity</p>
+</div>
+<div class="bloomberg-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Theta (Θ)</p>
+<p class="text-xl font-bold font-mono text-red-400">-$42/day</p>
+<p class="text-xs text-slate-400">Time decay</p>
+</div>
+<div class="bloomberg-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Vega (ν)</p>
+<p class="text-xl font-bold font-mono text-sky-400">+$85</p>
+<p class="text-xs text-slate-400">Vol sensitivity</p>
+</div>
+<div class="bloomberg-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Total P&L</p>
+<p class="text-xl font-bold font-mono text-emerald-400">+$1,245</p>
+<p class="text-xs text-slate-400">All positions</p>
+</div>
+</div>
+
+<!-- Open Positions -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wider">Open Positions</h3>
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="border-b border-amber-400/30 text-slate-400 text-sm text-left">
+  <th class="pb-3 uppercase tracking-wider">Symbol</th>
+  <th class="pb-3 uppercase tracking-wider">Type</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Strike</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Expiry</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Qty</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Avg Cost</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Current</th>
+  <th class="pb-3 text-right uppercase tracking-wider">P&L</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Delta</th>
+  <th class="pb-3 text-right uppercase tracking-wider">IV</th>
+  <th class="pb-3"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-3 font-semibold text-white">AAPL</td>
+  <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400">CALL</span></td>
+  <td class="py-3 text-right text-slate-300 font-mono">$190</td>
+  <td class="py-3 text-right text-slate-300 font-mono">Dec 20</td>
+  <td class="py-3 text-right text-white font-medium font-mono">+5</td>
+  <td class="py-3 text-right text-slate-300 font-mono">$3.25</td>
+  <td class="py-3 text-right text-white font-medium font-mono">$4.80</td>
+  <td class="py-3 text-right text-emerald-400 font-medium font-mono">+$775</td>
+  <td class="py-3 text-right text-emerald-400 font-mono">+0.52</td>
+  <td class="py-3 text-right text-slate-300 font-mono">32%</td>
+  <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
+</tr>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-3 font-semibold text-white">NVDA</td>
+  <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400">PUT</span></td>
+  <td class="py-3 text-right text-slate-300 font-mono">$480</td>
+  <td class="py-3 text-right text-slate-300 font-mono">Dec 15</td>
+  <td class="py-3 text-right text-white font-medium font-mono">-2</td>
+  <td class="py-3 text-right text-slate-300 font-mono">$8.50</td>
+  <td class="py-3 text-right text-white font-medium font-mono">$5.20</td>
+  <td class="py-3 text-right text-emerald-400 font-medium font-mono">+$660</td>
+  <td class="py-3 text-right text-red-400 font-mono">-0.28</td>
+  <td class="py-3 text-right text-slate-300 font-mono">45%</td>
+  <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
+</tr>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-3 font-semibold text-white">SPY</td>
+  <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400">CALL</span></td>
+  <td class="py-3 text-right text-slate-300 font-mono">$470</td>
+  <td class="py-3 text-right text-amber-400 font-mono">Dec 13</td>
+  <td class="py-3 text-right text-white font-medium font-mono">+10</td>
+  <td class="py-3 text-right text-slate-300 font-mono">$2.10</td>
+  <td class="py-3 text-right text-white font-medium font-mono">$1.85</td>
+  <td class="py-3 text-right text-red-400 font-medium font-mono">-$250</td>
+  <td class="py-3 text-right text-emerald-400 font-mono">+0.38</td>
+  <td class="py-3 text-right text-slate-300 font-mono">18%</td>
+  <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
+</tr>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-3 font-semibold text-white">TSLA</td>
+  <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-400">SPREAD</span></td>
+  <td class="py-3 text-right text-slate-300 font-mono">$250/$260</td>
+  <td class="py-3 text-right text-slate-300 font-mono">Jan 19</td>
+  <td class="py-3 text-right text-white font-medium font-mono">+3</td>
+  <td class="py-3 text-right text-slate-300 font-mono">$4.50</td>
+  <td class="py-3 text-right text-white font-medium font-mono">$4.70</td>
+  <td class="py-3 text-right text-emerald-400 font-medium font-mono">+$60</td>
+  <td class="py-3 text-right text-emerald-400 font-mono">+0.15</td>
+  <td class="py-3 text-right text-slate-300 font-mono">52%</td>
+  <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- P&L Chart & Expiration Calendar -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">P&L by Underlying Price</h3>
+<div class="h-64"><canvas id="plChart"></canvas></div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Upcoming Expirations</h3>
+<div class="space-y-3">
+<% const expirations = [
+  { date: 'Dec 13', days: 2, positions: 1, value: 1850, risk: 'high' },
+  { date: 'Dec 15', days: 4, positions: 1, value: 1040, risk: 'medium' },
+  { date: 'Dec 20', days: 9, positions: 1, value: 2400, risk: 'low' },
+  { date: 'Jan 19', days: 39, positions: 1, value: 1410, risk: 'low' }
+]; expirations.forEach(exp => { %>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-lg flex items-center justify-center <%= exp.risk === 'high' ? 'bg-red-500/20 text-red-400' : exp.risk === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400' %>">
+      <span class="font-bold text-sm"><%= exp.days %>d</span>
+    </div>
+    <div>
+      <p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= exp.date %></p>
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= exp.positions %> position<%= exp.positions > 1 ? 's' : '' %></p>
+    </div>
+  </div>
+  <div class="text-right">
+    <p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$<%= exp.value.toLocaleString() %></p>
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">at risk</p>
+  </div>
+</div>
+<% }); %>
+</div>
+</div>
+</div>
+
+<!-- Options Chain -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">AAPL Options Chain</h3>
+<select class="form-input w-auto" id="chainExpiry">
+  <option>Dec 13, 2024</option>
+  <option selected>Dec 20, 2024</option>
+  <option>Dec 27, 2024</option>
+  <option>Jan 17, 2025</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Calls -->
+<div>
+<h4 class="text-sm font-medium text-emerald-400 mb-2 text-center">CALLS</h4>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">
+  <th class="pb-2">Bid</th><th class="pb-2">Ask</th><th class="pb-2">Strike</th><th class="pb-2">Delta</th><th class="pb-2">IV</th>
+</tr>
+</thead>
+<tbody>
+<% [180, 182.5, 185, 187.5, 190, 192.5, 195].forEach(strike => { 
+  const atm = strike === 185;
+  const itm = strike < 185.5;
+%>
+<tr class="border-t <%= theme === 'light' ? 'border-gray-100' : 'border-slate-800' %> <%= atm ? (theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10') : '' %> <%= itm ? (theme === 'light' ? 'bg-emerald-50/50' : 'bg-emerald-500/5') : '' %>">
+  <td class="py-1.5 text-center text-emerald-400"><%= (Math.max(0, 185.5 - strike) + Math.random() * 2).toFixed(2) %></td>
+  <td class="py-1.5 text-center <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= (Math.max(0, 185.5 - strike) + Math.random() * 2 + 0.05).toFixed(2) %></td>
+  <td class="py-1.5 text-center font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$<%= strike %></td>
+  <td class="py-1.5 text-center <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= (0.3 + (185.5 - strike) * 0.02).toFixed(2) %></td>
+  <td class="py-1.5 text-center <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= Math.round(25 + Math.random() * 15) %>%</td>
+</tr>
+<% }); %>
+</tbody>
+</table>
+</div>
+<!-- Puts -->
+<div>
+<h4 class="text-sm font-medium text-red-400 mb-2 text-center">PUTS</h4>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">
+  <th class="pb-2">IV</th><th class="pb-2">Delta</th><th class="pb-2">Strike</th><th class="pb-2">Bid</th><th class="pb-2">Ask</th>
+</tr>
+</thead>
+<tbody>
+<% [180, 182.5, 185, 187.5, 190, 192.5, 195].forEach(strike => { 
+  const atm = strike === 185;
+  const itm = strike > 185.5;
+%>
+<tr class="border-t <%= theme === 'light' ? 'border-gray-100' : 'border-slate-800' %> <%= atm ? (theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10') : '' %> <%= itm ? (theme === 'light' ? 'bg-red-50/50' : 'bg-red-500/5') : '' %>">
+  <td class="py-1.5 text-center <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= Math.round(25 + Math.random() * 15) %>%</td>
+  <td class="py-1.5 text-center <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= (-0.3 - (strike - 185.5) * 0.02).toFixed(2) %></td>
+  <td class="py-1.5 text-center font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$<%= strike %></td>
+  <td class="py-1.5 text-center text-red-400"><%= (Math.max(0, strike - 185.5) + Math.random() * 2).toFixed(2) %></td>
+  <td class="py-1.5 text-center <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= (Math.max(0, strike - 185.5) + Math.random() * 2 + 0.05).toFixed(2) %></td>
+</tr>
+<% }); %>
+</tbody>
+</table>
+</div>
+</div>
+<p class="text-center text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-3">AAPL: $185.50 • Click any strike to view details</p>
+</div>
+</div></div></main>
+
+<script>
+// P&L Chart
+const prices = [];
+const pnl = [];
+for (let p = 170; p <= 200; p += 2) {
+  prices.push(p);
+  // Simplified P&L calculation for demo
+  let total = 0;
+  // AAPL 190 Call (long 5)
+  total += Math.max(0, p - 190) * 500 - 3.25 * 500;
+  // SPY approx
+  total += Math.max(0, p * 2.5 - 470) * 1000 - 2.10 * 1000;
+  pnl.push(total);
+}
+
+new Chart(document.getElementById('plChart'), {
+  type: 'line',
+  data: {
+    labels: prices.map(p => '$' + p),
+    datasets: [{
+      label: 'P&L',
+      data: pnl,
+      borderColor: '#0ea5e9',
+      backgroundColor: (ctx) => {
+        const value = ctx.raw;
+        return value >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+      },
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      annotation: {
+        annotations: {
+          zeroline: { type: 'line', yMin: 0, yMax: 0, borderColor: '<%= theme === "light" ? "#6b7280" : "#64748b" %>', borderWidth: 1, borderDash: [5, 5] },
+          currentPrice: { type: 'line', xMin: 8, xMax: 8, borderColor: '#8b5cf6', borderWidth: 2 }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: '<%= theme === "light" ? "#e5e7eb" : "#334155" %>' } },
+      y: { grid: { color: '<%= theme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { callback: v => '$' + v } }
+    }
+  }
+});
+
+function showOptionsCalc() {
+  showToast('Options calculator coming soon!', 'info');
+}
+
+function showAddOptionModal() {
+  showToast('Add option modal coming soon!', 'info');
+}
+</script>
+<%- include('../partials/footer') %>

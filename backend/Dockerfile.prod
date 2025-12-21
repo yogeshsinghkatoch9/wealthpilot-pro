@@ -1,0 +1,100 @@
+##############################################
+# WealthPilot Pro - Backend Production Dockerfile
+# Multi-stage build for optimized production image
+##############################################
+
+# ==========================================
+# Stage 1: Dependencies
+# ==========================================
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Install build dependencies for canvas and native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    pkgconfig \
+    cairo-dev \
+    pango-dev \
+    pixman-dev \
+    libjpeg-turbo-dev \
+    giflib-dev \
+    librsvg-dev
+
+# Copy package files
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install all production dependencies including canvas
+RUN npm ci --omit=dev && \
+    npm cache clean --force
+
+# ==========================================
+# Stage 2: Builder
+# ==========================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package*.json ./
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# ==========================================
+# Stage 3: Production
+# ==========================================
+FROM node:20-alpine AS production
+
+# Set environment
+ENV NODE_ENV=production
+ENV PORT=4000
+
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 wealthpilot && \
+    mkdir -p /app/data /app/logs /app/reports && \
+    chown -R wealthpilot:nodejs /app
+
+# Install runtime dependencies (including canvas runtime libs)
+RUN apk add --no-cache \
+    curl \
+    tini \
+    dumb-init \
+    cairo \
+    pango \
+    pixman \
+    libjpeg-turbo \
+    giflib \
+    librsvg
+
+# Copy necessary files from builder
+COPY --from=builder --chown=wealthpilot:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=wealthpilot:nodejs /app/package*.json ./
+COPY --from=builder --chown=wealthpilot:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=wealthpilot:nodejs /app/src ./src
+
+# Switch to non-root user
+USER wealthpilot
+
+# Expose port
+EXPOSE 4000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:4000/health || exit 1
+
+# Use tini as init system
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Start application
+CMD ["node", "src/index.js"]

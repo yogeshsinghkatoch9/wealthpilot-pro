@@ -1,0 +1,31 @@
+
+=====================================================
+🔍 TROUBLESHOOTING GUIDE
+=====================================================
+
+ISSUE: 'Failed to refresh market breadth data'
+
+ROOT CAUSE: Not logged in at frontend (no session cookie)
+
+SOLUTION:
+1. Open browser and go to: http://localhost:3000
+2. Login with:
+   Email: demo@wealthpilot.com
+   Password: demo123456
+3. After login, navigate to Market Breadth page
+4. Click REFRESH button
+
+The error happens because:
+- Frontend JavaScript calls /api/market-breadth/...
+- Frontend proxy forwards to http://localhost:4000/api/market-breadth/...
+- Proxy reads token from cookie (req.cookies.token)
+- If not logged in → NO TOKEN → Backend returns auth error
+- JavaScript catches error → Shows 'Failed to refresh' message
+
+VERIFICATION:
+- Backend API is working ✅ (tested with Bearer token)
+- Frontend proxy is configured ✅ (adds Authorization header)
+- YOU JUST NEED TO LOGIN at http://localhost:3000 ✅
+
+=====================================================
+

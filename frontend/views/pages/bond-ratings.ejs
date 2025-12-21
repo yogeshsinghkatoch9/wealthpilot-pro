@@ -1,0 +1,193 @@
+<%- include('../partials/header', { pageTitle: 'Bond Ratings' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Bond Ratings</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Credit ratings & yield analysis for holdings</p></div>
+<div class="flex gap-2">
+<select class="form-input w-32"><option selected>My Holdings</option><option>Watchlist</option></select>
+</div>
+</div>
+
+<!-- Credit Overview -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-sky-50 to-emerald-50' : 'from-sky-900/20 to-emerald-900/20' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Credit Quality</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Credit Rating</p>
+<p class="text-3xl font-bold text-emerald-400">A+</p>
+<p class="text-xs text-emerald-400">Investment Grade</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">AAA/AA Rated</p>
+<p class="text-3xl font-bold text-emerald-400">8</p>
+<p class="text-xs">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">A/BBB Rated</p>
+<p class="text-3xl font-bold text-sky-400">6</p>
+<p class="text-xs">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Below IG</p>
+<p class="text-3xl font-bold text-amber-400">2</p>
+<p class="text-xs text-amber-400">speculative</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Recent Changes</p>
+<p class="text-3xl font-bold text-emerald-400">+2</p>
+<p class="text-xs text-emerald-400">upgrades YTD</p>
+</div>
+</div>
+</div>
+
+<!-- Credit Ratings Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings Credit Ratings</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3 text-center">S&P</th>
+<th class="px-4 py-3 text-center">Moody's</th>
+<th class="px-4 py-3 text-center">Fitch</th>
+<th class="px-4 py-3 text-center">Outlook</th>
+<th class="px-4 py-3 text-center">Bond Yield</th>
+<th class="px-4 py-3 text-center">Spread</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div><span class="font-medium">Microsoft</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">AAA</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">Aaa</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">AAA</span></td>
+<td class="px-4 py-3 text-center text-emerald-400">Stable</td>
+<td class="px-4 py-3 text-center">4.82%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+45bp</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">AA+</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">Aaa</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">AA+</span></td>
+<td class="px-4 py-3 text-center text-emerald-400">Stable</td>
+<td class="px-4 py-3 text-center">4.92%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+55bp</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div><span class="font-medium">J&J</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">AAA</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">Aaa</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">AAA</span></td>
+<td class="px-4 py-3 text-center text-emerald-400">Stable</td>
+<td class="px-4 py-3 text-center">4.78%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+41bp</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-bold">A+</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-bold">A2</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-bold">A+</span></td>
+<td class="px-4 py-3 text-center text-emerald-400">Positive</td>
+<td class="px-4 py-3 text-center">5.12%</td>
+<td class="px-4 py-3 text-center">+75bp</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">TSLA</div><span class="font-medium">Tesla</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">BBB</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">Baa3</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">BBB-</span></td>
+<td class="px-4 py-3 text-center text-amber-400">Stable</td>
+<td class="px-4 py-3 text-center">5.84%</td>
+<td class="px-4 py-3 text-center text-amber-400">+147bp</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Rating Scale & Distribution -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Credit Rating Scale</h3>
+<div class="space-y-2 text-sm">
+<div class="flex items-center gap-3 p-2 rounded bg-emerald-500/10">
+<span class="w-16 font-bold text-emerald-400">AAA</span>
+<div class="flex-1 h-2 rounded bg-emerald-500"></div>
+<span class="text-xs">Highest Quality</span>
+</div>
+<div class="flex items-center gap-3 p-2 rounded bg-emerald-500/10">
+<span class="w-16 font-bold text-emerald-400">AA</span>
+<div class="flex-1 h-2 rounded bg-emerald-400"></div>
+<span class="text-xs">High Quality</span>
+</div>
+<div class="flex items-center gap-3 p-2 rounded bg-sky-500/10">
+<span class="w-16 font-bold text-sky-400">A</span>
+<div class="flex-1 h-2 rounded bg-sky-500"></div>
+<span class="text-xs">Upper Medium</span>
+</div>
+<div class="flex items-center gap-3 p-2 rounded bg-amber-500/10">
+<span class="w-16 font-bold text-amber-400">BBB</span>
+<div class="flex-1 h-2 rounded bg-amber-500"></div>
+<span class="text-xs">Lower Medium (IG)</span>
+</div>
+<div class="flex items-center gap-3 p-2 rounded bg-red-500/10">
+<span class="w-16 font-bold text-red-400">BB/B</span>
+<div class="flex-1 h-2 rounded bg-red-500"></div>
+<span class="text-xs">Speculative</span>
+</div>
+</div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Rating Distribution</h3>
+<div class="h-48"><canvas id="distChart"></canvas></div>
+</div>
+</div>
+
+<!-- Recent Rating Actions -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">📊 Recent Rating Actions</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="text-emerald-400 text-xl">⬆️</span>
+<div><span class="font-bold">NVDA</span><span class="ml-2 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">S&P Upgrade</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium">A → <span class="text-emerald-400">A+</span></p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Strong cash flow, AI dominance | Nov 2024</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="text-sky-400 text-xl">↔️</span>
+<div><span class="font-bold">AAPL</span><span class="ml-2 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Moody's Affirm</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium"><span class="text-sky-400">Aaa Stable</span></p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Exceptional liquidity maintained | Oct 2024</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-amber-50' : 'bg-amber-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="text-amber-400 text-xl">⚠️</span>
+<div><span class="font-bold">INTC</span><span class="ml-2 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">S&P Downgrade</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium">A- → <span class="text-amber-400">BBB+</span></p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Competitive pressures, restructuring | Sep 2024</p>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('distChart'), {
+  type: 'doughnut',
+  data: { labels: ['AAA','AA','A','BBB','BB & Below'], datasets: [{ data: [3,5,4,3,1], backgroundColor: ['#10b981','#34d399','#0ea5e9','#f59e0b','#ef4444'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+<%- include('../partials/footer') %>

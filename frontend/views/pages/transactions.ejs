@@ -1,0 +1,301 @@
+<%
+// Safe defaults for undefined variables
+const safeTransactions = transactions || [];
+const safePortfolios = portfolios || [];
+const safeStats = stats || {};
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  money: (val) => `$${Number(val).toFixed(2)}`,
+  compact: (val) => Number(val).toLocaleString()
+};
+%>
+
+<%- include('../partials/header', { pageTitle: 'Transactions' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-1.5 h-8 bg-amber-400"></div>
+      <div>
+        <h1 class="text-lg font-bold text-white tracking-wide">TRANSACTIONS</h1>
+        <p class="text-xs text-slate-400 font-mono">TRADE HISTORY & ACTIVITY</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="openModal('txModal')" class="bloomberg-btn bloomberg-btn-primary">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        ADD TRANSACTION
+      </button>
+    </div>
+  </div>
+</div>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-4">
+
+    <!-- KPI Bar -->
+    <div class="bloomberg-kpi-bar">
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">TOTAL TRANSACTIONS</div>
+        <div class="bloomberg-kpi-value text-amber-400 font-mono"><%= safeStats.totalTransactions || safeTransactions.length %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">THIS MONTH</div>
+        <div class="bloomberg-kpi-value text-sky-400 font-mono"><%= safeStats.thisMonthCount || 0 %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">BUYS</div>
+        <div class="bloomberg-kpi-value text-emerald-400 font-mono"><%= safeFmt.compact(safeStats.buyTotal || 0) %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">SELLS</div>
+        <div class="bloomberg-kpi-value text-red-400 font-mono"><%= safeFmt.compact(safeStats.sellTotal || 0) %></div>
+      </div>
+      <div class="bloomberg-kpi-divider"></div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">DIVIDENDS</div>
+        <div class="bloomberg-kpi-value text-purple-400 font-mono"><%= safeFmt.compact(safeStats.dividendTotal || 0) %></div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bloomberg-card">
+      <div class="flex flex-wrap gap-3 items-center">
+        <select id="portfolioFilter" class="bloomberg-input w-48" onchange="filterTransactions()">
+          <option value="">ALL PORTFOLIOS</option>
+          <% safePortfolios.forEach(p => { %>
+          <option value="<%= p.id %>"><%= p.name.toUpperCase() %></option>
+          <% }) %>
+        </select>
+        <select id="typeFilter" class="bloomberg-input w-40" onchange="filterTransactions()">
+          <option value="">ALL TYPES</option>
+          <option value="buy">BUY</option>
+          <option value="sell">SELL</option>
+          <option value="dividend">DIVIDEND</option>
+          <option value="split">SPLIT</option>
+        </select>
+        <input
+          type="text"
+          id="symbolSearch"
+          class="bloomberg-input flex-1"
+          placeholder="SEARCH SYMBOL..."
+          onkeyup="filterTransactions()"
+        >
+      </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="bloomberg-card overflow-hidden">
+      <% if (safeTransactions.length === 0) { %>
+      <div class="p-12 text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <h3 class="text-lg font-semibold text-white mb-2 tracking-wide">NO TRANSACTIONS</h3>
+        <p class="text-slate-400 mb-4 text-sm">Add your first transaction to start tracking</p>
+        <button onclick="openModal('txModal')" class="bloomberg-btn bloomberg-btn-primary">
+          ADD TRANSACTION
+        </button>
+      </div>
+      <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="bloomberg-table" id="txTable">
+          <thead>
+            <tr>
+              <th>DATE</th>
+              <th>TYPE</th>
+              <th>SYMBOL</th>
+              <th class="text-right">SHARES</th>
+              <th class="text-right">PRICE</th>
+              <th class="text-right">TOTAL</th>
+              <th>PORTFOLIO</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% safeTransactions.forEach(tx => {
+              const total = (parseFloat(tx.shares) || 0) * (parseFloat(tx.price) || 0) || parseFloat(tx.total) || 0;
+              const typeColor = tx.type === 'buy' ? 'emerald-400' : tx.type === 'sell' ? 'red-400' : 'purple-400';
+            %>
+            <tr class="tx-row" data-portfolio="<%= tx.portfolioId %>" data-type="<%= tx.type %>" data-symbol="<%= (tx.symbol || '').toLowerCase() %>">
+              <td class="font-mono text-slate-300">
+                <%= tx.date ? new Date(tx.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '-' %>
+              </td>
+              <td>
+                <span class="inline-flex items-center px-2 py-0.5 text-xs font-bold tracking-wider bg-<%= typeColor %>/10 text-<%= typeColor %> border border-<%= typeColor %>/30">
+                  <%= (tx.type || 'N/A').toUpperCase() %>
+                </span>
+              </td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center">
+                    <span class="text-amber-400 text-xs font-bold font-mono">
+                      <%= tx.symbol ? tx.symbol.slice(0,2).toUpperCase() : '??' %>
+                    </span>
+                  </div>
+                  <span class="text-white font-semibold tracking-wide"><%= (tx.symbol || '-').toUpperCase() %></span>
+                </div>
+              </td>
+              <td class="text-right font-mono text-slate-300">
+                <%= tx.shares ? parseFloat(tx.shares).toFixed(3) : '-' %>
+              </td>
+              <td class="text-right font-mono text-slate-300">
+                <%= tx.price ? safeFmt.money(parseFloat(tx.price)) : '-' %>
+              </td>
+              <td class="text-right font-mono font-semibold <%= tx.type === 'sell' || tx.type === 'dividend' ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= tx.type === 'buy' ? '-' : '+' %><%= safeFmt.money(total) %>
+              </td>
+              <td class="text-slate-400 text-sm">
+                <%= tx.portfolioName || 'UNKNOWN' %>
+              </td>
+              <td class="text-right">
+                <button class="text-slate-500 hover:text-amber-400 transition-colors p-1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="px-4 py-3 border-t border-slate-700/50 flex justify-between items-center bg-slate-900/50">
+        <span class="text-slate-400 text-xs font-mono tracking-wide">
+          SHOWING <span id="txCount" class="text-amber-400 font-semibold"><%= safeTransactions.length %></span> OF <%= safeStats.totalTransactions || safeTransactions.length %> TRANSACTIONS
+        </span>
+      </div>
+      <% } %>
+    </div>
+
+  </div>
+</main>
+
+<!-- Transaction Modal -->
+<div id="txModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header border-b border-slate-700">
+      <h3 class="text-white font-bold tracking-wide">ADD TRANSACTION</h3>
+      <button onclick="closeModal('txModal')" class="modal-close text-slate-400 hover:text-white">&times;</button>
+    </div>
+    <form id="txForm" onsubmit="return handleAddTx(event)">
+      <div class="space-y-4 p-6">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-2 tracking-wide">TYPE</label>
+            <select name="type" class="bloomberg-input" required>
+              <option value="buy">BUY</option>
+              <option value="sell">SELL</option>
+              <option value="dividend">DIVIDEND</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-2 tracking-wide">DATE</label>
+            <input type="date" name="date" class="bloomberg-input" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-2 tracking-wide">PORTFOLIO</label>
+          <select name="portfolio_id" class="bloomberg-input" required>
+            <% safePortfolios.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.name.toUpperCase() %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-2 tracking-wide">SYMBOL</label>
+          <input type="text" name="symbol" class="bloomberg-input" placeholder="AAPL" required style="text-transform: uppercase;">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-2 tracking-wide">SHARES</label>
+            <input type="number" name="shares" class="bloomberg-input font-mono" placeholder="100" step="0.001">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-2 tracking-wide">PRICE</label>
+            <input type="number" name="price" class="bloomberg-input font-mono" placeholder="150.00" step="0.01">
+          </div>
+        </div>
+        <button type="submit" class="bloomberg-btn bloomberg-btn-primary w-full">
+          ADD TRANSACTION
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function filterTransactions() {
+  const portfolio = document.getElementById('portfolioFilter').value;
+  const type = document.getElementById('typeFilter').value;
+  const symbol = document.getElementById('symbolSearch').value.toLowerCase();
+  const rows = document.querySelectorAll('.tx-row');
+  let visible = 0;
+
+  rows.forEach(row => {
+    const matchPortfolio = !portfolio || row.dataset.portfolio === portfolio;
+    const matchType = !type || row.dataset.type === type;
+    const matchSymbol = !symbol || (row.dataset.symbol && row.dataset.symbol.includes(symbol));
+
+    if (matchPortfolio && matchType && matchSymbol) {
+      row.style.display = '';
+      visible++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  document.getElementById('txCount').textContent = visible;
+}
+
+async function handleAddTx(e) {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+
+  const shares = parseFloat(formData.get('shares')) || 0;
+  const price = parseFloat(formData.get('price')) || 0;
+  const amount = shares * price;
+
+  try {
+    const res = await fetch('/api/transactions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        portfolioId: formData.get('portfolio_id'),
+        symbol: formData.get('symbol').toUpperCase(),
+        type: formData.get('type'),
+        shares: shares,
+        price: price,
+        amount: amount,
+        fees: 0,
+        executedAt: formData.get('date') + 'T00:00:00.000Z',
+        notes: ''
+      })
+    });
+
+    if (res.ok) {
+      showToast('Transaction added successfully', 'success');
+      closeModal('txModal');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const error = await res.json();
+      console.error('Transaction error:', error);
+      showToast('Failed to add transaction', 'error');
+    }
+  } catch (err) {
+    console.error('Error adding transaction:', err);
+    showToast('Error adding transaction', 'error');
+  }
+  return false;
+}
+</script>
+
+<%- include('../partials/footer') %>

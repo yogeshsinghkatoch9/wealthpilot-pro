@@ -1,0 +1,397 @@
+<%- include('../partials/header', { pageTitle: 'Market Scanner' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-amber-400 tracking-wide">MARKET SCANNER</h1>
+      <p class="text-xs text-slate-400 mt-1">Real-time scanning with custom conditions</p>
+    </div>
+    <button onclick="runScanner()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      RUN SCAN
+    </button>
+  </div>
+</div>
+
+<!-- Scanner Presets -->
+<div class="flex flex-wrap gap-2 mb-6">
+  <button onclick="loadPreset('gainers')" class="preset-btn bloomberg-btn bloomberg-btn-sm bg-emerald-500 text-black font-bold">
+    TOP GAINERS
+  </button>
+  <button onclick="loadPreset('losers')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    TOP LOSERS
+  </button>
+  <button onclick="loadPreset('volume')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    HIGH VOLUME
+  </button>
+  <button onclick="loadPreset('breakout')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    BREAKOUTS
+  </button>
+  <button onclick="loadPreset('oversold')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    OVERSOLD RSI
+  </button>
+  <button onclick="loadPreset('overbought')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    OVERBOUGHT RSI
+  </button>
+  <button onclick="loadPreset('earnings')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    EARNINGS SOON
+  </button>
+  <button onclick="loadPreset('dividend')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
+    HIGH DIVIDEND
+  </button>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+  <!-- Filter Builder -->
+  <div class="bloomberg-card">
+    <div class="p-5">
+      <h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wide">FILTERS</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">MARKET CAP</label>
+          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>Any</option>
+            <option>Mega ($200B+)</option>
+            <option>Large ($10B-$200B)</option>
+            <option>Mid ($2B-$10B)</option>
+            <option>Small ($300M-$2B)</option>
+            <option>Micro (&lt;$300M)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">SECTOR</label>
+          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>All Sectors</option>
+            <option>Technology</option>
+            <option>Healthcare</option>
+            <option>Financial</option>
+            <option>Consumer</option>
+            <option>Energy</option>
+            <option>Industrial</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">PRICE RANGE</label>
+          <div class="flex gap-2">
+            <input type="number" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">DAILY CHANGE %</label>
+          <div class="flex gap-2">
+            <input type="number" placeholder="Min" value="5" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">VOLUME</label>
+          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>Above Average</option>
+            <option>2x Average</option>
+            <option>5x Average</option>
+            <option>10x Average</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">RSI (14)</label>
+          <div class="flex gap-2">
+            <input type="number" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" placeholder="Max" value="30" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">52-WEEK POSITION</label>
+          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>Any</option>
+            <option>Near 52W High</option>
+            <option>Near 52W Low</option>
+            <option>New 52W High</option>
+            <option>New 52W Low</option>
+          </select>
+        </div>
+
+        <button onclick="addCondition()" class="bloomberg-btn bloomberg-btn-sm w-full text-xs">
+          + ADD CUSTOM CONDITION
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="lg:col-span-3 space-y-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm text-slate-400">
+        <span class="font-bold text-emerald-400 font-mono" id="resultCount">47</span> STOCKS MATCH YOUR CRITERIA
+      </p>
+      <div class="flex gap-2">
+        <select class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <option>SORT: CHANGE %</option>
+          <option>SORT: VOLUME</option>
+          <option>SORT: MARKET CAP</option>
+          <option>SORT: PRICE</option>
+        </select>
+        <button onclick="saveScanner()" class="bloomberg-btn bloomberg-btn-sm">SAVE</button>
+        <button onclick="exportResults()" class="bloomberg-btn bloomberg-btn-sm">EXPORT CSV</button>
+      </div>
+    </div>
+
+    <div class="bloomberg-card overflow-hidden">
+      <table class="bloomberg-table">
+        <thead>
+          <tr>
+            <th>SYMBOL</th>
+            <th>PRICE</th>
+            <th>CHANGE</th>
+            <th>VOLUME</th>
+            <th>MARKET CAP</th>
+            <th>RSI</th>
+            <th>SIGNAL</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="scanResults">
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                  SMCI
+                </div>
+                <div>
+                  <p class="font-bold text-white">SMCI</p>
+                  <p class="text-xs text-slate-500">Super Micro</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$42.85</td>
+            <td class="font-mono text-emerald-400 font-bold">+18.4%</td>
+            <td class="font-mono text-slate-400">45.2M</td>
+            <td class="font-mono text-slate-400">$25B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">58</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">BREAKOUT</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">
+                  PLTR
+                </div>
+                <div>
+                  <p class="font-bold text-white">PLTR</p>
+                  <p class="text-xs text-slate-500">Palantir</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$71.24</td>
+            <td class="font-mono text-emerald-400 font-bold">+12.8%</td>
+            <td class="font-mono text-slate-400">89.4M</td>
+            <td class="font-mono text-slate-400">$158B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-mono font-bold">78</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">52W HIGH</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
+                  RIVN
+                </div>
+                <div>
+                  <p class="font-bold text-white">RIVN</p>
+                  <p class="text-xs text-slate-500">Rivian</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$14.87</td>
+            <td class="font-mono text-emerald-400 font-bold">+9.2%</td>
+            <td class="font-mono text-slate-400">67.8M</td>
+            <td class="font-mono text-slate-400">$15B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono font-bold">42</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-sky-500/20 text-sky-400 rounded text-xs font-bold">VOLUME</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white text-xs font-bold">
+                  MARA
+                </div>
+                <div>
+                  <p class="font-bold text-white">MARA</p>
+                  <p class="text-xs text-slate-500">Marathon Digital</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$24.56</td>
+            <td class="font-mono text-emerald-400 font-bold">+8.7%</td>
+            <td class="font-mono text-slate-400">52.1M</td>
+            <td class="font-mono text-slate-400">$7.8B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">55</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">CRYPTO</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                  SOUN
+                </div>
+                <div>
+                  <p class="font-bold text-white">SOUN</p>
+                  <p class="text-xs text-slate-500">SoundHound AI</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$8.42</td>
+            <td class="font-mono text-emerald-400 font-bold">+7.5%</td>
+            <td class="font-mono text-slate-400">38.9M</td>
+            <td class="font-mono text-slate-400">$2.8B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">62</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">AI THEME</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                  IONQ
+                </div>
+                <div>
+                  <p class="font-bold text-white">IONQ</p>
+                  <p class="text-xs text-slate-500">IonQ</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$42.18</td>
+            <td class="font-mono text-emerald-400 font-bold">+6.9%</td>
+            <td class="font-mono text-slate-400">24.5M</td>
+            <td class="font-mono text-slate-400">$9.2B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-mono font-bold">72</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">QUANTUM</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex justify-center">
+      <button class="bloomberg-btn">LOAD MORE RESULTS</button>
+    </div>
+  </div>
+</div>
+
+<!-- Saved Scanners -->
+<div class="bloomberg-card mt-6">
+  <div class="p-5">
+    <h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wide">SAVED SCANNERS</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('momentum')">
+        <p class="font-bold text-white text-sm">MOMENTUM PLAYS</p>
+        <p class="text-xs text-slate-400 mt-1">RSI > 60, Vol > 2x</p>
+      </div>
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('value')">
+        <p class="font-bold text-white text-sm">VALUE STOCKS</p>
+        <p class="text-xs text-slate-400 mt-1">P/E < 15, Div > 2%</p>
+      </div>
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('smallcap')">
+        <p class="font-bold text-white text-sm">SMALL CAP GROWTH</p>
+        <p class="text-xs text-slate-400 mt-1">$300M-$2B, +50% YoY</p>
+      </div>
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('squeeze')">
+        <p class="font-bold text-white text-sm">SHORT SQUEEZE</p>
+        <p class="text-xs text-slate-400 mt-1">SI > 20%, Days < 5</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function runScanner() {
+  showToast('Scanning markets...', 'info');
+  setTimeout(() => {
+    document.getElementById('resultCount').textContent = Math.floor(Math.random() * 50 + 30);
+    showToast('Scan complete!', 'success');
+  }, 1000);
+}
+
+function loadPreset(preset) {
+  // Reset all preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.className = 'preset-btn bloomberg-btn bloomberg-btn-sm';
+  });
+  // Highlight selected preset
+  event.currentTarget.className = 'preset-btn bloomberg-btn bloomberg-btn-sm bg-emerald-500 text-black font-bold';
+  showToast(`Loaded ${preset} preset`, 'info');
+  runScanner();
+}
+
+function saveScanner() {
+  showToast('Scanner saved!', 'success');
+}
+
+function exportResults() {
+  showToast('Exporting to CSV...', 'info');
+}
+
+function addCondition() {
+  showToast('Custom condition builder coming soon!', 'info');
+}
+
+function loadSaved(name) {
+  showToast(`Loading ${name} scanner...`, 'info');
+  runScanner();
+}
+</script>
+
+<%- include('../partials/footer') %>

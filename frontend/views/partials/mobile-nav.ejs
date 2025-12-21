@@ -1,0 +1,286 @@
+<!-- Mobile Header -->
+<header class="mobile-header">
+  <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+  
+  <div class="mobile-header-logo">
+    Wealth<span>Pilot</span>
+  </div>
+  
+  <button class="mobile-menu-btn" onclick="window.commandPalette?.open()">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    </svg>
+  </button>
+</header>
+
+<!-- Mobile Bottom Navigation -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-items">
+    <a href="/" class="mobile-nav-item <%= typeof currentPage !== 'undefined' && currentPage === 'dashboard' ? 'active' : '' %>">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span>Home</span>
+    </a>
+    
+    <a href="/portfolio" class="mobile-nav-item <%= typeof currentPage !== 'undefined' && currentPage === 'portfolio' ? 'active' : '' %>">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+      <span>Portfolio</span>
+    </a>
+    
+    <a href="/analytics" class="mobile-nav-item <%= typeof currentPage !== 'undefined' && currentPage === 'analytics' ? 'active' : '' %>">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <span>Analytics</span>
+    </a>
+    
+    <a href="/watchlist" class="mobile-nav-item <%= typeof currentPage !== 'undefined' && currentPage === 'watchlist' ? 'active' : '' %>">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+      </svg>
+      <span>Watch</span>
+    </a>
+    
+    <button class="mobile-nav-item" onclick="toggleMobileMore()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <span>More</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" id="mobile-overlay" onclick="closeMobileSidebar()"></div>
+
+<!-- Mobile More Menu (slides up from bottom) -->
+<div class="mobile-more-menu" id="mobile-more-menu">
+  <div class="mobile-more-header">
+    <span>More Options</span>
+    <button onclick="toggleMobileMore()">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <div class="mobile-more-grid">
+    <a href="/performance" class="mobile-more-item">
+      <div class="mobile-more-icon bg-emerald-500/20 text-emerald-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+      <span>Performance</span>
+    </a>
+    <a href="/dividends" class="mobile-more-item">
+      <div class="mobile-more-icon bg-purple-500/20 text-purple-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <span>Dividends</span>
+    </a>
+    <a href="/risk" class="mobile-more-item">
+      <div class="mobile-more-icon bg-amber-500/20 text-amber-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <span>Risk</span>
+    </a>
+    <a href="/alerts" class="mobile-more-item">
+      <div class="mobile-more-icon bg-red-500/20 text-red-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </div>
+      <span>Alerts</span>
+    </a>
+    <a href="/transactions" class="mobile-more-item">
+      <div class="mobile-more-icon bg-sky-500/20 text-sky-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+      </div>
+      <span>Transactions</span>
+    </a>
+    <a href="/reports" class="mobile-more-item">
+      <div class="mobile-more-icon bg-blue-500/20 text-blue-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <span>Reports</span>
+    </a>
+    <a href="/settings" class="mobile-more-item">
+      <div class="mobile-more-icon bg-slate-500/20 text-slate-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      <span>Settings</span>
+    </a>
+    <a href="/logout" class="mobile-more-item">
+      <div class="mobile-more-icon bg-red-500/20 text-red-400">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </div>
+      <span>Logout</span>
+    </a>
+  </div>
+</div>
+
+<style>
+  /* Mobile More Menu */
+  .mobile-more-menu {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1e293b;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    z-index: 50;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .mobile-more-menu.open {
+    transform: translateY(0);
+  }
+  
+  .mobile-more-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #334155;
+    color: white;
+    font-weight: 600;
+  }
+  
+  .mobile-more-header button {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+  }
+  
+  .mobile-more-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 16px;
+  }
+  
+  .mobile-more-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 8px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 11px;
+    text-align: center;
+    border-radius: 12px;
+    transition: all 0.2s;
+  }
+  
+  .mobile-more-item:active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .mobile-more-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+  }
+  
+  .mobile-more-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  @media (min-width: 769px) {
+    .mobile-more-menu,
+    .mobile-overlay,
+    .mobile-header,
+    .mobile-nav {
+      display: none !important;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .mobile-more-menu {
+      display: block;
+    }
+  }
+  
+  @media (max-width: 375px) {
+    .mobile-more-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
+
+<script>
+  // Mobile sidebar toggle
+  function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (sidebar) {
+      sidebar.classList.toggle('mobile-open');
+      overlay.classList.toggle('active');
+      document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : '';
+    }
+  }
+  
+  function closeMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (sidebar) {
+      sidebar.classList.remove('mobile-open');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+  
+  // Mobile more menu toggle
+  function toggleMobileMore() {
+    const menu = document.getElementById('mobile-more-menu');
+    const overlay = document.getElementById('mobile-overlay');
+    
+    if (menu) {
+      menu.classList.toggle('open');
+      overlay.classList.toggle('active');
+      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+    }
+  }
+  
+  // Close menus on escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeMobileSidebar();
+      const menu = document.getElementById('mobile-more-menu');
+      if (menu) {
+        menu.classList.remove('open');
+        document.getElementById('mobile-overlay').classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+  });
+  
+  // Desktop sidebar toggle
+  function toggleDesktopSidebar() {
+    document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('sidebar_collapsed', document.body.classList.contains('sidebar-collapsed'));
+  }
+  
+  // Restore sidebar state
+  if (localStorage.getItem('sidebar_collapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+</script>

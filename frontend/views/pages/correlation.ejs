@@ -1,0 +1,272 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeData = typeof data !== 'undefined' ? data : {};
+const safeSymbols = safeData.symbols || [];
+const safeMatrix = safeData.matrix || [];
+const safeAvgCorrelation = safeData.avgCorrelation || 0;
+const safeHighestCorrelation = safeData.highestCorrelation || { value: 0, pair: 'N/A' };
+const safeLowestCorrelation = safeData.lowestCorrelation || { value: 0, pair: 'N/A' };
+const safeTopCorrelations = safeData.topCorrelations || [];
+const safeBottomCorrelations = safeData.bottomCorrelations || [];
+const safeInsights = safeData.insights || [];
+%>
+<%- include('../partials/header', { pageTitle: 'Correlation Matrix' }) %>
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+      <!-- Bloomberg Header Bar -->
+      <div class="bloomberg-header">
+        <div>
+          <h1 class="text-2xl font-bold text-amber-400 mb-1">CORRELATION MATRIX</h1>
+          <p class="text-gray-400 text-sm">Portfolio asset correlation analysis</p>
+        </div>
+        <div class="flex gap-2">
+          <select id="periodSelect" class="form-input w-40" onchange="changePeriod()">
+            <option value="30">30 Days</option>
+            <option value="90" selected>90 Days</option>
+            <option value="365">1 Year</option>
+            <option value="1095">3 Years</option>
+          </select>
+          <button onclick="refreshCorrelation()" class="bloomberg-btn bloomberg-btn-primary">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <% if (safeSymbols.length > 0) { %>
+      <!-- Correlation Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bloomberg-card p-4">
+          <p class="text-gray-400 text-sm mb-2">Avg Correlation</p>
+          <p class="text-2xl font-bold font-mono <%= safeAvgCorrelation > 0.7 ? 'text-red-400' : safeAvgCorrelation > 0.4 ? 'text-amber-400' : 'text-emerald-400' %>">
+            <%= safeAvgCorrelation.toFixed(2) %>
+          </p>
+          <p class="text-xs <%= safeAvgCorrelation > 0.7 ? 'text-red-400' : safeAvgCorrelation > 0.4 ? 'text-amber-400' : 'text-emerald-400' %>">
+            <%= safeAvgCorrelation > 0.7 ? 'High correlation' : safeAvgCorrelation > 0.4 ? 'Moderately high' : 'Well diversified' %>
+          </p>
+        </div>
+        <div class="bloomberg-card p-4">
+          <p class="text-gray-400 text-sm mb-2">Highest Pair</p>
+          <p class="text-2xl font-bold font-mono text-red-400"><%= safeHighestCorrelation.value.toFixed(2) %></p>
+          <p class="text-xs text-gray-400">
+            <%= safeHighestCorrelation.pair %>
+          </p>
+        </div>
+        <div class="bloomberg-card p-4">
+          <p class="text-gray-400 text-sm mb-2">Lowest Pair</p>
+          <p class="text-2xl font-bold font-mono text-emerald-400"><%= safeLowestCorrelation.value.toFixed(2) %></p>
+          <p class="text-xs text-gray-400">
+            <%= safeLowestCorrelation.pair %>
+          </p>
+        </div>
+        <div class="bloomberg-card p-4">
+          <p class="text-gray-400 text-sm mb-2">Diversification</p>
+          <% const divScore = safeData.diversificationScore || ((1 - safeAvgCorrelation) * 100); %>
+          <p class="text-2xl font-bold font-mono <%= divScore > 60 ? 'text-emerald-400' : divScore > 30 ? 'text-amber-400' : 'text-red-400' %>">
+            <%= divScore > 60 ? 'GOOD' : divScore > 30 ? 'FAIR' : 'POOR' %>
+          </p>
+          <p class="text-xs <%= divScore > 60 ? 'text-emerald-400' : divScore > 30 ? 'text-amber-400' : 'text-red-400' %>">
+            <%= divScore > 60 ? 'Well diversified' : divScore > 30 ? 'Could improve' : 'High risk' %>
+          </p>
+        </div>
+      </div>
+
+      <!-- Correlation Heatmap -->
+      <div class="bloomberg-card p-5">
+        <h3 class="font-semibold text-amber-400 mb-4 text-lg">CORRELATION HEATMAP</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-gray-400">
+                <th class="p-2"></th>
+                <% safeSymbols.forEach(symbol => { %>
+                <th class="p-2 text-center font-bold font-mono"><%= symbol %></th>
+                <% }) %>
+              </tr>
+            </thead>
+            <tbody class="text-white">
+              <% safeSymbols.forEach((rowSymbol, rowIdx) => { %>
+              <tr>
+                <td class="p-2 font-bold font-mono text-amber-400"><%= rowSymbol %></td>
+                <% safeSymbols.forEach((colSymbol, colIdx) => { %>
+                <% const corrValue = safeMatrix[rowIdx] ? safeMatrix[rowIdx][colIdx] : (rowIdx === colIdx ? 1 : 0); %>
+                <%
+                  let bgColor, textColor;
+                  if (corrValue === 1) {
+                    bgColor = 'rgba(16,185,129,0.9)';
+                    textColor = 'white';
+                  } else if (corrValue >= 0.8) {
+                    bgColor = 'rgba(239,68,68,0.9)';
+                    textColor = 'white';
+                  } else if (corrValue >= 0.6) {
+                    bgColor = 'rgba(239,68,68,0.7)';
+                    textColor = 'white';
+                  } else if (corrValue >= 0.4) {
+                    bgColor = 'rgba(245,158,11,0.6)';
+                    textColor = 'white';
+                  } else if (corrValue >= 0.2) {
+                    bgColor = 'rgba(59,130,246,0.4)';
+                    textColor = 'white';
+                  } else if (corrValue >= 0) {
+                    bgColor = 'rgba(59,130,246,0.3)';
+                    textColor = 'white';
+                  } else if (corrValue >= -0.2) {
+                    bgColor = 'rgba(16,185,129,0.3)';
+                    textColor = 'white';
+                  } else {
+                    bgColor = 'rgba(16,185,129,0.6)';
+                    textColor = 'white';
+                  }
+                %>
+                <td class="p-2 text-center rounded font-mono" style="background:<%= bgColor %>;color:<%= textColor %>">
+                  <%= corrValue.toFixed(2) %>
+                </td>
+                <% }) %>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-amber-400/20">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background:rgba(16,185,129,0.6)"></div>
+            <span class="text-xs text-gray-400">Negative</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background:rgba(59,130,246,0.4)"></div>
+            <span class="text-xs text-gray-400">Low</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background:rgba(245,158,11,0.6)"></div>
+            <span class="text-xs text-gray-400">Medium</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded" style="background:rgba(239,68,68,0.8)"></div>
+            <span class="text-xs text-gray-400">High</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Most Correlated Pairs -->
+        <div class="bloomberg-card p-5">
+          <h3 class="font-semibold text-amber-400 mb-4 text-lg">MOST CORRELATED PAIRS</h3>
+          <div class="space-y-3">
+            <% if (safeTopCorrelations.length > 0) { %>
+            <% safeTopCorrelations.slice(0, 5).forEach(pair => { %>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+              <div class="flex items-center gap-3">
+                <span class="font-semibold font-mono text-white"><%= pair.pair %></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 rounded-full bg-slate-700">
+                  <div class="h-2 rounded-full <%= pair.value > 0.8 ? 'bg-red-400' : pair.value > 0.6 ? 'bg-amber-400' : 'bg-sky-400' %>"
+                       style="width: <%= Math.abs(pair.value) * 100 %>%"></div>
+                </div>
+                <span class="font-bold font-mono <%= pair.value > 0.8 ? 'text-red-400' : pair.value > 0.6 ? 'text-amber-400' : 'text-sky-400' %>">
+                  <%= pair.value.toFixed(2) %>
+                </span>
+              </div>
+            </div>
+            <% }) %>
+            <% } else { %>
+            <p class="text-center text-gray-400 py-4">No correlation data available</p>
+            <% } %>
+          </div>
+          <p class="text-xs text-gray-400 mt-4">
+            High correlation indicates similar price movements, which may increase portfolio risk
+          </p>
+        </div>
+
+        <!-- Least Correlated Pairs -->
+        <div class="bloomberg-card p-5">
+          <h3 class="font-semibold text-amber-400 mb-4 text-lg">LEAST CORRELATED PAIRS</h3>
+          <div class="space-y-3">
+            <% if (safeBottomCorrelations.length > 0) { %>
+            <% safeBottomCorrelations.slice(0, 5).forEach(pair => { %>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+              <div class="flex items-center gap-3">
+                <span class="font-semibold font-mono text-white"><%= pair.pair %></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 rounded-full bg-slate-700">
+                  <div class="h-2 rounded-full bg-emerald-400" style="width: <%= (1 - Math.abs(pair.value)) * 100 %>%"></div>
+                </div>
+                <span class="font-bold font-mono text-emerald-400"><%= pair.value.toFixed(2) %></span>
+              </div>
+            </div>
+            <% }) %>
+            <% } else { %>
+            <p class="text-center text-gray-400 py-4">No correlation data available</p>
+            <% } %>
+          </div>
+          <p class="text-xs text-gray-400 mt-4">
+            Low or negative correlation provides diversification benefits
+          </p>
+        </div>
+      </div>
+
+      <!-- Correlation Recommendations -->
+      <div class="bloomberg-card p-5">
+        <h3 class="font-semibold text-amber-400 mb-4 text-lg">DIVERSIFICATION INSIGHTS</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% if (safeInsights.length > 0) { %>
+          <% safeInsights.forEach(insight => { %>
+          <div class="p-4 rounded-lg <%= insight.type === 'warning' ? 'bg-amber-500/10 border border-amber-500/20' : insight.type === 'danger' ? 'bg-red-500/10 border border-red-500/20' : 'bg-emerald-500/10 border border-emerald-500/20' %>">
+            <p class="font-medium text-white mb-1"><%= insight.title %></p>
+            <p class="text-sm text-gray-400"><%= insight.message %></p>
+          </div>
+          <% }) %>
+          <% } else { %>
+          <div class="p-4 rounded-lg bg-sky-500/10 border border-sky-500/20">
+            <p class="font-medium text-white mb-1">Portfolio Analysis</p>
+            <p class="text-sm text-gray-400">
+              Your average correlation is <span class="font-mono"><%= safeAvgCorrelation.toFixed(2) %></span>.
+              <%= safeAvgCorrelation > 0.7 ? 'Consider adding uncorrelated assets.' : safeAvgCorrelation > 0.4 ? 'Moderate diversification - some improvements possible.' : 'Good diversification across holdings.' %>
+            </p>
+          </div>
+          <div class="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <p class="font-medium text-white mb-1">Suggestion</p>
+            <p class="text-sm text-gray-400">
+              Consider adding bonds (BND, AGG) or gold (GLD) which typically have low correlation with stocks.
+            </p>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <% } else { %>
+      <!-- No Data State -->
+      <div class="bloomberg-card p-12 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center border border-amber-400/20">
+          <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-amber-400 mb-2">NO CORRELATION DATA</h3>
+        <p class="text-gray-400 mb-4">Add at least 2 holdings to your portfolio to see correlation analysis</p>
+        <a href="/portfolios" class="bloomberg-btn bloomberg-btn-primary">Add Holdings</a>
+      </div>
+      <% } %>
+
+    </div>
+  </main>
+</div>
+
+<script>
+function changePeriod() {
+  const period = document.getElementById('periodSelect').value;
+  window.location.href = '/correlation?period=' + period;
+}
+
+function refreshCorrelation() {
+  showToast('Refreshing correlation data...', 'info');
+  setTimeout(() => location.reload(), 500);
+}
+</script>
+<%- include('../partials/footer') %>

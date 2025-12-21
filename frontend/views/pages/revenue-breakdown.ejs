@@ -1,0 +1,188 @@
+<%- include('../partials/header', { pageTitle: 'Revenue Breakdown' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Revenue Breakdown</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Segment & geographic revenue analysis</p></div>
+<div class="flex gap-2">
+<input type="text" value="AAPL" class="form-input w-24 font-mono">
+<button class="btn-primary">Analyze</button>
+</div>
+</div>
+
+<!-- Company Header -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-sky-50 to-purple-50' : 'from-sky-900/20 to-purple-900/20' %>">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-xl">AAPL</div>
+<div class="flex-1">
+<h2 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Apple Inc.</h2>
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">FY 2024 Revenue: $383.3B (+2.0% YoY)</p>
+</div>
+<div class="text-center px-4">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Gross Margin</p>
+<p class="text-xl font-bold text-emerald-400">44.9%</p>
+</div>
+</div>
+</div>
+
+<!-- Revenue Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue by Segment</h3>
+<div class="h-64"><canvas id="segmentChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue by Geography</h3>
+<div class="h-64"><canvas id="geoChart"></canvas></div>
+</div>
+</div>
+
+<!-- Segment Details -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Segment Performance</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Segment</th>
+<th class="px-4 py-3 text-center">Revenue</th>
+<th class="px-4 py-3 text-center">% of Total</th>
+<th class="px-4 py-3">Mix</th>
+<th class="px-4 py-3 text-center">YoY Growth</th>
+<th class="px-4 py-3 text-center">Gross Margin</th>
+<th class="px-4 py-3 text-center">Trend</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-sky-500"></div><span class="font-medium">iPhone</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$200.6B</td>
+<td class="px-4 py-3 text-center">52.3%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-sky-500" style="width:52%"></div></div></td>
+<td class="px-4 py-3 text-center text-red-400">-2.8%</td>
+<td class="px-4 py-3 text-center">42.4%</td>
+<td class="px-4 py-3 text-center text-red-400">↓</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div><span class="font-medium">Services</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$96.2B</td>
+<td class="px-4 py-3 text-center">25.1%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-purple-500" style="width:25%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold">+14.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold">71.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400">↑↑</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="font-medium">Mac</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$29.4B</td>
+<td class="px-4 py-3 text-center">7.7%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:8%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400">+2.4%</td>
+<td class="px-4 py-3 text-center">38.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400">↑</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="font-medium">iPad</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$28.3B</td>
+<td class="px-4 py-3 text-center">7.4%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-amber-500" style="width:7%"></div></div></td>
+<td class="px-4 py-3 text-center text-red-400">-6.2%</td>
+<td class="px-4 py-3 text-center">36.8%</td>
+<td class="px-4 py-3 text-center text-red-400">↓</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><span class="font-medium">Wearables/Home</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$28.8B</td>
+<td class="px-4 py-3 text-center">7.5%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-red-500" style="width:8%"></div></div></td>
+<td class="px-4 py-3 text-center text-red-400">-8.4%</td>
+<td class="px-4 py-3 text-center">34.2%</td>
+<td class="px-4 py-3 text-center text-red-400">↓↓</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Geographic Revenue -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Geographic Revenue</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Region</th>
+<th class="px-4 py-3 text-center">Revenue</th>
+<th class="px-4 py-3 text-center">% of Total</th>
+<th class="px-4 py-3">Mix</th>
+<th class="px-4 py-3 text-center">YoY Growth</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">🇺🇸 Americas</td>
+<td class="px-4 py-3 text-center font-bold">$162.6B</td>
+<td class="px-4 py-3 text-center">42.4%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-sky-500" style="width:42%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400">+3.2%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">🇪🇺 Europe</td>
+<td class="px-4 py-3 text-center font-bold">$101.8B</td>
+<td class="px-4 py-3 text-center">26.6%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-purple-500" style="width:27%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400">+6.8%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">🇨🇳 Greater China</td>
+<td class="px-4 py-3 text-center font-bold">$72.6B</td>
+<td class="px-4 py-3 text-center">18.9%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-red-500" style="width:19%"></div></div></td>
+<td class="px-4 py-3 text-center text-red-400">-8.4%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">🇯🇵 Japan</td>
+<td class="px-4 py-3 text-center font-bold">$24.8B</td>
+<td class="px-4 py-3 text-center">6.5%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-amber-500" style="width:7%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400">+2.4%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">🌏 Rest of Asia Pacific</td>
+<td class="px-4 py-3 text-center font-bold">$21.5B</td>
+<td class="px-4 py-3 text-center">5.6%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:6%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400">+4.8%</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Revenue Trend -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Quarterly Revenue Trend</h3>
+<div class="h-48"><canvas id="trendChart"></canvas></div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('segmentChart'), {
+  type: 'doughnut',
+  data: { labels: ['iPhone','Services','Mac','iPad','Wearables'], datasets: [{ data: [52.3,25.1,7.7,7.4,7.5], backgroundColor: ['#0ea5e9','#8b5cf6','#10b981','#f59e0b','#ef4444'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('geoChart'), {
+  type: 'doughnut',
+  data: { labels: ['Americas','Europe','China','Japan','APAC'], datasets: [{ data: [42.4,26.6,18.9,6.5,5.6], backgroundColor: ['#0ea5e9','#8b5cf6','#ef4444','#f59e0b','#10b981'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: { labels: ['Q1 23','Q2 23','Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24'], datasets: [
+    { label: 'iPhone', data: [65.8,51.3,42.6,43.8,69.7,45.9,39.3,46.2], borderColor: '#0ea5e9', fill: false },
+    { label: 'Services', data: [20.8,21.2,21.4,22.3,23.1,24.2,24.2,25.0], borderColor: '#8b5cf6', fill: false }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+<%- include('../partials/footer') %>

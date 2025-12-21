@@ -1,0 +1,340 @@
+<%- include('../partials/header', { pageTitle: 'Import Wizard' }) %>
+
+<div class="text-center mb-8">
+<h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Import Wizard</h1>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Import your portfolio from any source</p>
+</div>
+
+<!-- Progress Steps -->
+<div class="flex items-center justify-center mb-8">
+<div class="flex items-center">
+<div class="step-circle active" data-step="1">1</div>
+<div class="step-line"></div>
+<div class="step-circle" data-step="2">2</div>
+<div class="step-line"></div>
+<div class="step-circle" data-step="3">3</div>
+<div class="step-line"></div>
+<div class="step-circle" data-step="4">4</div>
+</div>
+</div>
+
+<!-- Step 1: Select Source -->
+<div id="step1" class="step-content">
+<div class="card p-6">
+<h2 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Select Import Source</h2>
+
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+<div onclick="selectSource('csv')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">📄</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">CSV File</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Upload spreadsheet</p>
+</div>
+
+<div onclick="selectSource('excel')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">📊</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Excel</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">.xlsx or .xls</p>
+</div>
+
+<div onclick="selectSource('schwab')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">🏦</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Schwab</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Export file</p>
+</div>
+
+<div onclick="selectSource('fidelity')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">🟢</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Fidelity</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Export file</p>
+</div>
+
+<div onclick="selectSource('etrade')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">⭐</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">E*TRADE</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Export file</p>
+</div>
+
+<div onclick="selectSource('robinhood')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">🪶</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Robinhood</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Export file</p>
+</div>
+
+<div onclick="selectSource('vanguard')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">🚢</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Vanguard</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Export file</p>
+</div>
+
+<div onclick="selectSource('coinbase')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">🪙</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Coinbase</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Crypto</p>
+</div>
+
+<div onclick="selectSource('manual')" class="source-option p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 hover:border-sky-500 bg-gray-50' : 'border-slate-700 hover:border-sky-500 bg-slate-800' %> cursor-pointer text-center transition-colors">
+<div class="text-4xl mb-2">✏️</div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Manual Entry</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Type holdings</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Step 2: Upload File -->
+<div id="step2" class="step-content hidden">
+<div class="card p-6">
+<h2 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Upload Your File</h2>
+
+<div id="dropzone" class="border-2 border-dashed <%= theme === 'light' ? 'border-gray-300 bg-gray-50' : 'border-slate-600 bg-slate-800' %> rounded-xl p-12 text-center cursor-pointer hover:border-sky-500 transition-colors">
+<div class="text-5xl mb-4">📁</div>
+<p class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> font-medium">Drag & drop your file here</p>
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm mt-2">or click to browse</p>
+<input type="file" id="fileInput" class="hidden" accept=".csv,.xlsx,.xls" onchange="handleFile()">
+</div>
+
+<div id="fileInfo" class="hidden mt-4 p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50 border border-emerald-200' : 'bg-emerald-500/10 border border-emerald-500/20' %>">
+<div class="flex items-center gap-3">
+<span class="text-2xl">✅</span>
+<div>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="fileName">portfolio_export.csv</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>" id="fileSize">24 KB • 47 rows detected</p>
+</div>
+<button onclick="removeFile()" class="ml-auto text-red-400 hover:text-red-500">✕</button>
+</div>
+</div>
+
+<div class="flex gap-3 mt-6">
+<button onclick="goToStep(1)" class="btn-ghost flex-1">Back</button>
+<button onclick="goToStep(3)" class="btn-primary flex-1">Continue</button>
+</div>
+</div>
+</div>
+
+<!-- Step 3: Map Columns -->
+<div id="step3" class="step-content hidden">
+<div class="card p-6">
+<h2 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Map Your Columns</h2>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-6">Match your file columns to WealthPilot fields</p>
+
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-4 items-center">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Symbol / Ticker <span class="text-red-400">*</span></label>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Stock ticker symbol</p>
+</div>
+<select class="form-input">
+<option>Column A: "Symbol"</option>
+<option>Column B: "Ticker"</option>
+<option>Column C: "Name"</option>
+</select>
+</div>
+
+<div class="grid grid-cols-2 gap-4 items-center">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Shares / Quantity <span class="text-red-400">*</span></label>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Number of shares owned</p>
+</div>
+<select class="form-input">
+<option>Column D: "Quantity"</option>
+<option>Column E: "Shares"</option>
+</select>
+</div>
+
+<div class="grid grid-cols-2 gap-4 items-center">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Cost Basis / Purchase Price</label>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Average price per share</p>
+</div>
+<select class="form-input">
+<option>Column F: "Cost Basis"</option>
+<option>Column G: "Avg Cost"</option>
+<option>-- Not Available --</option>
+</select>
+</div>
+
+<div class="grid grid-cols-2 gap-4 items-center">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Purchase Date</label>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Date acquired</p>
+</div>
+<select class="form-input">
+<option>Column H: "Date Acquired"</option>
+<option>-- Not Available --</option>
+</select>
+</div>
+
+<div class="grid grid-cols-2 gap-4 items-center">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Account</label>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Account name or type</p>
+</div>
+<select class="form-input">
+<option>-- Not Available --</option>
+<option>Column I: "Account"</option>
+</select>
+</div>
+</div>
+
+<div class="mt-6 p-4 rounded-lg <%= theme === 'light' ? 'bg-amber-50 border border-amber-200' : 'bg-amber-500/10 border border-amber-500/20' %>">
+<p class="text-sm <%= theme === 'light' ? 'text-amber-800' : 'text-amber-400' %>">💡 <strong>Tip:</strong> We'll fetch current prices automatically. Cost basis is optional but helps track gains/losses.</p>
+</div>
+
+<div class="flex gap-3 mt-6">
+<button onclick="goToStep(2)" class="btn-ghost flex-1">Back</button>
+<button onclick="goToStep(4)" class="btn-primary flex-1">Preview Import</button>
+</div>
+</div>
+</div>
+
+<!-- Step 4: Review & Import -->
+<div id="step4" class="step-content hidden">
+<div class="card p-6">
+<h2 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Review & Import</h2>
+
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %> text-center">
+<p class="text-3xl font-bold text-emerald-400">12</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Holdings to Import</p>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %> text-center">
+<p class="text-3xl font-bold text-sky-400">$48,247</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Estimated Value</p>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-amber-50' : 'bg-amber-500/10' %> text-center">
+<p class="text-3xl font-bold text-amber-400">0</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Warnings</p>
+</div>
+</div>
+
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-2">Symbol</th>
+<th class="px-4 py-2">Shares</th>
+<th class="px-4 py-2">Cost Basis</th>
+<th class="px-4 py-2">Current Price</th>
+<th class="px-4 py-2">Value</th>
+<th class="px-4 py-2">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">AAPL</td>
+<td class="px-4 py-3">50</td>
+<td class="px-4 py-3">$145.00</td>
+<td class="px-4 py-3">$189.84</td>
+<td class="px-4 py-3 font-medium">$9,492</td>
+<td class="px-4 py-3"><span class="text-emerald-400">✓</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">MSFT</td>
+<td class="px-4 py-3">30</td>
+<td class="px-4 py-3">$285.00</td>
+<td class="px-4 py-3">$415.50</td>
+<td class="px-4 py-3 font-medium">$12,465</td>
+<td class="px-4 py-3"><span class="text-emerald-400">✓</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">NVDA</td>
+<td class="px-4 py-3">25</td>
+<td class="px-4 py-3">$200.00</td>
+<td class="px-4 py-3">$485.20</td>
+<td class="px-4 py-3 font-medium">$12,130</td>
+<td class="px-4 py-3"><span class="text-emerald-400">✓</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">GOOGL</td>
+<td class="px-4 py-3">40</td>
+<td class="px-4 py-3">$125.00</td>
+<td class="px-4 py-3">$178.90</td>
+<td class="px-4 py-3 font-medium">$7,156</td>
+<td class="px-4 py-3"><span class="text-emerald-400">✓</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="mt-6">
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Import to Portfolio</label>
+<select class="form-input w-full md:w-1/2">
+<option>Main Portfolio</option>
+<option>Retirement IRA</option>
+<option>+ Create New Portfolio</option>
+</select>
+</div>
+
+<div class="flex gap-3 mt-6">
+<button onclick="goToStep(3)" class="btn-ghost flex-1">Back</button>
+<button onclick="completeImport()" class="btn-primary flex-1">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+Complete Import
+</button>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<style>
+.step-circle {
+  @apply w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm;
+  @apply <%= theme === 'light' ? 'bg-gray-200 text-gray-500' : 'bg-slate-700 text-slate-400' %>;
+}
+.step-circle.active { @apply bg-sky-500 text-white; }
+.step-circle.completed { @apply bg-emerald-500 text-white; }
+.step-line { @apply w-12 h-1 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>; }
+.source-option.selected { @apply border-sky-500 <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>; }
+</style>
+
+<script>
+let currentStep = 1;
+let selectedSource = null;
+
+function selectSource(source) {
+  selectedSource = source;
+  document.querySelectorAll('.source-option').forEach(el => el.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  setTimeout(() => goToStep(2), 300);
+}
+
+function goToStep(step) {
+  document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById('step' + step).classList.remove('hidden');
+  
+  document.querySelectorAll('.step-circle').forEach((el, i) => {
+    el.classList.remove('active', 'completed');
+    if (i + 1 < step) el.classList.add('completed');
+    if (i + 1 === step) el.classList.add('active');
+  });
+  
+  currentStep = step;
+}
+
+document.getElementById('dropzone').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+
+function handleFile() {
+  const file = document.getElementById('fileInput').files[0];
+  if (file) {
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = Math.round(file.size / 1024) + ' KB • 47 rows detected';
+    document.getElementById('fileInfo').classList.remove('hidden');
+  }
+}
+
+function removeFile() {
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInfo').classList.add('hidden');
+}
+
+function completeImport() {
+  showToast('Importing 12 holdings...', 'info');
+  setTimeout(() => {
+    showToast('Import successful! 12 holdings added.', 'success');
+    setTimeout(() => window.location.href = '/portfolio', 1000);
+  }, 1500);
+}
+</script>
+<%- include('../partials/footer') %>

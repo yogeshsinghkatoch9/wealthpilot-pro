@@ -1,0 +1,149 @@
+<%- include('../partials/header', { pageTitle: 'News Feed' }) %>
+<%
+  // Safe defaults
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeNews = typeof news !== 'undefined' && news ? news : [];
+%>
+<main class="p-4 lg:p-6"><div class="max-w-6xl mx-auto space-y-6">
+
+<div class="flex items-center justify-between">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Market News</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Latest news for your holdings and the market</p></div>
+<div class="flex gap-3">
+<select id="newsFilter" onchange="filterNews()" class="form-input w-40">
+<option value="all">All News</option>
+<option value="holdings">My Holdings</option>
+<option value="market">Market News</option>
+<option value="earnings">Earnings</option>
+</select>
+<button onclick="refreshNews()" class="btn-ghost" id="refreshBtn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg></button>
+</div>
+</div>
+
+<!-- Breaking News Banner -->
+<div class="card p-4 border-l-4 border-amber-500 <%= theme === 'light' ? 'bg-amber-50' : 'bg-amber-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded animate-pulse">LIVE</span>
+<p class="<%= theme === 'light' ? 'text-amber-800' : 'text-amber-200' %> font-medium" id="breakingNews">Markets are open. S&P 500 up 0.3% in early trading.</p>
+</div>
+</div>
+
+<!-- Holdings Quick View -->
+<div class="flex gap-3 overflow-x-auto pb-2">
+<% const symbols = safeHoldings.length > 0 ? safeHoldings.map(h => h.symbol) : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA']; symbols.slice(0, 8).forEach(s => { %>
+<button onclick="filterBySymbol('<%= s %>')" class="px-4 py-2 <%= theme === 'light' ? 'bg-white border border-gray-200 hover:border-sky-500' : 'bg-slate-800/50 border border-slate-700 hover:border-sky-500' %> rounded-lg text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> transition-colors whitespace-nowrap"><%= s %></button>
+<% }) %>
+</div>
+
+<!-- News Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="newsGrid">
+<% if (safeNews && safeNews.length > 0) {
+  safeNews.forEach((item, i) => {
+    const sentimentColor = item.sentiment === 'positive' ? 'emerald' : item.sentiment === 'negative' ? 'red' : 'slate';
+    const timeAgo = item.published_at ? new Date(item.published_at).toLocaleString() : 'Recently';
+%>
+<article class="card overflow-hidden hover:border-sky-500/50 transition-all group cursor-pointer" data-symbol="<%= item.symbol || 'MARKET' %>" data-category="<%= item.category || 'general' %>">
+<div class="h-40 bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+<% if (item.image_url) { %><img src="<%= item.image_url %>" alt="" class="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" onerror="this.style.display='none'"><% } %>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute bottom-3 left-3 flex gap-2">
+<span class="px-2 py-1 bg-<%= sentimentColor %>-500/90 text-white text-xs font-medium rounded"><%= item.symbol || 'MARKET' %></span>
+<span class="px-2 py-1 <%= theme === 'light' ? 'bg-white/90 text-gray-700' : 'bg-black/50 text-white' %> text-xs rounded"><%= item.category || 'general' %></span>
+</div>
+</div>
+<div class="p-4">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2 line-clamp-2 group-hover:text-sky-400 transition-colors"><%= item.headline || item.title %></h3>
+<div class="flex items-center justify-between text-sm">
+<span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= item.source %></span>
+<span class="<%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>"><%= timeAgo %></span>
+</div>
+<div class="mt-3 flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-<%= sentimentColor %>-500"></span>
+<span class="text-xs text-<%= sentimentColor %>-400 capitalize"><%= item.sentiment || 'neutral' %> sentiment</span>
+</div>
+<% if (item.url) { %><a href="<%= item.url %>" target="_blank" class="mt-2 text-xs text-sky-400 hover:underline block">Read full article</a><% } %>
+</div>
+</article>
+<% })
+} else { %>
+<div class="col-span-2 text-center py-12">
+<svg class="w-16 h-16 mx-auto <%= theme === 'light' ? 'text-gray-300' : 'text-slate-600' %> mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+<h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No news available</h4>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">News will appear here when available from the API</p>
+</div>
+<% } %>
+</div>
+
+<!-- Trending Topics -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Trending Topics</h3>
+<div class="flex flex-wrap gap-2">
+<% ['AI & Machine Learning', 'Fed Interest Rates', 'Earnings Season', 'EV Market', 'Cloud Computing', 'Semiconductor Shortage', 'Inflation Data', 'Tech Layoffs', 'Crypto Regulation', 'China Trade'].forEach((topic, i) => { %>
+<span class="px-3 py-1.5 <%= theme === 'light' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %> rounded-full text-sm cursor-pointer transition-colors"><%= topic %></span>
+<% }) %>
+</div>
+</div>
+
+<!-- Sentiment Summary -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="card p-5">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center"><svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Bullish News</p><p class="text-2xl font-bold text-emerald-400"><%= sentiment?.bullish || 0 %>%</p></div>
+</div>
+<div class="h-2 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: <%= sentiment?.bullish || 0 %>%"></div></div>
+</div>
+<div class="card p-5">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-xl bg-slate-500/20 flex items-center justify-center"><svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Neutral News</p><p class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= sentiment?.neutral || 0 %>%</p></div>
+</div>
+<div class="h-2 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden"><div class="h-full bg-slate-500" style="width: <%= sentiment?.neutral || 0 %>%"></div></div>
+</div>
+<div class="card p-5">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center"><svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Bearish News</p><p class="text-2xl font-bold text-red-400"><%= sentiment?.bearish || 0 %>%</p></div>
+</div>
+<div class="h-2 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden"><div class="h-full bg-red-500" style="width: <%= sentiment?.bearish || 0 %>%"></div></div>
+</div>
+</div>
+</div></div></main>
+
+<script>
+function filterNews() {
+  const filter = document.getElementById('newsFilter').value;
+  const articles = document.querySelectorAll('#newsGrid article');
+  
+  articles.forEach(article => {
+    const symbol = article.dataset.symbol;
+    const category = article.dataset.category;
+    
+    if (filter === 'all') {
+      article.style.display = '';
+    } else if (filter === 'holdings') {
+      article.style.display = symbol !== 'MARKET' ? '' : 'none';
+    } else if (filter === 'market') {
+      article.style.display = symbol === 'MARKET' ? '' : 'none';
+    } else if (filter === 'earnings') {
+      article.style.display = category === 'earnings' ? '' : 'none';
+    }
+  });
+}
+
+function filterBySymbol(symbol) {
+  const articles = document.querySelectorAll('#newsGrid article');
+  articles.forEach(article => {
+    article.style.display = article.dataset.symbol === symbol ? '' : 'none';
+  });
+}
+
+function refreshNews() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('animate-spin');
+  setTimeout(() => {
+    btn.classList.remove('animate-spin');
+    showToast('News refreshed', 'success');
+  }, 1000);
+}
+</script>
+<%- include('../partials/footer') %>

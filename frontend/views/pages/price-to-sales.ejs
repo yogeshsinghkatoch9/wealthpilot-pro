@@ -1,0 +1,186 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = 'Price to Sales';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 -mx-6 -mt-6 px-6 py-4 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 font-mono tracking-tight">PRICE TO SALES</h1>
+      <p class="text-slate-400 text-sm mt-1">Revenue-based valuation analysis</p>
+    </div>
+    <div class="flex gap-2">
+      <select class="bloomberg-btn px-4 py-2 bg-slate-800 border border-amber-400/30 text-amber-400 font-mono text-sm">
+        <option selected>My Holdings</option>
+        <option>Technology</option>
+        <option>All Sectors</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- P/S Summary -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-purple-50 to-amber-50' : 'from-purple-900/20 to-amber-900/20' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio P/S Analysis</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg P/S Ratio</p>
+<p class="text-2xl font-bold text-purple-400">8.4x</p>
+<p class="text-xs">weighted avg</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">5Y Avg P/S</p>
+<p class="text-2xl font-bold text-sky-400">6.8x</p>
+<p class="text-xs">historical</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">vs 5Y Avg</p>
+<p class="text-2xl font-bold text-amber-400">+23.5%</p>
+<p class="text-xs text-amber-400">premium</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Undervalued</p>
+<p class="text-3xl font-bold text-emerald-400">4</p>
+<p class="text-xs">below 5Y avg</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Overvalued</p>
+<p class="text-3xl font-bold text-red-400">8</p>
+<p class="text-xs">above 5Y avg</p>
+</div>
+</div>
+</div>
+
+<!-- Holdings P/S Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings P/S Valuation</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Company</th>
+<th class="px-4 py-3 text-center">Market Cap</th>
+<th class="px-4 py-3 text-center">Revenue (TTM)</th>
+<th class="px-4 py-3 text-center">P/S Ratio</th>
+<th class="px-4 py-3 text-center">5Y Avg</th>
+<th class="px-4 py-3 text-center">vs 5Y Avg</th>
+<th class="px-4 py-3 text-center">Valuation</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3 text-center">$3.52T</td>
+<td class="px-4 py-3 text-center">$79.8B</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">44.1x</td>
+<td class="px-4 py-3 text-center">22.4x</td>
+<td class="px-4 py-3 text-center text-red-400 font-bold">+96.9%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs">Expensive</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center">$2.94T</td>
+<td class="px-4 py-3 text-center">$383.3B</td>
+<td class="px-4 py-3 text-center font-bold">7.7x</td>
+<td class="px-4 py-3 text-center">6.4x</td>
+<td class="px-4 py-3 text-center text-amber-400">+20.3%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs">Stretched</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100 bg-emerald-50/30' : 'border-slate-700/50 bg-emerald-500/5' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">GOOGL</div><span class="font-medium">Alphabet</span></div></td>
+<td class="px-4 py-3 text-center">$2.12T</td>
+<td class="px-4 py-3 text-center">$307.4B</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">6.9x</td>
+<td class="px-4 py-3 text-center">7.2x</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold">-4.2%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">Fair Value</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100 bg-emerald-50/30' : 'border-slate-700/50 bg-emerald-500/5' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">INTC</div><span class="font-medium">Intel</span></div></td>
+<td class="px-4 py-3 text-center">$102.4B</td>
+<td class="px-4 py-3 text-center">$54.2B</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">1.9x</td>
+<td class="px-4 py-3 text-center">3.4x</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold">-44.1%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">Cheap</span></td>
+</tr>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">META</div><span class="font-medium">Meta</span></div></td>
+<td class="px-4 py-3 text-center">$1.48T</td>
+<td class="px-4 py-3 text-center">$134.9B</td>
+<td class="px-4 py-3 text-center font-bold">11.0x</td>
+<td class="px-4 py-3 text-center">8.2x</td>
+<td class="px-4 py-3 text-center text-amber-400">+34.1%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs">Stretched</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- P/S Insights -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="card p-5">
+<h4 class="font-bold text-emerald-400 mb-3">💎 Best Value (P/S)</h4>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Below 5Y average</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>INTC</span><span class="font-bold text-emerald-400">1.9x (-44%)</span></div>
+<div class="flex justify-between"><span>VZ</span><span class="font-bold text-emerald-400">1.2x (-28%)</span></div>
+<div class="flex justify-between"><span>GOOGL</span><span class="font-bold text-emerald-400">6.9x (-4%)</span></div>
+</div>
+</div>
+<div class="card p-5">
+<h4 class="font-bold text-red-400 mb-3">📈 Most Expensive</h4>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Above 5Y average</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>NVDA</span><span class="font-bold text-red-400">44.1x (+97%)</span></div>
+<div class="flex justify-between"><span>META</span><span class="font-bold text-amber-400">11.0x (+34%)</span></div>
+<div class="flex justify-between"><span>AAPL</span><span class="font-bold text-amber-400">7.7x (+20%)</span></div>
+</div>
+</div>
+<div class="card p-5">
+<h4 class="font-bold text-sky-400 mb-3">📊 Sector Comparison</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>Tech Sector Avg</span><span class="font-bold">8.2x</span></div>
+<div class="flex justify-between"><span>S&P 500 Avg</span><span class="font-bold">2.8x</span></div>
+<div class="flex justify-between"><span>Portfolio</span><span class="font-bold text-purple-400">8.4x</span></div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">P/S Current vs 5Y Average</h3>
+<div class="h-48"><canvas id="psChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">NVDA P/S History (5Y)</h3>
+<div class="h-48"><canvas id="trendChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('psChart'), {
+  type: 'bar',
+  data: { labels: ['NVDA','META','AAPL','GOOGL','MSFT','INTC'], datasets: [
+    { label: 'Current P/S', data: [44.1,11.0,7.7,6.9,12.8,1.9], backgroundColor: '#8b5cf6' },
+    { label: '5Y Avg', data: [22.4,8.2,6.4,7.2,10.4,3.4], backgroundColor: '#94a3b8' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: { labels: ['2020','2021','2022','2023','2024'], datasets: [
+    { label: 'P/S Ratio', data: [18.4,28.2,12.4,32.8,44.1], borderColor: '#8b5cf6', fill: true, backgroundColor: 'rgba(139,92,246,0.1)' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+<%- include('../partials/footer') %>

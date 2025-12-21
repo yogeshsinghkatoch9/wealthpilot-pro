@@ -1,0 +1,245 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const macdData = typeof technicals !== 'undefined' && technicals ? technicals : {};
+const macd = macdData.macd || 0;
+const signal = macdData.signal || 0;
+const histogram = macdData.histogram || 0;
+const price = macdData.price || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatNum(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(4); }
+
+// MACD interpretation
+let macdSignal = 'NEUTRAL';
+let signalColor = 'amber';
+if (macd > signal && histogram > 0) {
+  macdSignal = 'BULLISH';
+  signalColor = 'emerald';
+} else if (macd < signal && histogram < 0) {
+  macdSignal = 'BEARISH';
+  signalColor = 'red';
+}
+
+// Crossover detection
+const bullishCross = macd > signal && histogram > 0;
+const bearishCross = macd < signal && histogram < 0;
+%>
+<%- include('../partials/header', { pageTitle: 'MACD Indicator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">MACD INDICATOR</h1>
+      <p class="text-slate-400 mt-1">Moving Average Convergence Divergence</p>
+    </div>
+    <form method="GET" action="/macd" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<!-- MACD Overview -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-<%= signalColor %>-900/20 to-slate-900">
+  <div class="flex items-center gap-4 flex-wrap">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-amber-400"><%= symbol %></h2>
+      <p class="text-slate-400">Current Price: <span class="font-mono text-white"><%= formatPrice(price) %></span></p>
+    </div>
+    <div class="text-center px-4">
+      <p class="text-sm text-slate-400">Signal</p>
+      <p class="text-xl font-bold text-<%= signalColor %>-400"><%= macdSignal %></p>
+    </div>
+  </div>
+</div>
+
+<!-- MACD Values -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="bloomberg-card p-5">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
+        <span class="text-sky-400 font-bold">M</span>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400">MACD Line</p>
+        <p class="text-2xl font-mono font-bold text-<%= macd >= 0 ? 'emerald' : 'red' %>-400"><%= formatNum(macd) %></p>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400">12-period EMA minus 26-period EMA</p>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+        <span class="text-amber-400 font-bold">S</span>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400">Signal Line</p>
+        <p class="text-2xl font-mono font-bold text-amber-400"><%= formatNum(signal) %></p>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400">9-period EMA of MACD line</p>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+        <span class="text-purple-400 font-bold">H</span>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400">Histogram</p>
+        <p class="text-2xl font-mono font-bold text-<%= histogram >= 0 ? 'emerald' : 'red' %>-400"><%= formatNum(histogram) %></p>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400">MACD minus Signal line</p>
+  </div>
+</div>
+
+<!-- Crossover Status -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">Crossover Analysis</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg border-l-4 <%= bullishCross ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-600 bg-slate-800' %>">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-bold <%= bullishCross ? 'text-emerald-400' : 'text-slate-400' %>">Bullish Cross</p>
+          <p class="text-xs text-slate-400">MACD crosses above Signal line</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-sm font-bold <%= bullishCross ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-400' %>">
+          <%= bullishCross ? 'ACTIVE' : 'INACTIVE' %>
+        </span>
+      </div>
+    </div>
+
+    <div class="p-4 rounded-lg border-l-4 <%= bearishCross ? 'border-red-500 bg-red-500/10' : 'border-slate-600 bg-slate-800' %>">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-bold <%= bearishCross ? 'text-red-400' : 'text-slate-400' %>">Bearish Cross</p>
+          <p class="text-xs text-slate-400">MACD crosses below Signal line</p>
+        </div>
+        <span class="px-3 py-1 rounded-full text-sm font-bold <%= bearishCross ? 'bg-red-500 text-white' : 'bg-slate-700 text-slate-400' %>">
+          <%= bearishCross ? 'ACTIVE' : 'INACTIVE' %>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MACD Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">MACD Chart</h3>
+  <div class="h-80"><canvas id="macdChart"></canvas></div>
+</div>
+
+<!-- Trading Signals -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">MACD Trading Signals</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+      <h4 class="font-bold text-emerald-400 mb-2">Buy Signals</h4>
+      <ul class="text-sm text-slate-300 space-y-1">
+        <li>MACD line crosses above signal line</li>
+        <li>Histogram turns positive</li>
+        <li>MACD crosses above zero line</li>
+        <li>Bullish divergence with price</li>
+      </ul>
+    </div>
+    <div class="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+      <h4 class="font-bold text-red-400 mb-2">Sell Signals</h4>
+      <ul class="text-sm text-slate-300 space-y-1">
+        <li>MACD line crosses below signal line</li>
+        <li>Histogram turns negative</li>
+        <li>MACD crosses below zero line</li>
+        <li>Bearish divergence with price</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Generate sample MACD data for visualization
+const currentMacd = <%= macd %>;
+const currentSignal = <%= signal %>;
+const labels = [];
+const macdData = [];
+const signalData = [];
+const histogramData = [];
+const now = new Date();
+
+for (let i = 29; i >= 0; i--) {
+  const date = new Date(now);
+  date.setDate(date.getDate() - i);
+  labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+  // Simulate MACD fluctuation
+  const macdVal = currentMacd + (Math.random() - 0.5) * 2;
+  const signalVal = currentSignal + (Math.random() - 0.5) * 1.5;
+  macdData.push(macdVal);
+  signalData.push(signalVal);
+  histogramData.push(macdVal - signalVal);
+}
+
+// Set last values to actual
+macdData[macdData.length - 1] = currentMacd;
+signalData[signalData.length - 1] = currentSignal;
+histogramData[histogramData.length - 1] = currentMacd - currentSignal;
+
+new Chart(document.getElementById('macdChart'), {
+  type: 'bar',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Histogram',
+        data: histogramData,
+        backgroundColor: histogramData.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'),
+        borderRadius: 2
+      },
+      {
+        type: 'line',
+        label: 'MACD',
+        data: macdData,
+        borderColor: '#0ea5e9',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4
+      },
+      {
+        type: 'line',
+        label: 'Signal',
+        data: signalData,
+        borderColor: '#f59e0b',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4,
+        borderDash: [5, 5]
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+    },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', maxTicksLimit: 10 }
+      }
+    }
+  }
+});
+</script>
+<%- include('../partials/footer') %>

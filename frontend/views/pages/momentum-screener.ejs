@@ -1,0 +1,187 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Momentum Screener';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 px-6 py-4 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 tracking-tight">MOMENTUM SCREENER</h1>
+      <p class="text-slate-300 text-sm mt-1">Find stocks with strong price momentum</p>
+    </div>
+    <div class="flex gap-2">
+      <select class="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded text-sm focus:border-amber-400 focus:ring-1 focus:ring-amber-400 w-32">
+        <option selected>S&P 500</option>
+        <option>NASDAQ 100</option>
+        <option>Russell 2000</option>
+      </select>
+      <select class="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded text-sm focus:border-amber-400 focus:ring-1 focus:ring-amber-400 w-32">
+        <option>1 Month</option>
+        <option selected>3 Month</option>
+        <option>6 Month</option>
+        <option>12 Month</option>
+      </select>
+      <button class="bloomberg-btn px-4 py-2">Screen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Momentum Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-emerald-900/20 to-sky-900/20">
+  <h3 class="font-semibold text-white mb-4 uppercase tracking-wide">Momentum Overview</h3>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase text-xs tracking-wider">Strong Momentum</p>
+      <p class="text-3xl font-bold text-emerald-400 font-mono">142</p>
+      <p class="text-xs text-emerald-400 font-mono">score > 80</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase text-xs tracking-wider">Positive Momentum</p>
+      <p class="text-3xl font-bold text-sky-400 font-mono">286</p>
+      <p class="text-xs font-mono">score 50-80</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase text-xs tracking-wider">Weak Momentum</p>
+      <p class="text-3xl font-bold text-red-400 font-mono">72</p>
+      <p class="text-xs text-red-400 font-mono">score < 50</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase text-xs tracking-wider">Top Sector</p>
+      <p class="text-3xl font-bold text-purple-400 font-mono">Tech</p>
+      <p class="text-xs font-mono">avg score 78</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400 uppercase text-xs tracking-wider">Worst Sector</p>
+      <p class="text-3xl font-bold text-amber-400 font-mono">Energy</p>
+      <p class="text-xs font-mono">avg score 42</p>
+    </div>
+  </div>
+</div>
+
+<!-- Top Momentum Stocks -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-amber-400/30 bg-slate-900/50">
+    <h3 class="font-semibold text-amber-400 uppercase tracking-wide">Top Momentum Stocks</h3>
+  </div>
+  <table class="bloomberg-table w-full text-sm">
+    <thead>
+      <tr class="bg-slate-900/80 text-slate-400 text-left">
+        <th class="px-4 py-3 uppercase text-xs tracking-wider">Rank</th>
+        <th class="px-4 py-3 uppercase text-xs tracking-wider">Stock</th>
+        <th class="px-4 py-3 text-center uppercase text-xs tracking-wider">Score</th>
+        <th class="px-4 py-3 text-center uppercase text-xs tracking-wider">1M Return</th>
+        <th class="px-4 py-3 text-center uppercase text-xs tracking-wider">3M Return</th>
+        <th class="px-4 py-3 text-center uppercase text-xs tracking-wider">6M Return</th>
+        <th class="px-4 py-3 text-center uppercase text-xs tracking-wider">RSI</th>
+        <th class="px-4 py-3 text-center uppercase text-xs tracking-wider">Trend</th>
+      </tr>
+    </thead>
+    <tbody class="text-white">
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold font-mono">#1</span></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+        <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">98</span></td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+18.4%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+42.8%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+124.2%</td>
+        <td class="px-4 py-3 text-center text-amber-400 font-mono">72</td>
+        <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
+      </tr>
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-slate-500/20 text-slate-400 font-bold font-mono">#2</span></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">META</div><span class="font-medium">Meta</span></div></td>
+        <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">94</span></td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+12.2%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+28.4%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+68.2%</td>
+        <td class="px-4 py-3 text-center text-amber-400 font-mono">68</td>
+        <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
+      </tr>
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-amber-700/20 text-amber-600 font-bold font-mono">#3</span></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AVGO</div><span class="font-medium">Broadcom</span></div></td>
+        <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">92</span></td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+14.8%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+32.4%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+82.4%</td>
+        <td class="px-4 py-3 text-center text-amber-400 font-mono">74</td>
+        <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
+      </tr>
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-slate-500/20 text-slate-400 font-bold font-mono">#4</span></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AMZN</div><span class="font-medium">Amazon</span></div></td>
+        <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">88</span></td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+8.4%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+22.8%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+48.2%</td>
+        <td class="px-4 py-3 text-center font-mono">62</td>
+        <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
+      </tr>
+      <tr class="hover:bg-slate-800/50">
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-slate-500/20 text-slate-400 font-bold font-mono">#5</span></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">GOOGL</div><span class="font-medium">Alphabet</span></div></td>
+        <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">86</span></td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+6.2%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+18.4%</td>
+        <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+38.4%</td>
+        <td class="px-4 py-3 text-center font-mono">58</td>
+        <td class="px-4 py-3 text-center text-sky-400">Moderate</td>
+      </tr>
+    </tbody>
+</table>
+</div>
+
+<!-- Momentum Indicators -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="card p-4">
+<h4 class="font-bold text-emerald-400 mb-2">🔥 New 52W High</h4>
+<p class="text-2xl font-bold">48</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">stocks at highs</p>
+</div>
+<div class="card p-4">
+<h4 class="font-bold text-sky-400 mb-2">📈 Above 200 SMA</h4>
+<p class="text-2xl font-bold">384</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">76.8% of S&P</p>
+</div>
+<div class="card p-4">
+<h4 class="font-bold text-purple-400 mb-2">✨ Golden Cross</h4>
+<p class="text-2xl font-bold">62</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">50 > 200 SMA</p>
+</div>
+<div class="card p-4">
+<h4 class="font-bold text-red-400 mb-2">⚠️ Overbought</h4>
+<p class="text-2xl font-bold">28</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">RSI > 70</p>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Sector Momentum Scores</h3>
+<div class="h-48"><canvas id="sectorChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Score Distribution</h3>
+<div class="h-48"><canvas id="distChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('sectorChart'), {
+  type: 'bar',
+  data: { labels: ['Tech','Comm','Healthcare','Financials','Industrials','Consumer','Utilities','Energy'], datasets: [{ label: 'Avg Momentum Score', data: [78,72,68,64,62,58,48,42], backgroundColor: ['#8b5cf6','#0ea5e9','#10b981','#f59e0b','#94a3b8','#ec4899','#64748b','#ef4444'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, indexAxis: 'y' }
+});
+new Chart(document.getElementById('distChart'), {
+  type: 'bar',
+  data: { labels: ['0-20','20-40','40-60','60-80','80-100'], datasets: [{ label: 'Stocks', data: [12,42,118,186,142], backgroundColor: ['#ef4444','#f59e0b','#fbbf24','#0ea5e9','#10b981'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,155 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeBenchmark = benchmark || {};
+const safeUserStats = safeBenchmark.user_stats || {};
+const safeComparison = safeBenchmark.comparison || {};
+const safeBenchmarkData = safeBenchmark.benchmark || {};
+const safeLeaderboard = leaderboard || {};
+const safeLeaderboardData = safeLeaderboard.leaderboard || [];
+const safeInsights = safeBenchmark.insights || [];
+const safeMetric = metric || 'return';
+const safeTheme = theme || 'dark';
+
+// Safe numeric values with defaults
+const userReturn = safeUserStats.return_pct || 0;
+const userYield = safeUserStats.yield_pct || 0;
+const returnVsAvg = safeComparison.return_vs_avg || 0;
+const yieldVsAvg = safeComparison.yield_vs_avg || 0;
+const returnPercentile = safeComparison.return_percentile || 0;
+const yieldPercentile = safeComparison.yield_percentile || 0;
+const avgReturn = safeBenchmarkData.avg_return || 0;
+const bucket = safeBenchmarkData.bucket || 'N/A';
+const sampleSize = safeBenchmarkData.sample_size || 0;
+%>
+<%- include('../partials/header', { pageTitle: 'Benchmark' }) %>
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Bloomberg Header Bar -->
+    <div class="bloomberg-header">
+      <div>
+        <h1 class="text-2xl font-bold text-amber-400">COMMUNITY BENCHMARK</h1>
+        <p class="text-slate-400 text-sm mt-1">ANONYMOUS PERFORMANCE COMPARISON</p>
+      </div>
+    </div>
+
+    <% if (benchmark) { %>
+    <!-- KPI Bar for Benchmark Comparison Metrics -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Your Return -->
+      <div class="bloomberg-card">
+        <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Your Return</p>
+        <p class="text-2xl font-bold font-mono <%= returnVsAvg >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+          <%= userReturn.toFixed(2) %>%
+        </p>
+        <p class="text-slate-500 text-sm mt-1">
+          <span class="font-mono"><%= returnPercentile %></span>th percentile
+        </p>
+      </div>
+
+      <!-- Your Yield -->
+      <div class="bloomberg-card">
+        <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Your Yield</p>
+        <p class="text-2xl font-bold font-mono <%= yieldVsAvg >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+          <%= userYield.toFixed(2) %>%
+        </p>
+        <p class="text-slate-500 text-sm mt-1">
+          <span class="font-mono"><%= yieldPercentile %></span>th percentile
+        </p>
+      </div>
+
+      <!-- Avg Return -->
+      <div class="bloomberg-card">
+        <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Avg Return</p>
+        <p class="text-2xl font-bold font-mono text-white">
+          <%= avgReturn.toFixed(2) %>%
+        </p>
+        <p class="text-slate-500 text-sm mt-1 uppercase"><%= bucket %></p>
+      </div>
+
+      <!-- Sample Size -->
+      <div class="bloomberg-card">
+        <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Sample Size</p>
+        <p class="text-2xl font-bold font-mono text-white">
+          <%= sampleSize.toLocaleString() %>
+        </p>
+        <p class="text-slate-500 text-sm mt-1 uppercase">investors</p>
+      </div>
+    </div>
+
+    <!-- Performance Insights -->
+    <div class="bloomberg-card">
+      <h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Performance Insights</h3>
+      <div class="space-y-2">
+        <% if (safeInsights.length > 0) { safeInsights.forEach(ins => { %>
+        <p class="text-slate-300 flex items-start gap-3">
+          <span class="text-amber-400 mt-1">▸</span>
+          <span><%= ins %></span>
+        </p>
+        <% }) } else { %>
+        <p class="text-slate-400">No insights available at this time.</p>
+        <% } %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Leaderboard -->
+    <% if (leaderboard) { %>
+    <div class="bloomberg-card">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wide">Leaderboard</h3>
+
+        <!-- Metric Toggle Buttons -->
+        <div class="flex gap-2">
+          <% ['return', 'yield', 'sharpe'].forEach(m => { %>
+          <a href="/benchmark?metric=<%= m %>" class="bloomberg-btn <%= safeMetric === m ? 'bloomberg-btn-active' : '' %>">
+            <%= m === 'return' ? 'RETURN' : m === 'yield' ? 'YIELD' : 'SHARPE' %>
+          </a>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Leaderboard Table -->
+      <div class="bloomberg-table">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-700">
+              <th class="text-left py-3 px-4 text-xs uppercase tracking-wider text-slate-400">Rank</th>
+              <th class="text-left py-3 px-4 text-xs uppercase tracking-wider text-slate-400">Investor</th>
+              <th class="text-right py-3 px-4 text-xs uppercase tracking-wider text-slate-400">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (safeLeaderboardData.length > 0) {
+               safeLeaderboardData.slice(0, 10).forEach((e, i) => { %>
+            <tr class="border-b border-slate-800 <%= e.is_you ? 'bg-amber-400/10' : 'hover:bg-slate-800/30' %> transition-colors">
+              <td class="py-3 px-4">
+                <span class="w-8 h-8 rounded-full inline-flex items-center justify-center text-sm font-bold <%= i === 0 ? 'bg-amber-500 text-black' : i === 1 ? 'bg-slate-400 text-black' : i === 2 ? 'bg-amber-700 text-white' : 'bg-slate-700 text-white' %>">
+                  <%= e.rank %>
+                </span>
+              </td>
+              <td class="py-3 px-4 font-medium <%= e.is_you ? 'text-amber-400' : 'text-white' %>">
+                <%= e.is_you ? 'YOU' : e.username %>
+                <% if (e.is_you) { %>
+                <span class="ml-2 text-xs px-2 py-1 bg-amber-400/20 rounded text-amber-400">CURRENT</span>
+                <% } %>
+              </td>
+              <td class="py-3 px-4 text-right">
+                <span class="font-mono font-semibold text-white">
+                  <%= e.value %><%= safeMetric === 'sharpe' ? '' : '%' %>
+                </span>
+              </td>
+            </tr>
+            <% }) } else { %>
+            <tr>
+              <td colspan="3" class="py-8 px-4 text-center text-slate-400">
+                No leaderboard data available
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+</div></div></main>
+<%- include('../partials/footer') %>

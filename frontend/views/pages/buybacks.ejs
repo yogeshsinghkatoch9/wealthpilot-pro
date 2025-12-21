@@ -1,0 +1,188 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = 'Buyback Tracker';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="mb-6 pb-4 border-b-2 border-amber-400">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 uppercase tracking-wide">Buyback Tracker</h1>
+<p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Stock repurchase programs & announcements</p>
+</div>
+<div class="flex gap-2">
+<select class="bloomberg-btn w-40 text-sm">
+<option selected>My Holdings</option>
+<option>Watchlist</option>
+<option>Recent Announcements</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- Portfolio Buyback Summary -->
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wide mb-4">Portfolio Buyback Activity</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase text-xs tracking-wider mb-2">Active Programs</p>
+<p class="text-3xl font-bold text-amber-400 font-mono">12</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">of 16 holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase text-xs tracking-wider mb-2">Total Authorized</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-mono">$312B</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">Combined programs</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase text-xs tracking-wider mb-2">YTD Repurchased</p>
+<p class="text-3xl font-bold text-emerald-400 font-mono">$148B</p>
+<p class="text-xs text-emerald-400 font-mono">47% of authorized</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase text-xs tracking-wider mb-2">Avg Buyback Yield</p>
+<p class="text-3xl font-bold text-sky-400 font-mono">2.8%</p>
+<p class="text-xs text-emerald-400">Above S&P 1.8%</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase text-xs tracking-wider mb-2">Share Reduction</p>
+<p class="text-3xl font-bold text-emerald-400 font-mono">-3.2%</p>
+<p class="text-xs text-emerald-400">Avg 5-year</p>
+</div>
+</div>
+</div>
+
+<!-- Holdings Buyback Table -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wide">Holdings Buyback Programs</h3>
+</div>
+<table class="bloomberg-table">
+<thead>
+<tr>
+<th class="text-left">STOCK</th>
+<th class="text-center">PROGRAM SIZE</th>
+<th class="text-center">REMAINING</th>
+<th class="text-left">PROGRESS</th>
+<th class="text-center">BUYBACK YIELD</th>
+<th class="text-center">5Y SHARE Δ</th>
+<th class="text-center">STATUS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center font-bold font-mono">$90B</td>
+<td class="px-4 py-3 text-center font-mono">$42B</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:53%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">3.4%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">-24.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs uppercase font-semibold">ACTIVE</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3 text-center font-bold font-mono">$25B</td>
+<td class="px-4 py-3 text-center font-mono">$18B</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-sky-500" style="width:28%"></div></div></td>
+<td class="px-4 py-3 text-center font-mono">0.8%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">+12.4%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs uppercase font-semibold">ACTIVE</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div><span class="font-medium">Microsoft</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$60B</td>
+<td class="px-4 py-3 text-center">$28B</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:53%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold">2.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400">-8.4%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">ACTIVE</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">GOOGL</div><span class="font-medium">Alphabet</span></div></td>
+<td class="px-4 py-3 text-center font-bold">$70B</td>
+<td class="px-4 py-3 text-center">$35B</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:50%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold">2.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400">-6.2%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">ACTIVE</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">TSLA</div><span class="font-medium">Tesla</span></div></td>
+<td class="px-4 py-3 text-center font-bold <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>">—</td>
+<td class="px-4 py-3 text-center <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>">—</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"></div></td>
+<td class="px-4 py-3 text-center <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>">0%</td>
+<td class="px-4 py-3 text-center text-red-400">+42.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-slate-500/20 text-slate-400 text-xs">NONE</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Recent Announcements -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">📢 Recent Buyback Announcements</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-purple-50' : 'bg-purple-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="text-purple-400 text-xl">🔄</span>
+<div><span class="font-bold">AAPL</span><span class="ml-2 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">New Authorization</span></div>
+</div>
+<div class="text-right">
+<p class="font-bold text-purple-400">+$90B</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">May 2024</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="text-sky-400 text-xl">📈</span>
+<div><span class="font-bold">META</span><span class="ml-2 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Program Increase</span></div>
+</div>
+<div class="text-right">
+<p class="font-bold text-sky-400">+$50B</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Feb 2024</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<div class="flex items-center gap-3">
+<span class="text-emerald-400 text-xl">✅</span>
+<div><span class="font-bold">GOOGL</span><span class="ml-2 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">New Authorization</span></div>
+</div>
+<div class="text-right">
+<p class="font-bold text-emerald-400">+$70B</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Apr 2024</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Buyback Yield by Holding</h3>
+<div class="h-48"><canvas id="yieldChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Share Count Change (5Y)</h3>
+<div class="h-48"><canvas id="shareChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('yieldChart'), {
+  type: 'bar',
+  data: { labels: ['AAPL','META','GOOGL','MSFT','JNJ','NVDA'], datasets: [{ data: [3.4,3.2,2.8,2.2,1.8,0.8], backgroundColor: '#8b5cf6' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('shareChart'), {
+  type: 'bar',
+  data: { labels: ['AAPL','MSFT','GOOGL','JNJ','NVDA','TSLA'], datasets: [{ data: [-24.8,-8.4,-6.2,-4.2,12.4,42.8], backgroundColor: ctx => ctx.raw < 0 ? '#10b981' : '#ef4444' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

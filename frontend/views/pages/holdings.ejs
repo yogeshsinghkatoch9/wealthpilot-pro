@@ -1,0 +1,831 @@
+<%- include('../partials/header', { pageTitle: 'All Holdings' }) %>
+<%
+  // Safe defaults
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeTotals = typeof totals !== 'undefined' && totals ? totals : { marketValue: 0, costTotal: 0, gain: 0 };
+  const safePortfolios = typeof portfolios !== 'undefined' && portfolios ? portfolios : [];
+%>
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Bloomberg-Style Header Bar -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-white">All Holdings</h1>
+        <span class="status-live" id="liveIndicator">LIVE</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="location.reload()" class="bloomberg-btn bloomberg-btn-ghost">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Refresh
+        </button>
+        <button onclick="openUploadModal()" class="bloomberg-btn bloomberg-btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          Upload Portfolio
+        </button>
+        <button onclick="openAddHoldingModal()" class="bloomberg-btn bloomberg-btn-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Holding
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Bar -->
+    <div class="kpi-bar rounded-md overflow-hidden">
+      <div class="kpi-item">
+        <div class="kpi-label">Market Value</div>
+        <div class="kpi-value" id="totalMarketValue"><%= fmt.money(safeTotals.marketValue || safeTotals.value || 0) %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Cost Basis</div>
+        <div class="kpi-value" id="totalCostBasis"><%= fmt.money(safeTotals.costTotal || safeTotals.cost || 0) %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Total P&L</div>
+        <div class="kpi-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>" id="totalGain">
+          <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain || 0) %>
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Return</div>
+        <% const totalReturn = (safeTotals.costTotal > 0) ? ((safeTotals.gain / safeTotals.costTotal) * 100) : 0; %>
+        <div class="kpi-value <%= totalReturn >= 0 ? 'positive' : 'negative' %>" id="totalReturn">
+          <%= totalReturn >= 0 ? '+' : '' %><%= totalReturn.toFixed(2) %>%
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Holdings</div>
+        <div class="kpi-value" id="holdingsCount"><%= safeHoldings.length %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Portfolios</div>
+        <div class="kpi-value"><%= safePortfolios.length %></div>
+      </div>
+    </div>
+
+    <!-- Portfolio Filter -->
+    <div class="flex items-center gap-4 bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-2">
+      <label class="text-slate-400 text-sm">Filter by Portfolio:</label>
+      <select id="portfolioFilter" onchange="filterByPortfolio(this.value)" class="bg-slate-800 border border-slate-600 text-white rounded px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none">
+        <option value="all">All Portfolios</option>
+        <% safePortfolios.forEach(p => { %>
+        <option value="<%= p.id %>"><%= p.name %></option>
+        <% }) %>
+      </select>
+      <div class="ml-auto flex items-center gap-2">
+        <input type="text" id="searchInput" placeholder="Search symbol or name..." onkeyup="searchHoldings(this.value)"
+               class="bg-slate-800 border border-slate-600 text-white rounded px-3 py-1.5 text-sm w-64 focus:border-sky-500 focus:outline-none">
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Portfolio Holdings</span>
+        <span class="text-xs text-slate-500 font-mono" id="positionsCount"><%= safeHoldings.length %> positions</span>
+      </div>
+
+      <% if (safeHoldings.length === 0) { %>
+        <div class="p-12 text-center">
+          <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+          </svg>
+          <h3 class="text-lg font-semibold text-white mb-2">No Holdings Yet</h3>
+          <p class="text-slate-400 mb-6">Get started by adding stocks manually or uploading a portfolio file</p>
+          <div class="flex justify-center gap-3">
+            <button onclick="openAddHoldingModal()" class="bloomberg-btn bloomberg-btn-primary">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add Holding
+            </button>
+            <button onclick="openUploadModal()" class="bloomberg-btn bloomberg-btn-secondary">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+              Upload Portfolio
+            </button>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="overflow-x-auto">
+          <table class="bloomberg-table" id="holdingsTable">
+            <thead>
+              <tr>
+                <th class="cursor-pointer" onclick="sortTable('symbol')">Symbol <span class="sort-icon"></span></th>
+                <th>Name</th>
+                <th class="cursor-pointer" onclick="sortTable('portfolio')">Portfolio <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('shares')">Shares <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('avgCost')">Avg Cost <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('price')">Price <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('dayChange')">Day Chg <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('marketValue')">Mkt Value <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('gain')">P&L <span class="sort-icon"></span></th>
+                <th class="text-right cursor-pointer" onclick="sortTable('return')">Return <span class="sort-icon"></span></th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsBody">
+              <% safeHoldings.forEach(h => { %>
+              <tr data-symbol="<%= h.symbol %>" data-portfolio="<%= h.portfolioId %>" class="holding-row">
+                <td>
+                  <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                      <%= h.symbol ? h.symbol.slice(0,2) : '??' %>
+                    </div>
+                    <a href="/stock/<%= h.symbol %>" class="text-white font-medium hover:text-sky-400 transition-colors"><%= h.symbol %></a>
+                  </div>
+                </td>
+                <td class="text-slate-400 truncate max-w-[150px]" title="<%= h.name || '' %>"><%= h.name || '' %></td>
+                <td class="text-slate-400"><%= h.portfolioName || 'Main' %></td>
+                <td class="text-right text-slate-300"><%= fmt.number(h.shares) %></td>
+                <td class="text-right text-slate-400"><%= fmt.money(h.avgCostBasis || h.avg_cost_basis || 0) %></td>
+                <td class="text-right text-white font-medium price">$<%= (h.currentPrice || h.price || 0).toFixed(2) %></td>
+                <td class="text-right change <%= (h.changePct || h.change_percent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                  <%= (h.changePct || h.change_percent || 0) >= 0 ? '+' : '' %><%= (h.changePct || h.change_percent || 0).toFixed(2) %>%
+                </td>
+                <td class="text-right text-white font-medium"><%= fmt.money(h.marketValue || 0) %></td>
+                <td class="text-right <%= (h.gain || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                  <%= (h.gain || 0) >= 0 ? '+' : '' %><%= fmt.money(h.gain || 0) %>
+                </td>
+                <td class="text-right">
+                  <div class="flex items-center justify-end gap-2">
+                    <span class="font-bold <%= (h.gainPct || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                      <%= (h.gainPct || 0) >= 0 ? '+' : '' %><%= (h.gainPct || 0).toFixed(2) %>%
+                    </span>
+                    <div class="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div class="h-full <%= (h.gainPct || 0) >= 0 ? 'bg-emerald-500' : 'bg-red-500' %>" style="width: <%= Math.min(100, Math.abs(h.gainPct || 0) * 2) %>%"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <button onclick="editHolding('<%= h.id %>')" class="p-1.5 text-slate-400 hover:text-sky-400 rounded transition-colors" title="Edit">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                    </button>
+                    <button onclick="sellHolding('<%= h.id %>', '<%= h.symbol %>', <%= h.shares %>)" class="p-1.5 text-slate-400 hover:text-amber-400 rounded transition-colors" title="Sell">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                    </button>
+                    <button onclick="deleteHolding('<%= h.id %>', '<%= h.symbol %>')" class="p-1.5 text-slate-400 hover:text-red-400 rounded transition-colors" title="Delete">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+            <tfoot class="bg-bloomberg-elevated border-t-2 border-slate-600">
+              <tr>
+                <td colspan="7" class="text-right font-semibold text-white py-3 px-4">Totals:</td>
+                <td class="text-right font-bold text-white text-lg py-3 px-4" id="footerMarketValue"><%= fmt.money(safeTotals.marketValue || 0) %></td>
+                <td class="text-right font-bold <%= (safeTotals.gain || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> text-lg py-3 px-4" id="footerGain">
+                  <%= (safeTotals.gain || 0) >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain || 0) %>
+                </td>
+                <td class="text-right font-bold <%= totalReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %> py-3 px-4" id="footerReturn">
+                  <%= totalReturn >= 0 ? '+' : '' %><%= totalReturn.toFixed(2) %>%
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+
+<!-- Upload Portfolio Modal -->
+<div id="uploadModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-bloomberg-surface border border-bloomberg-border rounded-lg w-full max-w-xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-bloomberg-border">
+      <h3 class="text-lg font-semibold text-white">Upload Portfolio</h3>
+      <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="uploadForm" enctype="multipart/form-data" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Portfolio Name</label>
+        <input type="text" name="portfolioName" id="uploadPortfolioName" placeholder="My Imported Portfolio"
+               class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Portfolio File (CSV, Excel)</label>
+        <div class="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-sky-500 transition-colors cursor-pointer"
+             onclick="document.getElementById('portfolioFile').click()" id="dropZone">
+          <svg class="w-12 h-12 mx-auto text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+          </svg>
+          <p class="text-slate-400 mb-2">Drag and drop your file here, or click to browse</p>
+          <p class="text-xs text-slate-500">Supports: CSV, XLSX (Fidelity, Schwab, TD Ameritrade exports)</p>
+          <input type="file" name="portfolio" id="portfolioFile" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleFileSelect(this)">
+        </div>
+        <div id="selectedFile" class="hidden mt-3 p-3 bg-slate-800 rounded-lg flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+              <p class="text-white font-medium" id="fileName"></p>
+              <p class="text-xs text-slate-400" id="fileSize"></p>
+            </div>
+          </div>
+          <button type="button" onclick="clearFile()" class="text-slate-400 hover:text-red-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="bg-slate-800/50 rounded-lg p-4">
+        <h4 class="text-sm font-medium text-white mb-2">Expected Column Format</h4>
+        <p class="text-xs text-slate-400">Your file should have columns like: Symbol, Quantity, Cost Basis or Principal</p>
+        <p class="text-xs text-slate-500 mt-1">We auto-detect formats from Fidelity, Schwab, TD Ameritrade, and others</p>
+      </div>
+      <div class="flex justify-end gap-3 pt-4">
+        <button type="button" onclick="closeUploadModal()" class="bloomberg-btn bloomberg-btn-ghost">Cancel</button>
+        <button type="submit" id="uploadBtn" class="bloomberg-btn bloomberg-btn-primary" disabled>
+          <svg class="w-4 h-4 mr-2 hidden animate-spin" id="uploadSpinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Upload Portfolio
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Holding Modal -->
+<div id="addHoldingModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-bloomberg-surface border border-bloomberg-border rounded-lg w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-bloomberg-border">
+      <h3 class="text-lg font-semibold text-white">Add Holding</h3>
+      <button onclick="closeAddHoldingModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="addHoldingForm" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Portfolio *</label>
+        <select name="portfolioId" id="holdingPortfolio" required
+                class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none">
+          <% safePortfolios.forEach(p => { %>
+          <option value="<%= p.id %>"><%= p.name %></option>
+          <% }) %>
+        </select>
+        <% if (safePortfolios.length === 0) { %>
+        <p class="text-xs text-amber-400 mt-1">No portfolios found. <a href="/portfolios" class="underline">Create one first</a></p>
+        <% } %>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Symbol *</label>
+        <input type="text" name="symbol" id="holdingSymbol" placeholder="AAPL" required
+               class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none uppercase"
+               oninput="this.value = this.value.toUpperCase(); lookupSymbol(this.value)">
+        <div id="symbolLookup" class="hidden mt-2 p-3 bg-slate-800 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <span id="lookupName" class="text-white font-medium"></span>
+              <span id="lookupPrice" class="text-emerald-400 ml-2"></span>
+            </div>
+            <span id="lookupChange" class="text-sm"></span>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Shares *</label>
+          <input type="number" name="shares" id="holdingShares" placeholder="100" step="0.0001" min="0.0001" required
+                 class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none"
+                 oninput="calculateTotals()">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Avg Cost/Share *</label>
+          <input type="number" name="avgCostBasis" id="holdingCost" placeholder="150.00" step="0.01" min="0.01" required
+                 class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none"
+                 oninput="calculateTotals()">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Purchase Date</label>
+        <input type="date" name="purchaseDate" id="holdingDate"
+               class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none">
+      </div>
+      <div id="totalCostPreview" class="hidden bg-slate-800/50 rounded-lg p-3">
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-400">Total Cost:</span>
+          <span id="previewTotalCost" class="text-white font-medium">$0.00</span>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-4">
+        <button type="button" onclick="closeAddHoldingModal()" class="bloomberg-btn bloomberg-btn-ghost">Cancel</button>
+        <button type="submit" id="addHoldingBtn" class="bloomberg-btn bloomberg-btn-primary">
+          Add Holding
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sell Holding Modal -->
+<div id="sellModal" class="fixed inset-0 bg-black/70 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-bloomberg-surface border border-bloomberg-border rounded-lg w-full max-w-md">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-bloomberg-border">
+      <h3 class="text-lg font-semibold text-white">Sell <span id="sellSymbol"></span></h3>
+      <button onclick="closeSellModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="sellForm" class="p-6 space-y-4">
+      <input type="hidden" name="holdingId" id="sellHoldingId">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Shares to Sell (Max: <span id="maxShares"></span>)</label>
+        <input type="number" name="shares" id="sellShares" step="0.0001" min="0.0001" required
+               class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Sell Price per Share</label>
+        <input type="number" name="price" id="sellPrice" step="0.01" min="0.01" required
+               class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-300 mb-2">Cost Basis Method</label>
+        <select name="method" id="sellMethod"
+                class="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-4 py-2.5 focus:border-sky-500 focus:outline-none">
+          <option value="FIFO">FIFO (First In, First Out)</option>
+          <option value="LIFO">LIFO (Last In, First Out)</option>
+          <option value="HIFO">HIFO (Highest Cost First)</option>
+        </select>
+      </div>
+      <div class="flex justify-end gap-3 pt-4">
+        <button type="button" onclick="closeSellModal()" class="bloomberg-btn bloomberg-btn-ghost">Cancel</button>
+        <button type="submit" class="bloomberg-btn bg-amber-600 hover:bg-amber-500 text-white">Sell Shares</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api';
+let symbolLookupTimeout;
+
+// Upload Modal Functions
+function openUploadModal() {
+  document.getElementById('uploadModal').classList.remove('hidden');
+}
+
+function closeUploadModal() {
+  document.getElementById('uploadModal').classList.add('hidden');
+  document.getElementById('uploadForm').reset();
+  clearFile();
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (file) {
+    document.getElementById('dropZone').classList.add('hidden');
+    document.getElementById('selectedFile').classList.remove('hidden');
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatFileSize(file.size);
+    document.getElementById('uploadBtn').disabled = false;
+  }
+}
+
+function clearFile() {
+  document.getElementById('portfolioFile').value = '';
+  document.getElementById('dropZone').classList.remove('hidden');
+  document.getElementById('selectedFile').classList.add('hidden');
+  document.getElementById('uploadBtn').disabled = true;
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' bytes';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+// Upload form submission
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData(e.target);
+  const uploadBtn = document.getElementById('uploadBtn');
+  const spinner = document.getElementById('uploadSpinner');
+
+  uploadBtn.disabled = true;
+  spinner.classList.remove('hidden');
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/portfolio-upload/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Portfolio upload started! Processing...', 'success');
+      closeUploadModal();
+
+      // Poll for status
+      if (data.uploadId) {
+        pollUploadStatus(data.uploadId);
+      }
+    } else {
+      showToast(data.error || 'Upload failed', 'error');
+    }
+  } catch (error) {
+    console.error('Upload error:', error);
+    showToast('Failed to upload portfolio', 'error');
+  } finally {
+    uploadBtn.disabled = false;
+    spinner.classList.add('hidden');
+  }
+});
+
+async function pollUploadStatus(uploadId) {
+  const token = localStorage.getItem('token');
+  let attempts = 0;
+  const maxAttempts = 30;
+
+  const poll = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/portfolio-upload/status/${uploadId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+
+      if (data.upload?.status === 'completed') {
+        showToast(`Portfolio uploaded! ${data.upload.totalHoldings} holdings added.`, 'success');
+        setTimeout(() => location.reload(), 1500);
+      } else if (data.upload?.status === 'failed') {
+        showToast(`Upload failed: ${data.upload.errorMessage}`, 'error');
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(poll, 2000);
+      }
+    } catch (error) {
+      console.error('Poll error:', error);
+    }
+  };
+
+  poll();
+}
+
+// Add Holding Modal Functions
+function openAddHoldingModal() {
+  document.getElementById('addHoldingModal').classList.remove('hidden');
+  document.getElementById('holdingDate').value = new Date().toISOString().split('T')[0];
+}
+
+function closeAddHoldingModal() {
+  document.getElementById('addHoldingModal').classList.add('hidden');
+  document.getElementById('addHoldingForm').reset();
+  document.getElementById('symbolLookup').classList.add('hidden');
+  document.getElementById('totalCostPreview').classList.add('hidden');
+}
+
+async function lookupSymbol(symbol) {
+  clearTimeout(symbolLookupTimeout);
+
+  if (symbol.length < 1) {
+    document.getElementById('symbolLookup').classList.add('hidden');
+    return;
+  }
+
+  symbolLookupTimeout = setTimeout(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE}/market/quote/${symbol}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.price) {
+          document.getElementById('lookupName').textContent = data.name || symbol;
+          document.getElementById('lookupPrice').textContent = '$' + data.price.toFixed(2);
+          document.getElementById('lookupChange').textContent = (data.changePercent >= 0 ? '+' : '') + data.changePercent?.toFixed(2) + '%';
+          document.getElementById('lookupChange').className = data.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400';
+          document.getElementById('symbolLookup').classList.remove('hidden');
+
+          // Auto-fill current price as cost if empty
+          if (!document.getElementById('holdingCost').value) {
+            document.getElementById('holdingCost').value = data.price.toFixed(2);
+            calculateTotals();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Symbol lookup error:', error);
+    }
+  }, 500);
+}
+
+function calculateTotals() {
+  const shares = parseFloat(document.getElementById('holdingShares').value) || 0;
+  const cost = parseFloat(document.getElementById('holdingCost').value) || 0;
+  const total = shares * cost;
+
+  if (total > 0) {
+    document.getElementById('previewTotalCost').textContent = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('totalCostPreview').classList.remove('hidden');
+  } else {
+    document.getElementById('totalCostPreview').classList.add('hidden');
+  }
+}
+
+// Add Holding Form Submission
+document.getElementById('addHoldingForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const formData = {
+    portfolioId: document.getElementById('holdingPortfolio').value,
+    symbol: document.getElementById('holdingSymbol').value.toUpperCase(),
+    shares: parseFloat(document.getElementById('holdingShares').value),
+    avgCostBasis: parseFloat(document.getElementById('holdingCost').value),
+    purchaseDate: document.getElementById('holdingDate').value || new Date().toISOString()
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/holdings`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showToast(`Added ${formData.shares} shares of ${formData.symbol}`, 'success');
+      closeAddHoldingModal();
+      location.reload();
+    } else {
+      showToast(data.error || 'Failed to add holding', 'error');
+    }
+  } catch (error) {
+    console.error('Add holding error:', error);
+    showToast('Failed to add holding', 'error');
+  }
+});
+
+// Sell Modal Functions
+function sellHolding(holdingId, symbol, maxShares) {
+  document.getElementById('sellHoldingId').value = holdingId;
+  document.getElementById('sellSymbol').textContent = symbol;
+  document.getElementById('maxShares').textContent = maxShares;
+  document.getElementById('sellShares').max = maxShares;
+  document.getElementById('sellShares').value = maxShares;
+  document.getElementById('sellModal').classList.remove('hidden');
+
+  // Get current price
+  const token = localStorage.getItem('token');
+  fetch(`${API_BASE}/market/quote/${symbol}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.price) {
+      document.getElementById('sellPrice').value = data.price.toFixed(2);
+    }
+  });
+}
+
+function closeSellModal() {
+  document.getElementById('sellModal').classList.add('hidden');
+}
+
+document.getElementById('sellForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const holdingId = document.getElementById('sellHoldingId').value;
+  const sellData = {
+    shares: parseFloat(document.getElementById('sellShares').value),
+    price: parseFloat(document.getElementById('sellPrice').value),
+    method: document.getElementById('sellMethod').value
+  };
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/holdings/${holdingId}/sell`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(sellData)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showToast(`Sold ${sellData.shares} shares for $${data.proceeds?.toFixed(2)}`, 'success');
+      closeSellModal();
+      location.reload();
+    } else {
+      showToast(data.error || 'Failed to sell shares', 'error');
+    }
+  } catch (error) {
+    console.error('Sell error:', error);
+    showToast('Failed to sell shares', 'error');
+  }
+});
+
+// Delete Holding
+async function deleteHolding(holdingId, symbol) {
+  if (!confirm(`Delete all shares of ${symbol}? This cannot be undone.`)) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE}/holdings/${holdingId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (response.ok) {
+      showToast(`${symbol} removed from portfolio`, 'success');
+      location.reload();
+    } else {
+      const data = await response.json();
+      showToast(data.error || 'Failed to delete holding', 'error');
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    showToast('Failed to delete holding', 'error');
+  }
+}
+
+// Edit Holding
+function editHolding(holdingId) {
+  window.location.href = `/holding/${holdingId}/edit`;
+}
+
+// Filter and Search
+function filterByPortfolio(portfolioId) {
+  const rows = document.querySelectorAll('.holding-row');
+  rows.forEach(row => {
+    if (portfolioId === 'all' || row.dataset.portfolio === portfolioId) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  updateVisibleCount();
+}
+
+function searchHoldings(query) {
+  const rows = document.querySelectorAll('.holding-row');
+  const lowerQuery = query.toLowerCase();
+
+  rows.forEach(row => {
+    const symbol = row.dataset.symbol.toLowerCase();
+    const name = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+
+    if (symbol.includes(lowerQuery) || name.includes(lowerQuery)) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  updateVisibleCount();
+}
+
+function updateVisibleCount() {
+  const visibleRows = document.querySelectorAll('.holding-row:not([style*="display: none"])');
+  document.getElementById('positionsCount').textContent = visibleRows.length + ' positions';
+}
+
+// Sort Table
+let sortColumn = 'marketValue';
+let sortDirection = 'desc';
+
+function sortTable(column) {
+  const tbody = document.getElementById('holdingsBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  if (sortColumn === column) {
+    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortColumn = column;
+    sortDirection = 'desc';
+  }
+
+  rows.sort((a, b) => {
+    let aVal, bVal;
+
+    switch (column) {
+      case 'symbol':
+        aVal = a.dataset.symbol;
+        bVal = b.dataset.symbol;
+        break;
+      case 'portfolio':
+        aVal = a.querySelector('td:nth-child(3)')?.textContent || '';
+        bVal = b.querySelector('td:nth-child(3)')?.textContent || '';
+        break;
+      case 'shares':
+        aVal = parseFloat(a.querySelector('td:nth-child(4)')?.textContent.replace(/,/g, '')) || 0;
+        bVal = parseFloat(b.querySelector('td:nth-child(4)')?.textContent.replace(/,/g, '')) || 0;
+        break;
+      case 'price':
+        aVal = parseFloat(a.querySelector('.price')?.textContent.replace(/[$,]/g, '')) || 0;
+        bVal = parseFloat(b.querySelector('.price')?.textContent.replace(/[$,]/g, '')) || 0;
+        break;
+      case 'marketValue':
+        aVal = parseFloat(a.querySelector('td:nth-child(8)')?.textContent.replace(/[$,]/g, '')) || 0;
+        bVal = parseFloat(b.querySelector('td:nth-child(8)')?.textContent.replace(/[$,]/g, '')) || 0;
+        break;
+      case 'gain':
+        aVal = parseFloat(a.querySelector('td:nth-child(9)')?.textContent.replace(/[$,+]/g, '')) || 0;
+        bVal = parseFloat(b.querySelector('td:nth-child(9)')?.textContent.replace(/[$,+]/g, '')) || 0;
+        break;
+      case 'return':
+        aVal = parseFloat(a.querySelector('td:nth-child(10) span')?.textContent.replace(/[%+]/g, '')) || 0;
+        bVal = parseFloat(b.querySelector('td:nth-child(10) span')?.textContent.replace(/[%+]/g, '')) || 0;
+        break;
+      default:
+        aVal = 0;
+        bVal = 0;
+    }
+
+    if (typeof aVal === 'string') {
+      return sortDirection === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    }
+    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 ${
+    type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-red-600' : 'bg-sky-600'
+  } text-white`;
+  toast.innerHTML = `
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>' :
+        type === 'error' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>' :
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'}
+    </svg>
+    ${message}
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+// Drag and drop
+const dropZone = document.getElementById('dropZone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-sky-500');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-sky-500');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-sky-500');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById('portfolioFile');
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      input.files = dataTransfer.files;
+      handleFileSelect(input);
+    }
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

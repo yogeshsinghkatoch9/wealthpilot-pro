@@ -1,0 +1,199 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeSettings = settings || [];
+const safeTheme = theme || 'dark';
+const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
+%>
+<%- include('../partials/header', { pageTitle: 'DRIP Settings' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">DIVIDEND REINVESTMENT (DRIP)</h1>
+      <p class="text-slate-400">Configure automatic dividend reinvestment settings</p>
+    </div>
+    <button onclick="enableAllDRIP()" class="bloomberg-btn bloomberg-btn-primary">Enable All DRIP</button>
+  </div>
+</div>
+
+<!-- DRIP Summary -->
+<%
+const enabledCount = safeSettings.filter(s => s.drip_enabled).length;
+const totalCount = safeSettings.length;
+const ytdReinvested = safeSettings.reduce((sum, s) => sum + (s.ytd_reinvested || 0), 0);
+const ytdShares = safeSettings.reduce((sum, s) => sum + (s.ytd_shares || 0), 0);
+const nextDividend = safeSettings.reduce((sum, s) => sum + (s.next_dividend || 0), 0);
+const estAnnual = safeSettings.reduce((sum, s) => sum + (s.annual_dividend || 0), 0);
+%>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm">DRIP Enabled</p>
+<p class="text-2xl font-bold font-mono text-emerald-400"><%= enabledCount %> / <%= totalCount %></p>
+<p class="text-sm text-slate-400">holdings</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm">YTD Reinvested</p>
+<p class="text-2xl font-bold font-mono text-emerald-400"><%= safeFmt.money(ytdReinvested) %></p>
+<p class="text-sm text-emerald-400 font-mono">+<%= ytdShares.toFixed(0) %> shares</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm">Next Dividend</p>
+<p class="text-2xl font-bold font-mono text-white"><%= safeFmt.money(nextDividend) %></p>
+<p class="text-sm text-slate-400">Upcoming</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm">Est. Annual</p>
+<p class="text-2xl font-bold font-mono text-amber-400"><%= safeFmt.money(estAnnual) %></p>
+<p class="text-sm text-slate-400">compound growth</p>
+</div>
+</div>
+
+<!-- Global Settings -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">Global DRIP Settings</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 rounded-lg bg-slate-800">
+<div>
+<p class="font-medium text-white">Auto-Enable for New Positions</p>
+<p class="text-sm text-slate-400">Automatically enable DRIP when you buy dividend stocks</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" class="sr-only peer" checked>
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg bg-slate-800">
+<div>
+<p class="font-medium text-white">Fractional Shares</p>
+<p class="text-sm text-slate-400">Allow purchasing fractional shares with dividends</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" class="sr-only peer" checked>
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg bg-slate-800">
+<div>
+<p class="font-medium text-white">DRIP Notifications</p>
+<p class="text-sm text-slate-400">Get notified when dividends are reinvested</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" class="sr-only peer" checked>
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+</label>
+</div>
+</div>
+</div>
+
+<!-- Per-Stock Settings -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b border-slate-700">
+<h3 class="text-lg font-semibold text-amber-400">Per-Stock DRIP Settings (<%= safeSettings.length %>)</h3>
+</div>
+<% if (safeSettings.length === 0) { %>
+<div class="p-12 text-center">
+<svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+<h4 class="text-lg font-semibold text-white mb-2">No Dividend Stocks</h4>
+<p class="text-slate-400">Add dividend-paying stocks to your portfolio to configure DRIP</p>
+</div>
+<% } else { %>
+<table class="w-full text-sm">
+<thead>
+<tr class="bg-slate-800 text-slate-400 text-left">
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3">Yield</th>
+<th class="px-4 py-3">Next Div</th>
+<th class="px-4 py-3">Est. Amount</th>
+<th class="px-4 py-3">YTD Reinvested</th>
+<th class="px-4 py-3">DRIP</th>
+</tr>
+</thead>
+<tbody>
+<% safeSettings.forEach(s => {
+  const colors = ['sky', 'emerald', 'amber', 'red', 'purple', 'indigo', 'pink', 'teal'];
+  const colorIndex = s.symbol ? s.symbol.charCodeAt(0) % colors.length : 0;
+  const color = colors[colorIndex];
+%>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white text-xs font-bold"><%= s.symbol || 'N/A' %></div>
+<div><p class="font-medium text-white"><%= s.name || s.symbol %></p><p class="text-xs text-slate-400 font-mono"><%= s.shares || 0 %> shares</p></div>
+</div>
+</td>
+<td class="px-4 py-4 font-mono <%= (s.dividend_yield || 0) > 2 ? 'text-emerald-400 font-bold' : 'text-white' %>"><%= (s.dividend_yield || 0).toFixed(2) %>%</td>
+<td class="px-4 py-4 text-slate-400"><%= s.next_dividend_date ? new Date(s.next_dividend_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-' %></td>
+<td class="px-4 py-4 font-medium font-mono text-white"><%= safeFmt.money(s.next_dividend || 0) %></td>
+<td class="px-4 py-4 font-mono text-emerald-400"><%= safeFmt.money(s.ytd_reinvested || 0) %></td>
+<td class="px-4 py-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" class="sr-only peer drip-toggle" data-id="<%= s.id %>" <%= s.drip_enabled ? 'checked' : '' %> onchange="toggleDRIP('<%= s.id %>')">
+<div class="w-9 h-5 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+</label>
+</td>
+</tr>
+<% }) %>
+</tbody>
+</table>
+<% } %>
+</div>
+
+<!-- DRIP History -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Recent DRIP Activity</h3>
+<%
+const history = settings.flatMap(s => (s.history || []).map(h => ({ ...h, symbol: s.symbol, name: s.name })));
+history.sort((a, b) => new Date(b.date) - new Date(a.date));
+if (history.length === 0) { %>
+<div class="text-center py-8">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No DRIP activity yet. Activity will appear here when dividends are reinvested.</p>
+</div>
+<% } else { %>
+<div class="space-y-3">
+<% history.slice(0, 10).forEach(h => { %>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<div class="flex items-center gap-3">
+<span class="text-emerald-400 text-lg">♻️</span>
+<div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.symbol %> - <%= h.name %></p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= new Date(h.date).toLocaleDateString() %></p></div>
+</div>
+<div class="text-right">
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.amount || 0) %> → <%= (h.shares || 0).toFixed(2) %> shares</p>
+<p class="text-xs text-emerald-400">@ <%= fmt.money(h.price || 0) %>/share</p>
+</div>
+</div>
+<% }) %>
+</div>
+<% } %>
+</div>
+</div></div></main>
+
+<script>
+async function enableAllDRIP() {
+  try {
+    const res = await fetch('/api/drip/enable-all', { method: 'PUT' });
+    if (res.ok) {
+      showToast('DRIP enabled for all holdings!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      showToast('Failed to enable DRIP', 'error');
+    }
+  } catch (e) {
+    showToast('Error enabling DRIP', 'error');
+  }
+}
+
+async function toggleDRIP(id) {
+  try {
+    const res = await fetch('/api/drip/' + id + '/toggle', { method: 'PUT' });
+    if (res.ok) {
+      showToast('DRIP setting updated!', 'success');
+    } else {
+      showToast('Failed to update DRIP', 'error');
+    }
+  } catch (e) {
+    showToast('Error updating DRIP', 'error');
+  }
+}
+</script>
+<%- include('../partials/footer') %>

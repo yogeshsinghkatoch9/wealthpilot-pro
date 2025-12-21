@@ -1,0 +1,408 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const opt = options || {};
+const calls = opt.calls || [];
+const puts = opt.puts || [];
+const expirations = opt.expirations || [];
+const quote = opt.quote || {};
+const price = quote.price || opt.currentPrice || 0;
+const change = quote.change || 0;
+const changePercent = quote.changePercent || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(2) + '%'; }
+function formatVol(v) {
+  if (!v) return '0';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toString();
+}
+function formatDelta(v) { return (v || 0).toFixed(2); }
+function formatIV(v) { return ((v || 0) * 100).toFixed(1) + '%'; }
+
+// Calculate aggregate metrics
+let totalCallVolume = 0, totalPutVolume = 0;
+let totalCallOI = 0, totalPutOI = 0;
+let avgIV = 0, ivCount = 0;
+
+calls.forEach(c => {
+  totalCallVolume += c.volume || 0;
+  totalCallOI += c.openInterest || 0;
+  if (c.impliedVolatility) { avgIV += c.impliedVolatility; ivCount++; }
+});
+puts.forEach(p => {
+  totalPutVolume += p.volume || 0;
+  totalPutOI += p.openInterest || 0;
+  if (p.impliedVolatility) { avgIV += p.impliedVolatility; ivCount++; }
+});
+
+const totalVolume = totalCallVolume + totalPutVolume;
+const totalOI = totalCallOI + totalPutOI;
+avgIV = ivCount > 0 ? (avgIV / ivCount) : 0;
+const putCallRatio = totalCallVolume > 0 ? (totalPutVolume / totalCallVolume) : 0;
+
+// Build strike map - matching calls and puts by strike
+const strikeMap = {};
+calls.forEach(c => {
+  const strike = c.strike;
+  if (!strikeMap[strike]) strikeMap[strike] = { strike: strike };
+  strikeMap[strike].call = c;
+});
+puts.forEach(p => {
+  const strike = p.strike;
+  if (!strikeMap[strike]) strikeMap[strike] = { strike: strike };
+  strikeMap[strike].put = p;
+});
+
+// Sort strikes
+const strikes = Object.keys(strikeMap).map(Number).sort((a, b) => a - b);
+const atmIndex = strikes.findIndex(s => s >= price);
+const displayStrikes = strikes.slice(Math.max(0, atmIndex - 5), atmIndex + 6);
+%>
+<%- include('../partials/header', { pageTitle: 'Options Chain' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">OPTIONS CHAIN</h1>
+      <p class="text-slate-400 text-sm mt-1">Real-time options analytics and strategy builder</p>
+    </div>
+    <form method="GET" action="/options-chain" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn-primary">LOAD CHAIN</button>
+    </form>
+  </div>
+</div>
+
+<% if (!options || (!calls.length && !puts.length)) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No options data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if options are available for this stock.</p>
+</div>
+<% } else { %>
+
+<!-- Underlying Info -->
+<div class="bloomberg-card mb-6">
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div class="flex items-center gap-4">
+      <div class="w-14 h-14 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-black text-xl font-bold"><%= symbol %></div>
+      <div>
+        <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+        <p class="text-slate-400 text-sm">Options Chain Analysis</p>
+      </div>
+    </div>
+    <div class="text-right">
+      <p class="text-3xl font-bold font-mono text-white"><%= formatPrice(price) %></p>
+      <p class="<%= change >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+        <%= change >= 0 ? '+' : '' %><%= formatPrice(change) %> (<%= change >= 0 ? '+' : '' %><%= formatPct(changePercent) %>)
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- KPI Bar for Options Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="bloomberg-card">
+    <div class="text-center">
+      <p class="text-xs text-slate-400 mb-1 uppercase">Total Volume</p>
+      <p class="text-2xl font-bold font-mono text-amber-400"><%= formatVol(totalVolume) %></p>
+      <p class="text-xs text-slate-500 mt-1">Calls + Puts</p>
+    </div>
+  </div>
+  <div class="bloomberg-card">
+    <div class="text-center">
+      <p class="text-xs text-slate-400 mb-1 uppercase">Open Interest</p>
+      <p class="text-2xl font-bold font-mono text-white"><%= formatVol(totalOI) %></p>
+      <p class="text-xs text-slate-500 mt-1">Total contracts</p>
+    </div>
+  </div>
+  <div class="bloomberg-card">
+    <div class="text-center">
+      <p class="text-xs text-slate-400 mb-1 uppercase">Avg IV</p>
+      <p class="text-2xl font-bold font-mono text-amber-400"><%= formatPct(avgIV * 100) %></p>
+      <p class="text-xs text-slate-500 mt-1">Implied Volatility</p>
+    </div>
+  </div>
+  <div class="bloomberg-card">
+    <div class="text-center">
+      <p class="text-xs text-slate-400 mb-1 uppercase">Put/Call Ratio</p>
+      <p class="text-2xl font-bold font-mono <%= putCallRatio > 1 ? 'text-red-400' : 'text-emerald-400' %>"><%= putCallRatio.toFixed(2) %></p>
+      <p class="text-xs text-slate-500 mt-1"><%= putCallRatio > 1 ? 'Bearish' : 'Bullish' %> sentiment</p>
+    </div>
+  </div>
+</div>
+
+<!-- Expiration Selector -->
+<% if (expirations.length > 0) { %>
+<div class="flex flex-wrap gap-2 mb-6">
+  <% expirations.slice(0, 8).forEach((exp, idx) => {
+    const expDate = new Date(exp);
+    const now = new Date();
+    const daysToExp = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+    const monthStr = expDate.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+    const dayStr = expDate.getDate();
+  %>
+  <a href="/options-chain?symbol=<%= symbol %>&expiration=<%= exp %>"
+     class="bloomberg-btn-secondary <%= idx === 0 ? 'bg-amber-500 text-black font-semibold' : '' %>">
+    <%= monthStr %> <%= dayStr %> (<%= daysToExp %>D)
+  </a>
+  <% }); %>
+</div>
+<% } %>
+
+<!-- Options Chain Table -->
+<div class="bloomberg-card overflow-hidden mb-6">
+  <div class="overflow-x-auto">
+    <table class="bloomberg-table w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800">
+          <th colspan="7" class="px-4 py-3 text-left font-bold text-emerald-400 border-r border-slate-700 uppercase">Calls</th>
+          <th class="px-4 py-3 font-bold text-white uppercase">Strike</th>
+          <th colspan="7" class="px-4 py-3 text-left font-bold text-red-400 border-l border-slate-700 uppercase">Puts</th>
+        </tr>
+        <tr class="text-slate-400 border-b border-slate-700 text-xs uppercase">
+          <th class="px-2 py-2">Bid</th>
+          <th class="px-2 py-2">Ask</th>
+          <th class="px-2 py-2">Last</th>
+          <th class="px-2 py-2">Vol</th>
+          <th class="px-2 py-2">OI</th>
+          <th class="px-2 py-2">IV</th>
+          <th class="px-2 py-2 border-r border-slate-700">Delta</th>
+          <th class="px-2 py-2"></th>
+          <th class="px-2 py-2 border-l border-slate-700">Delta</th>
+          <th class="px-2 py-2">IV</th>
+          <th class="px-2 py-2">OI</th>
+          <th class="px-2 py-2">Vol</th>
+          <th class="px-2 py-2">Last</th>
+          <th class="px-2 py-2">Ask</th>
+          <th class="px-2 py-2">Bid</th>
+        </tr>
+      </thead>
+      <tbody id="chainBody">
+        <% displayStrikes.forEach(strike => {
+          const row = strikeMap[strike] || {};
+          const call = row.call || {};
+          const put = row.put || {};
+          const isITMCall = strike < price;
+          const isATM = Math.abs(strike - price) < price * 0.02;
+          const rowClass = isATM ? 'bg-amber-500/10' : (isITMCall ? 'bg-emerald-500/5' : 'bg-red-500/5');
+        %>
+        <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 cursor-pointer <%= rowClass %>">
+          <!-- Call columns -->
+          <td class="px-2 py-2 text-emerald-400 font-mono"><%= call.bid ? call.bid.toFixed(2) : '-' %></td>
+          <td class="px-2 py-2 font-mono"><%= call.ask ? call.ask.toFixed(2) : '-' %></td>
+          <td class="px-2 py-2 font-mono"><%= call.lastPrice ? call.lastPrice.toFixed(2) : '-' %></td>
+          <td class="px-2 py-2 font-mono"><%= formatVol(call.volume) %></td>
+          <td class="px-2 py-2 font-mono"><%= formatVol(call.openInterest) %></td>
+          <td class="px-2 py-2 font-mono"><%= call.impliedVolatility ? formatIV(call.impliedVolatility) : '-' %></td>
+          <td class="px-2 py-2 font-mono border-r border-slate-700"><%= call.delta ? formatDelta(call.delta) : '-' %></td>
+
+          <!-- Strike column -->
+          <td class="px-2 py-2 text-center font-bold font-mono <%= isATM ? 'bg-amber-500/20 text-amber-400 ring-2 ring-amber-500' : (isITMCall ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400') %>">
+            $<%= strike %><%= isATM ? ' ★' : '' %>
+          </td>
+
+          <!-- Put columns -->
+          <td class="px-2 py-2 font-mono border-l border-slate-700"><%= put.delta ? formatDelta(put.delta) : '-' %></td>
+          <td class="px-2 py-2 font-mono"><%= put.impliedVolatility ? formatIV(put.impliedVolatility) : '-' %></td>
+          <td class="px-2 py-2 font-mono"><%= formatVol(put.openInterest) %></td>
+          <td class="px-2 py-2 font-mono"><%= formatVol(put.volume) %></td>
+          <td class="px-2 py-2 font-mono"><%= put.lastPrice ? put.lastPrice.toFixed(2) : '-' %></td>
+          <td class="px-2 py-2 font-mono"><%= put.ask ? put.ask.toFixed(2) : '-' %></td>
+          <td class="px-2 py-2 text-red-400 font-mono"><%= put.bid ? put.bid.toFixed(2) : '-' %></td>
+        </tr>
+        <% }); %>
+
+        <% if (displayStrikes.length === 0) { %>
+        <tr>
+          <td colspan="15" class="px-4 py-8 text-center text-slate-400">
+            No options data available for the selected expiration
+          </td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Volume Analysis -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="text-lg font-bold text-white mb-4 uppercase">Call vs Put Volume</h3>
+    <div class="space-y-4">
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-emerald-400">Call Volume</span>
+          <span class="text-emerald-400 font-mono font-bold"><%= formatVol(totalCallVolume) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-emerald-400 rounded-full" style="width: <%= totalVolume ? (totalCallVolume / totalVolume * 100) : 50 %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-red-400">Put Volume</span>
+          <span class="text-red-400 font-mono font-bold"><%= formatVol(totalPutVolume) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-red-400 rounded-full" style="width: <%= totalVolume ? (totalPutVolume / totalVolume * 100) : 50 %>%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 p-3 rounded bg-slate-800">
+      <p class="text-sm text-slate-400">
+        <% if (putCallRatio < 0.7) { %>
+          <strong class="text-emerald-400">Bullish:</strong> Low put/call ratio suggests bullish sentiment
+        <% } else if (putCallRatio > 1.2) { %>
+          <strong class="text-red-400">Bearish:</strong> High put/call ratio suggests bearish sentiment or hedging
+        <% } else { %>
+          <strong class="text-amber-400">Neutral:</strong> Put/call ratio is within normal range
+        <% } %>
+      </p>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="text-lg font-bold text-white mb-4 uppercase">Open Interest Distribution</h3>
+    <div class="h-48"><canvas id="oiChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Strategy Builder -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="text-lg font-bold text-white mb-4 uppercase">Quick Strategies</h3>
+    <div class="space-y-4">
+      <div class="grid grid-cols-2 gap-2">
+        <a href="/options-greeks?symbol=<%= symbol %>&strategy=long_call" class="bloomberg-btn-secondary text-emerald-400 border-emerald-500/50 text-center">LONG CALL</a>
+        <a href="/options-greeks?symbol=<%= symbol %>&strategy=long_put" class="bloomberg-btn-secondary text-red-400 border-red-500/50 text-center">LONG PUT</a>
+        <a href="/straddles?symbol=<%= symbol %>" class="bloomberg-btn-secondary text-center">STRADDLE</a>
+        <a href="/iv-surface?symbol=<%= symbol %>" class="bloomberg-btn-secondary text-center">IV SURFACE</a>
+      </div>
+
+      <div class="pt-4 border-t border-slate-700">
+        <h4 class="text-sm font-bold text-slate-400 mb-2">ATM Options Summary</h4>
+        <%
+          const atmStrike = displayStrikes.find(s => Math.abs(s - price) < price * 0.02) || displayStrikes[Math.floor(displayStrikes.length / 2)];
+          const atmRow = strikeMap[atmStrike] || {};
+          const atmCall = atmRow.call || {};
+          const atmPut = atmRow.put || {};
+        %>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-400">ATM Strike</span>
+            <span class="font-mono text-amber-400">$<%= atmStrike %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">ATM Call Price</span>
+            <span class="font-mono text-emerald-400"><%= atmCall.lastPrice ? formatPrice(atmCall.lastPrice) : '-' %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">ATM Put Price</span>
+            <span class="font-mono text-red-400"><%= atmPut.lastPrice ? formatPrice(atmPut.lastPrice) : '-' %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Straddle Cost</span>
+            <span class="font-mono text-white"><%= (atmCall.lastPrice && atmPut.lastPrice) ? formatPrice(atmCall.lastPrice + atmPut.lastPrice) : '-' %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="text-lg font-bold text-white mb-4 uppercase">Implied Move</h3>
+    <%
+      const straddleCost = (atmCall.lastPrice || 0) + (atmPut.lastPrice || 0);
+      const impliedMove = price > 0 ? (straddleCost / price * 100) : 0;
+      const expectedHigh = price * (1 + impliedMove / 100);
+      const expectedLow = price * (1 - impliedMove / 100);
+    %>
+    <div class="text-center mb-4">
+      <p class="text-sm text-slate-400">Expected Move (Based on ATM Straddle)</p>
+      <p class="text-4xl font-bold font-mono text-amber-400">±<%= impliedMove.toFixed(1) %>%</p>
+    </div>
+    <div class="grid grid-cols-3 gap-4 text-center">
+      <div>
+        <p class="text-sm text-slate-400">Expected Low</p>
+        <p class="text-xl font-bold font-mono text-red-400"><%= formatPrice(expectedLow) %></p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400">Current</p>
+        <p class="text-xl font-bold font-mono text-white"><%= formatPrice(price) %></p>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400">Expected High</p>
+        <p class="text-xl font-bold font-mono text-emerald-400"><%= formatPrice(expectedHigh) %></p>
+      </div>
+    </div>
+    <div class="mt-4 h-4 bg-slate-700 rounded-full overflow-hidden relative">
+      <div class="absolute inset-y-0 bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500 opacity-30" style="left: 0; right: 0;"></div>
+      <div class="absolute top-0 bottom-0 w-1 bg-white" style="left: 50%"></div>
+    </div>
+  </div>
+</div>
+
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (options && (calls.length || puts.length)) { %>
+// Open Interest Chart
+const strikes = <%- JSON.stringify(displayStrikes) %>;
+const callOI = strikes.map(s => {
+  const row = <%- JSON.stringify(strikeMap) %>[s];
+  return row && row.call ? row.call.openInterest || 0 : 0;
+});
+const putOI = strikes.map(s => {
+  const row = <%- JSON.stringify(strikeMap) %>[s];
+  return row && row.put ? row.put.openInterest || 0 : 0;
+});
+
+new Chart(document.getElementById('oiChart'), {
+  type: 'bar',
+  data: {
+    labels: strikes.map(s => '$' + s),
+    datasets: [
+      {
+        label: 'Call OI',
+        data: callOI,
+        backgroundColor: '#10b981',
+        borderRadius: 2
+      },
+      {
+        label: 'Put OI',
+        data: putOI,
+        backgroundColor: '#ef4444',
+        borderRadius: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+    },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#94a3b8',
+          callback: function(value) {
+            if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+            return value;
+          }
+        }
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,344 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : { name: 'User' };
+const safeCryptoData = typeof cryptoData !== 'undefined' ? cryptoData : [];
+const safeTotalValue = typeof totalValue !== 'undefined' ? totalValue : 35969;
+const safe24hChange = typeof change24h !== 'undefined' ? change24h : 6219;
+const safe24hPercent = typeof change24hPercent !== 'undefined' ? change24hPercent : 20.9;
+const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52.4;
+%>
+<%- include('../partials/header', { pageTitle: 'Crypto Tracker' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <h1 class="text-2xl font-bold text-amber-400 tracking-tight">CRYPTO TRACKER</h1>
+      <div class="flex items-center gap-2">
+        <span class="live-indicator"></span>
+        <span class="text-xs text-slate-400 uppercase tracking-wider">LIVE</span>
+      </div>
+    </div>
+    <button onclick="showAddCryptoModal()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      ADD POSITION
+    </button>
+  </div>
+</div>
+
+<!-- KPI Bar -->
+<div class="bloomberg-kpi-bar mb-6">
+  <div class="bloomberg-kpi">
+    <div class="bloomberg-kpi-label">TOTAL VALUE</div>
+    <div class="bloomberg-kpi-value font-mono">$<%= safeTotalValue.toLocaleString() %></div>
+  </div>
+  <div class="bloomberg-kpi">
+    <div class="bloomberg-kpi-label">24H CHANGE</div>
+    <div class="bloomberg-kpi-value font-mono <%= safe24hChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+      <%= safe24hChange >= 0 ? '+' : '' %>$<%= Math.abs(safe24hChange).toLocaleString() %>
+      (<%= safe24hChange >= 0 ? '+' : '' %><%= safe24hPercent %>%)
+    </div>
+  </div>
+  <div class="bloomberg-kpi">
+    <div class="bloomberg-kpi-label">BTC DOMINANCE</div>
+    <div class="bloomberg-kpi-value font-mono"><%= safeBtcDominance %>%</div>
+  </div>
+  <div class="bloomberg-kpi">
+    <div class="bloomberg-kpi-label">MARKET CAP</div>
+    <div class="bloomberg-kpi-value font-mono">$1.68T</div>
+  </div>
+  <div class="bloomberg-kpi">
+    <div class="bloomberg-kpi-label">24H VOLUME</div>
+    <div class="bloomberg-kpi-value font-mono">$78.2B</div>
+  </div>
+  <div class="bloomberg-kpi">
+    <div class="bloomberg-kpi-label">FEAR & GREED</div>
+    <div class="bloomberg-kpi-value font-mono text-amber-400">65 (GREED)</div>
+  </div>
+</div>
+
+<!-- Market Overview -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<div class="bloomberg-card p-4">
+<div class="flex items-center gap-3">
+  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold">₿</div>
+  <div class="flex-1">
+    <p class="text-slate-400 text-xs uppercase tracking-wider">Bitcoin</p>
+    <p class="text-white font-bold font-mono">$43,250</p>
+  </div>
+  <span class="text-emerald-400 text-sm font-medium font-mono">+2.4%</span>
+</div>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center gap-3">
+  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold">Ξ</div>
+  <div class="flex-1">
+    <p class="text-slate-400 text-xs uppercase tracking-wider">Ethereum</p>
+    <p class="text-white font-bold font-mono">$2,285</p>
+  </div>
+  <span class="text-emerald-400 text-sm font-medium font-mono">+1.8%</span>
+</div>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center gap-3">
+  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-bold">◎</div>
+  <div class="flex-1">
+    <p class="text-slate-400 text-xs uppercase tracking-wider">Solana</p>
+    <p class="text-white font-bold font-mono">$98.50</p>
+  </div>
+  <span class="text-red-400 text-sm font-medium font-mono">-0.8%</span>
+</div>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center gap-3">
+  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center text-white font-bold">●</div>
+  <div class="flex-1">
+    <p class="text-slate-400 text-xs uppercase tracking-wider">Cardano</p>
+    <p class="text-white font-bold font-mono">$0.52</p>
+  </div>
+  <span class="text-emerald-400 text-sm font-medium font-mono">+3.2%</span>
+</div>
+</div>
+</div>
+
+<!-- Portfolio Summary -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+<div class="lg:col-span-2 bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Your Crypto Holdings</h3>
+<div class="overflow-x-auto">
+<table class="bloomberg-table w-full">
+<thead>
+<tr class="border-b border-amber-400/30 text-slate-400 text-xs uppercase tracking-wider text-left">
+  <th class="pb-3">ASSET</th>
+  <th class="pb-3 text-right">PRICE</th>
+  <th class="pb-3 text-right">24H</th>
+  <th class="pb-3 text-right">HOLDINGS</th>
+  <th class="pb-3 text-right">VALUE</th>
+  <th class="pb-3 text-right">P&L</th>
+  <th class="pb-3"></th>
+</tr>
+</thead>
+<tbody id="cryptoHoldings">
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold">₿</div>
+      <div>
+        <p class="font-semibold text-white">Bitcoin</p>
+        <p class="text-xs text-slate-400">BTC</p>
+      </div>
+    </div>
+  </td>
+  <td class="py-4 text-right text-white font-medium font-mono">$43,250</td>
+  <td class="py-4 text-right text-emerald-400 font-medium font-mono">+2.4%</td>
+  <td class="py-4 text-right text-slate-300 font-mono">0.5 BTC</td>
+  <td class="py-4 text-right text-white font-medium font-mono">$21,625</td>
+  <td class="py-4 text-right text-emerald-400 font-medium font-mono">+$4,125 (+23.6%)</td>
+  <td class="py-4 text-right"><button class="bloomberg-btn bloomberg-btn-ghost">EDIT</button></td>
+</tr>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">Ξ</div>
+      <div>
+        <p class="font-semibold text-white">Ethereum</p>
+        <p class="text-xs text-slate-400">ETH</p>
+      </div>
+    </div>
+  </td>
+  <td class="py-4 text-right text-white font-medium font-mono">$2,285</td>
+  <td class="py-4 text-right text-emerald-400 font-medium font-mono">+1.8%</td>
+  <td class="py-4 text-right text-slate-300 font-mono">5.2 ETH</td>
+  <td class="py-4 text-right text-white font-medium font-mono">$11,882</td>
+  <td class="py-4 text-right text-emerald-400 font-medium font-mono">+$2,382 (+25.1%)</td>
+  <td class="py-4 text-right"><button class="bloomberg-btn bloomberg-btn-ghost">EDIT</button></td>
+</tr>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-sm font-bold">◎</div>
+      <div>
+        <p class="font-semibold text-white">Solana</p>
+        <p class="text-xs text-slate-400">SOL</p>
+      </div>
+    </div>
+  </td>
+  <td class="py-4 text-right text-white font-medium font-mono">$98.50</td>
+  <td class="py-4 text-right text-red-400 font-medium font-mono">-0.8%</td>
+  <td class="py-4 text-right text-slate-300 font-mono">25 SOL</td>
+  <td class="py-4 text-right text-white font-medium font-mono">$2,462</td>
+  <td class="py-4 text-right text-red-400 font-medium font-mono">-$288 (-10.5%)</td>
+  <td class="py-4 text-right"><button class="bloomberg-btn bloomberg-btn-ghost">EDIT</button></td>
+</tr>
+</tbody>
+<tfoot>
+<tr class="bg-slate-800/50 border-t border-amber-400/30">
+  <td colspan="4" class="py-3 font-semibold text-amber-400 uppercase tracking-wider">Total Crypto Value</td>
+  <td class="py-3 text-right font-bold text-lg text-white font-mono">$35,969</td>
+  <td class="py-3 text-right text-emerald-400 font-bold font-mono">+$6,219 (+20.9%)</td>
+  <td></td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div>
+
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Allocation</h3>
+<div class="h-48"><canvas id="cryptoAllocationChart"></canvas></div>
+<div class="space-y-2 mt-4">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-300 text-sm">Bitcoin</span></div>
+    <span class="text-white font-medium font-mono">60.1%</span>
+  </div>
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-indigo-500"></div><span class="text-slate-300 text-sm">Ethereum</span></div>
+    <span class="text-white font-medium font-mono">33.0%</span>
+  </div>
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-purple-500"></div><span class="text-slate-300 text-sm">Solana</span></div>
+    <span class="text-white font-medium font-mono">6.9%</span>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Market Movers -->
+<div class="bloomberg-card p-5 mb-6">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Market Movers (24h)</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+<% const movers = [
+  { symbol: 'PEPE', name: 'Pepe', price: '0.0000012', change: 45.2, color: 'emerald' },
+  { symbol: 'BONK', name: 'Bonk', price: '0.000018', change: 28.5, color: 'amber' },
+  { symbol: 'INJ', name: 'Injective', price: '38.50', change: 15.8, color: 'sky' },
+  { symbol: 'SEI', name: 'Sei', price: '0.85', change: 12.3, color: 'red' },
+  { symbol: 'TIA', name: 'Celestia', price: '18.20', change: -8.5, color: 'purple' },
+  { symbol: 'AVAX', name: 'Avalanche', price: '38.75', change: -5.2, color: 'pink' }
+]; movers.forEach(m => { %>
+<div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 transition-colors">
+  <div class="flex items-center gap-2 mb-2">
+    <div class="w-6 h-6 rounded-full bg-<%= m.color %>-500/20 flex items-center justify-center text-<%= m.color %>-400 text-xs font-bold"><%= m.symbol.slice(0,1) %></div>
+    <span class="font-medium text-white text-sm"><%= m.symbol %></span>
+  </div>
+  <p class="text-slate-300 text-sm font-mono">$<%= m.price %></p>
+  <p class="<%= m.change >= 0 ? 'text-emerald-400' : 'text-red-400' %> text-sm font-medium font-mono"><%= m.change >= 0 ? '+' : '' %><%= m.change %>%</p>
+</div>
+<% }); %>
+</div>
+</div>
+
+<!-- Fear & Greed -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Fear & Greed Index</h3>
+<div class="flex items-center justify-center">
+  <div class="relative w-40 h-40">
+    <svg viewBox="0 0 100 50" class="w-full">
+      <defs>
+        <linearGradient id="fgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ef4444"/>
+          <stop offset="25%" style="stop-color:#f97316"/>
+          <stop offset="50%" style="stop-color:#eab308"/>
+          <stop offset="75%" style="stop-color:#84cc16"/>
+          <stop offset="100%" style="stop-color:#22c55e"/>
+        </linearGradient>
+      </defs>
+      <path d="M 5 45 A 40 40 0 0 1 95 45" fill="none" stroke="url(#fgGradient)" stroke-width="8" stroke-linecap="round"/>
+      <line x1="50" y1="45" x2="50" y2="15" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round" transform="rotate(45, 50, 45)"/>
+    </svg>
+    <div class="absolute inset-0 flex items-end justify-center pb-2">
+      <div class="text-center">
+        <p class="text-3xl font-bold text-amber-400 font-mono">65</p>
+        <p class="text-sm text-slate-400 uppercase tracking-wider">Greed</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="flex justify-between text-xs text-slate-400 mt-4">
+  <span>Extreme Fear</span><span>Fear</span><span>Neutral</span><span>Greed</span><span>Extreme Greed</span>
+</div>
+</div>
+
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">BTC Dominance</h3>
+<div class="text-center mb-4">
+  <p class="text-4xl font-bold text-white font-mono">52.4%</p>
+  <p class="text-sm text-emerald-400 font-mono">+0.8% this week</p>
+</div>
+<div class="h-4 bg-slate-700 rounded-full overflow-hidden flex">
+  <div class="bg-amber-500 h-full" style="width: 52.4%"></div>
+  <div class="bg-indigo-500 h-full" style="width: 17.8%"></div>
+  <div class="bg-slate-400 h-full" style="width: 29.8%"></div>
+</div>
+<div class="flex justify-between text-xs text-slate-400 mt-2 font-mono">
+  <span>BTC 52.4%</span><span>ETH 17.8%</span><span>Others 29.8%</span>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<!-- Add Crypto Modal -->
+<div id="addCryptoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+<div class="bg-slate-900 border border-amber-400/30 rounded-lg p-6 max-w-md w-full mx-4">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Add Crypto Holding</h3>
+<div class="space-y-4">
+  <div>
+    <label class="block text-sm font-medium text-slate-300 mb-1 uppercase tracking-wider">Cryptocurrency</label>
+    <select class="form-input">
+      <option>Bitcoin (BTC)</option>
+      <option>Ethereum (ETH)</option>
+      <option>Solana (SOL)</option>
+      <option>Cardano (ADA)</option>
+      <option>Polkadot (DOT)</option>
+      <option>Avalanche (AVAX)</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-slate-300 mb-1 uppercase tracking-wider">Amount</label>
+    <input type="number" step="0.0001" class="form-input font-mono" placeholder="0.00">
+  </div>
+  <div>
+    <label class="block text-sm font-medium text-slate-300 mb-1 uppercase tracking-wider">Cost Basis ($)</label>
+    <input type="number" step="0.01" class="form-input font-mono" placeholder="0.00">
+  </div>
+</div>
+<div class="flex gap-3 mt-6">
+  <button onclick="document.getElementById('addCryptoModal').classList.add('hidden')" class="bloomberg-btn bloomberg-btn-ghost flex-1">CANCEL</button>
+  <button onclick="addCryptoHolding()" class="bloomberg-btn bloomberg-btn-primary flex-1">ADD HOLDING</button>
+</div>
+</div>
+</div>
+
+<script>
+// Allocation chart
+new Chart(document.getElementById('cryptoAllocationChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Bitcoin', 'Ethereum', 'Solana'],
+    datasets: [{
+      data: [21625, 11882, 2462],
+      backgroundColor: ['#f59e0b', '#6366f1', '#a855f7'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: { legend: { display: false } }
+  }
+});
+
+function showAddCryptoModal() {
+  document.getElementById('addCryptoModal').classList.remove('hidden');
+}
+
+function addCryptoHolding() {
+  showToast('Crypto holding added!', 'success');
+  document.getElementById('addCryptoModal').classList.add('hidden');
+}
+</script>
+<%- include('../partials/footer') %>

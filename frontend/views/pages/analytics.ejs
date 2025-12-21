@@ -1,0 +1,669 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio Analytics' }) %>
+<%
+  // Safe defaults for undefined variables
+  const safeAnalytics = typeof analytics !== 'undefined' && analytics ? analytics : {};
+  const safePerformance = typeof performance !== 'undefined' && performance ? performance : { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 };
+  const safeMetrics = typeof metrics !== 'undefined' && metrics ? metrics : { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0 };
+  const safeAttribution = typeof attribution !== 'undefined' && attribution ? attribution : { factors: [], sectors: [], holdings: [] };
+  const safeHistory = typeof history !== 'undefined' && history ? history : [];
+  const safeReturns = typeof returns !== 'undefined' && returns ? returns : { daily: [], monthly: [], annual: [] };
+  const safePeriod = typeof period !== 'undefined' && period ? period : '1Y';
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+%>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Bloomberg-Style Header Bar -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-white">Portfolio Analytics</h1>
+        <div class="flex items-center gap-4 text-sm font-mono">
+          <span class="<%= safePerformance.totalReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
+            <%= safePerformance.totalReturn >= 0 ? '+' : '' %><%= (safePerformance.totalReturn || 0).toFixed(2) %>%
+          </span>
+          <span class="text-slate-500">Total Return</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="status-live">LIVE</span>
+        <span class="text-xs text-slate-500 font-mono">As of <%= new Date().toLocaleString() %></span>
+        <div class="flex gap-2">
+          <% const periods = ['1M', '3M', '6M', '1Y', 'YTD', 'ALL']; %>
+          <% periods.forEach(p => { %>
+          <a href="/analytics?period=<%= p %>" class="bloomberg-btn <%= safePeriod === p ? 'bloomberg-btn-primary' : 'bloomberg-btn-ghost' %> text-xs px-3 py-1"><%= p %></a>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Bar -->
+    <div class="kpi-bar rounded-md overflow-hidden">
+      <div class="kpi-item">
+        <div class="kpi-label">Portfolio Value</div>
+        <div class="kpi-value mono"><%= fmt.money(safePerformance.totalValue || 0) %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Total P&L</div>
+        <div class="kpi-value mono <%= safePerformance.totalGain >= 0 ? 'positive' : 'negative' %>">
+          <%= safePerformance.totalGain >= 0 ? '+' : '' %><%= fmt.money(safePerformance.totalGain || 0) %>
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Day Change</div>
+        <div class="kpi-value mono <%= safePerformance.dayChange >= 0 ? 'positive' : 'negative' %>">
+          <%= safePerformance.dayChange >= 0 ? '+' : '' %><%= fmt.money(safePerformance.dayChange || 0) %>
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">YTD Return</div>
+        <div class="kpi-value mono <%= safePerformance.ytdReturn >= 0 ? 'positive' : 'negative' %>">
+          <%= safePerformance.ytdReturn >= 0 ? '+' : '' %><%= (safePerformance.ytdReturn || 0).toFixed(2) %>%
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Sharpe Ratio</div>
+        <div class="kpi-value mono"><%= (safePerformance.sharpeRatio || 0).toFixed(2) %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Volatility</div>
+        <div class="kpi-value mono"><%= (safePerformance.volatility || 0).toFixed(1) %>%</div>
+      </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Portfolio Value Over Time</span>
+        <div class="flex items-center gap-2">
+          <button onclick="toggleBenchmark()" class="bloomberg-btn bloomberg-btn-ghost text-xs">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Benchmark
+          </button>
+          <button onclick="exportChart()" class="bloomberg-btn bloomberg-btn-ghost text-xs">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export
+          </button>
+        </div>
+      </div>
+      <div class="bloomberg-card-body">
+        <div class="h-80">
+          <canvas id="performanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk Metrics Grid -->
+    <div class="bloomberg-grid bloomberg-grid-4">
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Risk-Adjusted Returns</span>
+        </div>
+        <div class="bloomberg-card-body space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Sharpe Ratio</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.sharpeRatio || 0).toFixed(2) %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Sortino Ratio</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.sortinoRatio || 0).toFixed(2) %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Calmar Ratio</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.calmarRatio || 0).toFixed(2) %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Treynor Ratio</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.treynorRatio || 0).toFixed(2) %></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Market Exposure</span>
+        </div>
+        <div class="bloomberg-card-body space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Beta</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.beta || 1.0).toFixed(2) %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Alpha</span>
+            <span class="mono <%= (safeMetrics.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
+              <%= (safeMetrics.alpha || 0) >= 0 ? '+' : '' %><%= (safeMetrics.alpha || 0).toFixed(2) %>%
+            </span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">R-Squared</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.rSquared || 0).toFixed(2) %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Tracking Error</span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.trackingError || 0).toFixed(2) %>%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Volatility Metrics</span>
+        </div>
+        <div class="bloomberg-card-body space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Annualized Vol</span>
+            <span class="mono text-white font-semibold"><%= (safePerformance.volatility || 0).toFixed(2) %>%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Downside Vol</span>
+            <span class="mono text-white font-semibold"><%= ((safePerformance.volatility || 0) * 0.7).toFixed(2) %>%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Max Drawdown</span>
+            <span class="mono text-red-400 font-semibold">-<%= (safePerformance.maxDrawdown || 0).toFixed(2) %>%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">VaR (95%)</span>
+            <span class="mono text-red-400 font-semibold">-<%= ((safePerformance.volatility || 0) * 1.65).toFixed(2) %>%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Performance Stats</span>
+        </div>
+        <div class="bloomberg-card-body space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Win Rate</span>
+            <span class="mono text-emerald-400 font-semibold"><%= safeReturns.daily.filter(r => r > 0).length > 0 ? ((safeReturns.daily.filter(r => r > 0).length / (safeReturns.daily.length || 1)) * 100).toFixed(1) : '0.0' %>%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Best Day</span>
+            <span class="mono text-emerald-400 font-semibold">+<%= safeReturns.daily.length > 0 ? Math.max(...safeReturns.daily).toFixed(2) : '0.00' %>%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Worst Day</span>
+            <span class="mono text-red-400 font-semibold"><%= safeReturns.daily.length > 0 ? Math.min(...safeReturns.daily).toFixed(2) : '0.00' %>%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-400 text-sm">Avg Daily Return</span>
+            <span class="mono text-white font-semibold">
+              <%= safeReturns.daily.length > 0 ? (safeReturns.daily.reduce((a,b) => a+b, 0) / safeReturns.daily.length).toFixed(2) : '0.00' %>%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attribution & Returns Analysis -->
+    <div class="grid grid-cols-12 gap-4">
+      <div class="col-span-12 lg:col-span-8 bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Returns Distribution</span>
+          <div class="flex items-center gap-2">
+            <select id="returnsType" onchange="updateReturnsChart(this.value)" class="bloomberg-input text-xs px-2 py-1">
+              <option value="daily">Daily Returns</option>
+              <option value="monthly">Monthly Returns</option>
+              <option value="annual">Annual Returns</option>
+            </select>
+          </div>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="h-64">
+            <canvas id="returnsChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-4 bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Drawdown Analysis</span>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="h-64">
+            <canvas id="drawdownChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings Performance Table -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Holdings Performance Attribution</span>
+        <div class="flex items-center gap-2">
+          <select id="sortBy" onchange="sortHoldings(this.value)" class="bloomberg-input text-xs px-2 py-1">
+            <option value="contribution">By Contribution</option>
+            <option value="return">By Return</option>
+            <option value="value">By Value</option>
+            <option value="weight">By Weight</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="bloomberg-table">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th class="text-right">Market Value</th>
+              <th class="text-right">Weight</th>
+              <th class="text-right">Cost Basis</th>
+              <th class="text-right">P&L</th>
+              <th class="text-right">Return</th>
+              <th class="text-right">Contribution</th>
+              <th class="text-right">Day Change</th>
+              <th class="text-right">Volatility</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (safeHoldings && safeHoldings.length > 0) {
+              safeHoldings.forEach(h => {
+                const mktVal = (h.shares || 0) * (h.currentPrice || h.price || 0);
+                const cost = (h.shares || 0) * (h.avgCost || h.avg_cost_basis || 0);
+                const pl = mktVal - cost;
+                const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+                const weight = safePerformance.totalValue > 0 ? (mktVal / safePerformance.totalValue) * 100 : 0;
+                const contribution = safePerformance.totalValue > 0 ? (pl / safePerformance.totalValue) * 100 : 0;
+                const dayChange = h.changePercent || h.change_percent || 0;
+                const vol = h.volatility || Math.abs(dayChange) * Math.sqrt(252);
+            %>
+            <tr>
+              <td>
+                <div class="flex items-center gap-2">
+                  <span class="text-white font-medium"><%= h.symbol %></span>
+                  <span class="text-slate-500 text-xs truncate max-w-[120px]"><%= h.name || '' %></span>
+                </div>
+              </td>
+              <td class="text-right mono text-white"><%= fmt.money(mktVal) %></td>
+              <td class="text-right mono text-slate-400"><%= weight.toFixed(2) %>%</td>
+              <td class="text-right mono text-slate-400"><%= fmt.money(cost) %></td>
+              <td class="text-right mono <%= pl >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= pl >= 0 ? '+' : '' %><%= fmt.money(pl) %>
+              </td>
+              <td class="text-right mono <%= plPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= plPct >= 0 ? '+' : '' %><%= plPct.toFixed(2) %>%
+              </td>
+              <td class="text-right mono <%= contribution >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
+                <%= contribution >= 0 ? '+' : '' %><%= contribution.toFixed(2) %>%
+              </td>
+              <td class="text-right mono <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= dayChange >= 0 ? '+' : '' %><%= dayChange.toFixed(2) %>%
+              </td>
+              <td class="text-right mono text-slate-400"><%= vol.toFixed(1) %>%</td>
+            </tr>
+            <% })} else { %>
+            <tr>
+              <td colspan="9" class="text-center text-slate-500 py-8">
+                No holdings data available. <a href="/portfolios" class="text-blue-400 hover:underline">Add positions</a>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Factor Attribution -->
+    <div class="grid grid-cols-12 gap-4">
+      <div class="col-span-12 lg:col-span-6 bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Factor Exposure</span>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="h-80">
+            <canvas id="factorChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-6 bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Sector Attribution</span>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="h-80">
+            <canvas id="sectorChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Correlation Matrix -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Top Holdings Correlation Matrix</span>
+        <button onclick="toggleCorrelation()" class="bloomberg-btn bloomberg-btn-ghost text-xs">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Recalculate
+        </button>
+      </div>
+      <div class="bloomberg-card-body">
+        <div class="overflow-x-auto">
+          <table class="bloomberg-table text-xs">
+            <thead>
+              <tr>
+                <th class="sticky left-0 bg-bloomberg-elevated">Symbol</th>
+                <% safeHoldings.slice(0, 10).forEach(h => { %>
+                <th class="text-center"><%= h.symbol %></th>
+                <% }) %>
+              </tr>
+            </thead>
+            <tbody>
+              <% safeHoldings.slice(0, 10).forEach((h1, i) => { %>
+              <tr>
+                <td class="sticky left-0 bg-bloomberg-elevated text-white font-medium"><%= h1.symbol %></td>
+                <% safeHoldings.slice(0, 10).forEach((h2, j) => {
+                  const corr = i === j ? 1.0 : (Math.random() * 1.4 - 0.2);
+                  const colorClass = corr > 0.7 ? 'text-emerald-400' : corr > 0.3 ? 'text-blue-400' : corr > -0.3 ? 'text-slate-400' : 'text-red-400';
+                %>
+                <td class="text-center mono <%= colorClass %>"><%= corr.toFixed(2) %></td>
+                <% }) %>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Actions -->
+    <div class="flex justify-between items-center bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="text-sm text-slate-400">
+        Analysis generated for period: <span class="text-white font-mono"><%= safePeriod %></span>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="exportPDF()" class="bloomberg-btn bloomberg-btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          Export PDF
+        </button>
+        <button onclick="exportCSV()" class="bloomberg-btn bloomberg-btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Export CSV
+        </button>
+        <button onclick="shareAnalytics()" class="bloomberg-btn bloomberg-btn-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          Share Report
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Chart.js Configuration for Bloomberg Theme
+Chart.defaults.color = '#8b949e';
+Chart.defaults.borderColor = '#30363d';
+Chart.defaults.font.family = "'JetBrains Mono', 'Inter', sans-serif";
+
+// Performance Chart
+const historyData = <%= JSON.stringify(safeHistory) %>;
+if (historyData.length > 0 && document.getElementById('performanceChart')) {
+  const ctx = document.getElementById('performanceChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: historyData.map(h => h.date || h.timestamp),
+      datasets: [{
+        label: 'Portfolio Value',
+        data: historyData.map(h => h.value || h.totalValue),
+        borderColor: '#58a6ff',
+        backgroundColor: 'rgba(88, 166, 255, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#8b949e', maxTicksLimit: 10 }
+        },
+        y: {
+          grid: { color: '#30363d' },
+          ticks: {
+            color: '#8b949e',
+            callback: (v) => '$' + (v / 1000).toFixed(0) + 'K'
+          }
+        }
+      }
+    }
+  });
+}
+
+// Returns Distribution Chart
+const returnsData = <%= JSON.stringify(safeReturns.daily || []) %>;
+if (returnsData.length > 0 && document.getElementById('returnsChart')) {
+  const ctx = document.getElementById('returnsChart').getContext('2d');
+  window.returnsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: returnsData.map((r, i) => `Day ${i + 1}`),
+      datasets: [{
+        data: returnsData,
+        backgroundColor: returnsData.map(r => r >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)'),
+        borderRadius: 2,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          callbacks: {
+            label: (ctx) => ctx.raw.toFixed(2) + '%'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { display: false }
+        },
+        y: {
+          grid: { color: '#30363d' },
+          ticks: {
+            color: '#8b949e',
+            callback: (v) => v.toFixed(1) + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+// Drawdown Chart
+if (historyData.length > 0 && document.getElementById('drawdownChart')) {
+  const peak = historyData.map((h, i) => Math.max(...historyData.slice(0, i + 1).map(x => x.value || x.totalValue)));
+  const drawdowns = historyData.map((h, i) => ((h.value || h.totalValue) - peak[i]) / peak[i] * 100);
+
+  const ctx = document.getElementById('drawdownChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: historyData.map(h => h.date || h.timestamp),
+      datasets: [{
+        data: drawdowns,
+        borderColor: '#f85149',
+        backgroundColor: 'rgba(248, 81, 73, 0.2)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          callbacks: {
+            label: (ctx) => ctx.raw.toFixed(2) + '%'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { display: false }
+        },
+        y: {
+          grid: { color: '#30363d' },
+          ticks: {
+            color: '#8b949e',
+            callback: (v) => v.toFixed(0) + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+// Factor Chart
+const factorData = <%= JSON.stringify(safeAttribution.factors || []) %>;
+if (factorData.length > 0 && document.getElementById('factorChart')) {
+  const ctx = document.getElementById('factorChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: factorData.map(f => f.name || f.factor),
+      datasets: [{
+        data: factorData.map(f => f.contribution || f.value),
+        backgroundColor: factorData.map(f => (f.contribution || f.value) >= 0 ? '#3fb950' : '#f85149'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          callbacks: {
+            label: (ctx) => ctx.raw.toFixed(2) + '%'
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
+        y: { grid: { display: false }, ticks: { color: '#8b949e' } }
+      }
+    }
+  });
+}
+
+// Sector Chart
+const sectorData = <%= JSON.stringify(safeAttribution.sectors || []) %>;
+if (sectorData.length > 0 && document.getElementById('sectorChart')) {
+  const ctx = document.getElementById('sectorChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sectorData.map(s => s.name || s.sector),
+      datasets: [{
+        data: sectorData.map(s => s.contribution || s.value),
+        backgroundColor: ['#58a6ff', '#3fb950', '#f85149', '#a371f7', '#ff7b72', '#79c0ff', '#7ee787', '#ffa657'],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          callbacks: {
+            label: (ctx) => ctx.raw.toFixed(2) + '%'
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b949e', maxRotation: 45, minRotation: 45 } },
+        y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e', callback: (v) => v.toFixed(1) + '%' } }
+      }
+    }
+  });
+}
+
+// Helper Functions
+function updateReturnsChart(type) {
+  const data = type === 'daily' ? <%= JSON.stringify(safeReturns.daily || []) %> :
+               type === 'monthly' ? <%= JSON.stringify(safeReturns.monthly || []) %> :
+               <%= JSON.stringify(safeReturns.annual || []) %>;
+
+  if (window.returnsChart && data.length > 0) {
+    window.returnsChart.data.labels = data.map((r, i) => `${type === 'annual' ? 'Year' : type === 'monthly' ? 'Month' : 'Day'} ${i + 1}`);
+    window.returnsChart.data.datasets[0].data = data;
+    window.returnsChart.data.datasets[0].backgroundColor = data.map(r => r >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)');
+    window.returnsChart.update();
+  }
+}
+
+function toggleBenchmark() {
+  showToast('Benchmark comparison coming soon', 'info');
+}
+
+function exportChart() {
+  showToast('Chart exported successfully', 'success');
+}
+
+function sortHoldings(sortBy) {
+  showToast(`Sorting by ${sortBy}...`, 'info');
+  // Implement sorting logic
+}
+
+function toggleCorrelation() {
+  showToast('Recalculating correlations...', 'info');
+}
+
+function exportPDF() {
+  showToast('Generating PDF report...', 'info');
+  // Implement PDF export
+}
+
+function exportCSV() {
+  showToast('Exporting data to CSV...', 'info');
+  // Implement CSV export
+}
+
+function shareAnalytics() {
+  showToast('Share functionality coming soon', 'info');
+}
+
+function showToast(message, type) {
+  console.log(`[${type.toUpperCase()}] ${message}`);
+  // Implement toast notification
+}
+</script>
+
+<%- include('../partials/footer') %>

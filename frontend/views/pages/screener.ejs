@@ -1,0 +1,327 @@
+<%- include('../partials/header', { pageTitle: 'Stock Screener' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Stock Screener</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Find stocks matching your criteria</p></div>
+<div class="flex gap-2">
+<button onclick="resetFilters()" class="btn-ghost">Reset</button>
+<button onclick="runScreen()" class="btn-primary" id="screenBtn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>Screen Stocks</button>
+</div>
+</div>
+
+<!-- Filters -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Filters</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+<!-- Market Cap -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Market Cap</label>
+<select id="marketCap" class="form-input">
+<option value="">Any</option>
+<option value="mega">Mega ($200B+)</option>
+<option value="large">Large ($10B-$200B)</option>
+<option value="mid">Mid ($2B-$10B)</option>
+<option value="small">Small ($300M-$2B)</option>
+<option value="micro">Micro (&lt;$300M)</option>
+</select>
+</div>
+
+<!-- Sector -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Sector</label>
+<select id="sector" class="form-input">
+<option value="">Any</option>
+<option value="Technology">Technology</option>
+<option value="Healthcare">Healthcare</option>
+<option value="Financial">Financial</option>
+<option value="Consumer">Consumer</option>
+<option value="Industrial">Industrial</option>
+<option value="Energy">Energy</option>
+<option value="Utilities">Utilities</option>
+<option value="Real Estate">Real Estate</option>
+</select>
+</div>
+
+<!-- Dividend Yield -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Dividend Yield</label>
+<select id="divYield" class="form-input">
+<option value="">Any</option>
+<option value="0">None (0%)</option>
+<option value="1">1%+</option>
+<option value="2">2%+</option>
+<option value="3">3%+</option>
+<option value="4">4%+</option>
+<option value="5">5%+</option>
+</select>
+</div>
+
+<!-- P/E Ratio -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">P/E Ratio</label>
+<select id="peRatio" class="form-input">
+<option value="">Any</option>
+<option value="low">Low (&lt;15)</option>
+<option value="mid">Fair (15-25)</option>
+<option value="high">High (25-50)</option>
+<option value="growth">Growth (50+)</option>
+<option value="negative">Negative</option>
+</select>
+</div>
+
+<!-- Price Range -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Price Range</label>
+<div class="flex gap-2">
+<input type="number" id="priceMin" placeholder="Min" class="form-input w-1/2">
+<input type="number" id="priceMax" placeholder="Max" class="form-input w-1/2">
+</div>
+</div>
+
+<!-- 52-Week Performance -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">52-Week Change</label>
+<select id="yearChange" class="form-input">
+<option value="">Any</option>
+<option value="up50">Up 50%+</option>
+<option value="up20">Up 20%+</option>
+<option value="up10">Up 10%+</option>
+<option value="flat">Flat (-10% to +10%)</option>
+<option value="down10">Down 10%+</option>
+<option value="down20">Down 20%+</option>
+</select>
+</div>
+
+<!-- Volume -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Avg Volume</label>
+<select id="volume" class="form-input">
+<option value="">Any</option>
+<option value="high">High (10M+)</option>
+<option value="medium">Medium (1M-10M)</option>
+<option value="low">Low (&lt;1M)</option>
+</select>
+</div>
+
+<!-- Analyst Rating -->
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Analyst Rating</label>
+<select id="rating" class="form-input">
+<option value="">Any</option>
+<option value="buy">Strong Buy</option>
+<option value="outperform">Outperform</option>
+<option value="hold">Hold</option>
+<option value="underperform">Underperform</option>
+</select>
+</div>
+</div>
+
+<!-- Preset Screens -->
+<div class="mt-4 pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<p class="text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Quick Presets:</p>
+<div class="flex flex-wrap gap-2">
+<button onclick="applyPreset('dividend')" class="px-3 py-1.5 text-sm <%= theme === 'light' ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' %> rounded-lg transition-colors">💰 High Dividend</button>
+<button onclick="applyPreset('value')" class="px-3 py-1.5 text-sm <%= theme === 'light' ? 'bg-sky-100 text-sky-700 hover:bg-sky-200' : 'bg-sky-500/20 text-sky-400 hover:bg-sky-500/30' %> rounded-lg transition-colors">📊 Value Stocks</button>
+<button onclick="applyPreset('growth')" class="px-3 py-1.5 text-sm <%= theme === 'light' ? 'bg-purple-100 text-purple-700 hover:bg-purple-200' : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' %> rounded-lg transition-colors">🚀 Growth Stocks</button>
+<button onclick="applyPreset('mega')" class="px-3 py-1.5 text-sm <%= theme === 'light' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30' %> rounded-lg transition-colors">🏢 Mega Caps</button>
+<button onclick="applyPreset('momentum')" class="px-3 py-1.5 text-sm <%= theme === 'light' ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-red-500/20 text-red-400 hover:bg-red-500/30' %> rounded-lg transition-colors">📈 Momentum</button>
+</div>
+</div>
+</div>
+
+<!-- Results -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Results</h3>
+<span id="resultCount" class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">0 stocks found</span>
+</div>
+
+<div class="overflow-x-auto">
+<table class="w-full" id="resultsTable">
+<thead>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-200 text-gray-500' : 'border-slate-700 text-slate-400' %> text-sm text-left">
+<th class="pb-3 cursor-pointer hover:text-sky-400" onclick="sortBy('symbol')">Symbol ↕</th>
+<th class="pb-3 cursor-pointer hover:text-sky-400" onclick="sortBy('name')">Company ↕</th>
+<th class="pb-3 text-right cursor-pointer hover:text-sky-400" onclick="sortBy('price')">Price ↕</th>
+<th class="pb-3 text-right cursor-pointer hover:text-sky-400" onclick="sortBy('change')">Change ↕</th>
+<th class="pb-3 text-right cursor-pointer hover:text-sky-400" onclick="sortBy('marketCap')">Market Cap ↕</th>
+<th class="pb-3 text-right cursor-pointer hover:text-sky-400" onclick="sortBy('pe')">P/E ↕</th>
+<th class="pb-3 text-right cursor-pointer hover:text-sky-400" onclick="sortBy('dividend')">Div Yield ↕</th>
+<th class="pb-3">Sector</th>
+<th class="pb-3">Actions</th>
+</tr>
+</thead>
+<tbody id="resultsBody">
+<tr><td colspan="9" class="py-12 text-center <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Set filters and click "Screen Stocks" to find matches</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div></div></main>
+
+<script>
+const stockData = [
+  { symbol: 'AAPL', name: 'Apple Inc.', price: 185.50, change: 1.2, marketCap: 2900, pe: 28.5, dividend: 0.5, sector: 'Technology', rating: 'buy' },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', price: 378.20, change: 0.8, marketCap: 2800, pe: 35.2, dividend: 0.8, sector: 'Technology', rating: 'buy' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 141.80, change: -0.5, marketCap: 1750, pe: 24.1, dividend: 0, sector: 'Technology', rating: 'outperform' },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 178.50, change: 2.1, marketCap: 1850, pe: 62.3, dividend: 0, sector: 'Consumer', rating: 'buy' },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 495.00, change: 3.5, marketCap: 1220, pe: 65.8, dividend: 0.04, sector: 'Technology', rating: 'buy' },
+  { symbol: 'JPM', name: 'JPMorgan Chase & Co.', price: 170.25, change: 0.3, marketCap: 490, pe: 10.2, dividend: 2.4, sector: 'Financial', rating: 'outperform' },
+  { symbol: 'JNJ', name: 'Johnson & Johnson', price: 156.80, change: -0.2, marketCap: 378, pe: 15.8, dividend: 3.0, sector: 'Healthcare', rating: 'hold' },
+  { symbol: 'V', name: 'Visa Inc.', price: 260.40, change: 0.9, marketCap: 535, pe: 29.4, dividend: 0.8, sector: 'Financial', rating: 'buy' },
+  { symbol: 'PG', name: 'Procter & Gamble', price: 159.20, change: 0.1, marketCap: 375, pe: 26.1, dividend: 2.4, sector: 'Consumer', rating: 'hold' },
+  { symbol: 'XOM', name: 'Exxon Mobil Corp.', price: 105.60, change: -1.2, marketCap: 420, pe: 9.8, dividend: 3.5, sector: 'Energy', rating: 'outperform' },
+  { symbol: 'CVX', name: 'Chevron Corporation', price: 150.30, change: -0.8, marketCap: 280, pe: 11.2, dividend: 4.1, sector: 'Energy', rating: 'hold' },
+  { symbol: 'KO', name: 'Coca-Cola Company', price: 60.25, change: 0.4, marketCap: 260, pe: 23.5, dividend: 3.1, sector: 'Consumer', rating: 'hold' },
+  { symbol: 'PFE', name: 'Pfizer Inc.', price: 28.40, change: -2.1, marketCap: 160, pe: 8.5, dividend: 5.8, sector: 'Healthcare', rating: 'underperform' },
+  { symbol: 'VZ', name: 'Verizon Communications', price: 38.50, change: 0.2, marketCap: 162, pe: 7.8, dividend: 6.8, sector: 'Technology', rating: 'hold' },
+  { symbol: 'T', name: 'AT&T Inc.', price: 17.20, change: -0.3, marketCap: 123, pe: 6.2, dividend: 6.5, sector: 'Technology', rating: 'hold' },
+  { symbol: 'INTC', name: 'Intel Corporation', price: 45.60, change: -1.5, marketCap: 192, pe: 12.3, dividend: 1.1, sector: 'Technology', rating: 'underperform' },
+  { symbol: 'DIS', name: 'Walt Disney Company', price: 95.20, change: 1.8, marketCap: 174, pe: 45.2, dividend: 0, sector: 'Consumer', rating: 'outperform' },
+  { symbol: 'NFLX', name: 'Netflix Inc.', price: 485.30, change: 2.5, marketCap: 210, pe: 42.8, dividend: 0, sector: 'Consumer', rating: 'buy' },
+  { symbol: 'AMD', name: 'AMD Inc.', price: 145.80, change: 4.2, marketCap: 235, pe: 48.5, dividend: 0, sector: 'Technology', rating: 'buy' },
+  { symbol: 'CRM', name: 'Salesforce Inc.', price: 265.40, change: 1.1, marketCap: 258, pe: 58.2, dividend: 0, sector: 'Technology', rating: 'outperform' },
+];
+
+let currentSort = { column: 'marketCap', asc: false };
+let filteredData = [];
+
+function runScreen() {
+  const marketCap = document.getElementById('marketCap').value;
+  const sector = document.getElementById('sector').value;
+  const divYield = document.getElementById('divYield').value;
+  const peRatio = document.getElementById('peRatio').value;
+  const priceMin = parseFloat(document.getElementById('priceMin').value) || 0;
+  const priceMax = parseFloat(document.getElementById('priceMax').value) || Infinity;
+  
+  filteredData = stockData.filter(stock => {
+    // Market cap filter
+    if (marketCap) {
+      const cap = stock.marketCap;
+      if (marketCap === 'mega' && cap < 200) return false;
+      if (marketCap === 'large' && (cap < 10 || cap >= 200)) return false;
+      if (marketCap === 'mid' && (cap < 2 || cap >= 10)) return false;
+      if (marketCap === 'small' && (cap < 0.3 || cap >= 2)) return false;
+      if (marketCap === 'micro' && cap >= 0.3) return false;
+    }
+    
+    // Sector filter
+    if (sector && stock.sector !== sector) return false;
+    
+    // Dividend filter
+    if (divYield && stock.dividend < parseFloat(divYield)) return false;
+    
+    // P/E filter
+    if (peRatio) {
+      const pe = stock.pe;
+      if (peRatio === 'low' && pe >= 15) return false;
+      if (peRatio === 'mid' && (pe < 15 || pe >= 25)) return false;
+      if (peRatio === 'high' && (pe < 25 || pe >= 50)) return false;
+      if (peRatio === 'growth' && pe < 50) return false;
+      if (peRatio === 'negative' && pe > 0) return false;
+    }
+    
+    // Price filter
+    if (stock.price < priceMin || stock.price > priceMax) return false;
+    
+    return true;
+  });
+  
+  renderResults();
+}
+
+function renderResults() {
+  const tbody = document.getElementById('resultsBody');
+  document.getElementById('resultCount').textContent = filteredData.length + ' stocks found';
+  
+  if (filteredData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="py-12 text-center <%= theme === "light" ? "text-gray-500" : "text-slate-400" %>">No stocks match your criteria</td></tr>';
+    return;
+  }
+  
+  // Sort
+  filteredData.sort((a, b) => {
+    let valA = a[currentSort.column];
+    let valB = b[currentSort.column];
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+    return currentSort.asc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+  });
+  
+  tbody.innerHTML = filteredData.map(stock => `
+    <tr class="border-b <%= theme === 'light' ? 'border-gray-100 hover:bg-gray-50' : 'border-slate-700/50 hover:bg-slate-800/30' %> transition-colors">
+      <td class="py-3"><span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">${stock.symbol}</span></td>
+      <td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">${stock.name}</td>
+      <td class="py-3 text-right font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$${stock.price.toFixed(2)}</td>
+      <td class="py-3 text-right font-medium ${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'}">${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%</td>
+      <td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$${stock.marketCap}B</td>
+      <td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">${stock.pe.toFixed(1)}</td>
+      <td class="py-3 text-right ${stock.dividend > 2 ? 'text-emerald-400' : '<%= theme === "light" ? "text-gray-700" : "text-slate-300" %>'}">${stock.dividend.toFixed(1)}%</td>
+      <td class="py-3"><span class="badge-default text-xs">${stock.sector}</span></td>
+      <td class="py-3">
+        <button onclick="addToWatchlist('${stock.symbol}')" class="btn-ghost btn-sm" title="Add to Watchlist"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg></button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function sortBy(column) {
+  if (currentSort.column === column) {
+    currentSort.asc = !currentSort.asc;
+  } else {
+    currentSort = { column, asc: true };
+  }
+  renderResults();
+}
+
+function resetFilters() {
+  document.querySelectorAll('.card select, .card input').forEach(el => {
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  filteredData = [];
+  document.getElementById('resultsBody').innerHTML = '<tr><td colspan="9" class="py-12 text-center <%= theme === "light" ? "text-gray-500" : "text-slate-400" %>">Set filters and click "Screen Stocks" to find matches</td></tr>';
+  document.getElementById('resultCount').textContent = '0 stocks found';
+}
+
+function applyPreset(preset) {
+  resetFilters();
+  switch (preset) {
+    case 'dividend':
+      document.getElementById('divYield').value = '3';
+      break;
+    case 'value':
+      document.getElementById('peRatio').value = 'low';
+      document.getElementById('divYield').value = '2';
+      break;
+    case 'growth':
+      document.getElementById('peRatio').value = 'growth';
+      document.getElementById('sector').value = 'Technology';
+      break;
+    case 'mega':
+      document.getElementById('marketCap').value = 'mega';
+      break;
+    case 'momentum':
+      document.getElementById('yearChange').value = 'up20';
+      break;
+  }
+  runScreen();
+}
+
+async function addToWatchlist(symbol) {
+  try {
+    await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, target_price: 0 })
+    });
+    showToast(symbol + ' added to watchlist', 'success');
+  } catch (e) {
+    showToast('Failed to add to watchlist', 'error');
+  }
+}
+
+// Run initial screen
+runScreen();
+</script>
+<%- include('../partials/footer') %>

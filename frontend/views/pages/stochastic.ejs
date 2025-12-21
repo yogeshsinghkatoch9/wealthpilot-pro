@@ -1,0 +1,277 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const stochData = typeof technicals !== 'undefined' && technicals ? technicals : {};
+const kValue = stochData.stochK || 50;
+const dValue = stochData.stochD || 50;
+const price = stochData.price || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+
+// Stochastic interpretation
+let stochSignal = 'NEUTRAL';
+let signalColor = 'amber';
+let stochZone = 'Neutral Zone';
+
+if (kValue >= 80) {
+  stochSignal = 'OVERBOUGHT';
+  signalColor = 'red';
+  stochZone = 'Overbought (>80)';
+} else if (kValue <= 20) {
+  stochSignal = 'OVERSOLD';
+  signalColor = 'emerald';
+  stochZone = 'Oversold (<20)';
+} else if (kValue > dValue) {
+  stochSignal = 'BULLISH';
+  signalColor = 'emerald';
+  stochZone = 'Bullish Momentum';
+} else if (kValue < dValue) {
+  stochSignal = 'BEARISH';
+  signalColor = 'red';
+  stochZone = 'Bearish Momentum';
+}
+
+// Crossover detection
+const bullishCross = kValue > dValue;
+const bearishCross = kValue < dValue;
+%>
+<%- include('../partials/header', { pageTitle: 'Stochastic Oscillator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">STOCHASTIC OSCILLATOR</h1>
+      <p class="text-slate-400 mt-1">%K and %D momentum analysis</p>
+    </div>
+    <form method="GET" action="/stochastic" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<!-- Stochastic Overview -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-<%= signalColor %>-900/20 to-slate-900">
+  <div class="flex items-center gap-4 flex-wrap">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-amber-400"><%= symbol %></h2>
+      <p class="text-slate-400">Current Price: <span class="font-mono text-white"><%= formatPrice(price) %></span></p>
+    </div>
+    <div class="text-center px-4">
+      <p class="text-sm text-slate-400">Signal</p>
+      <p class="text-xl font-bold text-<%= signalColor %>-400"><%= stochSignal %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Stochastic Values -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
+          <span class="text-sky-400 font-bold">%K</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-400">%K (Fast Line)</p>
+          <p class="text-2xl font-mono font-bold text-sky-400"><%= kValue.toFixed(1) %></p>
+        </div>
+      </div>
+    </div>
+    <div class="h-4 bg-slate-700 rounded-full overflow-hidden">
+      <div class="h-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all duration-500" style="width: <%= kValue %>%"></div>
+    </div>
+    <p class="text-xs text-slate-400 mt-2">14-period stochastic indicator</p>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+          <span class="text-amber-400 font-bold">%D</span>
+        </div>
+        <div>
+          <p class="text-sm text-slate-400">%D (Slow Line)</p>
+          <p class="text-2xl font-mono font-bold text-amber-400"><%= dValue.toFixed(1) %></p>
+        </div>
+      </div>
+    </div>
+    <div class="h-4 bg-slate-700 rounded-full overflow-hidden">
+      <div class="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500" style="width: <%= dValue %>%"></div>
+    </div>
+    <p class="text-xs text-slate-400 mt-2">3-period SMA of %K</p>
+  </div>
+</div>
+
+<!-- Stochastic Gauge -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">Stochastic Gauge</h3>
+  <div class="relative h-8 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full overflow-hidden">
+    <div class="absolute inset-y-0 left-0 w-[20%] border-r-2 border-white/30 flex items-center justify-center">
+      <span class="text-xs font-bold text-white drop-shadow">OVERSOLD</span>
+    </div>
+    <div class="absolute inset-y-0 left-[20%] right-[20%] flex items-center justify-center">
+      <span class="text-xs font-bold text-white drop-shadow">NEUTRAL</span>
+    </div>
+    <div class="absolute inset-y-0 right-0 w-[20%] border-l-2 border-white/30 flex items-center justify-center">
+      <span class="text-xs font-bold text-white drop-shadow">OVERBOUGHT</span>
+    </div>
+    <!-- %K marker -->
+    <div class="absolute top-0 w-3 h-full bg-sky-400 border-2 border-white shadow-lg transition-all duration-500" style="left: calc(<%= kValue %>% - 6px);" title="%K"></div>
+    <!-- %D marker -->
+    <div class="absolute bottom-0 w-3 h-1/2 bg-amber-400 border border-white shadow-lg transition-all duration-500" style="left: calc(<%= dValue %>% - 6px);" title="%D"></div>
+  </div>
+  <div class="flex justify-between text-sm text-slate-400 mt-2">
+    <span>0</span>
+    <span>20</span>
+    <span>50</span>
+    <span>80</span>
+    <span>100</span>
+  </div>
+  <div class="flex justify-center gap-6 mt-3">
+    <div class="flex items-center gap-2">
+      <div class="w-3 h-3 bg-sky-400 rounded"></div>
+      <span class="text-sm text-slate-400">%K (Fast)</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-3 h-3 bg-amber-400 rounded"></div>
+      <span class="text-sm text-slate-400">%D (Slow)</span>
+    </div>
+  </div>
+</div>
+
+<!-- Crossover Status -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5 <%= bullishCross ? 'ring-2 ring-emerald-500' : '' %>">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+      <div>
+        <h4 class="font-semibold text-emerald-400">Bullish Cross</h4>
+        <p class="text-xs text-slate-400">%K crosses above %D</p>
+      </div>
+    </div>
+    <p class="text-sm text-slate-300">
+      <%= bullishCross ? 'Currently ACTIVE - %K (' + kValue.toFixed(1) + ') > %D (' + dValue.toFixed(1) + ')' : 'Not active' %>
+    </p>
+  </div>
+
+  <div class="bloomberg-card p-5 <%= bearishCross ? 'ring-2 ring-red-500' : '' %>">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+      </div>
+      <div>
+        <h4 class="font-semibold text-red-400">Bearish Cross</h4>
+        <p class="text-xs text-slate-400">%K crosses below %D</p>
+      </div>
+    </div>
+    <p class="text-sm text-slate-300">
+      <%= bearishCross ? 'Currently ACTIVE - %K (' + kValue.toFixed(1) + ') < %D (' + dValue.toFixed(1) + ')' : 'Not active' %>
+    </p>
+  </div>
+</div>
+
+<!-- Stochastic Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">Stochastic Chart</h3>
+  <div class="h-64"><canvas id="stochChart"></canvas></div>
+</div>
+
+<!-- Trading Guide -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">Trading Signals</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+      <h4 class="font-bold text-emerald-400 mb-2">Buy Signals</h4>
+      <ul class="text-sm text-slate-300 space-y-1">
+        <li>%K crosses above %D below 20</li>
+        <li>Both lines exit oversold zone</li>
+        <li>Bullish divergence with price</li>
+      </ul>
+    </div>
+    <div class="p-4 rounded-lg bg-red-500/10 border border-red-500/30">
+      <h4 class="font-bold text-red-400 mb-2">Sell Signals</h4>
+      <ul class="text-sm text-slate-300 space-y-1">
+        <li>%K crosses below %D above 80</li>
+        <li>Both lines exit overbought zone</li>
+        <li>Bearish divergence with price</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Generate sample stochastic data
+const currentK = <%= kValue %>;
+const currentD = <%= dValue %>;
+const labels = [];
+const kData = [];
+const dData = [];
+const now = new Date();
+
+for (let i = 29; i >= 0; i--) {
+  const date = new Date(now);
+  date.setDate(date.getDate() - i);
+  labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+  const kVal = Math.max(5, Math.min(95, currentK + (Math.random() - 0.5) * 30));
+  kData.push(kVal);
+  dData.push(kData.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, kData.length));
+}
+
+kData[kData.length - 1] = currentK;
+dData[dData.length - 1] = currentD;
+
+new Chart(document.getElementById('stochChart'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [
+      {
+        label: '%K',
+        data: kData,
+        borderColor: '#0ea5e9',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4
+      },
+      {
+        label: '%D',
+        data: dData,
+        borderColor: '#f59e0b',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.4,
+        borderDash: [5, 5]
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+    },
+    scales: {
+      y: {
+        min: 0,
+        max: 100,
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', maxTicksLimit: 10 }
+      }
+    }
+  }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,233 @@
+<%- include('../partials/header', { pageTitle: 'AI Assistant' }) %>
+<main class="p-4 lg:p-6"><div class="max-w-4xl mx-auto h-[calc(100vh-4rem)] flex flex-col">
+
+<!-- Header -->
+<div class="mb-4">
+<h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+</div>
+WealthPilot AI
+</h1>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Ask me anything about your portfolio, investments, or financial planning</p>
+</div>
+
+<!-- Chat Container -->
+<div class="flex-1 card flex flex-col overflow-hidden">
+<!-- Messages -->
+<div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+<!-- Welcome Message -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+</div>
+<div class="flex-1">
+<div class="<%= theme === 'light' ? 'bg-gray-100 text-gray-800' : 'bg-slate-800 text-slate-200' %> rounded-2xl rounded-tl-none p-4 max-w-[85%]">
+<p class="mb-3">👋 Hi <%= user?.full_name?.split(' ')[0] || 'there' %>! I'm your AI portfolio assistant. I can help you with:</p>
+<ul class="space-y-2 text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">
+<li>📊 <strong>Portfolio Analysis</strong> - "How diversified am I?"</li>
+<li>💰 <strong>Tax Strategy</strong> - "What can I harvest for tax savings?"</li>
+<li>📈 <strong>Performance</strong> - "How am I doing vs the S&P 500?"</li>
+<li>🎯 <strong>Goal Planning</strong> - "Am I on track for retirement?"</li>
+<li>💡 <strong>Investment Ideas</strong> - "What stocks match my strategy?"</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Quick Actions -->
+<div class="px-4 py-2 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div class="flex gap-2 overflow-x-auto pb-2">
+<% const quickActions = [
+  'Analyze my portfolio',
+  'Tax harvesting opportunities',
+  'Am I too risky?',
+  'Best performers',
+  'Dividend forecast',
+  'Rebalancing suggestions'
+]; quickActions.forEach(q => { %>
+<button onclick="sendQuickAction('<%= q %>')" class="px-3 py-1.5 text-sm <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300' %> rounded-full whitespace-nowrap transition-colors"><%= q %></button>
+<% }) %>
+</div>
+</div>
+
+<!-- Input -->
+<div class="p-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<form onsubmit="sendMessage(event)" class="flex gap-3">
+<button type="button" id="voiceBtn" onclick="startVoice()" class="p-3 rounded-xl <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200 text-gray-600' : 'bg-slate-800 hover:bg-slate-700 text-slate-400' %> transition-colors" title="Voice input (V8)">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+</button>
+<input type="text" id="chatInput" placeholder="Ask about your portfolio..." class="form-input flex-1" autocomplete="off">
+<button type="submit" id="sendBtn" class="btn-primary px-6">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+</button>
+</form>
+</div>
+</div>
+</div></div></main>
+
+<script>
+const portfolioContext = <%- JSON.stringify(portfolioData || {}) %>;
+
+function addMessage(content, isUser = false) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'flex gap-3' + (isUser ? ' justify-end' : '');
+  
+  if (isUser) {
+    div.innerHTML = `
+      <div class="flex-1 flex justify-end">
+        <div class="bg-gradient-to-r from-sky-500 to-purple-500 text-white rounded-2xl rounded-tr-none p-4 max-w-[85%]">
+          <p>${escapeHtml(content)}</p>
+        </div>
+      </div>
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-purple-500 flex-shrink-0 flex items-center justify-center text-white text-sm font-bold">
+        ${('<%= user?.full_name?.charAt(0) || "U" %>').toUpperCase()}
+      </div>
+    `;
+  } else {
+    div.innerHTML = `
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <div class="flex-1">
+        <div class="<%= theme === 'light' ? 'bg-gray-100 text-gray-800' : 'bg-slate-800 text-slate-200' %> rounded-2xl rounded-tl-none p-4 max-w-[85%]">
+          ${content}
+        </div>
+      </div>
+    `;
+  }
+  
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.className = 'flex gap-3';
+  div.innerHTML = `
+    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 flex items-center justify-center">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    </div>
+    <div class="<%= theme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> rounded-2xl rounded-tl-none p-4">
+      <div class="flex gap-1">
+        <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+        <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+        <span class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const indicator = document.getElementById('typingIndicator');
+  if (indicator) indicator.remove();
+}
+
+async function sendMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message) return;
+  
+  input.value = '';
+  addMessage(message, true);
+  addTypingIndicator();
+  
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, context: portfolioContext })
+    });
+    
+    const data = await response.json();
+    removeTypingIndicator();
+    addMessage(data.response);
+  } catch (error) {
+    removeTypingIndicator();
+    addMessage('Sorry, I encountered an error. Please try again.');
+  }
+  
+  btn.disabled = false;
+  input.focus();
+}
+
+function sendQuickAction(action) {
+  document.getElementById('chatInput').value = action;
+  sendMessage(new Event('submit'));
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// V8: Voice Command Support
+let recognition = null;
+let isListening = false;
+
+function startVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Voice recognition not supported in this browser', 'error');
+    return;
+  }
+  
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (!recognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = () => {
+      isListening = true;
+      document.getElementById('voiceBtn').classList.add('bg-red-500', 'text-white');
+      document.getElementById('voiceBtn').classList.remove('bg-slate-800', 'text-slate-400');
+      showToast('Listening... Speak now', 'info');
+    };
+    
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join('');
+      document.getElementById('chatInput').value = transcript;
+    };
+    
+    recognition.onend = () => {
+      isListening = false;
+      document.getElementById('voiceBtn').classList.remove('bg-red-500', 'text-white');
+      document.getElementById('voiceBtn').classList.add('bg-slate-800', 'text-slate-400');
+      
+      const input = document.getElementById('chatInput').value;
+      if (input.trim()) {
+        sendMessage(new Event('submit'));
+      }
+    };
+    
+    recognition.onerror = (event) => {
+      isListening = false;
+      document.getElementById('voiceBtn').classList.remove('bg-red-500', 'text-white');
+      document.getElementById('voiceBtn').classList.add('bg-slate-800', 'text-slate-400');
+      showToast('Voice error: ' + event.error, 'error');
+    };
+  }
+  
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+</script>
+<%- include('../partials/footer') %>

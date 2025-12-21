@@ -1,0 +1,397 @@
+<%
+// Safe defaults for undefined variables
+const safeData = data || {};
+const safeSummary = safeData.summary || {};
+const safeHoldings = safeData.holdings || [];
+const safeUpcoming = safeData.upcoming || [];
+const safeMonthlyIncome = safeData.monthlyIncome || [];
+const safeSectorIncome = safeData.sectorIncome || [];
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  compact: (n) => n.toLocaleString(),
+  money: (n) => '$' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+};
+
+const annualIncome = safeSummary.annualIncome || 0;
+const monthlyIncome = safeSummary.monthlyIncome || 0;
+const portfolioYield = safeSummary.portfolioYield || 0;
+const dividendPayers = safeSummary.dividendPayers || 0;
+const totalHoldings = safeSummary.totalHoldings || 0;
+const yieldOnCost = safeSummary.yieldOnCost || 0;
+const avgGrowthRate = safeSummary.avgGrowthRate || 5;
+%>
+<%- include('../partials/header', { pageTitle: 'Dividend Analysis' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="bloomberg-header-title">DIVIDEND ANALYSIS</h1>
+      <p class="bloomberg-header-subtitle">Real-time dividend income tracking and yield performance metrics</p>
+    </div>
+    <button onclick="refreshDividends()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      REFRESH DATA
+    </button>
+  </div>
+</div>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <% if (safeData && safeSummary && Object.keys(safeSummary).length > 0) { %>
+
+    <!-- KPI Bar for Dividend Summary Stats -->
+    <div class="bloomberg-kpi-bar">
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">ANNUAL INCOME</div>
+        <div class="bloomberg-kpi-value text-emerald-400 font-mono"><%= safeFmt.compact(annualIncome) %></div>
+        <div class="bloomberg-kpi-sublabel">Projected yearly</div>
+      </div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">MONTHLY INCOME</div>
+        <div class="bloomberg-kpi-value font-mono"><%= safeFmt.compact(monthlyIncome) %></div>
+        <div class="bloomberg-kpi-sublabel">Average per month</div>
+      </div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">PORTFOLIO YIELD</div>
+        <div class="bloomberg-kpi-value text-sky-400 font-mono"><%= portfolioYield.toFixed(2) %>%</div>
+        <div class="bloomberg-kpi-sublabel">Weighted average</div>
+      </div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">DIVIDEND PAYERS</div>
+        <div class="bloomberg-kpi-value font-mono"><%= dividendPayers %></div>
+        <div class="bloomberg-kpi-sublabel">of <%= totalHoldings %> holdings</div>
+      </div>
+      <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-label">YIELD ON COST</div>
+        <div class="bloomberg-kpi-value text-purple-400 font-mono"><%= yieldOnCost.toFixed(2) %>%</div>
+        <div class="bloomberg-kpi-sublabel">Based on cost basis</div>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Monthly Income Chart -->
+      <div class="bloomberg-card">
+        <div class="p-5">
+          <h3 class="text-sm font-bold text-orange-400 mb-1 tracking-wider">MONTHLY DIVIDEND INCOME</h3>
+          <p class="text-xs text-slate-500 mb-4">Income distribution by month</p>
+          <div class="h-64">
+            <canvas id="monthlyIncomeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Income by Sector Pie Chart -->
+      <div class="bloomberg-card">
+        <div class="p-5">
+          <h3 class="text-sm font-bold text-orange-400 mb-1 tracking-wider">INCOME BY SECTOR</h3>
+          <p class="text-xs text-slate-500 mb-4">Sector allocation breakdown</p>
+          <div class="h-64">
+            <canvas id="sectorIncomeChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dividend Holdings Table -->
+    <div class="bloomberg-card">
+      <div class="p-5">
+        <h3 class="text-sm font-bold text-orange-400 mb-1 tracking-wider">DIVIDEND-PAYING HOLDINGS</h3>
+        <p class="text-xs text-slate-500 mb-4">Comprehensive dividend stock analysis</p>
+        <div class="overflow-x-auto">
+          <table class="bloomberg-table">
+            <thead>
+              <tr>
+                <th>SYMBOL</th>
+                <th>NAME</th>
+                <th class="text-right">DIVIDEND</th>
+                <th class="text-right">YIELD</th>
+                <th class="text-right">ANNUAL INCOME</th>
+                <th>FREQUENCY</th>
+                <th class="text-right">% OF INCOME</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (safeHoldings.length > 0) { %>
+              <% safeHoldings.forEach(holding => { %>
+              <tr>
+                <td>
+                  <span class="font-bold text-white"><%= holding.symbol || '' %></span>
+                </td>
+                <td class="text-slate-400">
+                  <%= holding.name || holding.symbol || '' %>
+                </td>
+                <td class="text-right font-mono text-slate-300">
+                  <%= safeFmt.money(holding.dividend || 0) %>
+                </td>
+                <td class="text-right font-mono">
+                  <span class="<%= (holding.yield || 0) >= 4 ? 'text-emerald-400' : (holding.yield || 0) >= 2 ? 'text-sky-400' : 'text-slate-300' %>">
+                    <%= (holding.yield || 0).toFixed(2) %>%
+                  </span>
+                </td>
+                <td class="text-right text-emerald-400 font-mono font-semibold">
+                  <%= safeFmt.money(holding.annualIncome || 0) %>
+                </td>
+                <td>
+                  <span class="px-2 py-1 rounded text-xs bg-slate-700/50 text-slate-300 font-mono">
+                    <%= holding.frequency || 'Quarterly' %>
+                  </span>
+                </td>
+                <td class="text-right text-slate-400 font-mono">
+                  <%= (holding.incomeWeight || 0).toFixed(1) %>%
+                </td>
+              </tr>
+              <% }) %>
+              <% } else { %>
+              <tr>
+                <td colspan="7" class="py-8 text-center text-slate-500">
+                  No dividend-paying holdings found
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Dividends -->
+    <div class="bloomberg-card">
+      <div class="p-5">
+        <h3 class="text-sm font-bold text-orange-400 mb-1 tracking-wider">UPCOMING DIVIDEND PAYMENTS</h3>
+        <p class="text-xs text-slate-500 mb-4">Expected dividend schedule</p>
+        <% if (safeUpcoming.length > 0) { %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% safeUpcoming.slice(0, 6).forEach(div => { %>
+          <div class="p-4 rounded border border-slate-700 bg-slate-800/50 hover:border-orange-500/50 transition-colors">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-white font-mono"><%= div.symbol || '' %></span>
+              <span class="text-emerald-400 font-bold font-mono"><%= safeFmt.money(div.amount || 0) %></span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-500 text-xs">EX-DATE</span>
+              <span class="text-slate-300 font-mono text-xs"><%= div.exDate || 'TBD' %></span>
+            </div>
+            <div class="flex items-center justify-between text-sm mt-1">
+              <span class="text-slate-500 text-xs">PAY DATE</span>
+              <span class="text-slate-300 font-mono text-xs"><%= div.payDate || 'TBD' %></span>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+        <% } else { %>
+        <p class="text-slate-500 text-center py-8">No upcoming dividends scheduled</p>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Dividend Growth Projection -->
+    <div class="bloomberg-card">
+      <div class="p-5">
+        <h3 class="text-sm font-bold text-orange-400 mb-1 tracking-wider">5-YEAR INCOME PROJECTION</h3>
+        <p class="text-xs text-slate-500 mb-4">Forward-looking dividend growth analysis</p>
+        <div class="h-64">
+          <canvas id="projectionChart"></canvas>
+        </div>
+        <p class="text-xs text-slate-500 mt-3 text-center font-mono">
+          *Projection assumes <%= avgGrowthRate.toFixed(1) %>% annual dividend growth rate
+        </p>
+      </div>
+    </div>
+
+    <% } else { %>
+    <!-- No Data State -->
+    <div class="bloomberg-card">
+      <div class="p-12 text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700">
+          <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">NO DIVIDEND DATA</h3>
+        <p class="text-slate-400 mb-4">Add dividend-paying stocks to see income analysis</p>
+        <a href="/portfolios" class="bloomberg-btn bloomberg-btn-primary">ADD HOLDINGS</a>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function refreshDividends() {
+  showToast('Refreshing dividend data...', 'info');
+  setTimeout(() => location.reload(), 500);
+}
+
+<% if (safeData && safeSummary && Object.keys(safeSummary).length > 0) { %>
+const monthlyData = <%- JSON.stringify(safeMonthlyIncome) %>;
+const sectorIncome = <%- JSON.stringify(safeSectorIncome) %>;
+const annualIncome = <%= annualIncome %>;
+const growthRate = <%= avgGrowthRate / 100 %>;
+
+// Monthly Income Bar Chart
+new Chart(document.getElementById('monthlyIncomeChart'), {
+  type: 'bar',
+  data: {
+    labels: monthlyData.length > 0 ? monthlyData.map(m => m.month) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [{
+      label: 'Dividend Income',
+      data: monthlyData.length > 0 ? monthlyData.map(m => m.amount) : Array(12).fill(annualIncome / 12),
+      backgroundColor: 'rgba(52, 211, 153, 0.8)',
+      borderColor: 'rgba(52, 211, 153, 1)',
+      borderWidth: 1,
+      borderRadius: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#f97316',
+        bodyColor: '#e2e8f0',
+        borderColor: '#475569',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: (context) => '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+        }
+      }
+    },
+    scales: {
+      y: {
+        border: { color: '#334155' },
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'monospace' },
+          callback: v => '$' + v.toLocaleString()
+        }
+      },
+      x: {
+        border: { color: '#334155' },
+        grid: { display: false },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: 'monospace', size: 11 }
+        }
+      }
+    }
+  }
+});
+
+// Sector Income Pie Chart
+const sectorColors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#14b8a6'];
+new Chart(document.getElementById('sectorIncomeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: sectorIncome.length > 0 ? sectorIncome.map(s => s.sector) : ['Technology', 'Finance', 'Healthcare', 'Consumer', 'Energy'],
+    datasets: [{
+      data: sectorIncome.length > 0 ? sectorIncome.map(s => s.income) : [30, 25, 20, 15, 10],
+      backgroundColor: sectorColors,
+      borderColor: '#0f172a',
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          color: '#94a3b8',
+          padding: 12,
+          font: { size: 11, family: 'monospace' },
+          boxWidth: 12,
+          boxHeight: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#f97316',
+        bodyColor: '#e2e8f0',
+        borderColor: '#475569',
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: (context) => context.label + ': $' + context.parsed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+        }
+      }
+    }
+  }
+});
+
+// 5-Year Projection Chart
+const years = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'];
+const projections = years.map((_, i) => annualIncome * Math.pow(1 + growthRate, i + 1));
+
+new Chart(document.getElementById('projectionChart'), {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [{
+      label: 'Projected Annual Income',
+      data: projections,
+      borderColor: '#34d399',
+      backgroundColor: 'rgba(52, 211, 153, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 5,
+      pointBackgroundColor: '#34d399',
+      pointBorderColor: '#0f172a',
+      pointBorderWidth: 2,
+      pointHoverRadius: 7
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#f97316',
+        bodyColor: '#e2e8f0',
+        borderColor: '#475569',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: (context) => '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+        }
+      }
+    },
+    scales: {
+      y: {
+        border: { color: '#334155' },
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'monospace' },
+          callback: v => '$' + v.toLocaleString()
+        }
+      },
+      x: {
+        border: { color: '#334155' },
+        grid: { display: false },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: 'monospace', size: 11 }
+        }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

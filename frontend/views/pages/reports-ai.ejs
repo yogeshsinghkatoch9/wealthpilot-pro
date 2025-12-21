@@ -1,0 +1,179 @@
+<%
+// Safe defaults for all variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'AI Reports';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">AI-Generated Reports</h1>
+<p class="text-slate-400">Natural language portfolio analysis and insights</p>
+</div>
+<div class="flex gap-2">
+<button onclick="generateReport()" class="bloomberg-btn bloomberg-btn-primary" id="genBtn">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+Generate New Report
+</button>
+<button onclick="exportPDF()" class="bloomberg-btn bloomberg-btn-secondary">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+Export PDF
+</button>
+</div>
+</div>
+</div>
+
+<!-- Report Type Selector -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<button onclick="selectReportType('weekly')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-amber-400" data-type="weekly">
+<div class="text-2xl mb-2">📊</div>
+<p class="font-medium text-white">Weekly Summary</p>
+<p class="text-xs text-slate-400">Performance recap</p>
+</button>
+<button onclick="selectReportType('monthly')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="monthly">
+<div class="text-2xl mb-2">📈</div>
+<p class="font-medium text-white">Monthly Analysis</p>
+<p class="text-xs text-slate-400">Deep dive review</p>
+</button>
+<button onclick="selectReportType('tax')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="tax">
+<div class="text-2xl mb-2">💰</div>
+<p class="font-medium text-white">Tax Preview</p>
+<p class="text-xs text-slate-400">Tax implications</p>
+</button>
+<button onclick="selectReportType('risk')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="risk">
+<div class="text-2xl mb-2">⚠️</div>
+<p class="font-medium text-white">Risk Assessment</p>
+<p class="text-xs text-slate-400">Portfolio risks</p>
+</button>
+</div>
+
+<!-- Generated Report -->
+<div class="bloomberg-card p-6" id="reportContainer">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl font-bold text-white">Weekly Portfolio Summary</h2>
+<p class="text-slate-400 text-sm">Generated December 10, 2024 • Week of Dec 2-8</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">AI Generated</span>
+<button onclick="regenerate()" class="text-slate-400 hover:text-white">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+</button>
+</div>
+</div>
+
+<!-- Executive Summary -->
+<div class="prose prose-invert max-w-none" id="reportContent">
+<div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-6">
+<h3 class="text-lg font-semibold text-amber-400 mt-0 mb-2">📌 Executive Summary</h3>
+<p class="text-slate-300 mb-0">Your portfolio gained <strong class="text-emerald-400">$4,847 (+1.8%)</strong> this week, outperforming the S&P 500 by 0.3%. Technology holdings drove most gains, while energy lagged. Your risk metrics remain healthy with no immediate concerns.</p>
+</div>
+
+<h3 class="text-white">Performance Highlights</h3>
+<p class="text-slate-300">This was a strong week for growth stocks as the market digested positive inflation data. Your portfolio benefited from overweight positions in technology, particularly <strong>NVDA (+8.2%)</strong> which announced expanded AI partnerships, and <strong>MSFT (+3.1%)</strong> following Azure growth projections.</p>
+
+<div class="grid grid-cols-3 gap-4 my-6">
+<div class="p-4 rounded-lg bg-slate-800/50 border border-slate-700 text-center">
+<p class="text-2xl font-bold text-emerald-400">+$4,847</p>
+<p class="text-sm text-slate-400">Week Gain</p>
+</div>
+<div class="p-4 rounded-lg bg-slate-800/50 border border-slate-700 text-center">
+<p class="text-2xl font-bold text-white">$276,182</p>
+<p class="text-sm text-slate-400">Total Value</p>
+</div>
+<div class="p-4 rounded-lg bg-slate-800/50 border border-slate-700 text-center">
+<p class="text-2xl font-bold text-amber-400">+0.3%</p>
+<p class="text-sm text-slate-400">vs S&P 500</p>
+</div>
+</div>
+
+<h3 class="text-white">Top Movers</h3>
+<p class="text-slate-300"><strong class="text-emerald-400">Winners:</strong> NVDA led your portfolio with gains of $1,240, followed by AAPL (+$680) and MSFT (+$520). These three positions accounted for 50% of your weekly gains.</p>
+<p class="text-slate-300"><strong class="text-red-400">Laggards:</strong> XOM declined 2.1% (-$180) as oil prices softened. INTC continued its slide, dropping another 1.8% (-$95). Consider whether these positions still align with your investment thesis.</p>
+
+<h3 class="text-white">Dividend Activity</h3>
+<p class="text-slate-300">You received <strong>$127.50</strong> in dividends this week from JNJ ($42.00), MSFT ($51.00), and O ($34.50). Year-to-date dividend income now stands at <strong>$3,847</strong>, putting you on track to exceed your $4,200 annual target.</p>
+
+<h3 class="text-white">Risk Check</h3>
+<p class="text-slate-300">Portfolio volatility remains moderate at 14.2% (annualized), slightly below your 15% target. Sector concentration in technology (48%) continues to be elevated—consider trimming if this exceeds 50%. Your cash position of 3.2% provides limited downside buffer; you may want to increase this to 5% given current market valuations.</p>
+
+<div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 my-6">
+<h4 class="text-amber-400 font-semibold mt-0 mb-2">💡 AI Recommendations</h4>
+<ul class="text-slate-300 mb-0 space-y-1">
+<li>Consider taking partial profits on NVDA after its 8% weekly gain</li>
+<li>Review INTC position—it has underperformed for 3 consecutive weeks</li>
+<li>Next week brings CPI data (Wed) and Fed minutes (Thu)—prepare for volatility</li>
+</ul>
+</div>
+
+<h3 class="text-white">Looking Ahead</h3>
+<p class="text-slate-300">Key events next week include the Consumer Price Index release on Wednesday and Federal Reserve meeting minutes on Thursday. Given your growth-heavy allocation, positive inflation data could provide tailwinds, while hawkish Fed commentary may create headwinds. Your current sector mix is well-positioned for a soft landing scenario.</p>
+</div>
+</div>
+
+<!-- Previous Reports -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Previous Reports</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="text-xl">📊</span>
+<div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Weekly Summary</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Nov 25 - Dec 1, 2024</p></div>
+</div>
+<span class="text-emerald-400 text-sm">+2.1%</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="text-xl">📈</span>
+<div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Monthly Analysis</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">November 2024</p></div>
+</div>
+<span class="text-emerald-400 text-sm">+5.8%</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-3">
+<span class="text-xl">💰</span>
+<div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Q3 Tax Preview</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">September 30, 2024</p></div>
+</div>
+<span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">$2,450 est.</span>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script>
+let selectedType = 'weekly';
+
+function selectReportType(type) {
+  selectedType = type;
+  document.querySelectorAll('[data-type]').forEach(btn => {
+    btn.classList.remove('border-sky-500');
+    btn.classList.add('border-transparent');
+  });
+  document.querySelector(`[data-type="${type}"]`).classList.remove('border-transparent');
+  document.querySelector(`[data-type="${type}"]`).classList.add('border-sky-500');
+}
+
+function generateReport() {
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Generating...';
+  
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>Generate New Report';
+    showToast('Report generated successfully!', 'success');
+  }, 2000);
+}
+
+function regenerate() {
+  generateReport();
+}
+
+function exportPDF() {
+  showToast('Exporting report as PDF...', 'info');
+}
+</script>
+<%- include('../partials/footer') %>

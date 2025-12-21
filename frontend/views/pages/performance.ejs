@@ -1,0 +1,418 @@
+<%
+// Safe defaults for undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePerformance = typeof performance !== 'undefined' ? performance : null;
+const safeComparison = typeof comparison !== 'undefined' ? comparison : null;
+const safePeriod = typeof period !== 'undefined' ? period : '1M';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+    money: (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    compact: (v) => '$' + (v || 0).toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 1 }),
+    pct: (v) => (v || 0).toFixed(2) + '%'
+};
+%>
+<%- include('../partials/header', { pageTitle: 'Performance' }) %>
+<div class="flex h-screen overflow-hidden bg-slate-950">
+
+    <main class="flex-1 ml-64 overflow-y-auto w-full">
+        <!-- Bloomberg Header Bar -->
+        <div class="bloomberg-header">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-xl font-bold text-amber-400 tracking-wide">PERFORMANCE</h1>
+                    <div class="flex items-center gap-2 text-emerald-400 text-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="font-mono">LIVE</span>
+                    </div>
+                </div>
+                <div class="flex gap-1">
+                    <% const periods = ['1W', '1M', '3M', '6M', '1Y', 'YTD']; %>
+                    <% periods.forEach(p => { %>
+                    <a href="/performance?period=<%= p %>" class="bloomberg-btn <%= safePeriod === p ? 'active' : '' %>"><%= p %></a>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <% if (safePerformance) { %>
+            <!-- KPI Bar -->
+            <div class="kpi-bar mb-6">
+                <div class="kpi-item">
+                    <div class="kpi-label">PORTFOLIO VALUE</div>
+                    <div class="kpi-value"><%= safeFmt.compact(safePerformance.summary?.totalValue || 0) %></div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-label">TOTAL RETURN</div>
+                    <div class="kpi-value <%= (safePerformance.summary?.totalGainPercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                        <%= safeFmt.pct(safePerformance.summary?.totalGainPercent || 0) %>
+                    </div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-label">DAY CHANGE</div>
+                    <div class="kpi-value <%= (safePerformance.summary?.dayChangePercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                        <%= safeFmt.pct(safePerformance.summary?.dayChangePercent || 0) %>
+                    </div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-label">SHARPE RATIO</div>
+                    <div class="kpi-value font-mono"><%= (safePerformance.metrics?.sharpeRatio || 0).toFixed(2) %></div>
+                </div>
+                <div class="kpi-item">
+                    <div class="kpi-label">VOLATILITY</div>
+                    <div class="kpi-value text-amber-400 font-mono"><%= (safePerformance.metrics?.volatility || 0).toFixed(1) %>%</div>
+                </div>
+            </div>
+
+            <!-- Performance Chart -->
+            <div class="bloomberg-card mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-amber-400 tracking-wide">PORTFOLIO VALUE OVER TIME</h3>
+                    <span class="text-xs text-slate-500 font-mono"><%= safePeriod %> PERIOD</span>
+                </div>
+                <div class="h-80">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Risk Metrics -->
+                <div class="bloomberg-card">
+                    <h3 class="text-sm font-bold text-amber-400 tracking-wide mb-4">RISK METRICS</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                            <span class="text-slate-400 text-sm">BETA</span>
+                            <span class="text-white font-mono font-semibold"><%= (safePerformance.metrics?.beta || 1).toFixed(2) %></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                            <span class="text-slate-400 text-sm">ALPHA</span>
+                            <span class="font-mono font-semibold <%= (safePerformance.metrics?.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                                <%= safeFmt.pct(safePerformance.metrics?.alpha || 0) %>
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-800">
+                            <span class="text-slate-400 text-sm">MAX DRAWDOWN</span>
+                            <span class="text-red-400 font-mono font-semibold">-<%= (safePerformance.metrics?.maxDrawdown || 0).toFixed(1) %>%</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-slate-400 text-sm">ANNUALIZED VOLATILITY</span>
+                            <span class="text-white font-mono font-semibold"><%= (safePerformance.metrics?.volatility || 0).toFixed(1) %>%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Returns Distribution -->
+                <div class="bloomberg-card">
+                    <h3 class="text-sm font-bold text-amber-400 tracking-wide mb-4">RETURNS SUMMARY</h3>
+                    <div class="h-48">
+                        <canvas id="returnsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <% if (safeComparison) { %>
+            <!-- Benchmark Comparison -->
+            <div class="bloomberg-card mb-6">
+                <h3 class="text-sm font-bold text-amber-400 tracking-wide mb-4">BENCHMARK COMPARISON</h3>
+                <div class="h-64">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+                    <% (safeComparison.benchmarks || []).forEach(b => { %>
+                    <div class="text-center p-3 rounded border border-slate-800 bg-slate-900/50">
+                        <p class="text-slate-400 text-xs mb-1 font-mono"><%= b.name %></p>
+                        <p class="font-mono font-bold <%= b.periodReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                            <%= b.periodReturn >= 0 ? '+' : '' %><%= b.periodReturn.toFixed(1) %>%
+                        </p>
+                        <p class="text-xs font-mono <%= b.outperformance >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                            <%= b.outperformance >= 0 ? 'OUT' : 'UNDER' %> <%= Math.abs(b.outperformance).toFixed(1) %>%
+                        </p>
+                    </div>
+                    <% }) %>
+                </div>
+            </div>
+            <% } %>
+
+            <!-- Top Holdings Performance -->
+            <div class="bloomberg-card overflow-hidden">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold text-amber-400 tracking-wide">HOLDINGS PERFORMANCE</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="bloomberg-table">
+                        <thead>
+                            <tr>
+                                <th class="text-left">SYMBOL</th>
+                                <th class="text-right">PRICE</th>
+                                <th class="text-right">DAY CHG</th>
+                                <th class="text-right">VALUE</th>
+                                <th class="text-right">GAIN/LOSS</th>
+                                <th class="text-right">RETURN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% (safePerformance.holdings || []).forEach(h => { %>
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded border border-amber-500/30 bg-slate-900 flex items-center justify-center text-amber-400 text-xs font-bold font-mono">
+                                            <%= h.symbol ? h.symbol.slice(0, 2) : '??' %>
+                                        </div>
+                                        <span class="text-white font-mono font-semibold"><%= h.symbol %></span>
+                                    </div>
+                                </td>
+                                <td class="text-right text-slate-300 font-mono"><%= safeFmt.money(h.currentPrice) %></td>
+                                <td class="text-right font-mono font-medium <%= h.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                                    <%= safeFmt.pct(h.changePercent) %>
+                                </td>
+                                <td class="text-right text-white font-mono font-semibold"><%= safeFmt.compact(h.marketValue) %></td>
+                                <td class="text-right font-mono font-medium <%= h.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                                    <%= safeFmt.money(h.gain) %>
+                                </td>
+                                <td class="text-right">
+                                    <span class="px-2 py-1 rounded text-xs font-mono font-semibold <%= h.gainPercent >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400' %>">
+                                        <%= safeFmt.pct(h.gainPercent) %>
+                                    </span>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="bloomberg-card p-12 text-center">
+                <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <h3 class="text-lg font-bold text-amber-400 mb-2 tracking-wide">NO PERFORMANCE DATA</h3>
+                <p class="text-slate-400">Add holdings to your portfolios to see performance metrics</p>
+            </div>
+            <% } %>
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const theme = '<%= safeTheme %>';
+const isDark = theme === 'dark';
+
+<% if (safePerformance && safePerformance.history) { %>
+// Performance Chart
+const perfCtx = document.getElementById('performanceChart').getContext('2d');
+new Chart(perfCtx, {
+    type: 'line',
+    data: {
+        labels: <%- JSON.stringify(safePerformance.history.map(h => h.date)) %>,
+        datasets: [{
+            label: 'Portfolio Value',
+            data: <%- JSON.stringify(safePerformance.history.map(h => h.value)) %>,
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            tension: 0.1,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#0f172a',
+                borderColor: '#f59e0b',
+                borderWidth: 1,
+                titleColor: '#f59e0b',
+                bodyColor: '#e2e8f0',
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: true,
+                    color: '#1e293b',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#64748b',
+                    font: { family: 'monospace', size: 11 },
+                    maxTicksLimit: 8
+                }
+            },
+            y: {
+                grid: {
+                    color: '#1e293b',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#64748b',
+                    font: { family: 'monospace', size: 11 },
+                    callback: (v) => '$' + (v / 1000).toFixed(0) + 'K'
+                }
+            }
+        }
+    }
+});
+
+// Returns Distribution Chart
+const returnsCtx = document.getElementById('returnsChart').getContext('2d');
+new Chart(returnsCtx, {
+    type: 'bar',
+    data: {
+        labels: ['TOTAL GAIN', 'DAY CHANGE', 'COST BASIS'],
+        datasets: [{
+            data: [
+                <%= safePerformance.summary?.totalGain || 0 %>,
+                <%= safePerformance.summary?.dayChange || 0 %>,
+                <%= safePerformance.summary?.totalCost || 0 %>
+            ],
+            backgroundColor: [
+                '<%= (safePerformance.summary?.totalGain || 0) >= 0 ? "#34d399" : "#f87171" %>',
+                '<%= (safePerformance.summary?.dayChange || 0) >= 0 ? "#34d399" : "#f87171" %>',
+                '#f59e0b'
+            ],
+            borderRadius: 4,
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#0f172a',
+                borderColor: '#f59e0b',
+                borderWidth: 1,
+                titleColor: '#f59e0b',
+                bodyColor: '#e2e8f0',
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                }
+            }
+        },
+        scales: {
+            y: {
+                grid: {
+                    color: '#1e293b',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#64748b',
+                    font: { family: 'monospace', size: 11 },
+                    callback: (v) => '$' + (v / 1000).toFixed(0) + 'K'
+                }
+            },
+            x: {
+                grid: { display: false },
+                ticks: {
+                    color: '#64748b',
+                    font: { family: 'monospace', size: 11 }
+                }
+            }
+        }
+    }
+});
+<% } %>
+
+<% if (safeComparison && safeComparison.chartData) { %>
+// Comparison Chart
+const compCtx = document.getElementById('comparisonChart').getContext('2d');
+new Chart(compCtx, {
+    type: 'line',
+    data: {
+        labels: <%- JSON.stringify(safeComparison.chartData.map(d => d.date)) %>,
+        datasets: [
+            {
+                label: 'Portfolio',
+                data: <%- JSON.stringify(safeComparison.chartData.map(d => d.portfolio)) %>,
+                borderColor: '#f59e0b',
+                borderWidth: 3,
+                tension: 0.1,
+                pointRadius: 0,
+                pointHoverRadius: 6
+            },
+            {
+                label: 'S&P 500',
+                data: <%- JSON.stringify(safeComparison.chartData.map(d => d.SPY)) %>,
+                borderColor: '#34d399',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                tension: 0.1,
+                pointRadius: 0,
+                pointHoverRadius: 6
+            },
+            {
+                label: 'NASDAQ',
+                data: <%- JSON.stringify(safeComparison.chartData.map(d => d.QQQ)) %>,
+                borderColor: '#60a5fa',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                tension: 0.1,
+                pointRadius: 0,
+                pointHoverRadius: 6
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#94a3b8',
+                    font: { family: 'monospace', size: 11 },
+                    padding: 15
+                }
+            },
+            tooltip: {
+                backgroundColor: '#0f172a',
+                borderColor: '#f59e0b',
+                borderWidth: 1,
+                titleColor: '#f59e0b',
+                bodyColor: '#e2e8f0',
+                padding: 12,
+                displayColors: true
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: true,
+                    color: '#1e293b',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#64748b',
+                    font: { family: 'monospace', size: 11 },
+                    maxTicksLimit: 6
+                }
+            },
+            y: {
+                grid: {
+                    color: '#1e293b',
+                    drawBorder: false
+                },
+                ticks: {
+                    color: '#64748b',
+                    font: { family: 'monospace', size: 11 }
+                }
+            }
+        }
+    }
+});
+<% } %>
+</script>
+
+<%- include('../partials/footer') %>

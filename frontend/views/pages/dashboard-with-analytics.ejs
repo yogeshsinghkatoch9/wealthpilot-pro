@@ -1,0 +1,1173 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio Dashboard' }) %>
+<%
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0 };
+%>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Portfolio Header with Quick Stats -->
+    <div class="bg-bloomberg-surface border border-bloomberg-border rounded-md p-4">
+      <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold text-bloomberg-amber">Portfolio Dashboard</h1>
+        <div class="flex items-center gap-4">
+          <!-- Portfolio Selector -->
+          <select id="portfolio-selector"
+                  class="bg-bloomberg-dark border border-bloomberg-border text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-bloomberg-amber font-mono">
+            <option value="all">All Portfolios</option>
+            <% if (portfolios && portfolios.length > 0) { %>
+              <% portfolios.forEach(portfolio => { %>
+                <option value="<%= portfolio.id %>"><%= portfolio.name %></option>
+              <% }) %>
+            <% } %>
+          </select>
+
+          <!-- Quick Actions -->
+          <button onclick="expandAllSections()" class="bloomberg-btn bloomberg-btn-ghost text-xs">
+            Expand All
+          </button>
+          <button onclick="collapseAllSections()" class="bloomberg-btn bloomberg-btn-ghost text-xs">
+            Collapse All
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Stats KPIs -->
+      <div class="grid grid-cols-4 gap-4">
+        <div class="bg-bloomberg-dark border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase mb-1">Total Value</div>
+          <div class="text-2xl font-bold text-white font-mono"><%= fmt.money(safeTotals.value) %></div>
+        </div>
+        <div class="bg-bloomberg-dark border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase mb-1">Total Gain/Loss</div>
+          <div class="text-2xl font-bold <%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= fmt.pct((safeTotals.gain / safeTotals.cost) * 100) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-dark border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase mb-1">Holdings</div>
+          <div class="text-2xl font-bold text-white font-mono"><%= safeHoldings.length %></div>
+        </div>
+        <div class="bg-bloomberg-dark border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase mb-1">Status</div>
+          <div class="flex items-center gap-2">
+            <span class="status-live" id="ws-status">LIVE</span>
+            <span class="text-xs text-slate-500 font-mono">Real-time</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expandable Analytics Sections -->
+    <div class="space-y-3">
+
+      <!-- SECTION 1: PERFORMANCE ANALYTICS (4 analyses) -->
+      <div class="analytics-section bg-bloomberg-surface border border-bloomberg-border rounded-md">
+        <button onclick="toggleSection('performance')"
+                class="section-header w-full flex items-center justify-between p-4 hover:bg-bloomberg-dark transition-colors">
+          <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-bloomberg-amber chevron" id="chevron-performance" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <div>
+              <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">Performance Analytics</h2>
+              <p class="text-xs text-slate-400">4 Analyses • Attribution, Returns, Drawdown, Rolling Stats</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-xs text-slate-500">Last Updated</div>
+              <div class="text-xs text-white font-mono" id="update-time-performance"><%= new Date().toLocaleTimeString() %></div>
+            </div>
+            <button onclick="event.stopPropagation(); refreshSection('performance')"
+                    class="bloomberg-btn bloomberg-btn-ghost p-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+        </button>
+
+        <div id="section-performance" class="section-content" style="display: none;">
+          <div class="p-6 space-y-6">
+            <!-- Performance Attribution -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">1. Performance Attribution</h3>
+                <button onclick="loadAnalysis('performance-attribution')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Allocation Effect</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="alloc-effect">+1.23%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Selection Effect</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="select-effect">+2.45%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Interaction</div>
+                  <div class="text-lg font-bold text-white font-mono" id="interact-effect">+0.34%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded" id="mini-chart-attribution">
+                <canvas id="preview-attribution"></canvas>
+              </div>
+            </div>
+
+            <!-- Excess Returns -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">2. Excess Return vs Benchmark</h3>
+                <button onclick="loadAnalysis('excess-return')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Portfolio Return (1Y)</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="port-return">+15.8%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Alpha vs SPY</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="alpha-spy">+3.2%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-excess-return"></canvas>
+              </div>
+            </div>
+
+            <!-- Drawdown Analysis -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">3. Drawdown Analysis</h3>
+                <button onclick="loadAnalysis('drawdown')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Current Drawdown</div>
+                  <div class="text-lg font-bold text-red-400 font-mono" id="curr-dd">-2.3%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Max Drawdown</div>
+                  <div class="text-lg font-bold text-red-400 font-mono" id="max-dd">-12.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Recovery Days</div>
+                  <div class="text-lg font-bold text-white font-mono" id="recovery-days">45</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-drawdown"></canvas>
+              </div>
+            </div>
+
+            <!-- Rolling Statistics -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">4. Rolling Statistics</h3>
+                <button onclick="loadAnalysis('rolling-stats')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">90D Volatility</div>
+                  <div class="text-lg font-bold text-white font-mono" id="vol-90d">18.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Sharpe Ratio</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="sharpe-90d">1.45</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Sortino Ratio</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="sortino-90d">1.82</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Avg Return</div>
+                  <div class="text-lg font-bold text-green-400 font-mono" id="avg-return-90d">+1.2%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-rolling"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: RISK ANALYTICS (5 analyses) -->
+      <div class="analytics-section bg-bloomberg-surface border border-bloomberg-border rounded-md">
+        <button onclick="toggleSection('risk')"
+                class="section-header w-full flex items-center justify-between p-4 hover:bg-bloomberg-dark transition-colors">
+          <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-bloomberg-amber chevron" id="chevron-risk" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <div>
+              <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">Risk Analytics</h2>
+              <p class="text-xs text-slate-400">5 Analyses • Factor Risk, VaR, Stress Tests, Correlation, Concentration</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-xs text-slate-500">Last Updated</div>
+              <div class="text-xs text-white font-mono" id="update-time-risk"><%= new Date().toLocaleTimeString() %></div>
+            </div>
+            <button onclick="event.stopPropagation(); refreshSection('risk')"
+                    class="bloomberg-btn bloomberg-btn-ghost p-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+        </button>
+
+        <div id="section-risk" class="section-content" style="display: none;">
+          <div class="p-6 space-y-6">
+            <!-- Risk Decomposition -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">5. Risk Decomposition</h3>
+                <button onclick="loadAnalysis('risk-decomp')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-6 gap-2 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Market β</div>
+                  <div class="text-sm font-bold text-white font-mono">1.05</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Size β</div>
+                  <div class="text-sm font-bold text-white font-mono">-0.15</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Value β</div>
+                  <div class="text-sm font-bold text-white font-mono">0.22</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Profit β</div>
+                  <div class="text-sm font-bold text-white font-mono">0.18</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Invest β</div>
+                  <div class="text-sm font-bold text-white font-mono">-0.08</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Mom β</div>
+                  <div class="text-sm font-bold text-white font-mono">0.35</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-risk-decomp"></canvas>
+              </div>
+            </div>
+
+            <!-- VaR Analysis -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">6. VaR & Stress Scenarios</h3>
+                <button onclick="loadAnalysis('var-scenarios')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">1-Day VaR (95%)</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">-$25,450</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">CVaR</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">-$32,100</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">10-Day VaR</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">-$80,420</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Method</div>
+                  <div class="text-sm font-bold text-white">Historical</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-var"></canvas>
+              </div>
+            </div>
+
+            <!-- Correlation Matrix -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">7. Correlation & Covariance Heatmap</h3>
+                <button onclick="loadAnalysis('correlation')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Avg Correlation</div>
+                  <div class="text-lg font-bold text-white font-mono">0.68</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Max Correlation</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">0.92</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Portfolio Diversity</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">0.32</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-correlation"></canvas>
+              </div>
+            </div>
+
+            <!-- Stress Testing -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">8. Scenario & Stress Testing</h3>
+                <button onclick="loadAnalysis('stress-test')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-3 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">2008 Crisis</div>
+                  <div class="text-sm font-bold text-red-400 font-mono">-38.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">COVID Crash</div>
+                  <div class="text-sm font-bold text-red-400 font-mono">-31.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Rate Shock</div>
+                  <div class="text-sm font-bold text-red-400 font-mono">-12.8%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Bull Market</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">+24.6%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-stress"></canvas>
+              </div>
+            </div>
+
+            <!-- Holdings Concentration -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">9. Holdings Concentration</h3>
+                <button onclick="loadAnalysis('concentration')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Top 5 Weight</div>
+                  <div class="text-lg font-bold text-white font-mono">42.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Top 10 Weight</div>
+                  <div class="text-lg font-bold text-white font-mono">68.3%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">HHI Index</div>
+                  <div class="text-lg font-bold text-bloomberg-amber font-mono">0.085</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Effective N</div>
+                  <div class="text-lg font-bold text-white font-mono">11.8</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-concentration"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: ATTRIBUTION ANALYTICS (4 analyses) -->
+      <div class="analytics-section bg-bloomberg-surface border border-bloomberg-border rounded-md">
+        <button onclick="toggleSection('attribution')"
+                class="section-header w-full flex items-center justify-between p-4 hover:bg-bloomberg-dark transition-colors">
+          <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-bloomberg-amber chevron" id="chevron-attribution" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <div>
+              <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">Attribution Analytics</h2>
+              <p class="text-xs text-slate-400">4 Analyses • Regional, Sector, Peer Comparison, Alpha Decay</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-xs text-slate-500">Last Updated</div>
+              <div class="text-xs text-white font-mono" id="update-time-attribution"><%= new Date().toLocaleTimeString() %></div>
+            </div>
+            <button onclick="event.stopPropagation(); refreshSection('attribution')"
+                    class="bloomberg-btn bloomberg-btn-ghost p-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+        </button>
+
+        <div id="section-attribution" class="section-content" style="display: none;">
+          <div class="p-6 space-y-6">
+            <!-- Regional Attribution -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">10. Attribution by Region/Currency</h3>
+                <button onclick="loadAnalysis('regional-attribution')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-3 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">North America</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">+2.8%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Europe</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">+1.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Asia Pacific</div>
+                  <div class="text-sm font-bold text-red-400 font-mono">-0.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Currency Effect</div>
+                  <div class="text-sm font-bold text-white font-mono">+0.3%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-regional"></canvas>
+              </div>
+            </div>
+
+            <!-- Sector Rotation -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">11. Sector Rotation & Exposure</h3>
+                <button onclick="loadAnalysis('sector-rotation')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-5 gap-2 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Tech</div>
+                  <div class="text-sm font-bold text-white font-mono">28.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Finance</div>
+                  <div class="text-sm font-bold text-white font-mono">18.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Health</div>
+                  <div class="text-sm font-bold text-white font-mono">15.8%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Consumer</div>
+                  <div class="text-sm font-bold text-white font-mono">12.3%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Other</div>
+                  <div class="text-sm font-bold text-white font-mono">25.2%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-sector"></canvas>
+              </div>
+            </div>
+
+            <!-- Peer Benchmarking -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">12. Attribution vs Peers</h3>
+                <button onclick="loadAnalysis('peer-benchmark')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Your Rank</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">12/250</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Percentile</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">95th</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Peer Avg Return</div>
+                  <div class="text-lg font-bold text-white font-mono">+8.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Your Return</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">+15.8%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-peers"></canvas>
+              </div>
+            </div>
+
+            <!-- Alpha Decay -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">13. Alpha Decay / Factor Crowding</h3>
+                <button onclick="loadAnalysis('alpha-decay')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">1-Month Alpha</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">+2.1%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">3-Month Alpha</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">+1.8%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">6-Month Alpha</div>
+                  <div class="text-sm font-bold text-white font-mono">+1.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Factor Crowding</div>
+                  <div class="text-sm font-bold text-bloomberg-amber font-mono">Medium</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-alpha"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: CONSTRUCTION ANALYTICS (4 analyses) -->
+      <div class="analytics-section bg-bloomberg-surface border border-bloomberg-border rounded-md">
+        <button onclick="toggleSection('construction')"
+                class="section-header w-full flex items-center justify-between p-4 hover:bg-bloomberg-dark transition-colors">
+          <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-bloomberg-amber chevron" id="chevron-construction" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <div>
+              <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">Portfolio Construction</h2>
+              <p class="text-xs text-slate-400">4 Analyses • Optimization, Turnover, Liquidity, TCA</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-xs text-slate-500">Last Updated</div>
+              <div class="text-xs text-white font-mono" id="update-time-construction"><%= new Date().toLocaleTimeString() %></div>
+            </div>
+            <button onclick="event.stopPropagation(); refreshSection('construction')"
+                    class="bloomberg-btn bloomberg-btn-ghost p-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+        </button>
+
+        <div id="section-construction" class="section-content" style="display: none;">
+          <div class="p-6 space-y-6">
+            <!-- Efficient Frontier -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">14. Optimization / Efficient Frontier</h3>
+                <button onclick="loadAnalysis('efficient-frontier')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Current Sharpe</div>
+                  <div class="text-lg font-bold text-white font-mono">1.45</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Optimal Sharpe</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">1.68</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Target Risk</div>
+                  <div class="text-lg font-bold text-white font-mono">15.0%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Expected Return</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">18.2%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-frontier"></canvas>
+              </div>
+            </div>
+
+            <!-- Turnover Analysis -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">15. Holdings Turnover & Trade Cadence</h3>
+                <button onclick="loadAnalysis('turnover')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Annual Turnover</div>
+                  <div class="text-lg font-bold text-white font-mono">45.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Avg Hold Period</div>
+                  <div class="text-lg font-bold text-white font-mono">265 days</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Monthly Trades</div>
+                  <div class="text-lg font-bold text-bloomberg-amber font-mono">18</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Rebalance Freq</div>
+                  <div class="text-sm font-bold text-white">Quarterly</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-turnover"></canvas>
+              </div>
+            </div>
+
+            <!-- Liquidity Analysis -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">16. Liquidity and Market Impact</h3>
+                <button onclick="loadAnalysis('liquidity')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Liquidity Score</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">8.5/10</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Days to Liquidate</div>
+                  <div class="text-lg font-bold text-white font-mono">4.2</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Avg Spread</div>
+                  <div class="text-lg font-bold text-white font-mono">0.08%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Market Impact</div>
+                  <div class="text-sm font-bold text-green-400">Low</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-liquidity"></canvas>
+              </div>
+            </div>
+
+            <!-- Transaction Cost Analysis -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">17. Transaction Cost Analysis</h3>
+                <button onclick="loadAnalysis('tca')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Total TCA</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">-$2,450</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Avg Slippage</div>
+                  <div class="text-lg font-bold text-white font-mono">0.12%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Commission</div>
+                  <div class="text-lg font-bold text-white font-mono">$185</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Impact Cost</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">$1,820</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-tca"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: SPECIALIZED ANALYTICS (3 analyses) -->
+      <div class="analytics-section bg-bloomberg-surface border border-bloomberg-border rounded-md">
+        <button onclick="toggleSection('specialized')"
+                class="section-header w-full flex items-center justify-between p-4 hover:bg-bloomberg-dark transition-colors">
+          <div class="flex items-center gap-4">
+            <svg class="w-5 h-5 text-bloomberg-amber chevron" id="chevron-specialized" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <div>
+              <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">Specialized Analytics</h2>
+              <p class="text-xs text-slate-400">3 Analyses • Alternatives, ESG, Client Reporting</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-xs text-slate-500">Last Updated</div>
+              <div class="text-xs text-white font-mono" id="update-time-specialized"><%= new Date().toLocaleTimeString() %></div>
+            </div>
+            <button onclick="event.stopPropagation(); refreshSection('specialized')"
+                    class="bloomberg-btn bloomberg-btn-ghost p-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            </button>
+          </div>
+        </button>
+
+        <div id="section-specialized" class="section-content" style="display: none;">
+          <div class="p-6 space-y-6">
+            <!-- Alternatives Attribution -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">18. Performance Attribution for Alternatives</h3>
+                <button onclick="loadAnalysis('alternatives')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">IRR</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">12.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">MOIC</div>
+                  <div class="text-lg font-bold text-white font-mono">1.8x</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">DPI</div>
+                  <div class="text-lg font-bold text-white font-mono">0.45</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">TVPI</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">1.65</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-alternatives"></canvas>
+              </div>
+            </div>
+
+            <!-- ESG Analysis -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">19. ESG / Sustainability Exposure</h3>
+                <button onclick="loadAnalysis('esg')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">ESG Score</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">78/100</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Environmental</div>
+                  <div class="text-lg font-bold text-white font-mono">82</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Social</div>
+                  <div class="text-lg font-bold text-white font-mono">75</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Governance</div>
+                  <div class="text-lg font-bold text-white font-mono">76</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Carbon Footprint</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">120 tCO₂e</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Green Revenue</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">32%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-esg"></canvas>
+              </div>
+            </div>
+
+            <!-- Client Reporting -->
+            <div class="analysis-item bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-bloomberg-amber uppercase">20. Client/Product Performance Reporting</h3>
+                <button onclick="loadAnalysis('client-reporting')" class="bloomberg-btn bloomberg-btn-sm">
+                  View Details →
+                </button>
+              </div>
+              <div class="grid grid-cols-4 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">YTD Return</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">+11.8%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">3Y Annualized</div>
+                  <div class="text-lg font-bold text-green-400 font-mono">+14.2%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Max Drawdown</div>
+                  <div class="text-lg font-bold text-red-400 font-mono">-12.5%</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Risk Score</div>
+                  <div class="text-sm font-bold text-bloomberg-amber">6/10</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Sharpe Ratio</div>
+                  <div class="text-sm font-bold text-white font-mono">1.45</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Beta</div>
+                  <div class="text-sm font-bold text-white font-mono">1.05</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-slate-500">Alpha</div>
+                  <div class="text-sm font-bold text-green-400 font-mono">+3.2%</div>
+                </div>
+              </div>
+              <div class="h-48 bg-bloomberg-surface rounded">
+                <canvas id="preview-client"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Holdings Table (Original) -->
+    <div class="bg-bloomberg-surface border border-bloomberg-border rounded-md p-6">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide mb-4">Holdings Overview</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-bloomberg-dark border-b border-bloomberg-border">
+            <tr>
+              <th class="px-4 py-3 text-left text-slate-400">Stock</th>
+              <th class="px-4 py-3 text-right text-slate-400">Shares</th>
+              <th class="px-4 py-3 text-right text-slate-400">Price</th>
+              <th class="px-4 py-3 text-right text-slate-400">Value</th>
+              <th class="px-4 py-3 text-right text-slate-400">Gain/Loss</th>
+              <th class="px-4 py-3 text-right text-slate-400">Weight</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono">
+            <% if (safeHoldings && safeHoldings.length > 0) { %>
+              <% safeHoldings.forEach(holding => { %>
+                <tr class="border-b border-slate-800 hover:bg-slate-900/50">
+                  <td class="px-4 py-3 text-white font-semibold"><%= holding.symbol %></td>
+                  <td class="px-4 py-3 text-right text-slate-300"><%= fmt.number(holding.quantity) %></td>
+                  <td class="px-4 py-3 text-right text-white"><%= fmt.money(holding.currentPrice || 0) %></td>
+                  <td class="px-4 py-3 text-right text-white"><%= fmt.money(holding.marketValue || 0) %></td>
+                  <td class="px-4 py-3 text-right <%= (holding.gain || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                    <%= fmt.pct(((holding.gain || 0) / (holding.costTotal || 1)) * 100) %>
+                  </td>
+                  <td class="px-4 py-3 text-right text-bloomberg-amber">
+                    <%= ((holding.marketValue || 0) / safeTotals.value * 100).toFixed(2) %>%
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+                  No holdings found
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+// Section toggle functionality
+function toggleSection(sectionId) {
+  const content = document.getElementById(`section-${sectionId}`);
+  const chevron = document.getElementById(`chevron-${sectionId}`);
+
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    chevron.style.transform = 'rotate(90deg)';
+
+    // Load data if not already loaded
+    if (!content.dataset.loaded) {
+      loadSectionData(sectionId);
+      content.dataset.loaded = 'true';
+    }
+  } else {
+    content.style.display = 'none';
+    chevron.style.transform = 'rotate(0deg)';
+  }
+}
+
+function expandAllSections() {
+  const sections = ['performance', 'risk', 'attribution', 'construction', 'specialized'];
+  sections.forEach(section => {
+    const content = document.getElementById(`section-${section}`);
+    const chevron = document.getElementById(`chevron-${section}`);
+    content.style.display = 'block';
+    chevron.style.transform = 'rotate(90deg)';
+
+    if (!content.dataset.loaded) {
+      loadSectionData(section);
+      content.dataset.loaded = 'true';
+    }
+  });
+}
+
+function collapseAllSections() {
+  const sections = ['performance', 'risk', 'attribution', 'construction', 'specialized'];
+  sections.forEach(section => {
+    const content = document.getElementById(`section-${section}`);
+    const chevron = document.getElementById(`chevron-${section}`);
+    content.style.display = 'none';
+    chevron.style.transform = 'rotate(0deg)';
+  });
+}
+
+// Load section data via API
+async function loadSectionData(sectionId) {
+  const portfolioId = document.getElementById('portfolio-selector').value;
+
+  try {
+    let endpoints = [];
+
+    switch(sectionId) {
+      case 'performance':
+        endpoints = [
+          `/api/advanced-analytics/performance-attribution?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/excess-return?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/drawdown-analysis?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/rolling-statistics?portfolioId=${portfolioId}`
+        ];
+        break;
+      case 'risk':
+        endpoints = [
+          `/api/advanced-analytics/risk-decomposition?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/var-scenarios?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/correlation-matrix?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/stress-scenarios?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/concentration-analysis?portfolioId=${portfolioId}`
+        ];
+        break;
+      case 'attribution':
+        endpoints = [
+          `/api/advanced-analytics/regional-attribution?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/sector-rotation?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/peer-benchmarking?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/alpha-decay?portfolioId=${portfolioId}`
+        ];
+        break;
+      case 'construction':
+        endpoints = [
+          `/api/advanced-analytics/efficient-frontier?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/turnover-analysis?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/liquidity-analysis?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/transaction-cost-analysis?portfolioId=${portfolioId}`
+        ];
+        break;
+      case 'specialized':
+        endpoints = [
+          `/api/advanced-analytics/alternatives-attribution?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/esg-analysis?portfolioId=${portfolioId}`,
+          `/api/advanced-analytics/client-reporting?portfolioId=${portfolioId}`
+        ];
+        break;
+    }
+
+    // Fetch data from all endpoints
+    const responses = await Promise.all(endpoints.map(url => fetch(url)));
+    const data = await Promise.all(responses.map(r => r.json()));
+
+    // Update UI with real data
+    updateSectionUI(sectionId, data);
+
+    // Initialize mini charts
+    initializeMiniCharts(sectionId, data);
+
+    // Update timestamp
+    document.getElementById(`update-time-${sectionId}`).textContent = new Date().toLocaleTimeString();
+
+  } catch (error) {
+    console.error(`Error loading ${sectionId} data:`, error);
+  }
+}
+
+function updateSectionUI(sectionId, data) {
+  // Update DOM elements with real data
+  if (sectionId === 'performance' && data[0]) {
+    if (data[0].allocationEffect !== undefined) {
+      document.getElementById('alloc-effect').textContent = `${data[0].allocationEffect >= 0 ? '+' : ''}${data[0].allocationEffect.toFixed(2)}%`;
+    }
+    if (data[0].selectionEffect !== undefined) {
+      document.getElementById('select-effect').textContent = `${data[0].selectionEffect >= 0 ? '+' : ''}${data[0].selectionEffect.toFixed(2)}%`;
+    }
+    if (data[0].interactionEffect !== undefined) {
+      document.getElementById('interact-effect').textContent = `${data[0].interactionEffect >= 0 ? '+' : ''}${data[0].interactionEffect.toFixed(2)}%`;
+    }
+  }
+}
+
+function initializeMiniCharts(sectionId, data) {
+  // Initialize small preview charts using Chart.js
+  if (sectionId === 'performance') {
+    // Attribution preview
+    const attrCtx = document.getElementById('preview-attribution');
+    if (attrCtx && data[0]?.waterfallData) {
+      new Chart(attrCtx, {
+        type: 'bar',
+        data: {
+          labels: data[0].waterfallData.labels || [],
+          datasets: [{
+            data: data[0].waterfallData.values || [],
+            backgroundColor: '#f59e0b'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false }
+          }
+        }
+      });
+    }
+  }
+}
+
+function refreshSection(sectionId) {
+  const content = document.getElementById(`section-${sectionId}`);
+  content.dataset.loaded = 'false';
+  loadSectionData(sectionId);
+}
+
+function loadAnalysis(analysisId) {
+  // Navigate to full analysis view in advanced analytics page
+  const portfolioId = document.getElementById('portfolio-selector').value;
+  window.location.href = `/advanced-analytics?tab=${getTabFromAnalysis(analysisId)}&portfolio=${portfolioId}`;
+}
+
+function getTabFromAnalysis(analysisId) {
+  const mapping = {
+    // Performance (4)
+    'performance-attribution': 'performance',
+    'excess-return': 'performance',
+    'drawdown': 'performance',
+    'rolling-stats': 'performance',
+    // Risk (5)
+    'risk-decomp': 'risk',
+    'var-scenarios': 'risk',
+    'correlation': 'risk',
+    'stress-test': 'risk',
+    'concentration': 'risk',
+    // Attribution (4)
+    'regional-attribution': 'attribution',
+    'sector-rotation': 'attribution',
+    'peer-benchmark': 'attribution',
+    'alpha-decay': 'attribution',
+    // Construction (4)
+    'efficient-frontier': 'construction',
+    'turnover': 'construction',
+    'liquidity': 'construction',
+    'tca': 'construction',
+    // Specialized (3)
+    'alternatives': 'specialized',
+    'esg': 'specialized',
+    'client-reporting': 'specialized'
+  };
+  return mapping[analysisId] || 'performance';
+}
+
+// Portfolio selector change handler
+document.getElementById('portfolio-selector').addEventListener('change', function() {
+  // Reload all expanded sections with new portfolio
+  const sections = ['performance', 'risk', 'attribution', 'construction', 'specialized'];
+  sections.forEach(section => {
+    const content = document.getElementById(`section-${section}`);
+    if (content.style.display !== 'none') {
+      loadSectionData(section);
+    }
+  });
+});
+</script>
+
+<style>
+.chevron {
+  transition: transform 0.3s ease;
+}
+
+.section-content {
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 5000px;
+  }
+}
+
+.analysis-item {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.analysis-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+}
+
+.bloomberg-btn-sm {
+  padding: 6px 12px;
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid #30363d;
+  color: #f59e0b;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bloomberg-btn-sm:hover {
+  background: #f59e0b;
+  color: white;
+  border-color: #f59e0b;
+}
+</style>
+
+<%- include('../partials/footer') %>

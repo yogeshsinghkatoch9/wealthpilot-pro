@@ -1,0 +1,496 @@
+<%- include('../partials/header') %>
+
+<div class="advanced-analytics-dashboard">
+  
+  <!-- Dashboard Header -->
+  <div class="dashboard-header px-6 py-4 border-b border-gray-700">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-amber-500 mb-1">Advanced Portfolio Analytics</h1>
+        <p class="text-gray-400">Comprehensive analytics across 20 dimensions</p>
+      </div>
+      
+      <!-- Portfolio Selector & Controls -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm text-gray-400">Portfolio:</label>
+          <select id="portfolio-select" class="bg-gray-800 border border-gray-700 rounded px-4 py-2 text-white focus:border-amber-500 focus:outline-none">
+            <option value="all">All Portfolios Combined</option>
+            <% if (portfolios && portfolios.length > 0) { %>
+              <% portfolios.forEach(portfolio => { %>
+                <option value="<%= portfolio.id %>" <%= selectedPortfolio === portfolio.id ? 'selected' : '' %>>
+                  <%= portfolio.name %>
+                </option>
+              <% }); %>
+            <% } %>
+          </select>
+        </div>
+        
+        <button id="refresh-btn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+        
+        <button id="export-all-btn" class="bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded font-semibold transition-all">
+          Export All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Widget Section -->
+  <div class="calendar-widget-section bg-gradient-to-r from-slate-900 to-slate-800 border-b border-gray-700 px-6 py-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Calendar Stats -->
+      <div class="bg-slate-800/50 rounded-xl p-4 border border-gray-700 hover:border-amber-500 transition-all">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-amber-500 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Calendar Overview
+          </h3>
+          <a href="/calendar" class="text-xs text-gray-400 hover:text-amber-500 transition-colors">View All →</a>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="text-center p-2 bg-blue-500/10 rounded-lg">
+            <div class="text-2xl font-bold text-blue-400"><%= calendarStats.today || 0 %></div>
+            <div class="text-xs text-gray-400">Today</div>
+          </div>
+          <div class="text-center p-2 bg-green-500/10 rounded-lg">
+            <div class="text-2xl font-bold text-green-400"><%= calendarStats.thisWeek || 0 %></div>
+            <div class="text-xs text-gray-400">This Week</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Events -->
+      <div class="lg:col-span-2 bg-slate-800/50 rounded-xl p-4 border border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-amber-500 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Upcoming Events
+          </h3>
+          <button onclick="openQuickAddEvent()" class="text-xs bg-amber-500 hover:bg-amber-600 text-black px-3 py-1 rounded font-semibold transition-all">
+            + Add Event
+          </button>
+        </div>
+        <div class="space-y-2 max-h-24 overflow-y-auto custom-scrollbar">
+          <% if (upcomingEvents && upcomingEvents.length > 0) { %>
+            <% upcomingEvents.forEach(event => { %>
+              <div class="flex items-center gap-3 p-2 bg-slate-700/50 rounded hover:bg-slate-700 transition-all cursor-pointer" onclick="window.location.href='/calendar'">
+                <div class="w-2 h-2 rounded-full" style="background-color: <%= event.color || '#f59e0b' %>"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm text-white truncate"><%= event.title %></div>
+                  <div class="text-xs text-gray-400">
+                    <%= new Date(event.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                  </div>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full
+                  <%= event.event_type === 'task' ? 'bg-blue-500/20 text-blue-400' :
+                     event.event_type === 'meeting' ? 'bg-green-500/20 text-green-400' :
+                     'bg-amber-500/20 text-amber-400' %>">
+                  <%= event.event_type %>
+                </span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="text-center py-4">
+              <svg class="w-12 h-12 mx-auto text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              <p class="text-sm text-gray-400">No upcoming events</p>
+              <button onclick="openQuickAddEvent()" class="text-xs text-amber-500 hover:text-amber-400 mt-2">Add your first event</button>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dividend Calendar Widget Section -->
+  <div class="dividend-widget-section bg-gradient-to-r from-slate-800 to-slate-900 border-b border-gray-700 px-6 py-4">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <!-- Dividend Stats -->
+      <div class="bg-slate-800/50 rounded-xl p-4 border border-gray-700 hover:border-amber-500 transition-all">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-amber-500 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Dividends
+          </h3>
+          <a href="/dividend-calendar" class="text-xs text-gray-400 hover:text-amber-500 transition-colors">View All →</a>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="text-center p-2 bg-emerald-500/10 rounded-lg">
+            <div class="text-2xl font-bold text-emerald-400" id="dividend-today">0</div>
+            <div class="text-xs text-gray-400">Today</div>
+          </div>
+          <div class="text-center p-2 bg-purple-500/10 rounded-lg">
+            <div class="text-2xl font-bold text-purple-400" id="dividend-week">0</div>
+            <div class="text-xs text-gray-400">This Week</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Dividends -->
+      <div class="lg:col-span-3 bg-slate-800/50 rounded-xl p-4 border border-gray-700">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-amber-500 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            Upcoming Ex-Dates
+          </h3>
+          <a href="/dividend-calendar" class="text-xs bg-amber-500 hover:bg-amber-600 text-black px-3 py-1 rounded font-semibold transition-all">
+            View Calendar
+          </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 max-h-24 overflow-y-auto custom-scrollbar" id="upcoming-dividends">
+          <div class="text-center py-4">
+            <div class="text-xs text-gray-400">Loading dividend data...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="dashboard-tabs border-b border-gray-700 px-6">
+    <div class="flex gap-2">
+      <button class="dashboard-tab active" data-tab="performance">
+        Performance <span class="tab-count">4</span>
+      </button>
+      <button class="dashboard-tab" data-tab="risk">
+        Risk <span class="tab-count">5</span>
+      </button>
+      <button class="dashboard-tab" data-tab="attribution">
+        Attribution <span class="tab-count">4</span>
+      </button>
+      <button class="dashboard-tab" data-tab="construction">
+        Construction <span class="tab-count">4</span>
+      </button>
+      <button class="dashboard-tab" data-tab="specialized">
+        Specialized <span class="tab-count">3</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="dashboard-content p-6">
+    
+    <!-- Performance Tab -->
+    <div id="tab-performance" class="tab-content active">
+      <%- include('../partials/analytics-tabs/performance-tab') %>
+    </div>
+
+    <!-- Risk Tab -->
+    <div id="tab-risk" class="tab-content hidden">
+      <%- include('../partials/analytics-tabs/risk-tab') %>
+    </div>
+
+    <!-- Attribution Tab -->
+    <div id="tab-attribution" class="tab-content hidden">
+      <%- include('../partials/analytics-tabs/attribution-tab') %>
+    </div>
+
+    <!-- Construction Tab -->
+    <div id="tab-construction" class="tab-content hidden">
+      <%- include('../partials/analytics-tabs/construction-tab') %>
+    </div>
+
+    <!-- Specialized Tab -->
+    <div id="tab-specialized" class="tab-content hidden">
+      <%- include('../partials/analytics-tabs/specialized-tab') %>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+  <div class="text-center">
+    <div class="loading-spinner mb-4"></div>
+    <p class="text-amber-500 text-lg">Loading analytics...</p>
+  </div>
+</div>
+
+<style>
+  .advanced-analytics-dashboard {
+    min-height: 100vh;
+    background: #0a0e17;
+  }
+
+  .dashboard-header {
+    background: #0f1419;
+  }
+
+  .dashboard-tabs {
+    background: #0f1419;
+  }
+
+  .dashboard-tab {
+    padding: 1rem 1.5rem;
+    color: #9ca3af;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .dashboard-tab:hover {
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .dashboard-tab.active {
+    color: #f59e0b;
+    border-bottom-color: #f59e0b;
+  }
+
+  .tab-count {
+    background: #30363d;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .dashboard-tab.active .tab-count {
+    background: #f59e0b;
+    color: #000;
+  }
+
+  .tab-content {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .loading-spinner {
+    border: 4px solid #30363d;
+    border-top: 4px solid #f59e0b;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .chart-container {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #30363d;
+  }
+
+  .chart-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #f59e0b;
+  }
+
+  .chart-controls {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .chart-control-btn {
+    background: #30363d;
+    border: 1px solid #30363d;
+    color: #e5e7eb;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chart-control-btn:hover {
+    background: #3d444d;
+    border-color: #f59e0b;
+  }
+
+  .export-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #30363d;
+  }
+
+  .export-btn {
+    background: #30363d;
+    color: #e5e7eb;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+
+  .export-btn:hover {
+    background: #f59e0b;
+    color: #000;
+  }
+
+  .error-state {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    text-align: center;
+    color: #ef4444;
+  }
+
+  .empty-state {
+    background: rgba(156, 163, 175, 0.05);
+    border: 1px solid #30363d;
+    border-radius: 0.5rem;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: #9ca3af;
+  }
+
+  .empty-state svg {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    opacity: 0.5;
+  }
+
+  /* Calendar Widget Styles */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #f59e0b;
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+  }
+</style>
+
+<script src="/js/advanced-charts.js"></script>
+<script src="/js/advanced-dashboard.js"></script>
+<script src="/js/dashboard-customization.js"></script>
+
+<script>
+  // Quick Add Event Function
+  function openQuickAddEvent() {
+    window.location.href = '/calendar';
+  }
+
+  // Auto-refresh upcoming events every 5 minutes
+  setInterval(() => {
+    // Silently refresh calendar data without full page reload
+    fetch('/api/calendar/upcoming/list?limit=5', {
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.data.length > 0) {
+        console.log('Calendar events refreshed:', data.data.length, 'upcoming events');
+      }
+    })
+    .catch(err => console.error('Failed to refresh calendar:', err));
+  }, 5 * 60 * 1000); // 5 minutes
+
+  // Load dividend calendar widget data
+  async function loadDividendWidget() {
+    try {
+      // Fetch stats
+      const statsRes = await fetch('/api/dividend-calendar/stats', { credentials: 'include' });
+      const stats = await statsRes.json();
+
+      if (stats.success) {
+        document.getElementById('dividend-today').textContent = stats.data.today || 0;
+        document.getElementById('dividend-week').textContent = stats.data.thisWeek || 0;
+      }
+
+      // Fetch upcoming dividends
+      const upcomingRes = await fetch('/api/dividend-calendar/upcoming?limit=6', { credentials: 'include' });
+      const upcoming = await upcomingRes.json();
+
+      if (upcoming.success && upcoming.data.length > 0) {
+        const container = document.getElementById('upcoming-dividends');
+        container.innerHTML = upcoming.data.map(div => {
+          const exDate = new Date(div.ex_dividend_date);
+          const daysUntil = Math.ceil((exDate - new Date()) / (1000 * 60 * 60 * 24));
+
+          return `
+            <div class="flex items-center gap-2 p-2 bg-slate-700/50 rounded hover:bg-slate-700 transition-all cursor-pointer"
+                 onclick="window.location.href='/dividend-calendar'">
+              <div class="w-8 h-8 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
+                ${div.symbol}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-white truncate">${div.company_name}</div>
+                <div class="text-xs text-gray-400">$${div.dividend_amount.toFixed(4)} • ${daysUntil}d</div>
+              </div>
+              <div class="text-xs text-emerald-400 font-semibold">
+                ${exDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        document.getElementById('upcoming-dividends').innerHTML = `
+          <div class="col-span-full text-center py-4">
+            <div class="text-xs text-gray-400">No upcoming dividends</div>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Error loading dividend widget:', error);
+    }
+  }
+
+  // Load dividend widget on page load
+  loadDividendWidget();
+
+  // Auto-refresh dividend data every 5 minutes
+  setInterval(loadDividendWidget, 5 * 60 * 1000);
+</script>
+
+<%- include('../partials/footer') %>
