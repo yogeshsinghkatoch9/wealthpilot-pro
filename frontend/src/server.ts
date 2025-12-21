@@ -14,6 +14,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+console.log(`[Frontend] Starting with API_URL: ${API_URL}`);
+console.log(`[Frontend] API_BASE: ${API_BASE}`);
+
+// Health check endpoint (must be before API proxy)
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'frontend',
+    apiUrl: API_URL,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // API Proxy - Forward /api/* requests to backend
 app.use('/api', async (req, res, next) => {
   const backendUrl = `${API_URL}${req.originalUrl}`;
@@ -115,7 +128,17 @@ async function apiFetch(endpoint: string, token: string | null = null, options: 
     console.log(`[apiFetch] Calling ${options.method || 'GET'} ${url}`);
 
     const response = await fetch(url, { ...options, headers });
-    const data = await response.json();
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error(`[apiFetch] Non-JSON response for ${endpoint}:`, text.substring(0, 200));
+      return { error: `Server returned non-JSON response (${response.status})` };
+    }
 
     console.log(`[apiFetch] Response status: ${response.status}`,
                 `Data type: ${Array.isArray(data) ? 'array' : typeof data}`,
@@ -124,13 +147,13 @@ async function apiFetch(endpoint: string, token: string | null = null, options: 
     if (!response.ok) {
       console.error(`[apiFetch] HTTP ${response.status} error:`, data);
       const errorData = data as any;
-      return { error: errorData.error || errorData.message || `HTTP ${response.status}` };
+      return { error: errorData.error || errorData.message || `Server error (${response.status})` };
     }
 
     return data;
   } catch (err: any) {
     console.error(`[apiFetch] Network error for ${endpoint}:`, err.message);
-    return { error: 'Network error: ' + err.message };
+    return { error: `Cannot connect to server: ${err.message}` };
   }
 }
 
