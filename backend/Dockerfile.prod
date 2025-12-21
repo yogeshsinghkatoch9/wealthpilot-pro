@@ -27,8 +27,8 @@ RUN apk add --no-cache \
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Install all production dependencies including canvas
-RUN npm ci --omit=dev && \
+# Install all production dependencies (ignore optional canvas failures)
+RUN npm ci --omit=dev --ignore-scripts || npm ci --omit=dev --no-optional && \
     npm cache clean --force
 
 # ==========================================
