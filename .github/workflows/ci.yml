@@ -148,8 +148,8 @@ jobs:
 
       - name: Verify deployment files
         run: |
-          echo "Checking deployment configuration..."
-          test -f nixpacks.toml && echo "✅ nixpacks.toml found" || echo "⚠️ nixpacks.toml not found"
-          test -f vercel.json && echo "✅ vercel.json found" || echo "⚠️ vercel.json not found"
-          test -f railway.json && echo "✅ railway.json found" || echo "⚠️ railway.json not found"
-          echo "✅ Ready for deployment"
+          echo "Checking AWS deployment configuration..."
+          test -f docker-compose.aws.yml && echo "✅ docker-compose.aws.yml found" || echo "⚠️ docker-compose.aws.yml not found"
+          test -f backend/Dockerfile.prod && echo "✅ backend/Dockerfile.prod found" || echo "⚠️ backend/Dockerfile.prod not found"
+          test -f frontend/Dockerfile && echo "✅ frontend/Dockerfile found" || echo "⚠️ frontend/Dockerfile not found"
+          echo "✅ Ready for AWS deployment"

@@ -20,6 +20,90 @@ const marketRoutes = require('./routes/market');
 const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 
+// Sector rotation routes with error handling
+let sectorRotationRoutes;
+try {
+  sectorRotationRoutes = require('./routes/sectorRotation');
+  console.log('[INDEX] Sector rotation routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load sector rotation routes:', error.message);
+  const expressRouter = require('express').Router;
+  sectorRotationRoutes = expressRouter();
+  sectorRotationRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Sector rotation routes failed to load' });
+  });
+}
+
+// Sector heatmap routes with error handling
+let sectorHeatmapRoutes;
+try {
+  sectorHeatmapRoutes = require('./routes/sectorHeatmap');
+  console.log('[INDEX] Sector heatmap routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load sector heatmap routes:', error.message);
+  const expressRouter = require('express').Router;
+  sectorHeatmapRoutes = expressRouter();
+  sectorHeatmapRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Sector heatmap routes failed to load' });
+  });
+}
+
+// ETF analyzer routes with error handling
+let etfAnalyzerRoutes;
+try {
+  etfAnalyzerRoutes = require('./routes/etfAnalyzer');
+  console.log('[INDEX] ETF analyzer routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load ETF analyzer routes:', error.message);
+  const expressRouter = require('express').Router;
+  etfAnalyzerRoutes = expressRouter();
+  etfAnalyzerRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'ETF analyzer routes failed to load' });
+  });
+}
+
+// Economic calendar routes with error handling
+let economicCalendarRoutes;
+try {
+  economicCalendarRoutes = require('./routes/economicCalendar');
+  console.log('[INDEX] Economic calendar routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load economic calendar routes:', error.message);
+  const expressRouter = require('express').Router;
+  economicCalendarRoutes = expressRouter();
+  economicCalendarRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Economic calendar routes failed to load' });
+  });
+}
+
+// Sentiment routes with error handling
+let sentimentRoutes;
+try {
+  sentimentRoutes = require('./routes/sentiment');
+  console.log('[INDEX] Sentiment routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load sentiment routes:', error.message);
+  const expressRouter = require('express').Router;
+  sentimentRoutes = expressRouter();
+  sentimentRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Sentiment routes failed to load' });
+  });
+}
+
+// Market breadth routes with error handling
+let marketBreadthRoutes;
+try {
+  marketBreadthRoutes = require('./routes/marketBreadth');
+  console.log('[INDEX] Market breadth routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load market breadth routes:', error.message);
+  const expressRouter = require('express').Router;
+  marketBreadthRoutes = expressRouter();
+  marketBreadthRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Market breadth routes failed to load' });
+  });
+}
+
 // Portfolio upload routes with error handling
 let portfolioUploadRoutes;
 try {
@@ -50,13 +134,12 @@ const app = express();
 const { prisma } = require('./db/simpleDb');
 const PORT = process.env.PORT || 4000;
 
-// Trust proxy for Railway/Vercel (required for rate limiting behind reverse proxy)
+// Trust proxy (required for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);
 
 // Middleware - Allow multiple origins for CORS
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://wealthpilot-pro.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -94,7 +177,7 @@ app.use((req, res, next) => {
 
 // Health check - must work even before DB connection
 let dbConnected = false;
-const BUILD_VERSION = 'v29.2.3-holding-fix';
+const BUILD_VERSION = 'v31.0.0-live-market-data';
 const BUILD_TIME = new Date().toISOString(); // Captured at server start
 app.get('/health', (req, res) => {
   res.json({
@@ -118,9 +201,15 @@ app.use('/api/watchlists', watchlistRoutes);
 app.use('/api/watchlist', watchlistSimpleRoutes); // Simplified watchlist API (singular)
 app.use('/api/alerts', alertRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/market-breadth', marketBreadthRoutes); // Market breadth indicators
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dividends', dividendRoutes);
 app.use('/api/portfolio-upload', portfolioUploadRoutes); // Portfolio file upload
+app.use('/api/sector-rotation', sectorRotationRoutes); // Sector rotation analysis
+app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
+app.use('/api/etf-analyzer', etfAnalyzerRoutes); // ETF analyzer
+app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
+app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
 
 // Error handling middleware
 app.use((err, req, res, next) => {

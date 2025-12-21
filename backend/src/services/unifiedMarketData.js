@@ -1,13 +1,22 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 
+// Yahoo Finance - no API key required
+let yahooFinance;
+try {
+  yahooFinance = require('yahoo-finance2').default;
+} catch (e) {
+  logger.warn('yahoo-finance2 not available');
+}
+
 /**
  * Unified Market Data Service
- * Integrates 4 data providers with intelligent fallback:
+ * Integrates 5 data providers with intelligent fallback:
  * 1. Finnhub (Primary - 60 req/min)
  * 2. Financial Modeling Prep (Secondary - 250 req/day)
- * 3. Alpha Vantage (Tertiary - 25 req/day)
- * 4. StockData.org (Backup - Real-time)
+ * 3. Yahoo Finance (No API key required - reliable)
+ * 4. Alpha Vantage (Tertiary - 25 req/day)
+ * 5. StockData.org (Backup - Real-time)
  */
 class UnifiedMarketDataService {
   constructor() {
@@ -24,7 +33,7 @@ class UnifiedMarketDataService {
       profile: 30 * 60 * 1000 // 30 minutes for company profiles
     };
 
-    logger.info('Unified Market Data Service initialized with 4 providers');
+    logger.info('Unified Market Data Service initialized with 5 providers (including Yahoo Finance)');
   }
 
   /**
@@ -73,7 +82,18 @@ class UnifiedMarketDataService {
         logger.warn(`[Quote] FMP failed for ${symbol}:`, err.message);
       }
 
-      // Try Alpha Vantage third
+      // Try Yahoo Finance third (no API key required - most reliable)
+      try {
+        const quote = await this.fetchQuoteYahoo(symbol);
+        if (quote) {
+          logger.info(`[Quote] SUCCESS via Yahoo Finance: ${symbol}`);
+          return quote;
+        }
+      } catch (err) {
+        logger.warn(`[Quote] Yahoo Finance failed for ${symbol}:`, err.message);
+      }
+
+      // Try Alpha Vantage fourth
       try {
         const quote = await this.fetchQuoteAlphaVantage(symbol);
         if (quote) {
@@ -200,6 +220,41 @@ class UnifiedMarketDataService {
   }
 
   /**
+   * Yahoo Finance Quote (no API key required)
+   */
+  async fetchQuoteYahoo(symbol) {
+    if (!yahooFinance) {
+      return null;
+    }
+
+    try {
+      const quote = await yahooFinance.quote(symbol);
+      if (!quote || !quote.regularMarketPrice) {
+        return null;
+      }
+
+      return {
+        symbol: quote.symbol,
+        price: quote.regularMarketPrice,
+        previousClose: quote.regularMarketPreviousClose,
+        change: quote.regularMarketChange,
+        changePercent: quote.regularMarketChangePercent,
+        high: quote.regularMarketDayHigh,
+        low: quote.regularMarketDayLow,
+        open: quote.regularMarketOpen,
+        volume: quote.regularMarketVolume,
+        marketCap: quote.marketCap,
+        name: quote.shortName || quote.longName,
+        timestamp: new Date().toISOString(),
+        provider: 'Yahoo Finance'
+      };
+    } catch (err) {
+      logger.warn(`[Quote] Yahoo Finance error for ${symbol}:`, err.message);
+      return null;
+    }
+  }
+
+  /**
    * StockData.org Quote
    */
   async fetchQuoteStockData(symbol) {
@@ -262,7 +317,18 @@ class UnifiedMarketDataService {
         logger.warn(`[History] Alpha Vantage failed for ${symbol}:`, err.message);
       }
 
-      // Try Finnhub third
+      // Try Yahoo Finance third (no API key required)
+      try {
+        const data = await this.fetchHistoricalYahoo(symbol, days);
+        if (data && data.length > 0) {
+          logger.info(`[History] SUCCESS via Yahoo Finance: ${symbol} (${data.length} points)`);
+          return data;
+        }
+      } catch (err) {
+        logger.warn(`[History] Yahoo Finance failed for ${symbol}:`, err.message);
+      }
+
+      // Try Finnhub fourth
       try {
         const data = await this.fetchHistoricalFinnhub(symbol, days);
         if (data && data.length > 0) {
@@ -347,6 +413,43 @@ class UnifiedMarketDataService {
       close: parseFloat(timeSeries[date]['4. close']),
       volume: parseInt(timeSeries[date]['5. volume'])
     }));
+  }
+
+  /**
+   * Yahoo Finance Historical Data (no API key required)
+   */
+  async fetchHistoricalYahoo(symbol, days) {
+    if (!yahooFinance) {
+      return null;
+    }
+
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+
+      const result = await yahooFinance.chart(symbol, {
+        period1: startDate,
+        period2: endDate,
+        interval: '1d'
+      });
+
+      if (!result || !result.quotes || result.quotes.length === 0) {
+        return null;
+      }
+
+      return result.quotes.map(item => ({
+        date: new Date(item.date).toISOString().split('T')[0],
+        open: item.open,
+        high: item.high,
+        low: item.low,
+        close: item.close,
+        volume: item.volume
+      }));
+    } catch (err) {
+      logger.warn(`[History] Yahoo Finance error for ${symbol}:`, err.message);
+      return null;
+    }
   }
 
   /**

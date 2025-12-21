@@ -1,17 +1,15 @@
 const axios = require('axios');
-const { v4: uuidv4 } = require('uuid');
-const Database = require('../db/database');
 const SectorCalculations = require('./sectorCalculations');
+const logger = require('../utils/logger');
 
 /**
  * Comprehensive Sector Rotation Service
- * Fetches live data from Polygon.io and Alpha Vantage
+ * Fetches LIVE data from Yahoo Finance (free, no API key), Polygon.io, and Alpha Vantage
  * Calculates momentum, money flow, and rotation signals
  * Implements professional trading indicators (ROC, RSI, MFI, RS)
  */
 
 // 11 SPDR Sector ETFs
-const logger = require('../utils/logger');
 const SECTOR_ETFS = {
   'Technology': 'XLK',
   'Financials': 'XLF',
@@ -33,7 +31,6 @@ class SectorRotationService {
   constructor() {
     this.polygonKey = process.env.POLYGON_API_KEY;
     this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY;
-    this.db = Database;
     this.cache = new Map(); // In-memory cache
     this.cacheTTL = 5 * 60 * 1000; // 5 minutes
   }
@@ -378,104 +375,33 @@ class SectorRotationService {
   }
 
   /**
-   * Save sector rotation data to database for historical tracking
+   * Save sector rotation data (placeholder - data is cached in memory)
    * @param {Object} rotationData - Complete rotation data object
    */
   async saveSectorRotationData(rotationData) {
-    try {
-      const now = new Date().toISOString();
-
-      // Save sector performance
-      for (const sector of rotationData.sectors) {
-        // Update or insert sector data
-        this.db.run(`
-          INSERT OR REPLACE INTO SectorData (
-            id, sectorName, sectorCode, currentPrice, change, changePercent,
-            volume, marketCap, ytdReturn, updatedAt, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          uuidv4(),
-          sector.sectorName,
-          sector.sectorCode,
-          sector.price,
-          sector.change,
-          sector.changePercent,
-          sector.volume,
-          0, // marketCap (can calculate later)
-          sector.roc50, // Use 50-day ROC as YTD proxy
-          now,
-          now
-        ]);
-
-        // Insert into SectorPerformance for historical tracking
-        this.db.run(`
-          INSERT OR IGNORE INTO SectorPerformance (
-            id, sectorName, sectorCode, date, open, high, low, close,
-            volume, returnPct, relativeStrength, momentumScore, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          uuidv4(),
-          sector.sectorName,
-          sector.sectorCode,
-          now.split('T')[0],
-          sector.price, // Open (using close as proxy)
-          sector.price,
-          sector.price,
-          sector.price,
-          sector.volume,
-          sector.changePercent,
-          sector.relativeStrength,
-          sector.moneyFlow,
-          now
-        ]);
-      }
-
-      // Save rotation pairs
-      for (const pair of rotationData.rotationPairs) {
-        this.db.run(`
-          INSERT INTO SectorRotation (
-            id, fromSector, toSector, date, flowAmount, flowPercent, reason, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-          uuidv4(),
-          pair.fromSector,
-          pair.toSector,
-          now.split('T')[0],
-          pair.flowAmount,
-          pair.strengthDifference,
-          pair.confidence,
-          now
-        ]);
-      }
-
-      logger.info('[SectorRotation] Data saved to database successfully');
-    } catch (error) {
-      logger.error('[SectorRotation] Error saving data:', error);
-      // Don't throw - saving to DB is non-critical
-    }
+    // Store in cache for historical reference
+    const cacheKey = `rotation_history_${new Date().toISOString().split('T')[0]}`;
+    this.cache.set(cacheKey, { data: rotationData, timestamp: Date.now() });
+    logger.info('[SectorRotation] Data cached for historical tracking');
   }
 
   /**
-   * Get historical sector rotation data from database
+   * Get historical sector rotation data from cache
    * @param {number} days - Number of days to fetch
    * @returns {Array} Historical rotation data
    */
   async getHistoricalRotations(days = 30) {
-    try {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - days);
+    // Return cached data if available
+    const history = [];
+    const now = Date.now();
 
-      const rotations = this.db.all(`
-        SELECT * FROM SectorRotation
-        WHERE date >= ?
-        ORDER BY date DESC
-      `, [cutoffDate.toISOString().split('T')[0]]);
+    this.cache.forEach((value, key) => {
+      if (key.startsWith('rotation_history_') && (now - value.timestamp) < days * 24 * 60 * 60 * 1000) {
+        history.push(value.data);
+      }
+    });
 
-      return rotations;
-    } catch (error) {
-      logger.error('[SectorRotation] Error fetching historical rotations:', error);
-      return [];
-    }
+    return history;
   }
 
   /**

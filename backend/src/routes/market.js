@@ -14,6 +14,104 @@ const unifiedMarketData = new UnifiedMarketDataService();
 router.use(optionalAuth);
 
 /**
+ * GET /api/market/indices
+ * Get major market indices with real-time prices
+ */
+router.get('/indices', async (req, res) => {
+  try {
+    const indices = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI'];
+    const indexNames = {
+      'SPY': 'S&P 500',
+      'QQQ': 'NASDAQ 100',
+      'DIA': 'Dow Jones',
+      'IWM': 'Russell 2000',
+      'VTI': 'Total Market'
+    };
+
+    logger.info('[API] Fetching market indices via unified service');
+
+    const quotes = await Promise.all(
+      indices.map(async (symbol) => {
+        try {
+          const quote = await unifiedMarketData.fetchQuote(symbol);
+          return {
+            symbol,
+            name: indexNames[symbol],
+            price: quote?.price || 0,
+            change: quote?.change || 0,
+            changePercent: quote?.changePercent || 0,
+            previousClose: quote?.previousClose || 0,
+            high: quote?.high || 0,
+            low: quote?.low || 0,
+            provider: quote?.provider || 'unknown'
+          };
+        } catch (e) {
+          logger.warn(`Failed to fetch index ${symbol}:`, e.message);
+          return { symbol, name: indexNames[symbol], price: 0, change: 0, changePercent: 0 };
+        }
+      })
+    );
+
+    res.json(quotes);
+  } catch (error) {
+    logger.error('Market indices error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/market/sectors
+ * Get sector performance data
+ */
+router.get('/sectors', async (req, res) => {
+  try {
+    // Sector ETFs
+    const sectorETFs = {
+      'XLK': { name: 'Technology', color: '#3B82F6' },
+      'XLF': { name: 'Financial', color: '#10B981' },
+      'XLV': { name: 'Healthcare', color: '#EF4444' },
+      'XLE': { name: 'Energy', color: '#F59E0B' },
+      'XLY': { name: 'Consumer Discretionary', color: '#8B5CF6' },
+      'XLP': { name: 'Consumer Staples', color: '#EC4899' },
+      'XLI': { name: 'Industrial', color: '#6366F1' },
+      'XLB': { name: 'Materials', color: '#14B8A6' },
+      'XLU': { name: 'Utilities', color: '#F97316' },
+      'XLRE': { name: 'Real Estate', color: '#06B6D4' },
+      'XLC': { name: 'Communication', color: '#84CC16' }
+    };
+
+    logger.info('[API] Fetching sector performance via unified service');
+
+    const sectors = await Promise.all(
+      Object.entries(sectorETFs).map(async ([symbol, info]) => {
+        try {
+          const quote = await unifiedMarketData.fetchQuote(symbol);
+          return {
+            symbol,
+            name: info.name,
+            color: info.color,
+            price: quote?.price || 0,
+            change: quote?.change || 0,
+            changePercent: quote?.changePercent || 0,
+            provider: quote?.provider || 'unknown'
+          };
+        } catch (e) {
+          return { symbol, name: info.name, color: info.color, price: 0, change: 0, changePercent: 0 };
+        }
+      })
+    );
+
+    // Sort by change percent (best to worst)
+    sectors.sort((a, b) => b.changePercent - a.changePercent);
+
+    res.json(sectors);
+  } catch (error) {
+    logger.error('Sectors error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/market/quote/:symbol
  * Uses unified service with 4-provider fallback
  */

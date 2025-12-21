@@ -1,4 +1,4 @@
-const { prisma } = require('@prisma/client');
+const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 
 /**
