@@ -8,6 +8,8 @@ const quoteCache = new NodeCache({ stdTTL: 60, checkperiod: 30 });
 const profileCache = new NodeCache({ stdTTL: 3600, checkperiod: 120 });
 
 const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_API_KEY;
+const FMP_API_KEY = process.env.FMP_API_KEY;
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
 const POLYGON_KEY = process.env.POLYGON_API_KEY;
 
 // Rate limiting for Alpha Vantage (5 calls/min free tier)
@@ -32,7 +34,193 @@ async function rateLimitedFetch(url) {
  * Fetches real-time and historical stock data
  */
 class MarketDataService {
-  
+
+  /**
+   * Search for stocks/ETFs by query
+   * Uses FMP as primary, Alpha Vantage as fallback
+   */
+  static async searchStocks(query) {
+    if (!query || query.length < 1) {
+      return [];
+    }
+
+    logger.info(`[MarketDataService] Searching for: ${query}`);
+
+    // Try FMP first (best search API)
+    if (FMP_API_KEY) {
+      try {
+        const results = await this.searchWithFMP(query);
+        if (results && results.length > 0) {
+          logger.info(`[MarketDataService] FMP returned ${results.length} results`);
+          return results;
+        }
+      } catch (err) {
+        logger.warn(`[MarketDataService] FMP search failed: ${err.message}`);
+      }
+    }
+
+    // Try Finnhub as second option
+    if (FINNHUB_API_KEY) {
+      try {
+        const results = await this.searchWithFinnhub(query);
+        if (results && results.length > 0) {
+          logger.info(`[MarketDataService] Finnhub returned ${results.length} results`);
+          return results;
+        }
+      } catch (err) {
+        logger.warn(`[MarketDataService] Finnhub search failed: ${err.message}`);
+      }
+    }
+
+    // Try Alpha Vantage as fallback
+    if (ALPHA_VANTAGE_KEY) {
+      try {
+        const results = await this.searchWithAlphaVantage(query);
+        if (results && results.length > 0) {
+          logger.info(`[MarketDataService] Alpha Vantage returned ${results.length} results`);
+          return results;
+        }
+      } catch (err) {
+        logger.warn(`[MarketDataService] Alpha Vantage search failed: ${err.message}`);
+      }
+    }
+
+    // Final fallback: mock data for popular symbols
+    logger.warn('[MarketDataService] All search APIs failed, using mock data');
+    return this.getMockSearchResults(query);
+  }
+
+  /**
+   * Search using Financial Modeling Prep API
+   */
+  static async searchWithFMP(query) {
+    const url = `https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(query)}&limit=20&apikey=${FMP_API_KEY}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid FMP response');
+    }
+
+    return data.map(item => ({
+      symbol: item.symbol,
+      name: item.name,
+      type: item.stockExchange?.includes('ETF') ? 'ETF' : 'Stock',
+      exchange: item.stockExchange || item.exchangeShortName,
+      currency: item.currency || 'USD'
+    }));
+  }
+
+  /**
+   * Search using Finnhub API
+   */
+  static async searchWithFinnhub(query) {
+    const url = `https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${FINNHUB_API_KEY}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.result || !Array.isArray(data.result)) {
+      throw new Error('Invalid Finnhub response');
+    }
+
+    return data.result.slice(0, 20).map(item => ({
+      symbol: item.symbol,
+      name: item.description,
+      type: item.type === 'ETF' ? 'ETF' : 'Stock',
+      exchange: item.displaySymbol?.split(':')[0] || 'US',
+      currency: 'USD'
+    }));
+  }
+
+  /**
+   * Search using Alpha Vantage API
+   */
+  static async searchWithAlphaVantage(query) {
+    const url = `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(query)}&apikey=${ALPHA_VANTAGE_KEY}`;
+
+    const data = await rateLimitedFetch(url);
+
+    if (data['Note']) {
+      throw new Error('Alpha Vantage rate limit');
+    }
+
+    const matches = data.bestMatches;
+    if (!Array.isArray(matches)) {
+      throw new Error('Invalid Alpha Vantage response');
+    }
+
+    return matches.slice(0, 20).map(item => ({
+      symbol: item['1. symbol'],
+      name: item['2. name'],
+      type: item['3. type'] === 'ETF' ? 'ETF' : 'Stock',
+      exchange: item['4. region'],
+      currency: item['8. currency'] || 'USD'
+    }));
+  }
+
+  /**
+   * Mock search results for development/fallback
+   */
+  static getMockSearchResults(query) {
+    const allMockStocks = [
+      { symbol: 'AAPL', name: 'Apple Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'MSFT', name: 'Microsoft Corporation', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'GOOGL', name: 'Alphabet Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'NVDA', name: 'NVIDIA Corporation', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'META', name: 'Meta Platforms Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'TSLA', name: 'Tesla Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'JPM', name: 'JPMorgan Chase & Co.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'V', name: 'Visa Inc.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'JNJ', name: 'Johnson & Johnson', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'WMT', name: 'Walmart Inc.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'PG', name: 'Procter & Gamble Co.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'UNH', name: 'UnitedHealth Group Inc.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'HD', name: 'Home Depot Inc.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'MA', name: 'Mastercard Inc.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'DIS', name: 'Walt Disney Co.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'NFLX', name: 'Netflix Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'ADBE', name: 'Adobe Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'CRM', name: 'Salesforce Inc.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'AMD', name: 'Advanced Micro Devices Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'INTC', name: 'Intel Corporation', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'CSCO', name: 'Cisco Systems Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'ORCL', name: 'Oracle Corporation', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'IBM', name: 'IBM Corporation', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'BA', name: 'Boeing Co.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'GE', name: 'General Electric Co.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'XOM', name: 'Exxon Mobil Corporation', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'CVX', name: 'Chevron Corporation', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'KO', name: 'Coca-Cola Co.', type: 'Stock', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'PEP', name: 'PepsiCo Inc.', type: 'Stock', exchange: 'NASDAQ', currency: 'USD' },
+      // ETFs
+      { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'QQQ', name: 'Invesco QQQ Trust', type: 'ETF', exchange: 'NASDAQ', currency: 'USD' },
+      { symbol: 'IWM', name: 'iShares Russell 2000 ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'VOO', name: 'Vanguard S&P 500 ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'VEA', name: 'Vanguard FTSE Developed Markets ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'VWO', name: 'Vanguard FTSE Emerging Markets ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'BND', name: 'Vanguard Total Bond Market ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'AGG', name: 'iShares Core US Aggregate Bond ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'GLD', name: 'SPDR Gold Shares', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'SLV', name: 'iShares Silver Trust', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'VNQ', name: 'Vanguard Real Estate ETF', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'XLF', name: 'Financial Select Sector SPDR Fund', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'XLK', name: 'Technology Select Sector SPDR Fund', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'XLE', name: 'Energy Select Sector SPDR Fund', type: 'ETF', exchange: 'NYSE', currency: 'USD' },
+      { symbol: 'XLV', name: 'Health Care Select Sector SPDR Fund', type: 'ETF', exchange: 'NYSE', currency: 'USD' }
+    ];
+
+    const lowerQuery = query.toLowerCase();
+    return allMockStocks.filter(stock =>
+      stock.symbol.toLowerCase().includes(lowerQuery) ||
+      stock.name.toLowerCase().includes(lowerQuery)
+    ).slice(0, 20);
+  }
+
   /**
    * Get quote for single symbol
    */

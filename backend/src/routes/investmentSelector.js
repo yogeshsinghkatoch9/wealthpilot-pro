@@ -1,7 +1,8 @@
 const express = require('express');
-const { body, query, validationResult } = require('express-validator');
+const { body, query, param, validationResult } = require('express-validator');
 const { authenticate } = require('../middleware/auth');
 const MarketDataService = require('../services/marketData');
+const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -382,5 +383,443 @@ function calculateHistoricalReturns(historicalData, currentPrice) {
     year10: calcReturn(findPriceAt(tenYearsAgo))
   };
 }
+
+// ============== SAVED PORTFOLIO ENDPOINTS ==============
+
+/**
+ * POST /api/investment-selector/save
+ * Save a portfolio analysis
+ */
+router.post('/save', [
+  body('name').trim().notEmpty().isLength({ max: 100 }),
+  body('description').optional().trim().isLength({ max: 500 }),
+  body('totalInvestment').isFloat({ min: 0 }),
+  body('investments').isArray({ min: 1 }),
+  body('investments.*.symbol').trim().notEmpty(),
+  body('investments.*.allocation').isFloat({ min: 0, max: 100 }),
+  body('allocation').optional().isObject(),
+  body('metrics').optional().isObject(),
+  body('returns').optional().isObject()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const userId = req.user.id;
+    const { name, description, totalInvestment, investments, allocation, metrics, returns } = req.body;
+
+    logger.info(`[Investment Selector] Saving portfolio "${name}" for user ${userId}`);
+
+    // Check for duplicate name
+    const existing = await prisma.savedPortfolioAnalysis.findFirst({
+      where: {
+        userId,
+        name: { equals: name, mode: 'insensitive' }
+      }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'A portfolio with this name already exists' });
+    }
+
+    // Create saved portfolio
+    const savedPortfolio = await prisma.savedPortfolioAnalysis.create({
+      data: {
+        userId,
+        name,
+        description: description || null,
+        totalInvestment,
+        equityAllocation: parseFloat(allocation?.equity) || 0,
+        fixedIncomeAllocation: parseFloat(allocation?.fixedIncome) || 0,
+        otherAllocation: parseFloat(allocation?.other) || 0,
+        portfolioBeta: parseFloat(metrics?.beta) || null,
+        portfolioYield: parseFloat(metrics?.yield) || null,
+        projectedIncome: parseFloat(metrics?.totalProjectedIncome) || null,
+        return1Year: parseFloat(returns?.year1) || null,
+        return3Year: parseFloat(returns?.year3) || null,
+        return5Year: parseFloat(returns?.year5) || null,
+        return10Year: parseFloat(returns?.year10) || null,
+        investments: JSON.stringify(investments)
+      }
+    });
+
+    logger.info(`[Investment Selector] Portfolio saved with ID: ${savedPortfolio.id}`);
+
+    res.json({
+      success: true,
+      data: {
+        id: savedPortfolio.id,
+        name: savedPortfolio.name,
+        message: 'Portfolio saved successfully'
+      }
+    });
+  } catch (err) {
+    logger.error('Save portfolio error:', err);
+    res.status(500).json({ error: 'Failed to save portfolio' });
+  }
+});
+
+/**
+ * GET /api/investment-selector/saved
+ * Get all saved portfolio analyses for the current user
+ */
+router.get('/saved', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    logger.info(`[Investment Selector] Loading saved portfolios for user ${userId}`);
+
+    const savedPortfolios = await prisma.savedPortfolioAnalysis.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        totalInvestment: true,
+        equityAllocation: true,
+        fixedIncomeAllocation: true,
+        otherAllocation: true,
+        portfolioBeta: true,
+        portfolioYield: true,
+        projectedIncome: true,
+        return1Year: true,
+        return3Year: true,
+        return5Year: true,
+        return10Year: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    res.json({
+      success: true,
+      count: savedPortfolios.length,
+      data: savedPortfolios.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        totalInvestment: p.totalInvestment,
+        allocation: {
+          equity: p.equityAllocation,
+          fixedIncome: p.fixedIncomeAllocation,
+          other: p.otherAllocation
+        },
+        metrics: {
+          beta: p.portfolioBeta,
+          yield: p.portfolioYield,
+          projectedIncome: p.projectedIncome
+        },
+        returns: {
+          year1: p.return1Year,
+          year3: p.return3Year,
+          year5: p.return5Year,
+          year10: p.return10Year
+        },
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt
+      }))
+    });
+  } catch (err) {
+    logger.error('Load saved portfolios error:', err);
+    res.status(500).json({ error: 'Failed to load saved portfolios' });
+  }
+});
+
+/**
+ * GET /api/investment-selector/saved/:id
+ * Get a specific saved portfolio analysis with full investment details
+ */
+router.get('/saved/:id', [
+  param('id').isUUID()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const userId = req.user.id;
+    const portfolioId = req.params.id;
+
+    logger.info(`[Investment Selector] Loading portfolio ${portfolioId} for user ${userId}`);
+
+    const portfolio = await prisma.savedPortfolioAnalysis.findFirst({
+      where: {
+        id: portfolioId,
+        userId
+      }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    // Parse investments JSON
+    let investments = [];
+    try {
+      investments = JSON.parse(portfolio.investments);
+    } catch (e) {
+      logger.warn('Failed to parse investments JSON:', e.message);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: portfolio.id,
+        name: portfolio.name,
+        description: portfolio.description,
+        totalInvestment: portfolio.totalInvestment,
+        allocation: {
+          equity: portfolio.equityAllocation,
+          fixedIncome: portfolio.fixedIncomeAllocation,
+          other: portfolio.otherAllocation
+        },
+        metrics: {
+          beta: portfolio.portfolioBeta,
+          yield: portfolio.portfolioYield,
+          projectedIncome: portfolio.projectedIncome
+        },
+        returns: {
+          year1: portfolio.return1Year,
+          year3: portfolio.return3Year,
+          year5: portfolio.return5Year,
+          year10: portfolio.return10Year
+        },
+        investments,
+        createdAt: portfolio.createdAt,
+        updatedAt: portfolio.updatedAt
+      }
+    });
+  } catch (err) {
+    logger.error('Load portfolio error:', err);
+    res.status(500).json({ error: 'Failed to load portfolio' });
+  }
+});
+
+/**
+ * PUT /api/investment-selector/saved/:id
+ * Update a saved portfolio analysis
+ */
+router.put('/saved/:id', [
+  param('id').isUUID(),
+  body('name').optional().trim().isLength({ min: 1, max: 100 }),
+  body('description').optional().trim().isLength({ max: 500 }),
+  body('totalInvestment').optional().isFloat({ min: 0 }),
+  body('investments').optional().isArray({ min: 1 })
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const userId = req.user.id;
+    const portfolioId = req.params.id;
+    const { name, description, totalInvestment, investments, allocation, metrics, returns } = req.body;
+
+    logger.info(`[Investment Selector] Updating portfolio ${portfolioId} for user ${userId}`);
+
+    // Check ownership
+    const existing = await prisma.savedPortfolioAnalysis.findFirst({
+      where: {
+        id: portfolioId,
+        userId
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    // Check for duplicate name (if name changed)
+    if (name && name !== existing.name) {
+      const duplicate = await prisma.savedPortfolioAnalysis.findFirst({
+        where: {
+          userId,
+          name: { equals: name, mode: 'insensitive' },
+          id: { not: portfolioId }
+        }
+      });
+
+      if (duplicate) {
+        return res.status(400).json({ error: 'A portfolio with this name already exists' });
+      }
+    }
+
+    // Build update data
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (totalInvestment !== undefined) updateData.totalInvestment = totalInvestment;
+    if (investments) updateData.investments = JSON.stringify(investments);
+    if (allocation) {
+      updateData.equityAllocation = parseFloat(allocation.equity) || 0;
+      updateData.fixedIncomeAllocation = parseFloat(allocation.fixedIncome) || 0;
+      updateData.otherAllocation = parseFloat(allocation.other) || 0;
+    }
+    if (metrics) {
+      updateData.portfolioBeta = parseFloat(metrics.beta) || null;
+      updateData.portfolioYield = parseFloat(metrics.yield) || null;
+      updateData.projectedIncome = parseFloat(metrics.totalProjectedIncome) || null;
+    }
+    if (returns) {
+      updateData.return1Year = parseFloat(returns.year1) || null;
+      updateData.return3Year = parseFloat(returns.year3) || null;
+      updateData.return5Year = parseFloat(returns.year5) || null;
+      updateData.return10Year = parseFloat(returns.year10) || null;
+    }
+
+    const updated = await prisma.savedPortfolioAnalysis.update({
+      where: { id: portfolioId },
+      data: updateData
+    });
+
+    res.json({
+      success: true,
+      data: {
+        id: updated.id,
+        name: updated.name,
+        message: 'Portfolio updated successfully'
+      }
+    });
+  } catch (err) {
+    logger.error('Update portfolio error:', err);
+    res.status(500).json({ error: 'Failed to update portfolio' });
+  }
+});
+
+/**
+ * DELETE /api/investment-selector/saved/:id
+ * Delete a saved portfolio analysis
+ */
+router.delete('/saved/:id', [
+  param('id').isUUID()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const userId = req.user.id;
+    const portfolioId = req.params.id;
+
+    logger.info(`[Investment Selector] Deleting portfolio ${portfolioId} for user ${userId}`);
+
+    // Check ownership
+    const existing = await prisma.savedPortfolioAnalysis.findFirst({
+      where: {
+        id: portfolioId,
+        userId
+      }
+    });
+
+    if (!existing) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    await prisma.savedPortfolioAnalysis.delete({
+      where: { id: portfolioId }
+    });
+
+    res.json({
+      success: true,
+      message: 'Portfolio deleted successfully'
+    });
+  } catch (err) {
+    logger.error('Delete portfolio error:', err);
+    res.status(500).json({ error: 'Failed to delete portfolio' });
+  }
+});
+
+/**
+ * POST /api/investment-selector/saved/:id/convert
+ * Convert a saved analysis to an actual portfolio with holdings
+ */
+router.post('/saved/:id/convert', [
+  param('id').isUUID()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const userId = req.user.id;
+    const portfolioId = req.params.id;
+
+    logger.info(`[Investment Selector] Converting saved analysis ${portfolioId} to real portfolio`);
+
+    // Get the saved analysis
+    const savedAnalysis = await prisma.savedPortfolioAnalysis.findFirst({
+      where: {
+        id: portfolioId,
+        userId
+      }
+    });
+
+    if (!savedAnalysis) {
+      return res.status(404).json({ error: 'Saved analysis not found' });
+    }
+
+    // Parse investments
+    let investments = [];
+    try {
+      investments = JSON.parse(savedAnalysis.investments);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid investments data' });
+    }
+
+    // Create the real portfolio
+    const portfolio = await prisma.portfolio.create({
+      data: {
+        userId,
+        name: savedAnalysis.name,
+        description: savedAnalysis.description || `Converted from Investment Selector analysis`,
+        currency: 'USD',
+        benchmark: 'SPY',
+        cashBalance: 0
+      }
+    });
+
+    // Create holdings for each investment
+    const holdings = [];
+    for (const inv of investments) {
+      const shares = parseFloat(inv.shares) || 0;
+      const price = parseFloat(inv.currentPrice) || 0;
+
+      if (shares > 0) {
+        const holding = await prisma.holding.create({
+          data: {
+            portfolioId: portfolio.id,
+            symbol: inv.symbol,
+            shares,
+            avgCostBasis: price,
+            sector: inv.sector || null,
+            assetType: 'stock'
+          }
+        });
+        holdings.push(holding);
+      }
+    }
+
+    logger.info(`[Investment Selector] Created portfolio ${portfolio.id} with ${holdings.length} holdings`);
+
+    res.json({
+      success: true,
+      data: {
+        portfolioId: portfolio.id,
+        portfolioName: portfolio.name,
+        holdingsCount: holdings.length,
+        message: 'Analysis converted to portfolio successfully'
+      }
+    });
+  } catch (err) {
+    logger.error('Convert to portfolio error:', err);
+    res.status(500).json({ error: 'Failed to convert to portfolio' });
+  }
+});
 
 module.exports = router;

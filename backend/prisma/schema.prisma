@@ -669,3 +669,39 @@ model SectorRotation {
   @@index([fromSector])
   @@index([toSector])
 }
+
+// ============== INVESTMENT SELECTOR ==============
+
+model SavedPortfolioAnalysis {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  name              String
+  description       String?
+  totalInvestment   Float     @map("total_investment")
+
+  // Allocation breakdown
+  equityAllocation    Float   @default(0) @map("equity_allocation")
+  fixedIncomeAllocation Float @default(0) @map("fixed_income_allocation")
+  otherAllocation     Float   @default(0) @map("other_allocation")
+
+  // Portfolio metrics
+  portfolioBeta       Float?  @map("portfolio_beta")
+  portfolioYield      Float?  @map("portfolio_yield")
+  projectedIncome     Float?  @map("projected_income")
+
+  // Historical returns
+  return1Year         Float?  @map("return_1_year")
+  return3Year         Float?  @map("return_3_year")
+  return5Year         Float?  @map("return_5_year")
+  return10Year        Float?  @map("return_10_year")
+
+  // Investments stored as JSON
+  investments         String  // JSON array of investments
+
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([name])
+  @@map("saved_portfolio_analyses")
+}
