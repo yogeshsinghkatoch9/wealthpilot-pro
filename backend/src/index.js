@@ -177,7 +177,7 @@ app.use((req, res, next) => {
 
 // Health check - must work even before DB connection
 let dbConnected = false;
-const BUILD_VERSION = 'v30.0.0-all-routes';
+const BUILD_VERSION = 'v31.0.0-live-market-data';
 const BUILD_TIME = new Date().toISOString(); // Captured at server start
 app.get('/health', (req, res) => {
   res.json({

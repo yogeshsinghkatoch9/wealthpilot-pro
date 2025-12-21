@@ -228,18 +228,21 @@ router.get('/analyze/:symbol', async (req, res) => {
       });
     }
 
+    // Extract holdings array from response object
+    const holdingsArray = Array.isArray(holdings) ? holdings : (holdings.holdings || []);
+
     res.json({
       success: true,
       data: {
         profile,
-        holdings: holdings.slice(0, 25), // Top 25 holdings
+        holdings: holdingsArray.slice(0, 25), // Top 25 holdings
         sectors,
         analytics: {
-          topHolding: holdings[0],
-          top5Weight: holdings.slice(0, 5).reduce((sum, h) => sum + h.weight, 0).toFixed(2),
-          top10Weight: holdings.slice(0, 10).reduce((sum, h) => sum + h.weight, 0).toFixed(2),
-          diversificationScore: calculateDiversificationScore(holdings),
-          dominantSector: sectors[0]
+          topHolding: holdingsArray[0] || null,
+          top5Weight: holdingsArray.slice(0, 5).reduce((sum, h) => sum + (h.weight || 0), 0).toFixed(2),
+          top10Weight: holdingsArray.slice(0, 10).reduce((sum, h) => sum + (h.weight || 0), 0).toFixed(2),
+          diversificationScore: calculateDiversificationScore(holdingsArray),
+          dominantSector: sectors[0] || null
         }
       }
     });
