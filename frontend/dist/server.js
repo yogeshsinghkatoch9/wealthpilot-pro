@@ -608,6 +608,12 @@ app.get('/transactions', requireAuth, async (req, res) => {
         fmt
     });
 });
+// Investment Selector & Portfolio Builder Tool
+app.get('/investment-selector', requireAuth, (req, res) => {
+    res.render('pages/investment-selector', {
+        pageTitle: 'Investment Selector'
+    });
+});
 app.get('/watchlist', requireAuth, async (req, res) => {
     const token = res.locals.token;
     // Fetch enhanced watchlist with real-time data

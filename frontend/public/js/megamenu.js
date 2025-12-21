@@ -317,13 +317,15 @@ class MegaMenu {
     return `
       <div class="megamenu-grid megamenu-grid-4">
         <div class="megamenu-column">
-          <h3 class="megamenu-column-title">Trading</h3>
+          <h3 class="megamenu-column-title">Portfolio Builder</h3>
           <ul class="megamenu-links">
+            <li><a href="/investment-selector" class="megamenu-link megamenu-link-featured">
+              <span class="megamenu-link-icon">★</span> Investment Selector
+            </a></li>
             <li><a href="/scanner" class="megamenu-link">Stock Scanner</a></li>
+            <li><a href="/etf-analyzer" class="megamenu-link">ETF Analyzer</a></li>
             <li><a href="/paper-trading" class="megamenu-link">Paper Trading</a></li>
-            <li><a href="/copy-trading" class="megamenu-link">Copy Trading</a></li>
             <li><a href="/backtest" class="megamenu-link">Backtest</a></li>
-            <li><a href="/optimizer" class="megamenu-link">Optimizer</a></li>
           </ul>
         </div>
         <div class="megamenu-column">

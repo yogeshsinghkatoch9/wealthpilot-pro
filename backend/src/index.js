@@ -20,6 +20,20 @@ const marketRoutes = require('./routes/market');
 const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 
+// Investment selector routes with error handling
+let investmentSelectorRoutes;
+try {
+  investmentSelectorRoutes = require('./routes/investmentSelector');
+  console.log('[INDEX] Investment selector routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load investment selector routes:', error.message);
+  const expressRouter = require('express').Router;
+  investmentSelectorRoutes = expressRouter();
+  investmentSelectorRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Investment selector routes failed to load' });
+  });
+}
+
 // Sector rotation routes with error handling
 let sectorRotationRoutes;
 try {
@@ -225,6 +239,7 @@ app.use('/api/market', marketRoutes);
 app.use('/api/market-breadth', marketBreadthRoutes); // Market breadth indicators
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dividends', dividendRoutes);
+app.use('/api/investment-selector', investmentSelectorRoutes); // Investment selector tool
 app.use('/api/portfolio-upload', portfolioUploadRoutes); // Portfolio file upload
 app.use('/api/sector-rotation', sectorRotationRoutes); // Sector rotation analysis
 app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
