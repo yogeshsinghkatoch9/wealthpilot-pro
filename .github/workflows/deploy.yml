@@ -19,9 +19,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script_stop: true
           command_timeout: 30m
           script: |
+            set -e
             cd /app
 
             # Clone or pull latest code
@@ -34,99 +34,72 @@ jobs:
               cd wealthpilot-pro
             fi
 
-            # Create .env file with all required variables
-            cat > .env << 'ENVEOF'
+            # Create .env file
+            cat > .env << EOF
             NODE_ENV=production
             PORT=4000
-
-            # Database - connects to local PostgreSQL container
             POSTGRES_USER=wealthpilot
-            POSTGRES_PASSWORD=WealthPilot2024SecurePass!
+            POSTGRES_PASSWORD=WealthPilot2024SecurePass
             POSTGRES_DB=wealthpilot
-            DATABASE_URL=postgresql://wealthpilot:WealthPilot2024SecurePass!@postgres:5432/wealthpilot?schema=public
-
-            # Redis
+            DATABASE_URL=postgresql://wealthpilot:WealthPilot2024SecurePass@postgres:5432/wealthpilot?schema=public
             REDIS_URL=redis://redis:6379
-
-            # JWT
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             JWT_EXPIRES_IN=7d
-
-            # API Keys
             ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
             FMP_API_KEY=${{ secrets.FMP_API_KEY }}
             POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }}
-            NASDAQ_API_KEY=${{ secrets.NASDAQ_API_KEY }}
-            INTRINIO_API_KEY=${{ secrets.INTRINIO_API_KEY }}
-            STOCKDATA_API_KEY=${{ secrets.STOCKDATA_API_KEY }}
             FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
-            IEX_API_KEY=${{ secrets.IEX_API_KEY }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            MARKETAUX_API_KEY=${{ secrets.MARKETAUX_API_KEY }}
-
-            # URLs
             FRONTEND_URL=http://${{ secrets.EC2_HOST }}:3000
             API_URL=http://${{ secrets.EC2_HOST }}:4000
             CORS_ORIGIN=http://${{ secrets.EC2_HOST }}:3000
-            ENVEOF
+            EOF
 
-            # Create docker-compose.aws.yml with full stack
-            cat > docker-compose.aws.yml << 'COMPOSEEOF'
+            # Create simplified docker-compose for AWS
+            cat > docker-compose.aws.yml << 'EOF'
             version: '3.8'
-
             services:
-              # PostgreSQL Database
               postgres:
                 image: postgres:16-alpine
                 container_name: wealthpilot-postgres
                 restart: always
                 environment:
-                  POSTGRES_USER: wealthpilot
-                  POSTGRES_PASSWORD: WealthPilot2024SecurePass!
-                  POSTGRES_DB: wealthpilot
-                  PGDATA: /var/lib/postgresql/data/pgdata
+                  - POSTGRES_USER=wealthpilot
+                  - POSTGRES_PASSWORD=WealthPilot2024SecurePass
+                  - POSTGRES_DB=wealthpilot
                 volumes:
-                  - postgres_data:/var/lib/postgresql/data
-                ports:
-                  - "5432:5432"
+                  - pgdata:/var/lib/postgresql/data
                 healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U wealthpilot -d wealthpilot"]
-                  interval: 10s
+                  test: ["CMD-SHELL", "pg_isready -U wealthpilot"]
+                  interval: 5s
                   timeout: 5s
-                  retries: 5
+                  retries: 10
                 networks:
-                  - wealthpilot-network
+                  - app-network
 
-              # Redis Cache
               redis:
                 image: redis:7-alpine
                 container_name: wealthpilot-redis
                 restart: always
-                command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
                 volumes:
-                  - redis_data:/data
-                ports:
-                  - "6379:6379"
+                  - redisdata:/data
                 healthcheck:
                   test: ["CMD", "redis-cli", "ping"]
-                  interval: 10s
+                  interval: 5s
                   timeout: 5s
-                  retries: 5
+                  retries: 10
                 networks:
-                  - wealthpilot-network
+                  - app-network
 
-              # Backend API
               backend:
                 build:
                   context: ./backend
                   dockerfile: Dockerfile.prod
                 container_name: wealthpilot-backend
                 restart: always
-                env_file:
-                  - .env
+                env_file: .env
                 environment:
-                  - PORT=4000
-                  - DATABASE_URL=postgresql://wealthpilot:WealthPilot2024SecurePass!@postgres:5432/wealthpilot?schema=public
+                  - DATABASE_URL=postgresql://wealthpilot:WealthPilot2024SecurePass@postgres:5432/wealthpilot?schema=public
                   - REDIS_URL=redis://redis:6379
                 ports:
                   - "4000:4000"
@@ -135,16 +108,9 @@ jobs:
                     condition: service_healthy
                   redis:
                     condition: service_healthy
-                healthcheck:
-                  test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 60s
                 networks:
-                  - wealthpilot-network
+                  - app-network
 
-              # Frontend
               frontend:
                 build:
                   context: ./frontend
@@ -160,45 +126,54 @@ jobs:
                 depends_on:
                   - backend
                 networks:
-                  - wealthpilot-network
+                  - app-network
 
             networks:
-              wealthpilot-network:
+              app-network:
                 driver: bridge
 
             volumes:
-              postgres_data:
-              redis_data:
-            COMPOSEEOF
+              pgdata:
+              redisdata:
+            EOF
 
-            # Stop existing containers (but preserve data volumes)
-            docker-compose -f docker-compose.aws.yml down || true
+            echo "Starting deployment..."
 
-            # Remove old backend/frontend images to force rebuild
-            docker rmi wealthpilot-pro-backend wealthpilot-pro-frontend 2>/dev/null || true
+            # Start postgres and redis first (quick to start)
+            docker-compose -f docker-compose.aws.yml up -d postgres redis
 
-            # Build and start all containers
-            docker-compose -f docker-compose.aws.yml up -d --build
+            echo "Waiting for database..."
+            sleep 15
 
-            # Wait for PostgreSQL to be fully ready
-            echo "Waiting for PostgreSQL to be ready..."
-            sleep 20
-
-            # Check if postgres is running
+            # Check if postgres is healthy
             docker-compose -f docker-compose.aws.yml ps postgres
 
-            # Run database migrations
-            echo "Running database migrations..."
-            docker exec wealthpilot-backend npx prisma migrate deploy 2>&1 || echo "Migration deploy done"
-            docker exec wealthpilot-backend npx prisma db push --accept-data-loss 2>&1 || echo "DB push done"
-            docker exec wealthpilot-backend npx prisma generate 2>&1 || echo "Generate done"
+            # Build backend (this takes time)
+            echo "Building backend..."
+            docker-compose -f docker-compose.aws.yml build --no-cache backend
 
-            # Show final status
+            # Build frontend
+            echo "Building frontend..."
+            docker-compose -f docker-compose.aws.yml build --no-cache frontend
+
+            # Start backend
+            echo "Starting backend..."
+            docker-compose -f docker-compose.aws.yml up -d backend
+
+            # Wait for backend to be ready
+            sleep 30
+
+            # Run migrations
+            echo "Running migrations..."
+            docker exec wealthpilot-backend npx prisma db push --accept-data-loss || echo "Prisma push done"
+
+            # Start frontend
+            echo "Starting frontend..."
+            docker-compose -f docker-compose.aws.yml up -d frontend
+
+            # Final status
             echo ""
             echo "=== Container Status ==="
             docker-compose -f docker-compose.aws.yml ps
-
             echo ""
-            echo "=== Deployment Complete ==="
-            echo "Frontend: http://${{ secrets.EC2_HOST }}:3000"
-            echo "Backend:  http://${{ secrets.EC2_HOST }}:4000"
+            echo "Deployment complete!"
