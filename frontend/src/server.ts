@@ -2681,8 +2681,19 @@ app.post('/api/theme', (req, res) => {
 });
 
 // Proxy for frontend API calls
+// NOTE: File uploads are handled by http-proxy-middleware at line 30
+// This fallback handler is for JSON-based API calls only
 app.all('/api/*', async (req, res) => {
   const endpoint = req.path.replace('/api', '');
+
+  // Skip multipart/form-data requests - they're handled by the proxy middleware
+  const contentType = req.get('content-type') || '';
+  if (contentType.includes('multipart/form-data')) {
+    // This shouldn't happen if proxy middleware is working, but just in case
+    console.log(`[API Fallback] Skipping multipart request for ${endpoint} - should be handled by proxy`);
+    return res.status(500).json({ error: 'File upload proxy error - multipart not supported in fallback handler' });
+  }
+
   const queryString = req.originalUrl.split('?')[1];
   const fullUrl = queryString ? `${API_URL}${endpoint}?${queryString}` : `${API_URL}${endpoint}`;
   const token = req.cookies.token;
