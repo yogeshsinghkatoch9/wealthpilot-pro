@@ -73,7 +73,7 @@ class SharingService {
       // Track share event
       await this.logShareEvent(portfolioId, 'link_created', { isPublic, expiresAt });
 
-      const baseUrl = process.env.FRONTEND_URL || 'https://wealthpilot-pro.vercel.app';
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const shareUrl = `${baseUrl}/shared/${shareToken}`;
 
       return {
@@ -109,7 +109,7 @@ class SharingService {
       }
 
       const share = result.rows[0];
-      const baseUrl = process.env.FRONTEND_URL || 'https://wealthpilot-pro.vercel.app';
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       return {
         shareToken: share.share_token,

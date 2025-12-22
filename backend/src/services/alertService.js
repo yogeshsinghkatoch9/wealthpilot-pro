@@ -388,11 +388,11 @@ class AlertService {
               <p style="margin: 5px 0;"><strong>Message:</strong> ${message}</p>
             </div>
 
-            <p><a href="https://wealthpilot-pro.vercel.app/alerts" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Alerts</a></p>
+            <p><a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/alerts" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Alerts</a></p>
 
             <p style="color: #6c757d; font-size: 12px; margin-top: 20px;">
               You received this email because you have alert notifications enabled.
-              <a href="https://wealthpilot-pro.vercel.app/settings">Manage notification settings</a>
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/settings">Manage notification settings</a>
             </p>
           </div>
         </div>
@@ -404,7 +404,7 @@ class AlertService {
         to: user.email,
         subject: `🔔 Alert Triggered: ${alert.symbol ? alert.symbol + ' - ' : ''}${alertTypeDisplay}`,
         html: emailHtml,
-        text: `Alert Triggered\n\nType: ${alertTypeDisplay}\n${alert.symbol ? 'Symbol: ' + alert.symbol + '\n' : ''}${currentValue ? 'Current Value: $' + parseFloat(currentValue).toFixed(2) + '\n' : ''}Message: ${message}\n\nView your alerts at https://wealthpilot-pro.vercel.app/alerts`
+        text: `Alert Triggered\n\nType: ${alertTypeDisplay}\n${alert.symbol ? 'Symbol: ' + alert.symbol + '\n' : ''}${currentValue ? 'Current Value: $' + parseFloat(currentValue).toFixed(2) + '\n' : ''}Message: ${message}\n\nView your alerts at ${process.env.FRONTEND_URL || 'http://localhost:3000'}/alerts`
       });
 
       logger.info(`Email notification queued for alert ${alert.id} to ${user.email}`);
