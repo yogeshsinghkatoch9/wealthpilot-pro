@@ -429,7 +429,7 @@ async function updateHoldingOnBuySimple(portfolioId, symbol, shares, price) {
 
   if (existing) {
     const existingShares = Number(existing.shares);
-    const existingCost = Number(existing.avgCostBasis || existing.avg_cost_basis || 0);
+    const existingCost = Number(existing.avgCostBasis) || 0;
     const totalShares = existingShares + shares;
     const newAvgCost = ((existingShares * existingCost) + (shares * price)) / totalShares;
 
@@ -437,8 +437,7 @@ async function updateHoldingOnBuySimple(portfolioId, symbol, shares, price) {
       where: { id: existing.id },
       data: {
         shares: totalShares,
-        avgCostBasis: newAvgCost,
-        avg_cost_basis: newAvgCost
+        avgCostBasis: newAvgCost
       }
     });
   } else {
@@ -446,13 +445,9 @@ async function updateHoldingOnBuySimple(portfolioId, symbol, shares, price) {
       data: {
         portfolioId,
         symbol,
-        name: symbol,
         shares,
         avgCostBasis: price,
-        avg_cost_basis: price,
-        sector: null,
-        assetType: 'stock',
-        asset_type: 'stock'
+        assetType: 'stock'
       }
     });
   }
