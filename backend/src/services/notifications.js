@@ -4,24 +4,26 @@
  */
 
 const emailService = require('./email');
-
+const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
+
 class NotificationService {
   constructor() {
-    this.db = null;
     this.queue = [];
     this.processing = false;
     this.batchSize = 10;
     this.batchInterval = 5000; // 5 seconds
+    this.initialized = false;
   }
 
   /**
-   * Initialize notification service with database
+   * Initialize notification service
    */
-  initialize(database) {
-    this.db = database;
+  initialize() {
+    if (this.initialized) return;
     this.startQueueProcessor();
-    logger.debug('🔔 Notification service initialized');
+    this.initialized = true;
+    logger.debug('Notification service initialized');
   }
 
   /**
@@ -52,12 +54,30 @@ class NotificationService {
       }
     };
 
-    if (!this.db) return defaultPrefs;
-
     try {
-      const user = await this.db.get('SELECT notification_preferences FROM users WHERE id = ?', [userId]);
-      if (user?.notification_preferences) {
-        return { ...defaultPrefs, ...JSON.parse(user.notification_preferences) };
+      const settings = await prisma.userSettings.findUnique({
+        where: { userId }
+      });
+
+      if (settings) {
+        return {
+          email: {
+            enabled: settings.emailNotifications,
+            alerts: settings.priceAlerts,
+            transactions: true,
+            reports: settings.weeklyReport || settings.monthlyReport,
+            weeklyDigest: settings.weeklyReport,
+            security: true,
+            dividends: settings.dividendAlerts,
+            marketing: false
+          },
+          push: {
+            enabled: settings.pushNotifications,
+            alerts: settings.alertsEnabled,
+            transactions: false
+          },
+          quietHours: defaultPrefs.quietHours
+        };
       }
     } catch (error) {
       logger.error('Error getting notification preferences:', error);
@@ -70,13 +90,27 @@ class NotificationService {
    * Update user notification preferences
    */
   async updateUserPreferences(userId, preferences) {
-    if (!this.db) return false;
-
     try {
-      await this.db.run(
-        'UPDATE users SET notification_preferences = ? WHERE id = ?',
-        [JSON.stringify(preferences), userId]
-      );
+      await prisma.userSettings.upsert({
+        where: { userId },
+        update: {
+          emailNotifications: preferences.email?.enabled ?? true,
+          pushNotifications: preferences.push?.enabled ?? false,
+          alertsEnabled: preferences.push?.alerts ?? true,
+          priceAlerts: preferences.email?.alerts ?? true,
+          dividendAlerts: preferences.email?.dividends ?? true,
+          weeklyReport: preferences.email?.weeklyDigest ?? true
+        },
+        create: {
+          userId,
+          emailNotifications: preferences.email?.enabled ?? true,
+          pushNotifications: preferences.push?.enabled ?? false,
+          alertsEnabled: preferences.push?.alerts ?? true,
+          priceAlerts: preferences.email?.alerts ?? true,
+          dividendAlerts: preferences.email?.dividends ?? true,
+          weeklyReport: preferences.email?.weeklyDigest ?? true
+        }
+      });
       return true;
     } catch (error) {
       logger.error('Error updating notification preferences:', error);
@@ -182,9 +216,20 @@ class NotificationService {
    * Get user by ID
    */
   async getUser(userId) {
-    if (!this.db) return null;
     try {
-      return await this.db.get('SELECT * FROM users WHERE id = ?', [userId]);
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true
+        }
+      });
+      if (user) {
+        user.name = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email.split('@')[0];
+      }
+      return user;
     } catch (error) {
       logger.error('Error getting user:', error);
       return null;
@@ -235,19 +280,20 @@ class NotificationService {
    * Log notification to database
    */
   async logNotification(notification, status, error = null) {
-    if (!this.db) return;
+    // Only log successful sends to the Notification model
+    if (status !== 'sent') return;
 
     try {
-      await this.db.run(`
-        INSERT INTO notification_logs (user_id, type, status, error, data, created_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
-      `, [
-        notification.userId,
-        notification.type,
-        status,
-        error,
-        JSON.stringify(notification.data)
-      ]);
+      await prisma.notification.create({
+        data: {
+          userId: notification.userId,
+          type: notification.type,
+          title: this.getSubjectForType(notification.type, notification.data),
+          message: notification.data?.message || JSON.stringify(notification.data),
+          data: JSON.stringify(notification.data),
+          isRead: false
+        }
+      });
     } catch (err) {
       logger.error('Error logging notification:', err);
     }
@@ -521,15 +567,13 @@ class NotificationService {
    * Get notification history for user
    */
   async getNotificationHistory(userId, limit = 50) {
-    if (!this.db) return [];
-
     try {
-      return await this.db.all(`
-        SELECT * FROM notification_logs 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC 
-        LIMIT ?
-      `, [userId, limit]);
+      const notifications = await prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: limit
+      });
+      return notifications;
     } catch (error) {
       logger.error('Error getting notification history:', error);
       return [];
@@ -540,14 +584,14 @@ class NotificationService {
    * Mark notification as read
    */
   async markAsRead(notificationId, userId) {
-    if (!this.db) return false;
-
     try {
-      await this.db.run(`
-        UPDATE notification_logs 
-        SET read_at = datetime('now') 
-        WHERE id = ? AND user_id = ?
-      `, [notificationId, userId]);
+      await prisma.notification.updateMany({
+        where: {
+          id: notificationId,
+          userId
+        },
+        data: { isRead: true }
+      });
       return true;
     } catch (error) {
       logger.error('Error marking notification as read:', error);
@@ -559,16 +603,35 @@ class NotificationService {
    * Get unread notification count
    */
   async getUnreadCount(userId) {
-    if (!this.db) return 0;
-
     try {
-      const result = await this.db.get(`
-        SELECT COUNT(*) as count FROM notification_logs 
-        WHERE user_id = ? AND read_at IS NULL AND status = 'sent'
-      `, [userId]);
-      return result?.count || 0;
+      const count = await prisma.notification.count({
+        where: {
+          userId,
+          isRead: false
+        }
+      });
+      return count;
     } catch (error) {
       logger.error('Error getting unread count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Mark all notifications as read for user
+   */
+  async markAllAsRead(userId) {
+    try {
+      const result = await prisma.notification.updateMany({
+        where: {
+          userId,
+          isRead: false
+        },
+        data: { isRead: true }
+      });
+      return result.count;
+    } catch (error) {
+      logger.error('Error marking all as read:', error);
       return 0;
     }
   }

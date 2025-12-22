@@ -100,6 +100,65 @@ router.get('/', [
 });
 
 /**
+ * GET /api/transactions/all
+ * Get all transactions for user with stats (for transactions page)
+ */
+router.get('/all', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { portfolioId, symbol, type, limit = 100 } = req.query;
+
+    const where = { userId };
+    if (portfolioId) where.portfolioId = portfolioId;
+    if (symbol) where.symbol = symbol.toUpperCase();
+    if (type) where.type = type;
+
+    // Get transactions
+    const transactions = await prisma.transaction.findMany({
+      where,
+      include: {
+        portfolio: {
+          select: { id: true, name: true }
+        }
+      },
+      orderBy: { executedAt: 'desc' },
+      take: parseInt(limit)
+    });
+
+    // Calculate stats for this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const thisMonthTxs = transactions.filter(t => new Date(t.executedAt) >= startOfMonth);
+
+    const stats = {
+      thisMonthCount: thisMonthTxs.length,
+      buyTotal: transactions.filter(t => t.type === 'buy').reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      sellTotal: transactions.filter(t => t.type === 'sell').reduce((sum, t) => sum + Math.abs(t.amount), 0),
+      dividendTotal: transactions.filter(t => t.type === 'dividend').reduce((sum, t) => sum + t.amount, 0),
+      totalCount: transactions.length
+    };
+
+    res.json({
+      success: true,
+      transactions: transactions.map(t => ({
+        ...t,
+        shares: t.shares ? Number(t.shares) : null,
+        price: t.price ? Number(t.price) : null,
+        amount: Number(t.amount),
+        fees: Number(t.fees),
+        portfolioName: t.portfolio?.name || 'Unknown'
+      })),
+      stats
+    });
+  } catch (err) {
+    logger.error('Get all transactions error:', err);
+    res.status(500).json({ success: false, error: 'Failed to get transactions' });
+  }
+});
+
+/**
  * POST /api/transactions
  * Create new transaction
  */

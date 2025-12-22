@@ -38,6 +38,7 @@ model User {
   sessions      Session[]
   apiKeys       ApiKey[]
   settings      UserSettings?
+  notifications Notification[]
 
   @@index([email])
   @@map("users")
@@ -246,6 +247,26 @@ model Alert {
   @@index([symbol])
   @@index([isActive])
   @@map("alerts")
+}
+
+// ============== NOTIFICATIONS ==============
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   // alert, dividend, earnings, price_target, system
+  title     String
+  message   String
+  data      String?  // JSON string for additional data
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 // ============== MARKET DATA CACHE ==============

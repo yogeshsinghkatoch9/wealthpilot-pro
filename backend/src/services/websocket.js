@@ -5,7 +5,7 @@
 
 const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
-const Database = require('../db/database');
+const { prisma } = require('../db/simpleDb');
 
 const logger = require('../utils/logger');
 // JWT Secret - must be set in production
@@ -92,33 +92,41 @@ class WebSocketService {
     }
   }
 
-  handleAuth(ws, token) {
+  async handleAuth(ws, token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
       ws.userId = decoded.userId;
-      
+
       // Add to clients map
       if (!this.clients.has(ws.userId)) {
         this.clients.set(ws.userId, new Set());
       }
       this.clients.get(ws.userId).add(ws);
-      
-      // Get user's holdings and auto-subscribe
-      const holdings = Database.getHoldingsByUser(ws.userId);
-      const symbols = [...new Set(holdings.map(h => h.symbol))];
-      
+
+      // Get user's holdings and auto-subscribe using Prisma
+      const holdings = await prisma.holding.findMany({
+        where: {
+          portfolio: { userId: ws.userId }
+        },
+        select: { symbol: true },
+        distinct: ['symbol']
+      });
+
+      const symbols = holdings.map(h => h.symbol);
+
       if (symbols.length > 0) {
         this.handleSubscribe(ws, symbols);
       }
-      
-      this.send(ws, { 
-        type: 'authenticated', 
+
+      this.send(ws, {
+        type: 'authenticated',
         userId: ws.userId,
         subscribedSymbols: Array.from(ws.subscribedSymbols)
       });
-      
+
       logger.debug(`User ${ws.userId} authenticated via WebSocket`);
     } catch (err) {
+      logger.error('WebSocket auth error:', err.message);
       this.send(ws, { type: 'auth_error', message: 'Invalid token' });
     }
   }

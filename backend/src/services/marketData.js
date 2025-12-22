@@ -310,17 +310,128 @@ class MarketDataService {
   static async getDividendHistory(symbol) {
     symbol = symbol.toUpperCase();
 
+    // Check database cache first
     const dbDividends = await prisma.dividendHistory.findMany({
       where: { symbol },
       orderBy: { exDate: 'desc' }
     });
 
+    // Return cached if we have recent data (within 7 days)
+    if (dbDividends.length > 0) {
+      const latestUpdate = dbDividends[0];
+      const daysSinceUpdate = (Date.now() - new Date(latestUpdate.exDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceUpdate < 90) { // Dividend data doesn't change frequently
+        return dbDividends;
+      }
+    }
+
+    // Try to fetch from Alpha Vantage API
+    if (ALPHA_VANTAGE_KEY) {
+      try {
+        const apiDividends = await this.fetchDividendsFromAPI(symbol);
+        if (apiDividends && apiDividends.length > 0) {
+          // Save to database
+          await this.saveDividendsToDB(symbol, apiDividends);
+          return apiDividends;
+        }
+      } catch (err) {
+        logger.error(`Failed to fetch dividends for ${symbol} from API:`, err.message);
+      }
+    }
+
+    // Return cached data if available, otherwise mock
     if (dbDividends.length > 0) {
       return dbDividends;
     }
 
-    // Would fetch from API here
     return this.getMockDividends(symbol);
+  }
+
+  /**
+   * Fetch dividend data from Alpha Vantage API
+   */
+  static async fetchDividendsFromAPI(symbol) {
+    const url = `https://www.alphavantage.co/query?function=DIVIDENDS&symbol=${symbol}&apikey=${ALPHA_VANTAGE_KEY}`;
+
+    try {
+      const data = await rateLimitedFetch(url);
+
+      if (data['Note'] || data['Information']) {
+        logger.warn('Alpha Vantage rate limit hit for dividends');
+        return null;
+      }
+
+      if (!data.data || !Array.isArray(data.data)) {
+        return null;
+      }
+
+      return data.data.slice(0, 20).map(d => ({
+        symbol,
+        exDate: new Date(d.ex_dividend_date),
+        payDate: d.payment_date ? new Date(d.payment_date) : null,
+        recordDate: d.record_date ? new Date(d.record_date) : null,
+        amount: parseFloat(d.amount) || 0,
+        frequency: this.inferDividendFrequency(data.data),
+        type: 'regular'
+      }));
+    } catch (err) {
+      logger.error(`Alpha Vantage dividends error for ${symbol}:`, err.message);
+      return null;
+    }
+  }
+
+  /**
+   * Infer dividend frequency from history
+   */
+  static inferDividendFrequency(dividends) {
+    if (!dividends || dividends.length < 2) return 'unknown';
+
+    const dates = dividends.slice(0, 4).map(d => new Date(d.ex_dividend_date));
+    if (dates.length < 2) return 'unknown';
+
+    const avgDays = (dates[0] - dates[dates.length - 1]) / (dates.length - 1) / (1000 * 60 * 60 * 24);
+
+    if (avgDays < 45) return 'monthly';
+    if (avgDays < 120) return 'quarterly';
+    if (avgDays < 240) return 'semi-annual';
+    return 'annual';
+  }
+
+  /**
+   * Save dividends to database
+   */
+  static async saveDividendsToDB(symbol, dividends) {
+    try {
+      for (const div of dividends) {
+        await prisma.dividendHistory.upsert({
+          where: {
+            symbol_exDate: {
+              symbol: div.symbol,
+              exDate: div.exDate
+            }
+          },
+          update: {
+            payDate: div.payDate,
+            recordDate: div.recordDate,
+            amount: div.amount,
+            frequency: div.frequency,
+            type: div.type
+          },
+          create: {
+            symbol: div.symbol,
+            exDate: div.exDate,
+            payDate: div.payDate,
+            recordDate: div.recordDate,
+            amount: div.amount,
+            frequency: div.frequency,
+            type: div.type
+          }
+        });
+      }
+      logger.info(`Saved ${dividends.length} dividends for ${symbol}`);
+    } catch (err) {
+      logger.error(`Failed to save dividends for ${symbol}:`, err.message);
+    }
   }
 
   /**

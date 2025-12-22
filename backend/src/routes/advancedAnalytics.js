@@ -2,12 +2,14 @@ const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
+const { prisma } = require('../db/simpleDb');
 const performanceAttr = require('../services/advanced/performanceAttribution');
 const riskDecomp = require('../services/advanced/riskDecomposition');
 const peerBench = require('../services/advanced/peerBenchmarking');
 const liquidityAnalysis = require('../services/advanced/liquidityAnalysis');
 const tcaService = require('../services/advanced/transactionCostAnalysis');
 const esgAnalysis = require('../services/advanced/esgAnalysis');
+const MarketDataService = require('../services/marketData');
 
 // All routes require authentication
 router.use(authenticate);
@@ -387,13 +389,67 @@ router.get('/concentration-analysis', async (req, res) => {
     const { portfolioId } = req.query;
     if (!portfolioId) return res.status(400).json({ error: 'Portfolio ID required' });
 
-    // Mock concentration data
+    // Get holdings with current prices
+    const holdings = await prisma.holding.findMany({
+      where: { portfolioId },
+      select: { symbol: true, shares: true, avgCostBasis: true }
+    });
+
+    if (holdings.length === 0) {
+      return res.json({
+        top10Concentration: 0,
+        herfindahlIndex: 0,
+        concentrationByHolding: []
+      });
+    }
+
+    // Get quotes for all holdings
+    const symbols = holdings.map(h => h.symbol);
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Calculate market values
+    let totalValue = 0;
+    const holdingsWithValue = holdings.map(h => {
+      const price = quotes[h.symbol]?.price || h.avgCostBasis;
+      const value = h.shares * price;
+      totalValue += value;
+      return {
+        symbol: h.symbol,
+        shares: h.shares,
+        price,
+        value
+      };
+    });
+
+    // Sort by value descending
+    holdingsWithValue.sort((a, b) => b.value - a.value);
+
+    // Calculate concentration metrics
+    const concentrationByHolding = holdingsWithValue.map(h => ({
+      symbol: h.symbol,
+      value: h.value,
+      weight: totalValue > 0 ? (h.value / totalValue) * 100 : 0
+    }));
+
+    // Top 10 concentration
+    const top10Value = holdingsWithValue.slice(0, 10).reduce((sum, h) => sum + h.value, 0);
+    const top10Concentration = totalValue > 0 ? (top10Value / totalValue) * 100 : 0;
+
+    // Herfindahl-Hirschman Index (sum of squared weights)
+    const herfindahlIndex = concentrationByHolding.reduce((sum, h) => {
+      const weight = h.weight / 100;
+      return sum + (weight * weight);
+    }, 0);
+
     res.json({
-      top10Concentration: 65.5,
-      herfindahlIndex: 0.15,
-      concentrationByHolding: []
+      top10Concentration: parseFloat(top10Concentration.toFixed(2)),
+      herfindahlIndex: parseFloat(herfindahlIndex.toFixed(4)),
+      concentrationByHolding,
+      totalValue,
+      holdingsCount: holdings.length
     });
   } catch (error) {
+    logger.error('Concentration analysis error:', error);
     res.status(500).json({ error: 'Failed to analyze concentration' });
   }
 });
@@ -492,14 +548,89 @@ router.get('/turnover-analysis', async (req, res) => {
   try {
     const { portfolioId } = req.query;
     if (!portfolioId) return res.status(400).json({ error: 'Portfolio ID required' });
-    
-    // Mock turnover
+
+    // Get transactions for the past year
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        portfolioId,
+        executedAt: { gte: oneYearAgo }
+      },
+      orderBy: { executedAt: 'desc' }
+    });
+
+    // Get current portfolio value
+    const holdings = await prisma.holding.findMany({
+      where: { portfolioId },
+      select: { symbol: true, shares: true, avgCostBasis: true }
+    });
+
+    // Calculate current portfolio value
+    const symbols = holdings.map(h => h.symbol);
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    let totalPortfolioValue = 0;
+    holdings.forEach(h => {
+      const price = quotes[h.symbol]?.price || h.avgCostBasis;
+      totalPortfolioValue += h.shares * price;
+    });
+
+    // Calculate turnover metrics
+    const buyTransactions = transactions.filter(t => t.type === 'BUY');
+    const sellTransactions = transactions.filter(t => t.type === 'SELL');
+
+    const totalBought = buyTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const totalSold = sellTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+    // Annualized turnover = min(buys, sells) / avg portfolio value
+    const annualTurnover = totalPortfolioValue > 0
+      ? (Math.min(totalBought, totalSold) / totalPortfolioValue) * 100
+      : 0;
+
+    // Calculate trading frequency by period
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const tradingFrequency = {
+      daily: transactions.filter(t => {
+        const date = new Date(t.executedAt);
+        return date.toDateString() === now.toDateString();
+      }).length,
+      weekly: transactions.filter(t => new Date(t.executedAt) >= oneWeekAgo).length,
+      monthly: transactions.filter(t => new Date(t.executedAt) >= oneMonthAgo).length
+    };
+
+    // Calculate average holding period (days since first transaction per symbol)
+    const holdingPeriods = [];
+    const symbolFirstTx = {};
+    transactions.forEach(t => {
+      if (!symbolFirstTx[t.symbol] || new Date(t.executedAt) < symbolFirstTx[t.symbol]) {
+        symbolFirstTx[t.symbol] = new Date(t.executedAt);
+      }
+    });
+
+    Object.values(symbolFirstTx).forEach(firstDate => {
+      holdingPeriods.push((now - firstDate) / (1000 * 60 * 60 * 24));
+    });
+
+    const avgHoldingPeriod = holdingPeriods.length > 0
+      ? Math.round(holdingPeriods.reduce((a, b) => a + b, 0) / holdingPeriods.length)
+      : 0;
+
     res.json({
-      annualTurnover: 45.3,
-      avgHoldingPeriod: 180,
-      tradingFrequency: { daily: 2, weekly: 8, monthly: 15 }
+      annualTurnover: parseFloat(annualTurnover.toFixed(2)),
+      avgHoldingPeriod,
+      tradingFrequency,
+      totalTransactions: transactions.length,
+      totalBought: parseFloat(totalBought.toFixed(2)),
+      totalSold: parseFloat(totalSold.toFixed(2)),
+      portfolioValue: parseFloat(totalPortfolioValue.toFixed(2))
     });
   } catch (error) {
+    logger.error('Turnover analysis error:', error);
     res.status(500).json({ error: 'Failed to calculate turnover' });
   }
 });
@@ -571,20 +702,121 @@ router.get('/client-reporting', async (req, res) => {
   try {
     const { portfolioId } = req.query;
     if (!portfolioId) return res.status(400).json({ error: 'Portfolio ID required' });
-    
-    // Mock client reporting
+
+    // Get portfolio with holdings
+    const portfolio = await prisma.portfolio.findUnique({
+      where: { id: portfolioId },
+      include: {
+        holdings: true,
+        transactions: {
+          orderBy: { executedAt: 'desc' }
+        }
+      }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    // Get current quotes
+    const symbols = portfolio.holdings.map(h => h.symbol);
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Calculate AUM (Assets Under Management)
+    let totalCostBasis = 0;
+    let totalCurrentValue = 0;
+    portfolio.holdings.forEach(h => {
+      const price = quotes[h.symbol]?.price || h.avgCostBasis;
+      totalCostBasis += h.shares * h.avgCostBasis;
+      totalCurrentValue += h.shares * price;
+    });
+    totalCurrentValue += portfolio.cashBalance;
+
+    // Calculate returns
+    const totalReturn = totalCostBasis > 0
+      ? ((totalCurrentValue - totalCostBasis) / totalCostBasis) * 100
+      : 0;
+
+    // Calculate YTD return from snapshots if available
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+    const ytdSnapshot = await prisma.portfolioSnapshot.findFirst({
+      where: {
+        portfolioId,
+        snapshotDate: { gte: startOfYear }
+      },
+      orderBy: { snapshotDate: 'asc' }
+    });
+
+    const ytdReturn = ytdSnapshot
+      ? ((totalCurrentValue - ytdSnapshot.totalValue) / ytdSnapshot.totalValue) * 100
+      : totalReturn;
+
+    // Calculate net flows (deposits - withdrawals) this year
+    const ytdTransactions = portfolio.transactions.filter(
+      t => new Date(t.executedAt) >= startOfYear
+    );
+    const deposits = ytdTransactions
+      .filter(t => t.type === 'DEPOSIT')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const withdrawals = ytdTransactions
+      .filter(t => t.type === 'WITHDRAWAL')
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    const netFlows = deposits - withdrawals;
+
+    // Calculate win rate from closed positions
+    const sellTransactions = portfolio.transactions.filter(t => t.type === 'SELL');
+    let profitableTrades = 0;
+    sellTransactions.forEach(sell => {
+      // Simple win rate: positive amount = profit
+      if (sell.amount > (sell.shares * sell.price * 0.98)) { // Assuming some gain
+        profitableTrades++;
+      }
+    });
+    const winRate = sellTransactions.length > 0
+      ? (profitableTrades / sellTransactions.length) * 100
+      : 0;
+
+    // Calculate max drawdown from snapshots
+    const snapshots = await prisma.portfolioSnapshot.findMany({
+      where: { portfolioId },
+      orderBy: { snapshotDate: 'asc' },
+      select: { totalValue: true, snapshotDate: true }
+    });
+
+    let maxDrawdown = 0;
+    let peak = 0;
+    snapshots.forEach(s => {
+      if (s.totalValue > peak) peak = s.totalValue;
+      const drawdown = peak > 0 ? ((s.totalValue - peak) / peak) * 100 : 0;
+      if (drawdown < maxDrawdown) maxDrawdown = drawdown;
+    });
+
+    // Calculate simple Sharpe ratio estimate
+    const riskFreeRate = 4.5; // Current approx. risk-free rate
+    const avgReturn = totalReturn;
+    const stdDev = 15; // Estimate - would calculate from historical returns
+    const sharpeRatio = (avgReturn - riskFreeRate) / stdDev;
+
     res.json({
-      ytdReturn: 12.5,
-      sharpeRatio: 0.85,
-      maxDrawdown: -18.5,
-      winRate: 62.5,
+      ytdReturn: parseFloat(ytdReturn.toFixed(2)),
+      totalReturn: parseFloat(totalReturn.toFixed(2)),
+      sharpeRatio: parseFloat(sharpeRatio.toFixed(2)),
+      maxDrawdown: parseFloat(maxDrawdown.toFixed(2)),
+      winRate: parseFloat(winRate.toFixed(2)),
       kpis: {
-        aum: 1250000,
-        netFlows: 50000,
-        performanceFee: 15000
+        aum: parseFloat(totalCurrentValue.toFixed(2)),
+        costBasis: parseFloat(totalCostBasis.toFixed(2)),
+        netFlows: parseFloat(netFlows.toFixed(2)),
+        holdingsCount: portfolio.holdings.length,
+        transactionCount: portfolio.transactions.length
+      },
+      period: {
+        start: startOfYear.toISOString(),
+        end: new Date().toISOString()
       }
     });
   } catch (error) {
+    logger.error('Client reporting error:', error);
     res.status(500).json({ error: 'Failed to generate client report' });
   }
 });

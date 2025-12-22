@@ -733,54 +733,78 @@ router.get('/:id/risk', [
   }
 });
 
-module.exports = router;
-
 /**
  * GET /api/portfolios/:id/transactions
- * Get portfolio transactions
+ * Get portfolio transactions from database
  */
 router.get('/:id/transactions', async (req, res) => {
   try {
-    // Mock transaction data for now
-    const transactions = [
-      {
-        id: '1',
-        date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        type: 'buy',
-        symbol: 'AAPL',
-        shares: 10,
-        price: 175.50,
-        amount: 1755.00,
-        fees: 0,
-        notes: 'Initial purchase'
-      },
-      {
-        id: '2',
-        date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-        type: 'buy',
-        symbol: 'MSFT',
-        shares: 5,
-        price: 380.25,
-        amount: 1901.25,
-        fees: 0,
-        notes: 'Tech sector expansion'
-      },
-      {
-        id: '3',
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        type: 'dividend',
-        symbol: 'AAPL',
-        shares: 10,
-        price: 0.24,
-        amount: 2.40,
-        fees: 0,
-        notes: 'Quarterly dividend'
-      }
-    ];
+    const { id } = req.params;
+    const { limit = 50, offset = 0, type, symbol } = req.query;
 
-    res.json(transactions);
+    // Verify portfolio ownership
+    const portfolio = await prisma.portfolio.findFirst({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    // Build filter conditions
+    const where = { portfolioId: id };
+    if (type) where.type = type;
+    if (symbol) where.symbol = symbol.toUpperCase();
+
+    // Get transactions from database
+    const transactions = await prisma.transaction.findMany({
+      where,
+      orderBy: { executedAt: 'desc' },
+      take: parseInt(limit),
+      skip: parseInt(offset),
+      select: {
+        id: true,
+        symbol: true,
+        type: true,
+        shares: true,
+        price: true,
+        amount: true,
+        fees: true,
+        notes: true,
+        executedAt: true,
+        createdAt: true
+      }
+    });
+
+    // Get total count for pagination
+    const total = await prisma.transaction.count({ where });
+
+    // Format response
+    const formattedTransactions = transactions.map(t => ({
+      id: t.id,
+      date: t.executedAt.toISOString(),
+      type: t.type,
+      symbol: t.symbol,
+      shares: parseFloat(t.shares) || 0,
+      price: parseFloat(t.price) || 0,
+      amount: parseFloat(t.amount) || 0,
+      fees: parseFloat(t.fees) || 0,
+      notes: t.notes || ''
+    }));
+
+    res.json({
+      transactions: formattedTransactions,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        hasMore: parseInt(offset) + formattedTransactions.length < total
+      }
+    });
   } catch (err) {
     logger.error('Get transactions error:', err);
     res.status(500).json({ error: 'Failed to get transactions' });
   }
 });
+
+module.exports = router;

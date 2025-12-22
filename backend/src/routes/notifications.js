@@ -231,8 +231,8 @@ router.post('/:id/read', async (req, res) => {
  */
 router.post('/mark-all-read', async (req, res) => {
   try {
-    // This would update all unread notifications
-    res.json({ success: true, message: 'All notifications marked as read' });
+    const count = await notificationService.markAllAsRead(req.user.id);
+    res.json({ success: true, message: `Marked ${count} notifications as read`, count });
   } catch (error) {
     logger.error('Error marking all as read:', error);
     res.status(500).json({ success: false, error: 'Failed to mark all as read' });

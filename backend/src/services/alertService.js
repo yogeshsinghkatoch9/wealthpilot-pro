@@ -320,9 +320,24 @@ class AlertService {
         }
       });
 
+      // Save notification to database for persistence
+      const savedNotification = await this.createNotification(alert.userId, {
+        type: 'alert',
+        title: this.getAlertTitle(alert.type, alert.symbol),
+        message,
+        data: JSON.stringify({
+          alertId: alert.id,
+          alertType: alert.type,
+          symbol: alert.symbol,
+          currentValue,
+          triggeredAt: new Date().toISOString()
+        })
+      });
+
       // Send real-time notification via WebSocket
       const notification = {
         type: 'alert_triggered',
+        notificationId: savedNotification.id,
         alertId: alert.id,
         alertType: alert.type,
         symbol: alert.symbol,
@@ -547,6 +562,160 @@ class AlertService {
     } catch (error) {
       logger.error('Error resetting alert:', error);
       throw error;
+    }
+  }
+
+  // ============== NOTIFICATION METHODS ==============
+
+  /**
+   * Get display title for alert type
+   */
+  getAlertTitle(alertType, symbol) {
+    const titles = {
+      'price_above': `Price Target Reached${symbol ? ': ' + symbol : ''}`,
+      'price_below': `Price Alert${symbol ? ': ' + symbol : ''}`,
+      'price_change': `Price Change${symbol ? ': ' + symbol : ''}`,
+      'portfolio_value': 'Portfolio Value Alert',
+      'portfolio_gain': 'Portfolio Gain Alert',
+      'portfolio_loss': 'Portfolio Loss Alert',
+      'dividend': `Dividend Alert${symbol ? ': ' + symbol : ''}`,
+      'earnings': `Earnings Alert${symbol ? ': ' + symbol : ''}`
+    };
+    return titles[alertType] || 'Alert Triggered';
+  }
+
+  /**
+   * Create a notification in the database
+   */
+  async createNotification(userId, notificationData) {
+    try {
+      const notification = await prisma.notification.create({
+        data: {
+          userId,
+          type: notificationData.type,
+          title: notificationData.title,
+          message: notificationData.message,
+          data: notificationData.data || null,
+          isRead: false
+        }
+      });
+
+      logger.debug(`Created notification ${notification.id} for user ${userId}`);
+      return notification;
+    } catch (error) {
+      logger.error('Error creating notification:', error);
+      // Return a mock notification so alert processing can continue
+      return { id: 'temp-' + Date.now() };
+    }
+  }
+
+  /**
+   * Get all notifications for a user
+   */
+  async getUserNotifications(userId, options = {}) {
+    try {
+      const where = { userId };
+
+      if (options.isRead !== undefined) {
+        where.isRead = options.isRead;
+      }
+
+      if (options.type) {
+        where.type = options.type;
+      }
+
+      const notifications = await prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: options.limit || 50,
+        skip: options.offset || 0
+      });
+
+      return notifications;
+    } catch (error) {
+      logger.error('Error getting user notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get unread notification count for a user
+   */
+  async getUnreadCount(userId) {
+    try {
+      const count = await prisma.notification.count({
+        where: {
+          userId,
+          isRead: false
+        }
+      });
+      return count;
+    } catch (error) {
+      logger.error('Error getting unread count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Mark a notification as read
+   */
+  async markNotificationRead(notificationId, userId) {
+    try {
+      const notification = await prisma.notification.update({
+        where: { id: notificationId },
+        data: { isRead: true }
+      });
+
+      logger.debug(`Marked notification ${notificationId} as read`);
+      return notification;
+    } catch (error) {
+      logger.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark all notifications as read for a user
+   */
+  async markAllNotificationsRead(userId) {
+    try {
+      const result = await prisma.notification.updateMany({
+        where: {
+          userId,
+          isRead: false
+        },
+        data: { isRead: true }
+      });
+
+      logger.info(`Marked ${result.count} notifications as read for user ${userId}`);
+      return result.count;
+    } catch (error) {
+      logger.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete old notifications (cleanup)
+   */
+  async deleteOldNotifications(userId, daysOld = 30) {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+      const result = await prisma.notification.deleteMany({
+        where: {
+          userId,
+          createdAt: { lt: cutoffDate },
+          isRead: true
+        }
+      });
+
+      logger.info(`Deleted ${result.count} old notifications for user ${userId}`);
+      return result.count;
+    } catch (error) {
+      logger.error('Error deleting old notifications:', error);
+      return 0;
     }
   }
 }
