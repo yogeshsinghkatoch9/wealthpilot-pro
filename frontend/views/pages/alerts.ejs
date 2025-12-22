@@ -1,99 +1,121 @@
 <%- include('../partials/header') %>
 
-<div class="container mx-auto px-4 py-6 max-w-7xl">
-  
-  <!-- Page Header -->
-  <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-3xl font-bold text-amber-500 mb-2">Price Alerts</h1>
-      <p class="text-gray-400">Monitor your holdings and get notified when prices hit your targets</p>
-    </div>
-    <button id="create-alert-btn" class="bg-amber-500 hover:bg-amber-600 text-black px-6 py-3 rounded-lg font-semibold transition-all">
-      + Create Alert
-    </button>
-  </div>
+<main class="p-4 lg:p-6 min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-4">
 
-  <!-- Alert Stats Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="card p-4">
-      <div class="text-sm text-gray-400 mb-1">Active Alerts</div>
-      <div class="text-3xl font-mono font-bold text-green-500" id="stat-active">0</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-sm text-gray-400 mb-1">Triggered Today</div>
-      <div class="text-3xl font-mono font-bold text-amber-500" id="stat-triggered">0</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-sm text-gray-400 mb-1">Total Alerts</div>
-      <div class="text-3xl font-mono font-bold text-blue-500" id="stat-total">0</div>
-    </div>
-    <div class="card p-4">
-      <div class="text-sm text-gray-400 mb-1">Symbols Watched</div>
-      <div class="text-3xl font-mono font-bold text-purple-500" id="stat-symbols">0</div>
-    </div>
-  </div>
+    <!-- Hero Header with Glassmorphism -->
+    <div class="relative overflow-hidden glass-card p-5">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-amber-500/20 to-red-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl"></div>
 
-  <!-- Alert Tabs -->
-  <div class="mb-6">
-    <div class="flex gap-2 border-b border-gray-700">
-      <button class="alert-tab active px-6 py-3 font-semibold transition-all" data-tab="active">
-        Active Alerts
-      </button>
-      <button class="alert-tab px-6 py-3 font-semibold transition-all" data-tab="triggered">
-        Triggered Alerts
-      </button>
-    </div>
-  </div>
-
-  <!-- Active Alerts Table -->
-  <div id="tab-active" class="alert-tab-content">
-    <div class="card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-200">Active Alerts</h2>
-        <div class="flex gap-2">
-          <input type="text" id="search-alerts" placeholder="Search symbols..." 
-                 class="bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm focus:border-amber-500 focus:outline-none">
-          <select id="filter-condition" class="bg-gray-800 border border-gray-700 rounded px-4 py-2 text-sm">
-            <option value="">All Conditions</option>
-            <option value="above">Above</option>
-            <option value="below">Below</option>
-            <option value="equals">Equals</option>
-          </select>
-        </div>
-      </div>
-      
-      <div id="active-alerts-container">
-        <div class="flex items-center justify-center py-12 text-gray-500">
-          <div class="text-center">
-            <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-red-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
             </svg>
-            <p>No active alerts</p>
-            <p class="text-sm mt-2">Create your first alert to get started</p>
+          </div>
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-bold text-white">Price Alerts</h1>
+              <span class="badge badge-live">LIVE</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Monitor your holdings and get notified when prices hit your targets</p>
+          </div>
+        </div>
+        <button id="create-alert-btn" class="btn-gradient flex items-center gap-2 px-5 py-2.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Create Alert
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Stats Cards - Glassmorphism -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Active Alerts</div>
+        <div class="stat-card-value positive" id="stat-active">0</div>
+      </div>
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Triggered Today</div>
+        <div class="stat-card-value" style="color: #f59e0b;" id="stat-triggered">0</div>
+      </div>
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Total Alerts</div>
+        <div class="stat-card-value" style="color: #3b82f6;" id="stat-total">0</div>
+      </div>
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Symbols Watched</div>
+        <div class="stat-card-value" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="stat-symbols">0</div>
+      </div>
+    </div>
+
+    <!-- Alert Tabs - Glassmorphism -->
+    <div class="glass-card overflow-hidden">
+      <div class="flex gap-1 p-2 border-b border-white/10">
+        <button class="alert-tab active px-6 py-2.5 rounded-lg font-semibold transition-all" data-tab="active">
+          Active Alerts
+        </button>
+        <button class="alert-tab px-6 py-2.5 rounded-lg font-semibold transition-all" data-tab="triggered">
+          Triggered Alerts
+        </button>
+      </div>
+
+      <!-- Active Alerts Table -->
+      <div id="tab-active" class="alert-tab-content p-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+          <h2 class="text-lg font-semibold text-white">Active Alerts</h2>
+          <div class="flex gap-2">
+            <input type="text" id="search-alerts" placeholder="Search symbols..."
+                   class="form-input text-sm px-4 py-2 w-48">
+            <select id="filter-condition" class="form-input text-sm px-4 py-2">
+              <option value="">All Conditions</option>
+              <option value="above">Above</option>
+              <option value="below">Below</option>
+              <option value="equals">Equals</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="active-alerts-container">
+          <div class="glass-card-elevated p-12 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+              </svg>
+            </div>
+            <p class="text-white font-semibold">No active alerts</p>
+            <p class="text-sm text-slate-400 mt-2">Create your first alert to get started</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Triggered Alerts Table -->
+      <div id="tab-triggered" class="alert-tab-content hidden p-4">
+        <h2 class="text-lg font-semibold text-white mb-4">Triggered Alerts</h2>
+        <div id="triggered-alerts-container">
+          <div class="glass-card-elevated p-12 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <p class="text-white font-semibold">No triggered alerts</p>
+            <p class="text-sm text-slate-400 mt-2">Alerts will appear here when triggered</p>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Triggered Alerts Table -->
-  <div id="tab-triggered" class="alert-tab-content hidden">
-    <div class="card p-6">
-      <h2 class="text-xl font-bold text-gray-200 mb-4">Triggered Alerts</h2>
-      <div id="triggered-alerts-container">
-        <div class="flex items-center justify-center py-12 text-gray-500">
-          <div class="text-center">
-            <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <p>No triggered alerts</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
-
-</div>
+</main>
 
 <!-- Create Alert Modal -->
 <div id="create-alert-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
@@ -441,17 +463,20 @@ async function handleEditAlert(e) {
 
 <style>
   .alert-tab {
-    color: #9ca3af;
-    border-bottom: 2px solid transparent;
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid transparent;
   }
   .alert-tab:hover {
-    color: #e5e7eb;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.05);
   }
   .alert-tab.active {
-    color: #f59e0b;
-    border-bottom-color: #f59e0b;
+    color: white;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
   }
-  
+
   @keyframes slideDown {
     from {
       opacity: 0;
@@ -462,9 +487,33 @@ async function handleEditAlert(e) {
       transform: translateY(0);
     }
   }
-  
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .animate-slide-down {
     animation: slideDown 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  /* Modal Glassmorphism Override */
+  #create-alert-modal > div,
+  #edit-alert-modal > div {
+    background: rgba(21, 28, 37, 0.98);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
   }
 </style>
 

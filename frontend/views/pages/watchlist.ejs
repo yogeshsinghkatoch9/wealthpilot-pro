@@ -7,78 +7,102 @@
   const losers = safeItems.filter(i => (i.change_pct || 0) < 0).length;
   const atTarget = safeItems.filter(i => i.target_reached).length;
 %>
-<main class="p-4 lg:p-6">
+<main class="p-4 lg:p-6 min-h-screen">
   <div class="max-w-full mx-auto space-y-4">
 
-    <!-- Bloomberg-Style Header Bar -->
-    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
-      <div class="flex items-center gap-6">
-        <h1 class="text-lg font-semibold text-white">Watchlist</h1>
-        <span class="status-live">LIVE</span>
-        <span class="text-xs text-slate-400 font-mono">Track stocks you're interested in</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <button onclick="location.reload()" class="bloomberg-btn bloomberg-btn-ghost">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          Refresh
-        </button>
-        <button onclick="openModal('addWatchModal')" class="bloomberg-btn bloomberg-btn-primary">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Add Stock
-        </button>
+    <!-- Hero Header with Glassmorphism -->
+    <div class="relative overflow-hidden glass-card p-5">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+
+      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-bold text-white">Watchlist</h1>
+              <span class="badge badge-live">LIVE</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Track stocks you're interested in with real-time prices</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="location.reload()" class="btn-glass flex items-center gap-2 px-4 py-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refresh
+          </button>
+          <button onclick="openModal('addWatchModal')" class="btn-gradient flex items-center gap-2 px-5 py-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Stock
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- KPI Bar for Summary Stats -->
+    <!-- KPI Stats Grid - Glassmorphism -->
     <% if (safeItems.length > 0) { %>
-    <div class="kpi-bar rounded-md overflow-hidden">
-      <div class="kpi-item">
-        <div class="kpi-label">Watching</div>
-        <div class="kpi-value"><%= safeItems.length %></div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="stat-card group">
+        <div class="stat-card-label">Watching</div>
+        <div class="stat-card-value"><%= safeItems.length %></div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Gainers Today</div>
-        <div class="kpi-value positive"><%= gainers %></div>
+      <div class="stat-card group">
+        <div class="stat-card-label">Gainers Today</div>
+        <div class="stat-card-value positive"><%= gainers %></div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Losers Today</div>
-        <div class="kpi-value negative"><%= losers %></div>
+      <div class="stat-card group">
+        <div class="stat-card-label">Losers Today</div>
+        <div class="stat-card-value negative"><%= losers %></div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">At Target</div>
-        <div class="kpi-value text-purple-400"><%= atTarget %></div>
+      <div class="stat-card group">
+        <div class="stat-card-label">At Target</div>
+        <div class="stat-card-value" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><%= atTarget %></div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Neutral</div>
-        <div class="kpi-value"><%= safeItems.length - gainers - losers %></div>
+      <div class="stat-card group">
+        <div class="stat-card-label">Neutral</div>
+        <div class="stat-card-value"><%= safeItems.length - gainers - losers %></div>
       </div>
     </div>
     <% } %>
 
-    <!-- Empty State -->
+    <!-- Empty State - Glassmorphism -->
     <% if (safeItems.length === 0) { %>
-    <div class="bloomberg-card">
-      <div class="p-12 text-center">
-        <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="glass-card-elevated p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+        <svg class="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
         </svg>
-        <h3 class="text-lg font-semibold text-white mb-2">Your watchlist is empty</h3>
-        <p class="text-slate-400 mb-4">Add stocks to track their prices and set target alerts</p>
-        <button onclick="openModal('addWatchModal')" class="bloomberg-btn bloomberg-btn-primary">Add Your First Stock</button>
       </div>
+      <h3 class="text-xl font-bold text-white mb-2">Your watchlist is empty</h3>
+      <p class="text-slate-400 mb-6 max-w-md mx-auto">Add stocks to track their prices in real-time and set target alerts to never miss an opportunity</p>
+      <button onclick="openModal('addWatchModal')" class="btn-gradient px-6 py-3 flex items-center gap-2 mx-auto">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Your First Stock
+      </button>
     </div>
     <% } else { %>
 
-    <!-- Watchlist Table -->
-    <div class="bloomberg-card">
-      <div class="bloomberg-card-header">
-        <span class="bloomberg-card-title">Tracked Securities</span>
-        <span class="text-xs text-slate-500 font-mono"><%= safeItems.length %> symbols</span>
+    <!-- Watchlist Table - Glassmorphism -->
+    <div class="glass-card overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <span class="text-white font-semibold">Tracked Securities</span>
+          <span class="badge badge-primary text-xs"><%= safeItems.length %> symbols</span>
+        </div>
+        <span class="text-xs text-slate-400 font-mono">Auto-refreshes every 30s</span>
       </div>
 
       <div class="overflow-x-auto">
