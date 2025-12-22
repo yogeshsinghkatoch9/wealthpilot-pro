@@ -1073,7 +1073,12 @@ MSFT,50,300.00,2023-02-20</pre>
 
     } catch (err) {
       console.error('Upload error:', err);
-      showUploadError(err.message);
+      // Provide helpful message for auth errors
+      let errorMessage = err.message;
+      if (err.message.includes('Invalid token') || err.message.includes('expired') || err.message.includes('401')) {
+        errorMessage = 'Session expired. Please log out and log back in, then try again.';
+      }
+      showUploadError(errorMessage);
       progressDiv.classList.add('hidden');
       submitBtn.disabled = false;
     }
