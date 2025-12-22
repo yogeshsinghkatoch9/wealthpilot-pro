@@ -275,6 +275,22 @@ class PortfolioUploadService {
       throw new Error('Missing or invalid symbol');
     }
 
+    // Skip Total rows
+    if (symbol === 'TOTAL' || row.Description?.toLowerCase().includes('total')) {
+      throw new Error('Skipping total row');
+    }
+
+    // Skip cash sweep accounts (Fidelity SPAXX, FCASH, QPRMQ, etc.)
+    const cashSweepSymbols = ['SPAXX', 'FCASH', 'QPRMQ', 'FDRXX', 'FZFXX', 'SPRXX', 'VMFXX', 'SWVXX'];
+    if (cashSweepSymbols.includes(symbol)) {
+      throw new Error(`Skipping cash sweep account: ${symbol}`);
+    }
+
+    // Skip options (symbols with numbers in them, or starting with call/put indicators)
+    if (/^\d/.test(symbol) || symbol.length > 6 && /\d/.test(symbol)) {
+      throw new Error(`Skipping options contract: ${symbol}`);
+    }
+
     // Extract quantity (Fidelity uses "Quantity")
     const quantity = parseFloat(
       row.Quantity ||
