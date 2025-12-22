@@ -19,6 +19,7 @@ const alertRoutes = require('./routes/alerts');
 const marketRoutes = require('./routes/market');
 const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
+const calendarRoutes = require('./routes/calendar');
 
 // Sector rotation routes with error handling
 let sectorRotationRoutes;
@@ -204,6 +205,7 @@ app.use('/api/market', marketRoutes);
 app.use('/api/market-breadth', marketBreadthRoutes); // Market breadth indicators
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/dividends', dividendRoutes);
+app.use('/api/calendar', calendarRoutes); // Calendar events (dividends, earnings)
 app.use('/api/portfolio-upload', portfolioUploadRoutes); // Portfolio file upload
 app.use('/api/sector-rotation', sectorRotationRoutes); // Sector rotation analysis
 app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
