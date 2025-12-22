@@ -8,76 +8,120 @@
   const safeSectors = typeof sectors !== 'undefined' && sectors ? sectors : [];
   const safeRisk = typeof risk !== 'undefined' && risk ? risk : { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
   const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0, dayChange: 0, ytdReturn: 0, income: 0, cash: 0, holdingsCount: 0 };
+  const gainPct = safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0;
 %>
-<main class="p-4 lg:p-6">
-  <div class="max-w-full mx-auto space-y-4">
+<main class="p-4 lg:p-6 min-h-screen">
+  <div class="max-w-full mx-auto space-y-6">
 
-    <!-- Bloomberg-Style Header Bar -->
-    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
-      <div class="flex items-center gap-6">
-        <h1 class="text-lg font-semibold text-white">Portfolio Overview</h1>
-        <div class="flex items-center gap-4 text-sm font-mono">
-          <span class="<%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
-            <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
-            (<%= safeTotals.cost > 0 ? (safeTotals.gain >= 0 ? '+' : '') + ((safeTotals.gain / safeTotals.cost) * 100).toFixed(2) + '%' : '0%' %>)
-          </span>
-          <span class="text-slate-500">Today</span>
+    <!-- Hero Section with Glassmorphism -->
+    <div class="relative overflow-hidden glass-card p-6">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-3xl"></div>
+
+      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <h1 class="text-2xl lg:text-3xl font-bold text-white">Portfolio Overview</h1>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <p class="text-slate-400 text-sm">Welcome back! Here's your portfolio performance.</p>
         </div>
-      </div>
-      <div class="flex items-center gap-4">
-        <span class="status-live" id="ws-status">CONNECTING</span>
-        <span class="text-xs text-slate-500 font-mono">Last: <%= new Date().toLocaleTimeString() %></span>
-        <button onclick="refreshPrices()" class="bloomberg-btn bloomberg-btn-ghost" id="refreshBtn">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          Refresh
-        </button>
+
+        <div class="flex items-center gap-3">
+          <button onclick="refreshPrices()" class="btn-glass flex items-center gap-2" id="refreshBtn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refresh
+          </button>
+          <a href="/portfolio-manager" class="btn-gradient flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Manage Portfolio
+          </a>
+        </div>
       </div>
     </div>
 
-    <!-- KPI Ticker Bar (Bloomberg Style) -->
-    <div class="kpi-bar rounded-md overflow-hidden">
-      <div class="kpi-item">
-        <div class="kpi-label">Total Value</div>
-        <div class="kpi-value"><%= fmt.money(safeTotals.value) %></div>
+    <!-- KPI Stats Grid - Glassmorphism Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <!-- Total Value -->
+      <div class="stat-card group">
+        <div class="stat-card-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="stat-card-label">Total Value</div>
+        <div class="stat-card-value"><%= fmt.money(safeTotals.value) %></div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Day P&L</div>
-        <div class="kpi-value <%= safeTotals.dayChange >= 0 ? 'positive' : 'negative' %>">
+
+      <!-- Day P&L -->
+      <div class="stat-card">
+        <div class="stat-card-label">Day P&L</div>
+        <div class="stat-card-value <%= safeTotals.dayChange >= 0 ? 'positive' : 'negative' %>">
           <%= safeTotals.dayChange >= 0 ? '+' : '' %><%= fmt.money(safeTotals.dayChange || 0) %>
         </div>
-      </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Total P&L</div>
-        <div class="kpi-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>">
-          <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
+        <div class="text-xs mt-1 <%= safeTotals.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+          <% const dayPct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0; %>
+          <%= dayPct >= 0 ? '+' : '' %><%= dayPct.toFixed(2) %>%
         </div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">YTD Return</div>
-        <div class="kpi-value <%= safeTotals.ytdReturn >= 0 ? 'positive' : 'negative' %>">
+
+      <!-- Total P&L -->
+      <div class="stat-card">
+        <div class="stat-card-label">Total P&L</div>
+        <div class="stat-card-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>">
+          <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
+        </div>
+        <div class="text-xs mt-1 <%= gainPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+          <%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%
+        </div>
+      </div>
+
+      <!-- YTD Return -->
+      <div class="stat-card">
+        <div class="stat-card-label">YTD Return</div>
+        <div class="stat-card-value <%= safeTotals.ytdReturn >= 0 ? 'positive' : 'negative' %>">
           <%= safeTotals.ytdReturn >= 0 ? '+' : '' %><%= (safeTotals.ytdReturn || 0).toFixed(2) %>%
         </div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Div Yield</div>
-        <div class="kpi-value"><%= safeTotals.value > 0 ? ((safeTotals.income / safeTotals.value) * 100).toFixed(2) : '0.00' %>%</div>
+
+      <!-- Dividend Yield -->
+      <div class="stat-card">
+        <div class="stat-card-label">Div Yield</div>
+        <div class="stat-card-value">
+          <%= safeTotals.value > 0 ? ((safeTotals.income / safeTotals.value) * 100).toFixed(2) : '0.00' %>%
+        </div>
+        <div class="text-xs mt-1 text-blue-400">
+          <%= fmt.money(safeTotals.income || 0) %>/yr
+        </div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Holdings</div>
-        <div class="kpi-value"><%= safeTotals.holdingsCount || safeHoldings.length %></div>
+
+      <!-- Holdings Count -->
+      <div class="stat-card">
+        <div class="stat-card-label">Holdings</div>
+        <div class="stat-card-value"><%= safeTotals.holdingsCount || safeHoldings.length %></div>
+        <div class="text-xs mt-1 text-slate-400">
+          <%= safeSectors.length %> sectors
+        </div>
       </div>
-      <div class="kpi-item">
-        <div class="kpi-label">Cash</div>
-        <div class="kpi-value"><%= fmt.money(safeTotals.cash || 0) %></div>
+
+      <!-- Cash -->
+      <div class="stat-card">
+        <div class="stat-card-label">Cash</div>
+        <div class="stat-card-value"><%= fmt.money(safeTotals.cash || 0) %></div>
+        <% const cashPct = safeTotals.value > 0 ? (safeTotals.cash / safeTotals.value) * 100 : 0; %>
+        <div class="text-xs mt-1 text-slate-400"><%= cashPct.toFixed(1) %>% of portfolio</div>
       </div>
     </div>
 
     <!-- Portfolio Performance Chart -->
-    <div class="bloomberg-card">
-      <div class="bloomberg-card-header">
-        <span class="bloomberg-card-title">Portfolio Performance</span>
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Portfolio Performance</span>
         <div class="flex items-center gap-2">
           <button onclick="changeTimeframe('1D')" class="timeframe-btn active" data-timeframe="1D">1D</button>
           <button onclick="changeTimeframe('1W')" class="timeframe-btn" data-timeframe="1W">1W</button>

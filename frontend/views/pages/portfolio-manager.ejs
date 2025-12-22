@@ -10,23 +10,39 @@
   const safeAnalytics = typeof analytics !== 'undefined' ? analytics : null;
 %>
 
-<main class="p-4 lg:p-6 bg-bloomberg-bg min-h-screen">
+<main class="p-4 lg:p-6 min-h-screen">
   <div class="max-w-full mx-auto space-y-4">
 
-    <!-- Header Bar -->
-    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-lg px-4 py-3">
-      <div class="flex items-center gap-4">
-        <h1 class="text-xl font-bold text-white">Portfolio Manager</h1>
-        <span class="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded">INSTITUTIONAL</span>
-      </div>
-      <div class="flex items-center gap-3">
-        <span class="status-live" id="ws-status">LIVE</span>
-        <button onclick="refreshAllData()" class="bloomberg-btn bloomberg-btn-ghost text-sm">
-          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          Refresh
-        </button>
+    <!-- Hero Header Bar with Glassmorphism -->
+    <div class="relative overflow-hidden glass-card p-5">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-3xl"></div>
+
+      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-bold text-white">Portfolio Manager</h1>
+              <span class="badge badge-pro">INSTITUTIONAL</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Advanced portfolio management with real-time analytics</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="badge badge-live" id="ws-status">LIVE</span>
+          <button onclick="refreshAllData()" class="btn-glass flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Refresh Data
+          </button>
+        </div>
       </div>
     </div>
 
@@ -220,33 +236,35 @@
       <!-- RIGHT PANEL: Portfolio Table & Charts (8 cols) -->
       <div class="col-span-12 lg:col-span-8 space-y-4">
 
-        <!-- Portfolio Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-body text-center">
-              <div class="text-xs text-slate-400 uppercase">Total Value</div>
-              <div class="text-xl font-bold font-mono text-white" id="totalValueCard"><%= fmt.money(safeTotals.value) %></div>
+        <!-- Portfolio Summary Cards - Glassmorphism -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="stat-card group">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="stat-card-label">Total Value</div>
+            <div class="stat-card-value" id="totalValueCard"><%= fmt.money(safeTotals.value) %></div>
+            <div class="text-xs text-slate-400 mt-2">Portfolio Net Worth</div>
+          </div>
+          <div class="stat-card group">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="stat-card-label">Total Return</div>
+            <div class="stat-card-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>" id="totalReturnCard">
+              <%= fmt.pct(safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0) %>
+            </div>
+            <div class="text-xs <%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %> mt-2">
+              <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
             </div>
           </div>
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-body text-center">
-              <div class="text-xs text-slate-400 uppercase">Total Return</div>
-              <div class="text-xl font-bold font-mono <%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>" id="totalReturnCard">
-                <%= fmt.pct(safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0) %>
-              </div>
-            </div>
+          <div class="stat-card group">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="stat-card-label">Annual Income</div>
+            <div class="stat-card-value" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="annualIncomeCard"><%= fmt.money(safeTotals.dividendIncome) %></div>
+            <div class="text-xs text-purple-400 mt-2"><%= fmt.money(safeTotals.dividendIncome / 12) %>/month</div>
           </div>
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-body text-center">
-              <div class="text-xs text-slate-400 uppercase">Annual Income</div>
-              <div class="text-xl font-bold font-mono text-blue-400" id="annualIncomeCard"><%= fmt.money(safeTotals.dividendIncome) %></div>
-            </div>
-          </div>
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-body text-center">
-              <div class="text-xs text-slate-400 uppercase">Holdings</div>
-              <div class="text-xl font-bold font-mono text-white" id="holdingsCountCard"><%= safeTotals.holdingsCount %></div>
-            </div>
+          <div class="stat-card group">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div class="stat-card-label">Holdings</div>
+            <div class="stat-card-value" id="holdingsCountCard"><%= safeTotals.holdingsCount %></div>
+            <div class="text-xs text-slate-400 mt-2"><%= safeSectors.length %> sectors</div>
           </div>
         </div>
 
@@ -346,53 +364,54 @@
           </div>
         </div>
 
-        <!-- Charts Grid -->
+        <!-- Charts Grid - Glassmorphism -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <!-- Chart 1: Portfolio Allocation Donut -->
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-header">
-              <span class="bloomberg-card-title">Portfolio Allocation</span>
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Portfolio Allocation</span>
+              <span class="badge badge-primary">Live</span>
             </div>
-            <div class="bloomberg-card-body">
-              <canvas id="allocationDonutChart" height="200"></canvas>
+            <div style="height: 220px;">
+              <canvas id="allocationDonutChart"></canvas>
             </div>
           </div>
 
           <!-- Chart 2: Asset Class Breakdown -->
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-header">
-              <span class="bloomberg-card-title">Asset Class Breakdown</span>
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Asset Class Breakdown</span>
             </div>
-            <div class="bloomberg-card-body">
-              <canvas id="assetClassChart" height="200"></canvas>
+            <div style="height: 220px;">
+              <canvas id="assetClassChart"></canvas>
             </div>
           </div>
 
-          <!-- Chart 3: Sector Exposure Treemap -->
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-header">
-              <span class="bloomberg-card-title">Sector Exposure</span>
+          <!-- Chart 3: Sector Exposure -->
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Sector Exposure</span>
             </div>
-            <div class="bloomberg-card-body">
-              <canvas id="sectorTreemapChart" height="200"></canvas>
+            <div style="height: 220px;">
+              <canvas id="sectorTreemapChart"></canvas>
             </div>
           </div>
 
           <!-- Chart 4: Risk vs Return Scatter -->
-          <div class="bloomberg-card">
-            <div class="bloomberg-card-header">
-              <span class="bloomberg-card-title">Risk vs Return</span>
+          <div class="chart-container">
+            <div class="chart-header">
+              <span class="chart-title">Risk vs Return Analysis</span>
             </div>
-            <div class="bloomberg-card-body">
-              <canvas id="riskReturnChart" height="200"></canvas>
+            <div style="height: 220px;">
+              <canvas id="riskReturnChart"></canvas>
             </div>
           </div>
 
           <!-- Chart 5: Historical Growth Simulation -->
-          <div class="bloomberg-card col-span-1 md:col-span-2">
-            <div class="bloomberg-card-header">
-              <span class="bloomberg-card-title">Historical Growth Simulation</span>
+          <div class="chart-container col-span-1 md:col-span-2">
+            <div class="chart-header">
+              <span class="chart-title">Historical Growth Simulation</span>
               <div class="flex gap-2">
                 <button onclick="changeGrowthTimeframe('1Y')" class="timeframe-btn active" data-tf="1Y">1Y</button>
                 <button onclick="changeGrowthTimeframe('3Y')" class="timeframe-btn" data-tf="3Y">3Y</button>
@@ -400,123 +419,154 @@
                 <button onclick="changeGrowthTimeframe('10Y')" class="timeframe-btn" data-tf="10Y">10Y</button>
               </div>
             </div>
-            <div class="bloomberg-card-body">
-              <canvas id="growthSimulationChart" height="120"></canvas>
+            <div style="height: 200px;">
+              <canvas id="growthSimulationChart"></canvas>
             </div>
           </div>
 
           <!-- Chart 6: Income Contribution by Asset -->
-          <div class="bloomberg-card col-span-1 md:col-span-2">
-            <div class="bloomberg-card-header">
-              <span class="bloomberg-card-title">Income Contribution by Asset</span>
+          <div class="chart-container col-span-1 md:col-span-2">
+            <div class="chart-header">
+              <span class="chart-title">Income Contribution by Asset</span>
+              <span class="text-sm text-purple-400 font-mono"><%= fmt.money(safeTotals.dividendIncome) %>/yr</span>
             </div>
-            <div class="bloomberg-card-body">
-              <canvas id="incomeContributionChart" height="100"></canvas>
+            <div style="height: 160px;">
+              <canvas id="incomeContributionChart"></canvas>
             </div>
           </div>
 
         </div>
 
-        <!-- Quantitative Analytics Section -->
-        <div class="bloomberg-card">
-          <div class="bloomberg-card-header">
-            <span class="bloomberg-card-title">Quantitative Analytics</span>
+        <!-- Quantitative Analytics Section - Glassmorphism -->
+        <div class="glass-card-elevated p-5">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">Quantitative Analytics</h3>
+                <p class="text-slate-400 text-xs">Real-time portfolio metrics and risk analysis</p>
+              </div>
+            </div>
+            <span class="badge badge-primary">PRO</span>
           </div>
-          <div class="bloomberg-card-body">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <!-- Returns -->
-              <div class="space-y-2">
-                <h4 class="text-xs text-slate-400 uppercase font-semibold">Historical Returns</h4>
-                <div class="space-y-1 text-sm">
-                  <div class="flex justify-between">
+              <div class="bg-gradient-to-br from-emerald-500/10 to-green-500/5 rounded-xl p-4 border border-emerald-500/20">
+                <h4 class="text-xs text-emerald-400 uppercase font-semibold mb-3 flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                  </svg>
+                  Historical Returns
+                </h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">1 Year</span>
-                    <span class="font-mono text-emerald-400" id="return1Y">+12.5%</span>
+                    <span class="font-mono text-emerald-400 font-semibold" id="return1Y">+12.5%</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">3 Year</span>
-                    <span class="font-mono text-emerald-400" id="return3Y">+8.2%</span>
+                    <span class="font-mono text-emerald-400 font-semibold" id="return3Y">+8.2%</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">5 Year</span>
-                    <span class="font-mono text-emerald-400" id="return5Y">+10.1%</span>
+                    <span class="font-mono text-emerald-400 font-semibold" id="return5Y">+10.1%</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">10 Year</span>
-                    <span class="font-mono text-emerald-400" id="return10Y">+9.4%</span>
+                    <span class="font-mono text-emerald-400 font-semibold" id="return10Y">+9.4%</span>
                   </div>
                 </div>
               </div>
 
               <!-- Risk Metrics -->
-              <div class="space-y-2">
-                <h4 class="text-xs text-slate-400 uppercase font-semibold">Risk Metrics</h4>
-                <div class="space-y-1 text-sm">
-                  <div class="flex justify-between">
+              <div class="bg-gradient-to-br from-red-500/10 to-orange-500/5 rounded-xl p-4 border border-red-500/20">
+                <h4 class="text-xs text-red-400 uppercase font-semibold mb-3 flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  Risk Metrics
+                </h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Beta</span>
-                    <span class="font-mono text-white" id="portfolioBeta">1.05</span>
+                    <span class="font-mono text-white font-semibold" id="portfolioBeta">1.05</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Volatility</span>
-                    <span class="font-mono text-white" id="portfolioVolatility">18.2%</span>
+                    <span class="font-mono text-white font-semibold" id="portfolioVolatility">18.2%</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Sharpe Ratio</span>
-                    <span class="font-mono text-white" id="sharpeRatio">1.24</span>
+                    <span class="font-mono text-white font-semibold" id="sharpeRatio">1.24</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Max Drawdown</span>
-                    <span class="font-mono text-red-400" id="maxDrawdown">-15.3%</span>
+                    <span class="font-mono text-red-400 font-semibold" id="maxDrawdown">-15.3%</span>
                   </div>
                 </div>
               </div>
 
               <!-- Income Metrics -->
-              <div class="space-y-2">
-                <h4 class="text-xs text-slate-400 uppercase font-semibold">Income Analysis</h4>
-                <div class="space-y-1 text-sm">
-                  <div class="flex justify-between">
+              <div class="bg-gradient-to-br from-purple-500/10 to-pink-500/5 rounded-xl p-4 border border-purple-500/20">
+                <h4 class="text-xs text-purple-400 uppercase font-semibold mb-3 flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Income Analysis
+                </h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Portfolio Yield</span>
-                    <span class="font-mono text-blue-400" id="portfolioYield">2.4%</span>
+                    <span class="font-mono text-purple-400 font-semibold" id="portfolioYield">2.4%</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Annual Income</span>
-                    <span class="font-mono text-blue-400" id="annualIncomeMetric"><%= fmt.money(safeTotals.dividendIncome) %></span>
+                    <span class="font-mono text-purple-400 font-semibold" id="annualIncomeMetric"><%= fmt.money(safeTotals.dividendIncome) %></span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Monthly Income</span>
-                    <span class="font-mono text-blue-400" id="monthlyIncome"><%= fmt.money(safeTotals.dividendIncome / 12) %></span>
+                    <span class="font-mono text-purple-400 font-semibold" id="monthlyIncome"><%= fmt.money(safeTotals.dividendIncome / 12) %></span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Yield on Cost</span>
-                    <span class="font-mono text-blue-400" id="yieldOnCost">2.8%</span>
+                    <span class="font-mono text-purple-400 font-semibold" id="yieldOnCost">2.8%</span>
                   </div>
                 </div>
               </div>
 
               <!-- Allocation Metrics -->
-              <div class="space-y-2">
-                <h4 class="text-xs text-slate-400 uppercase font-semibold">Allocation Stats</h4>
-                <div class="space-y-1 text-sm">
-                  <div class="flex justify-between">
+              <div class="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 rounded-xl p-4 border border-blue-500/20">
+                <h4 class="text-xs text-blue-400 uppercase font-semibold mb-3 flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                  </svg>
+                  Allocation Stats
+                </h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Positions</span>
-                    <span class="font-mono text-white" id="positionCount"><%= safeTotals.holdingsCount %></span>
+                    <span class="font-mono text-white font-semibold" id="positionCount"><%= safeTotals.holdingsCount %></span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Sectors</span>
-                    <span class="font-mono text-white" id="sectorCount"><%= safeSectors.length %></span>
+                    <span class="font-mono text-white font-semibold" id="sectorCount"><%= safeSectors.length %></span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Top Position</span>
-                    <span class="font-mono text-white" id="topPosition">-</span>
+                    <span class="font-mono text-amber-400 font-semibold" id="topPosition">-</span>
                   </div>
-                  <div class="flex justify-between">
+                  <div class="flex justify-between items-center">
                     <span class="text-slate-300">Concentration</span>
-                    <span class="font-mono text-white" id="concentration">-</span>
+                    <span class="font-mono text-white font-semibold" id="concentration">-</span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
         </div>
 
       </div>
