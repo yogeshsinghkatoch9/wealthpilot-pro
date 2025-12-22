@@ -2564,6 +2564,113 @@ app.get('/profile', requireAuth, (req, res) => {
   res.redirect('/settings');
 });
 
+// ===================== PORTFOLIO MANAGER (INSTITUTIONAL GRADE) =====================
+
+app.get('/portfolio-manager', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const selectedPortfolioId = req.query.portfolio as string || '';
+
+  // Fetch user's portfolios
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+
+  // Get selected portfolio details if specified
+  let selectedPortfolio = null;
+  let holdings: any[] = [];
+  let sectors: any[] = [];
+  let analytics: any = null;
+
+  if (selectedPortfolioId && portfolios.length > 0) {
+    selectedPortfolio = portfolios.find((p: any) => p.id === selectedPortfolioId) || portfolios[0];
+
+    // Fetch holdings for selected portfolio
+    const holdingsData = await apiFetch(`/holdings?portfolioId=${selectedPortfolio.id}`, token);
+    holdings = holdingsData.error ? [] : holdingsData;
+
+    // Fetch analytics for selected portfolio
+    const analyticsData = await apiFetch(`/analytics/portfolio/${selectedPortfolio.id}`, token);
+    analytics = analyticsData.error ? null : analyticsData;
+
+    // Calculate sector allocation from holdings
+    const sectorMap = new Map();
+    holdings.forEach((h: any) => {
+      const sector = h.sector || 'Other';
+      const current = sectorMap.get(sector) || { name: sector, value: 0, count: 0 };
+      current.value += h.marketValue || 0;
+      current.count += 1;
+      sectorMap.set(sector, current);
+    });
+    sectors = Array.from(sectorMap.values());
+  } else if (portfolios.length > 0) {
+    selectedPortfolio = portfolios[0];
+    const holdingsData = await apiFetch(`/holdings?portfolioId=${selectedPortfolio.id}`, token);
+    holdings = holdingsData.error ? [] : holdingsData;
+  }
+
+  // Calculate portfolio totals
+  const totals = {
+    value: holdings.reduce((sum: number, h: any) => sum + (h.marketValue || 0), 0) + (selectedPortfolio?.cashBalance || 0),
+    cost: holdings.reduce((sum: number, h: any) => sum + (h.totalCost || 0), 0),
+    gain: holdings.reduce((sum: number, h: any) => sum + (h.gain || 0), 0),
+    dayChange: holdings.reduce((sum: number, h: any) => sum + (h.dayChange || 0) * (h.shares || 0), 0),
+    dividendIncome: holdings.reduce((sum: number, h: any) => sum + ((h.dividendYield || 0) / 100 * (h.marketValue || 0)), 0),
+    cash: selectedPortfolio?.cashBalance || 0,
+    holdingsCount: holdings.length
+  };
+
+  // Calculate asset allocation
+  const allocation = {
+    equity: 0,
+    fixedIncome: 0,
+    other: 0
+  };
+
+  holdings.forEach((h: any) => {
+    const assetType = (h.assetType || 'stock').toLowerCase();
+    const value = h.marketValue || 0;
+    if (['stock', 'etf', 'equity'].includes(assetType)) {
+      allocation.equity += value;
+    } else if (['bond', 'fixed income', 'fixed_income'].includes(assetType)) {
+      allocation.fixedIncome += value;
+    } else {
+      allocation.other += value;
+    }
+  });
+
+  // Convert to percentages
+  const totalInvested = allocation.equity + allocation.fixedIncome + allocation.other;
+  if (totalInvested > 0) {
+    allocation.equity = (allocation.equity / totalInvested) * 100;
+    allocation.fixedIncome = (allocation.fixedIncome / totalInvested) * 100;
+    allocation.other = (allocation.other / totalInvested) * 100;
+  }
+
+  // Format helpers
+  const fmt = {
+    money: (v: number) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    compact: (v: number) => {
+      if (v >= 1000000) return '$' + (v / 1000000).toFixed(2) + 'M';
+      if (v >= 1000) return '$' + (v / 1000).toFixed(1) + 'K';
+      return '$' + (v || 0).toFixed(2);
+    },
+    pct: (v: number) => (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%',
+    number: (v: number) => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
+  };
+
+  res.render('pages/portfolio-manager', {
+    pageTitle: 'Portfolio Manager',
+    portfolios,
+    selectedPortfolio,
+    holdings,
+    sectors,
+    analytics,
+    totals,
+    allocation,
+    currentPage: 'portfolio-manager',
+    fmt
+  });
+});
+
 // ===================== API PROXY ROUTES =====================
 
 // Theme toggle
@@ -2604,24 +2711,7 @@ app.all('/api/*', async (req, res) => {
   }
 });
 
-// ===================== START SERVER =====================
-
-app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║   🚀 WealthPilot Pro - Frontend Server                       ║
-║                                                              ║
-║   Frontend: http://localhost:${PORT}                             ║
-║   Backend API: ${API_URL}                           
-║                                                              ║
-║   Login: demo@wealthpilot.com / demo123456                   ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-  `);
-});
-
-export default app;
+// ===================== PORTFOLIO TOOLS ROUTE =====================
 
 // Portfolio Tools Route (rebalancing, tax loss harvesting, dividend forecasting)
 app.get('/portfolio-tools', requireAuth, async (req, res) => {
@@ -2677,3 +2767,21 @@ app.get('/portfolio-tools', requireAuth, async (req, res) => {
   });
 });
 
+// ===================== START SERVER =====================
+
+app.listen(PORT, () => {
+  console.log(`
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   WealthPilot Pro - Frontend Server                          ║
+║                                                              ║
+║   Frontend: http://localhost:${PORT}                             ║
+║   Backend API: ${API_URL}
+║                                                              ║
+║   Ready for connections...                                   ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+  `);
+});
+
+export default app;
