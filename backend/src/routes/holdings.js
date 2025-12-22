@@ -92,7 +92,10 @@ router.post('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { portfolioId, symbol, shares, avgCostBasis, purchaseDate, notes } = req.body;
+    const { portfolioId, symbol, purchaseDate, notes } = req.body;
+    // Convert string values to numbers (for form-urlencoded requests)
+    const shares = parseFloat(req.body.shares);
+    const avgCostBasis = parseFloat(req.body.avgCostBasis);
 
     // Verify portfolio ownership
     const portfolio = await prisma.portfolio.findFirst({

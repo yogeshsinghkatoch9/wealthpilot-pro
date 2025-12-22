@@ -184,7 +184,12 @@ router.post('/', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { portfolioId, symbol, type, shares, price, amount, fees, executedAt, notes } = req.body;
+    const { portfolioId, symbol, type, executedAt, notes } = req.body;
+    // Convert string values to numbers (for form-urlencoded requests)
+    const shares = req.body.shares ? parseFloat(req.body.shares) : null;
+    const price = req.body.price ? parseFloat(req.body.price) : null;
+    const amount = parseFloat(req.body.amount);
+    const fees = req.body.fees ? parseFloat(req.body.fees) : 0;
     logger.info(`Extracted data: portfolio=${portfolioId}, symbol=${symbol}, type=${type}, shares=${shares}, price=${price}, amount=${amount}`);
 
     // Verify portfolio ownership
