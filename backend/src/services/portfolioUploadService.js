@@ -309,8 +309,21 @@ class PortfolioUploadService {
 
     // Extract cost basis - Fidelity uses "Principal ($)*" or "NFS Cost ($)"
     // These are TOTAL cost, so we need to divide by quantity to get per-share cost
-    const principalCost = parseFloat(row['Principal ($)*'] || 0);
-    const nfsCost = parseFloat(row['NFS Cost ($)'] || 0);
+    // Use flexible column matching to handle special characters
+    const findColumnValue = (row, patterns) => {
+      for (const key of Object.keys(row)) {
+        const keyLower = key.toLowerCase().replace(/[^a-z]/g, '');
+        for (const pattern of patterns) {
+          if (keyLower.includes(pattern)) {
+            return parseFloat(row[key]) || 0;
+          }
+        }
+      }
+      return 0;
+    };
+
+    const principalCost = findColumnValue(row, ['principal']);
+    const nfsCost = findColumnValue(row, ['nfscost']);
     const directCostBasis = parseFloat(
       row.costBasis ||
       row.cost_basis ||
@@ -319,7 +332,7 @@ class PortfolioUploadService {
       row['Avg Cost'] ||
       row.avgCost ||
       0
-    );
+    ) || findColumnValue(row, ['costbasis', 'avgcost']);
 
     let finalCostBasis;
 
@@ -338,7 +351,7 @@ class PortfolioUploadService {
     }
     // Fallback to current price if available
     else {
-      const currentPrice = parseFloat(row['Price ($)'] || row.Price || row.price || 0);
+      const currentPrice = parseFloat(row['Price ($)'] || row.Price || row.price || 0) || findColumnValue(row, ['price']);
       if (currentPrice > 0) {
         finalCostBasis = currentPrice;
         logger.warn(`Using current price as cost basis for ${symbol}: $${finalCostBasis.toFixed(2)}`);
