@@ -521,21 +521,67 @@ class MarketDataService {
   // Mock data for development/fallback
   static getMockQuote(symbol) {
     const mockData = {
+      // Technology
       'AAPL': { price: 189.65, previousClose: 188.42, change: 1.23, changePercent: 0.65, sector: 'Technology', name: 'Apple Inc.' },
       'MSFT': { price: 428.42, previousClose: 425.18, change: 3.24, changePercent: 0.76, sector: 'Technology', name: 'Microsoft Corp' },
       'GOOGL': { price: 174.82, previousClose: 173.24, change: 1.58, changePercent: 0.91, sector: 'Technology', name: 'Alphabet Inc.' },
+      'GOOG': { price: 176.42, previousClose: 175.24, change: 1.18, changePercent: 0.67, sector: 'Technology', name: 'Alphabet Inc. Class C' },
       'NVDA': { price: 142.84, previousClose: 140.12, change: 2.72, changePercent: 1.94, sector: 'Technology', name: 'NVIDIA Corp' },
       'META': { price: 584.24, previousClose: 578.42, change: 5.82, changePercent: 1.01, sector: 'Technology', name: 'Meta Platforms' },
+      'INTC': { price: 24.18, previousClose: 24.86, change: -0.68, changePercent: -2.73, sector: 'Technology', name: 'Intel Corp' },
+      'AMD': { price: 142.50, previousClose: 140.80, change: 1.70, changePercent: 1.21, sector: 'Technology', name: 'AMD' },
+      'CRM': { price: 318.42, previousClose: 315.24, change: 3.18, changePercent: 1.01, sector: 'Technology', name: 'Salesforce' },
+      'ORCL': { price: 178.42, previousClose: 176.24, change: 2.18, changePercent: 1.24, sector: 'Technology', name: 'Oracle Corp' },
+      'CSCO': { price: 58.42, previousClose: 57.84, change: 0.58, changePercent: 1.00, sector: 'Technology', name: 'Cisco Systems' },
+      'ADBE': { price: 485.24, previousClose: 480.42, change: 4.82, changePercent: 1.00, sector: 'Technology', name: 'Adobe Inc.' },
+      // Consumer Cyclical
       'TSLA': { price: 248.42, previousClose: 252.18, change: -3.76, changePercent: -1.49, sector: 'Consumer Cyclical', name: 'Tesla Inc.' },
       'AMZN': { price: 218.64, previousClose: 216.42, change: 2.22, changePercent: 1.03, sector: 'Consumer Cyclical', name: 'Amazon.com Inc.' },
+      'HD': { price: 385.24, previousClose: 382.42, change: 2.82, changePercent: 0.74, sector: 'Consumer Cyclical', name: 'Home Depot' },
+      'NKE': { price: 78.42, previousClose: 77.84, change: 0.58, changePercent: 0.75, sector: 'Consumer Cyclical', name: 'Nike Inc.' },
+      'MCD': { price: 298.42, previousClose: 296.24, change: 2.18, changePercent: 0.74, sector: 'Consumer Cyclical', name: 'McDonalds Corp' },
+      'SBUX': { price: 98.42, previousClose: 97.24, change: 1.18, changePercent: 1.21, sector: 'Consumer Cyclical', name: 'Starbucks' },
+      // Financial Services
       'JPM': { price: 198.24, previousClose: 196.84, change: 1.40, changePercent: 0.71, sector: 'Financial Services', name: 'JPMorgan Chase' },
       'V': { price: 284.62, previousClose: 282.48, change: 2.14, changePercent: 0.76, sector: 'Financial Services', name: 'Visa Inc.' },
+      'MA': { price: 485.24, previousClose: 482.42, change: 2.82, changePercent: 0.58, sector: 'Financial Services', name: 'Mastercard' },
+      'BAC': { price: 42.84, previousClose: 42.42, change: 0.42, changePercent: 0.99, sector: 'Financial Services', name: 'Bank of America' },
+      'WFC': { price: 62.42, previousClose: 61.84, change: 0.58, changePercent: 0.94, sector: 'Financial Services', name: 'Wells Fargo' },
+      'GS': { price: 542.24, previousClose: 538.42, change: 3.82, changePercent: 0.71, sector: 'Financial Services', name: 'Goldman Sachs' },
+      'BRK.B': { price: 458.42, previousClose: 455.24, change: 3.18, changePercent: 0.70, sector: 'Financial Services', name: 'Berkshire Hathaway' },
+      // Healthcare
       'JNJ': { price: 156.42, previousClose: 155.84, change: 0.58, changePercent: 0.37, sector: 'Healthcare', name: 'Johnson & Johnson' },
       'UNH': { price: 584.24, previousClose: 582.18, change: 2.06, changePercent: 0.35, sector: 'Healthcare', name: 'UnitedHealth Group' },
-      'SPY': { price: 584.82, previousClose: 582.24, change: 2.58, changePercent: 0.44, sector: 'ETF', name: 'SPDR S&P 500 ETF' },
+      'PFE': { price: 28.42, previousClose: 28.24, change: 0.18, changePercent: 0.64, sector: 'Healthcare', name: 'Pfizer Inc.' },
+      'MRK': { price: 108.42, previousClose: 107.24, change: 1.18, changePercent: 1.10, sector: 'Healthcare', name: 'Merck & Co.' },
+      'ABBV': { price: 178.42, previousClose: 176.24, change: 2.18, changePercent: 1.24, sector: 'Healthcare', name: 'AbbVie Inc.' },
+      'LLY': { price: 785.24, previousClose: 778.42, change: 6.82, changePercent: 0.88, sector: 'Healthcare', name: 'Eli Lilly' },
+      // Energy
+      'XOM': { price: 108.42, previousClose: 107.24, change: 1.18, changePercent: 1.10, sector: 'Energy', name: 'Exxon Mobil' },
+      'CVX': { price: 148.42, previousClose: 146.24, change: 2.18, changePercent: 1.49, sector: 'Energy', name: 'Chevron Corp' },
+      'COP': { price: 108.42, previousClose: 106.24, change: 2.18, changePercent: 2.05, sector: 'Energy', name: 'ConocoPhillips' },
+      // Consumer Defensive
+      'PG': { price: 168.42, previousClose: 167.24, change: 1.18, changePercent: 0.71, sector: 'Consumer Defensive', name: 'Procter & Gamble' },
+      'KO': { price: 62.42, previousClose: 61.84, change: 0.58, changePercent: 0.94, sector: 'Consumer Defensive', name: 'Coca-Cola' },
+      'PEP': { price: 168.42, previousClose: 167.24, change: 1.18, changePercent: 0.71, sector: 'Consumer Defensive', name: 'PepsiCo' },
+      'WMT': { price: 168.42, previousClose: 166.24, change: 2.18, changePercent: 1.31, sector: 'Consumer Defensive', name: 'Walmart' },
+      'COST': { price: 918.42, previousClose: 912.24, change: 6.18, changePercent: 0.68, sector: 'Consumer Defensive', name: 'Costco' },
+      // Communication Services
       'VZ': { price: 42.84, previousClose: 42.62, change: 0.22, changePercent: 0.52, sector: 'Communication Services', name: 'Verizon' },
       'T': { price: 22.48, previousClose: 22.36, change: 0.12, changePercent: 0.54, sector: 'Communication Services', name: 'AT&T' },
-      'INTC': { price: 24.18, previousClose: 24.86, change: -0.68, changePercent: -2.73, sector: 'Technology', name: 'Intel Corp' }
+      'NFLX': { price: 898.42, previousClose: 892.24, change: 6.18, changePercent: 0.69, sector: 'Communication Services', name: 'Netflix' },
+      'DIS': { price: 112.42, previousClose: 111.24, change: 1.18, changePercent: 1.06, sector: 'Communication Services', name: 'Walt Disney' },
+      // Industrials
+      'CAT': { price: 378.42, previousClose: 375.24, change: 3.18, changePercent: 0.85, sector: 'Industrials', name: 'Caterpillar' },
+      'BA': { price: 178.42, previousClose: 176.24, change: 2.18, changePercent: 1.24, sector: 'Industrials', name: 'Boeing' },
+      'HON': { price: 218.42, previousClose: 216.24, change: 2.18, changePercent: 1.01, sector: 'Industrials', name: 'Honeywell' },
+      'UPS': { price: 128.42, previousClose: 127.24, change: 1.18, changePercent: 0.93, sector: 'Industrials', name: 'UPS' },
+      // ETFs
+      'SPY': { price: 584.82, previousClose: 582.24, change: 2.58, changePercent: 0.44, sector: 'ETF', name: 'SPDR S&P 500 ETF' },
+      'QQQ': { price: 498.42, previousClose: 495.24, change: 3.18, changePercent: 0.64, sector: 'ETF', name: 'Invesco QQQ Trust' },
+      'DIA': { price: 428.42, previousClose: 426.24, change: 2.18, changePercent: 0.51, sector: 'ETF', name: 'SPDR Dow Jones ETF' },
+      'IWM': { price: 218.42, previousClose: 216.24, change: 2.18, changePercent: 1.01, sector: 'ETF', name: 'iShares Russell 2000' },
+      'VTI': { price: 278.42, previousClose: 276.24, change: 2.18, changePercent: 0.79, sector: 'ETF', name: 'Vanguard Total Stock Market' }
     };
 
     const mock = mockData[symbol] || {
