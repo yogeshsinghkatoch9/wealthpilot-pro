@@ -83,14 +83,46 @@
     const current = document.documentElement.dataset.theme;
     const newTheme = current === 'dark' ? 'light' : 'dark';
 
+    // Update icons immediately for better UX
+    updateThemeIcons(newTheme);
+
+    // Save preference to server
     fetch('/api/theme', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme: newTheme })
     }).then(() => {
+      // Update localStorage
+      localStorage.setItem('theme', newTheme);
+      // Apply theme without reload for smooth transition
+      document.documentElement.dataset.theme = newTheme;
+      document.body.classList.toggle('light-theme', newTheme === 'light');
+    }).catch(() => {
+      // Fallback to reload if API fails
       location.reload();
     });
   }
+
+  // Update theme icons visibility
+  function updateThemeIcons(theme) {
+    const sunIcon = document.getElementById('theme-sun');
+    const moonIcon = document.getElementById('theme-moon');
+    if (sunIcon && moonIcon) {
+      if (theme === 'dark') {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      } else {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      }
+    }
+  }
+
+  // Initialize theme icons on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentTheme = document.documentElement.dataset.theme || 'dark';
+    updateThemeIcons(currentTheme);
+  });
 
   // Update alert badge
   function updateAlertBadge() {
