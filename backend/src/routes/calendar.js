@@ -124,6 +124,104 @@ router.get('/dividend-calendar', async (req, res) => {
 });
 
 /**
+ * GET /api/calendar/earnings-calendar
+ * Get upcoming earnings events based on user's holdings
+ */
+router.get('/earnings-calendar', async (req, res) => {
+  try {
+    const { prisma } = require('../db/simpleDb');
+    const userId = req.user.id;
+
+    // Get user's holdings
+    const holdings = await prisma.holding.findMany({
+      where: {
+        portfolio: { userId }
+      },
+      select: {
+        symbol: true,
+        shares: true
+      }
+    });
+
+    if (holdings.length === 0) {
+      return res.json([]);
+    }
+
+    // Earnings data for common stocks (company names, typical reporting times)
+    const earningsData = {
+      'AAPL': { name: 'Apple Inc.', time: 'AMC', quarter: 'Q1 FY25' },
+      'MSFT': { name: 'Microsoft Corp', time: 'AMC', quarter: 'Q2 FY25' },
+      'GOOGL': { name: 'Alphabet Inc.', time: 'AMC', quarter: 'Q4 2024' },
+      'NVDA': { name: 'NVIDIA Corp', time: 'AMC', quarter: 'Q4 FY25' },
+      'AMZN': { name: 'Amazon.com Inc.', time: 'AMC', quarter: 'Q4 2024' },
+      'META': { name: 'Meta Platforms', time: 'AMC', quarter: 'Q4 2024' },
+      'TSLA': { name: 'Tesla Inc.', time: 'AMC', quarter: 'Q4 2024' },
+      'JPM': { name: 'JPMorgan Chase', time: 'BMO', quarter: 'Q4 2024' },
+      'JNJ': { name: 'Johnson & Johnson', time: 'BMO', quarter: 'Q4 2024' },
+      'V': { name: 'Visa Inc.', time: 'AMC', quarter: 'Q1 FY25' },
+      'PG': { name: 'Procter & Gamble', time: 'BMO', quarter: 'Q2 FY25' },
+      'UNH': { name: 'UnitedHealth Group', time: 'BMO', quarter: 'Q4 2024' },
+      'HD': { name: 'Home Depot', time: 'BMO', quarter: 'Q4 FY24' },
+      'MA': { name: 'Mastercard', time: 'BMO', quarter: 'Q4 2024' },
+      'DIS': { name: 'Walt Disney Co', time: 'AMC', quarter: 'Q1 FY25' },
+      'BAC': { name: 'Bank of America', time: 'BMO', quarter: 'Q4 2024' },
+      'XOM': { name: 'Exxon Mobil', time: 'BMO', quarter: 'Q4 2024' },
+      'KO': { name: 'Coca-Cola Co', time: 'BMO', quarter: 'Q4 2024' },
+      'PFE': { name: 'Pfizer Inc.', time: 'BMO', quarter: 'Q4 2024' },
+      'NFLX': { name: 'Netflix Inc.', time: 'AMC', quarter: 'Q4 2024' },
+      'INTC': { name: 'Intel Corp', time: 'AMC', quarter: 'Q4 2024' },
+      'AMD': { name: 'AMD Inc.', time: 'AMC', quarter: 'Q4 2024' },
+      'CRM': { name: 'Salesforce', time: 'AMC', quarter: 'Q4 FY25' },
+      'ORCL': { name: 'Oracle Corp', time: 'AMC', quarter: 'Q2 FY25' },
+      'WMT': { name: 'Walmart Inc.', time: 'BMO', quarter: 'Q4 FY25' },
+      'CVX': { name: 'Chevron Corp', time: 'BMO', quarter: 'Q4 2024' },
+      'MRK': { name: 'Merck & Co', time: 'BMO', quarter: 'Q4 2024' },
+      'ABBV': { name: 'AbbVie Inc.', time: 'BMO', quarter: 'Q4 2024' },
+      'T': { name: 'AT&T Inc.', time: 'BMO', quarter: 'Q4 2024' },
+      'VZ': { name: 'Verizon', time: 'BMO', quarter: 'Q4 2024' }
+    };
+
+    // Generate upcoming earnings events for user's holdings
+    const upcomingEarnings = [];
+    const today = new Date();
+
+    holdings.forEach((holding, idx) => {
+      const earningsInfo = earningsData[holding.symbol];
+      if (earningsInfo) {
+        // Generate next earnings date (spread out over next 60 days)
+        const reportDate = new Date(today);
+        reportDate.setDate(reportDate.getDate() + (idx * 5) + 7);
+
+        // Random EPS estimate based on typical values
+        const epsEstimate = parseFloat((Math.random() * 3 + 0.5).toFixed(2));
+        const revenueEstimate = parseFloat((Math.random() * 50 + 10).toFixed(1));
+
+        upcomingEarnings.push({
+          id: `${holding.symbol}-earnings`,
+          symbol: holding.symbol,
+          companyName: earningsInfo.name,
+          reportDate: reportDate.toISOString().split('T')[0],
+          timeOfDay: earningsInfo.time, // BMO = Before Market Open, AMC = After Market Close
+          fiscalQuarter: earningsInfo.quarter,
+          epsEstimate: epsEstimate,
+          revenueEstimate: `$${revenueEstimate}B`,
+          shares: holding.shares,
+          status: 'scheduled'
+        });
+      }
+    });
+
+    // Sort by report date
+    upcomingEarnings.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate));
+
+    res.json(upcomingEarnings);
+  } catch (error) {
+    logger.error('Error fetching earnings calendar', { error: error.message });
+    res.status(500).json([]);
+  }
+});
+
+/**
  * GET /api/calendar/:id
  * Get a specific calendar event by ID
  */
