@@ -413,6 +413,75 @@ router.post('/', [
 });
 
 /**
+ * GET /api/portfolios/:id/holdings
+ * Get all holdings for a portfolio with current prices
+ */
+router.get('/:id/holdings', [
+  param('id').isUUID()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const portfolio = await prisma.portfolio.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    // Get holdings
+    const holdings = await prisma.holding.findMany({
+      where: { portfolioId: req.params.id },
+      orderBy: { symbol: 'asc' }
+    });
+
+    // Get current quotes for all holdings
+    const symbols = holdings.map(h => h.symbol);
+    let quotes = {};
+
+    if (symbols.length > 0) {
+      const MarketDataService = require('../services/marketData');
+      quotes = await MarketDataService.getQuotes(symbols);
+    }
+
+    // Enrich holdings with current prices
+    const enrichedHoldings = holdings.map(h => {
+      const quote = quotes[h.symbol] || {};
+      const currentPrice = quote.price || h.avgCostBasis;
+      const marketValue = h.shares * currentPrice;
+      const costTotal = h.shares * h.avgCostBasis;
+      const gain = marketValue - costTotal;
+      const gainPercent = costTotal > 0 ? (gain / costTotal) * 100 : 0;
+
+      return {
+        id: h.id,
+        symbol: h.symbol,
+        shares: Number(h.shares),
+        avgCostBasis: Number(h.avgCostBasis),
+        currentPrice,
+        marketValue,
+        costTotal,
+        gain,
+        gainPercent,
+        sector: h.sector || quote.sector,
+        assetType: h.assetType,
+        change: quote.change || 0,
+        changePercent: quote.changePercent || 0
+      };
+    });
+
+    res.json(enrichedHoldings);
+  } catch (err) {
+    logger.error('Get holdings error:', err);
+    res.status(500).json({ error: 'Failed to get holdings' });
+  }
+});
+
+/**
  * POST /api/portfolios/:id/holdings
  * Add a new holding to portfolio
  */
