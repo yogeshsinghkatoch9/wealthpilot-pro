@@ -148,7 +148,7 @@ app.post('/login', async (req, res) => {
 
   res.cookie('token', data.token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
+    httpOnly: false, // Allow JavaScript access for API calls
     sameSite: 'lax',
     secure: false // Set to true if using HTTPS
   });
@@ -171,7 +171,7 @@ app.post('/register', async (req, res) => {
     return res.render('pages/register', { pageTitle: 'Register', error: data.error });
   }
 
-  res.cookie('token', data.token, { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true });
+  res.cookie('token', data.token, { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: false });
   res.redirect('/');
 });
 
