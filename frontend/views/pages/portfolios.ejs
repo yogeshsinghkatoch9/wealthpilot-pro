@@ -828,12 +828,17 @@ MSFT,50,300.00,2023-02-20</pre>
    */
   const serverToken = `<%= token || "" %>`;
 
+  // Log token status on page load
+  console.log('[Auth] Server token present:', !!serverToken, 'Length:', serverToken?.length || 0);
+  if (serverToken) {
+    console.log('[Auth] Token preview:', serverToken.substring(0, 30) + '...');
+  }
+
   function getToken() {
     if (serverToken && serverToken.length > 0) {
-      console.log('Using server token (length:', serverToken.length, ')');
       return serverToken;
     }
-    console.error('No token available!');
+    console.error('[Auth] NO TOKEN AVAILABLE - user needs to log in again');
     return '';
   }
 
@@ -843,6 +848,16 @@ MSFT,50,300.00,2023-02-20</pre>
   async function authFetch(url, options = {}) {
     const token = getToken();
 
+    if (!token) {
+      console.error('[Auth] Cannot make authenticated request - no token!');
+      // Return a fake response that indicates auth error
+      return {
+        ok: false,
+        status: 401,
+        json: async () => ({ error: 'No authentication token. Please log out and log back in.' })
+      };
+    }
+
     // Don't set Content-Type for FormData - browser will set it with boundary
     const isFormData = options.body instanceof FormData;
     const headers = {
@@ -850,13 +865,13 @@ MSFT,50,300.00,2023-02-20</pre>
       ...options.headers
     };
 
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    headers['Authorization'] = `Bearer ${token}`;
+    console.log('[Auth] Making request to', url, 'with token');
 
     return fetch(url, {
       ...options,
-      headers
+      headers,
+      credentials: 'include' // Ensure cookies are sent
     });
   }
 

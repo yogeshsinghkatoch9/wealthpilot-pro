@@ -37,12 +37,20 @@ app.use('/api', createProxyMiddleware({
   },
   on: {
     proxyReq: (proxyReq, req: any, res) => {
-      // Forward Authorization from cookie if not already present
-      const token = req.cookies?.token;
-      if (token && !req.headers.authorization) {
+      // ALWAYS set Authorization from cookie (most reliable source)
+      // This ensures the token is forwarded even if client-side JS fails
+      const cookieToken = req.cookies?.token;
+      const headerToken = req.headers.authorization?.replace('Bearer ', '');
+
+      // Prefer cookie token, fall back to header token
+      const token = cookieToken || headerToken;
+
+      if (token) {
         proxyReq.setHeader('Authorization', `Bearer ${token}`);
+        console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}/api${req.url} [Token: ${token.substring(0, 20)}...]`);
+      } else {
+        console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}/api${req.url} [NO TOKEN!]`);
       }
-      console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}/api${req.url}`);
     },
     error: (err, req, res: any) => {
       console.error('[Proxy Error]', err.message);
@@ -171,7 +179,12 @@ app.post('/register', async (req, res) => {
     return res.render('pages/register', { pageTitle: 'Register', error: data.error });
   }
 
-  res.cookie('token', data.token, { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: false });
+  res.cookie('token', data.token, {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: false,
+    sameSite: 'lax',
+    secure: false
+  });
   res.redirect('/');
 });
 
