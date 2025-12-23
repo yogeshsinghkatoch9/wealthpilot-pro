@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "NODE_ENV=development node src/server.js",
-    "start": "npx prisma generate && (npx prisma db push --accept-data-loss || echo 'DB push skipped') && NODE_ENV=production node src/index.js",
+    "start": "npx prisma generate && (npx prisma db push --accept-data-loss || echo 'DB push skipped') && NODE_ENV=production node src/server.js",
     "seed": "node seed-simple.js",
     "test": "NODE_ENV=test jest --runInBand --forceExit",
     "test:watch": "NODE_ENV=test jest --watch --runInBand",

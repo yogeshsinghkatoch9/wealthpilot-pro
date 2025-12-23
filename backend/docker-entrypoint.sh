@@ -27,4 +27,4 @@ fi
 
 # Start the application
 echo "🎯 Starting Node.js server on port ${PORT:-4000}..."
-exec node src/index.js
+exec node src/server.js
