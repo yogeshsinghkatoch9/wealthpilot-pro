@@ -352,29 +352,127 @@ router.get('/stress-test', async (req, res) => {
   }
 });
 
-// Monte Carlo simulation
+// Monte Carlo simulation - Real calculations based on portfolio
 router.get('/monte-carlo', async (req, res) => {
   try {
-    const { portfolioId, iterations = 1000 } = req.query;
+    const { portfolioId, iterations = 1000, years = 10 } = req.query;
     if (!portfolioId) return res.status(400).json({ error: 'Portfolio ID required' });
 
-    // Mock Monte Carlo simulation
+    // Get portfolio with holdings
+    const portfolio = await prisma.portfolio.findUnique({
+      where: { id: portfolioId },
+      include: { holdings: true }
+    });
+
+    if (!portfolio || portfolio.holdings.length === 0) {
+      return res.json({
+        iterations: parseInt(iterations),
+        currentValue: 0,
+        meanReturn: 0,
+        medianReturn: 0,
+        stdDev: 0,
+        percentiles: { p5: 0, p25: 0, p50: 0, p75: 0, p95: 0 },
+        projectedValues: { p5: 0, p25: 0, p50: 0, p75: 0, p95: 0 },
+        confidence: { level95: { lower: 0, upper: 0 }, level99: { lower: 0, upper: 0 } }
+      });
+    }
+
+    // Get quotes for current values
+    const symbols = portfolio.holdings.map(h => h.symbol);
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Calculate current portfolio value and weighted volatility
+    let currentValue = Number(portfolio.cashBalance) || 0;
+    let weightedVolatility = 0;
+    let totalWeight = 0;
+
+    for (const h of portfolio.holdings) {
+      const price = quotes[h.symbol]?.price || Number(h.avgCostBasis);
+      const value = Number(h.shares) * price;
+      currentValue += value;
+
+      // Estimate volatility (use sector-based estimates if no historical data)
+      const sectorVolatility = {
+        'Technology': 0.28, 'Healthcare': 0.22, 'Financials': 0.20,
+        'Energy': 0.35, 'Consumer Discretionary': 0.25, 'Consumer Staples': 0.15,
+        'Industrials': 0.22, 'Materials': 0.25, 'Utilities': 0.18,
+        'Real Estate': 0.23, 'Communication Services': 0.26
+      };
+      const sector = h.sector || quotes[h.symbol]?.sector || 'Unknown';
+      const vol = sectorVolatility[sector] || 0.22;
+      weightedVolatility += vol * value;
+      totalWeight += value;
+    }
+
+    const avgVolatility = totalWeight > 0 ? weightedVolatility / totalWeight : 0.20;
+    const annualReturn = 0.10; // 10% expected annual return
+    const numYears = parseInt(years) || 10;
+    const numIterations = Math.min(parseInt(iterations), 5000);
+
+    // Run Monte Carlo simulation
+    const finalValues = [];
+    const annualReturns = [];
+
+    for (let i = 0; i < numIterations; i++) {
+      let value = currentValue;
+      for (let y = 0; y < numYears; y++) {
+        // Generate random return using normal distribution (Box-Muller)
+        const u1 = Math.random();
+        const u2 = Math.random();
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+        const yearReturn = annualReturn + avgVolatility * z;
+        value *= (1 + yearReturn);
+      }
+      finalValues.push(value);
+      annualReturns.push((Math.pow(value / currentValue, 1 / numYears) - 1) * 100);
+    }
+
+    // Sort for percentile calculations
+    finalValues.sort((a, b) => a - b);
+    annualReturns.sort((a, b) => a - b);
+
+    // Calculate statistics
+    const meanFinalValue = finalValues.reduce((a, b) => a + b, 0) / numIterations;
+    const meanReturn = annualReturns.reduce((a, b) => a + b, 0) / numIterations;
+    const medianReturn = annualReturns[Math.floor(numIterations / 2)];
+    const variance = annualReturns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) / numIterations;
+    const stdDev = Math.sqrt(variance);
+
+    // Percentiles
+    const getPercentile = (arr, p) => arr[Math.floor(arr.length * p / 100)];
+
     res.json({
-      iterations: parseInt(iterations),
-      meanReturn: 12.5,
-      medianReturn: 11.8,
-      stdDev: 15.3,
+      iterations: numIterations,
+      years: numYears,
+      currentValue: Math.round(currentValue * 100) / 100,
+      projectedMeanValue: Math.round(meanFinalValue * 100) / 100,
+      meanReturn: Math.round(meanReturn * 100) / 100,
+      medianReturn: Math.round(medianReturn * 100) / 100,
+      stdDev: Math.round(stdDev * 100) / 100,
+      portfolioVolatility: Math.round(avgVolatility * 100 * 10) / 10,
       percentiles: {
-        p5: -8.2,
-        p25: 4.5,
-        p50: 11.8,
-        p75: 19.3,
-        p95: 32.1
+        p5: Math.round(getPercentile(annualReturns, 5) * 100) / 100,
+        p25: Math.round(getPercentile(annualReturns, 25) * 100) / 100,
+        p50: Math.round(getPercentile(annualReturns, 50) * 100) / 100,
+        p75: Math.round(getPercentile(annualReturns, 75) * 100) / 100,
+        p95: Math.round(getPercentile(annualReturns, 95) * 100) / 100
       },
-      simulations: [],
+      projectedValues: {
+        p5: Math.round(getPercentile(finalValues, 5) * 100) / 100,
+        p25: Math.round(getPercentile(finalValues, 25) * 100) / 100,
+        p50: Math.round(getPercentile(finalValues, 50) * 100) / 100,
+        p75: Math.round(getPercentile(finalValues, 75) * 100) / 100,
+        p95: Math.round(getPercentile(finalValues, 95) * 100) / 100
+      },
       confidence: {
-        level95: { lower: -8.2, upper: 32.1 },
-        level99: { lower: -15.3, upper: 42.5 }
+        level95: {
+          lower: Math.round(getPercentile(annualReturns, 2.5) * 100) / 100,
+          upper: Math.round(getPercentile(annualReturns, 97.5) * 100) / 100
+        },
+        level99: {
+          lower: Math.round(getPercentile(annualReturns, 0.5) * 100) / 100,
+          upper: Math.round(getPercentile(annualReturns, 99.5) * 100) / 100
+        }
       }
     });
   } catch (error) {
@@ -475,20 +573,84 @@ router.get('/regional-attribution', async (req, res) => {
   }
 });
 
-// 11. Sector rotation & exposure
+// 11. Sector rotation & exposure - Real data from holdings
 router.get('/sector-rotation', async (req, res) => {
   try {
     const { portfolioId, period = '1Y' } = req.query;
     if (!portfolioId) return res.status(400).json({ error: 'Portfolio ID required' });
-    
-    // Mock sector rotation
+
+    // Get portfolio holdings
+    const holdings = await prisma.holding.findMany({
+      where: { portfolioId },
+      select: { symbol: true, shares: true, avgCostBasis: true, sector: true }
+    });
+
+    if (holdings.length === 0) {
+      return res.json({
+        currentExposure: [],
+        overweightSectors: [],
+        underweightSectors: [],
+        totalValue: 0
+      });
+    }
+
+    // Get quotes for current prices
+    const symbols = holdings.map(h => h.symbol);
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Calculate sector allocations
+    const sectorMap = {};
+    let totalValue = 0;
+
+    for (const h of holdings) {
+      const price = quotes[h.symbol]?.price || Number(h.avgCostBasis);
+      const value = Number(h.shares) * price;
+      const sector = h.sector || quotes[h.symbol]?.sector || 'Unknown';
+
+      totalValue += value;
+      sectorMap[sector] = (sectorMap[sector] || 0) + value;
+    }
+
+    // S&P 500 benchmark weights (approximate)
+    const benchmarkWeights = {
+      'Technology': 29.0, 'Healthcare': 13.0, 'Financials': 12.5,
+      'Consumer Discretionary': 10.5, 'Communication Services': 8.5,
+      'Industrials': 8.5, 'Consumer Staples': 6.5, 'Energy': 4.5,
+      'Utilities': 2.5, 'Real Estate': 2.5, 'Materials': 2.0
+    };
+
+    // Calculate current exposure with over/under weight
+    const currentExposure = Object.entries(sectorMap).map(([sector, value]) => {
+      const portfolioWeight = totalValue > 0 ? (value / totalValue) * 100 : 0;
+      const benchmarkWeight = benchmarkWeights[sector] || 0;
+      const activeWeight = portfolioWeight - benchmarkWeight;
+
+      return {
+        sector,
+        value: Math.round(value * 100) / 100,
+        portfolioWeight: Math.round(portfolioWeight * 100) / 100,
+        benchmarkWeight: Math.round(benchmarkWeight * 100) / 100,
+        activeWeight: Math.round(activeWeight * 100) / 100
+      };
+    }).sort((a, b) => b.portfolioWeight - a.portfolioWeight);
+
+    // Identify over/under weight sectors
+    const overweightSectors = currentExposure
+      .filter(s => s.activeWeight > 2)
+      .map(s => s.sector);
+    const underweightSectors = currentExposure
+      .filter(s => s.activeWeight < -2)
+      .map(s => s.sector);
+
     res.json({
-      rotationHistory: [],
-      currentExposure: {},
-      overweightSectors: ['Technology', 'Healthcare'],
-      underweightSectors: ['Energy', 'Utilities']
+      currentExposure,
+      overweightSectors,
+      underweightSectors,
+      totalValue: Math.round(totalValue * 100) / 100,
+      holdingsCount: holdings.length
     });
   } catch (error) {
+    logger.error('Sector rotation error:', error);
     res.status(500).json({ error: 'Failed to calculate sector rotation' });
   }
 });
