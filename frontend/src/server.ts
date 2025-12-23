@@ -286,17 +286,31 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
     const token = res.locals.token;
 
     // Fetch all dashboard data in parallel with proper error handling
-    const [dashboardData, portfoliosData, indicesData, moversData] = await Promise.all([
+    const [dashboardData, portfoliosData, indicesData, moversData, watchlistData] = await Promise.all([
       apiFetch('/analytics/dashboard', token).catch(() => ({ error: true })),
       apiFetch('/portfolios', token).catch(() => ({ error: true })),
       apiFetch('/market/indices', token).catch(() => []),
-      apiFetch('/market/movers', token).catch(() => ({ gainers: [], losers: [] }))
+      apiFetch('/market/movers', token).catch(() => ({ gainers: [], losers: [] })),
+      apiFetch('/watchlists', token).catch(() => [])
     ]);
 
     const dashboard = dashboardData.error ? null : dashboardData;
     const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
     const indices = indicesData.error || !Array.isArray(indicesData) ? [] : indicesData;
     const movers = moversData.error ? { gainers: [], losers: [] } : moversData;
+
+    // Extract watchlist items with prices
+    let watchlist: any[] = [];
+    if (watchlistData && !watchlistData.error && Array.isArray(watchlistData)) {
+      // Flatten all watchlist items from all watchlists
+      watchlist = watchlistData.flatMap((wl: any) =>
+        (wl.items || []).map((item: any) => ({
+          symbol: item.symbol,
+          price: item.currentPrice || item.price || 0,
+          changePercent: item.changePercent || 0
+        }))
+      );
+    }
 
     // Format helpers
     const fmt = {
@@ -306,11 +320,35 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
       number: (v: number) => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
     };
 
+    // Destructure dashboard data for template - these are the variables the template expects
+    const holdings = dashboard?.holdings || [];
+    const sectors = dashboard?.sectors || [];
+    const risk = dashboard?.risk || { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
+    const transactions = dashboard?.recentTransactions || [];
+    const alerts = dashboard?.activeAlerts || [];
+    const totals = dashboard ? {
+      value: dashboard.value || 0,
+      cost: dashboard.cost || 0,
+      gain: dashboard.gain || 0,
+      income: dashboard.income || 0,
+      dayChange: dashboard.dayChange || 0,
+      ytdReturn: dashboard.ytdReturn || 0,
+      cash: dashboard.cash || 0,
+      holdingsCount: dashboard.holdingsCount || holdings.length
+    } : { value: 0, cost: 0, gain: 0, income: 0, dayChange: 0, ytdReturn: 0, cash: 0, holdingsCount: 0 };
+
     res.render('pages/dashboard', {
       pageTitle: 'Portfolio Dashboard',
       dashboard,
       portfolios,
-      totals: dashboard || { value: 0, cost: 0, gain: 0, income: 0, holdings: 0, dayChange: 0 },
+      // Pass all the individual variables the template expects
+      holdings,
+      sectors,
+      risk,
+      transactions,
+      alerts,
+      watchlist,
+      totals,
       analysis: null,
       selectedPid: portfolios[0]?.id || null,
       indices,
@@ -331,7 +369,13 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
       pageTitle: 'Portfolio Dashboard',
       dashboard: null,
       portfolios: [],
-      totals: { value: 0, cost: 0, gain: 0, income: 0, holdings: 0, dayChange: 0 },
+      holdings: [],
+      sectors: [],
+      risk: { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 },
+      transactions: [],
+      alerts: [],
+      watchlist: [],
+      totals: { value: 0, cost: 0, gain: 0, income: 0, dayChange: 0, ytdReturn: 0, cash: 0, holdingsCount: 0 },
       analysis: null,
       selectedPid: null,
       indices: [],

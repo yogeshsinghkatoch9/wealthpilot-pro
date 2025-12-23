@@ -27,18 +27,29 @@ app.get('/health', (req, res) => {
     });
 });
 // API Proxy - Use http-proxy-middleware for proper proxying of all request types including file uploads
+// Note: app.use('/api', ...) strips /api prefix, so we need pathRewrite to add it back
 app.use('/api', (0, http_proxy_middleware_1.createProxyMiddleware)({
     target: API_URL,
     changeOrigin: true,
-    // Don't parse body - let the backend handle it
+    pathRewrite: (path, req) => {
+        // app.use('/api', ...) strips /api, so add it back
+        return '/api' + path;
+    },
     on: {
         proxyReq: (proxyReq, req, res) => {
-            // Forward Authorization from cookie if not already present
-            const token = req.cookies?.token;
-            if (token && !req.headers.authorization) {
+            // ALWAYS set Authorization from cookie (most reliable source)
+            // This ensures the token is forwarded even if client-side JS fails
+            const cookieToken = req.cookies?.token;
+            const headerToken = req.headers.authorization?.replace('Bearer ', '');
+            // Prefer cookie token, fall back to header token
+            const token = cookieToken || headerToken;
+            if (token) {
                 proxyReq.setHeader('Authorization', `Bearer ${token}`);
+                console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}/api${req.url} [Token: ${token.substring(0, 20)}...]`);
             }
-            console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}${req.originalUrl}`);
+            else {
+                console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${API_URL}/api${req.url} [NO TOKEN!]`);
+            }
         },
         error: (err, req, res) => {
             console.error('[Proxy Error]', err.message);
@@ -130,7 +141,7 @@ app.post('/login', async (req, res) => {
     }
     res.cookie('token', data.token, {
         maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
+        httpOnly: false, // Allow JavaScript access for API calls
         sameSite: 'lax',
         secure: false // Set to true if using HTTPS
     });
@@ -150,7 +161,12 @@ app.post('/register', async (req, res) => {
     if (data.error) {
         return res.render('pages/register', { pageTitle: 'Register', error: data.error });
     }
-    res.cookie('token', data.token, { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true });
+    res.cookie('token', data.token, {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: false,
+        sameSite: 'lax',
+        secure: false
+    });
     res.redirect('/');
 });
 app.get('/logout', (req, res) => {
@@ -238,16 +254,27 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
     try {
         const token = res.locals.token;
         // Fetch all dashboard data in parallel with proper error handling
-        const [dashboardData, portfoliosData, indicesData, moversData] = await Promise.all([
+        const [dashboardData, portfoliosData, indicesData, moversData, watchlistData] = await Promise.all([
             apiFetch('/analytics/dashboard', token).catch(() => ({ error: true })),
             apiFetch('/portfolios', token).catch(() => ({ error: true })),
             apiFetch('/market/indices', token).catch(() => []),
-            apiFetch('/market/movers', token).catch(() => ({ gainers: [], losers: [] }))
+            apiFetch('/market/movers', token).catch(() => ({ gainers: [], losers: [] })),
+            apiFetch('/watchlists', token).catch(() => [])
         ]);
         const dashboard = dashboardData.error ? null : dashboardData;
         const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
         const indices = indicesData.error || !Array.isArray(indicesData) ? [] : indicesData;
         const movers = moversData.error ? { gainers: [], losers: [] } : moversData;
+        // Extract watchlist items with prices
+        let watchlist = [];
+        if (watchlistData && !watchlistData.error && Array.isArray(watchlistData)) {
+            // Flatten all watchlist items from all watchlists
+            watchlist = watchlistData.flatMap((wl) => (wl.items || []).map((item) => ({
+                symbol: item.symbol,
+                price: item.currentPrice || item.price || 0,
+                changePercent: item.changePercent || 0
+            })));
+        }
         // Format helpers
         const fmt = {
             money: (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -255,11 +282,34 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
             pct: (v) => { const safeV = v || 0; return (safeV >= 0 ? '+' : '') + safeV.toFixed(2) + '%'; },
             number: (v) => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
         };
+        // Destructure dashboard data for template - these are the variables the template expects
+        const holdings = dashboard?.holdings || [];
+        const sectors = dashboard?.sectors || [];
+        const risk = dashboard?.risk || { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
+        const transactions = dashboard?.recentTransactions || [];
+        const alerts = dashboard?.activeAlerts || [];
+        const totals = dashboard ? {
+            value: dashboard.value || 0,
+            cost: dashboard.cost || 0,
+            gain: dashboard.gain || 0,
+            income: dashboard.income || 0,
+            dayChange: dashboard.dayChange || 0,
+            ytdReturn: dashboard.ytdReturn || 0,
+            cash: dashboard.cash || 0,
+            holdingsCount: dashboard.holdingsCount || holdings.length
+        } : { value: 0, cost: 0, gain: 0, income: 0, dayChange: 0, ytdReturn: 0, cash: 0, holdingsCount: 0 };
         res.render('pages/dashboard', {
             pageTitle: 'Portfolio Dashboard',
             dashboard,
             portfolios,
-            totals: dashboard || { value: 0, cost: 0, gain: 0, income: 0, holdings: 0, dayChange: 0 },
+            // Pass all the individual variables the template expects
+            holdings,
+            sectors,
+            risk,
+            transactions,
+            alerts,
+            watchlist,
+            totals,
             analysis: null,
             selectedPid: portfolios[0]?.id || null,
             indices,
@@ -281,7 +331,13 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
             pageTitle: 'Portfolio Dashboard',
             dashboard: null,
             portfolios: [],
-            totals: { value: 0, cost: 0, gain: 0, income: 0, holdings: 0, dayChange: 0 },
+            holdings: [],
+            sectors: [],
+            risk: { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 },
+            transactions: [],
+            alerts: [],
+            watchlist: [],
+            totals: { value: 0, cost: 0, gain: 0, income: 0, dayChange: 0, ytdReturn: 0, cash: 0, holdingsCount: 0 },
             analysis: null,
             selectedPid: null,
             indices: [],
@@ -2253,6 +2309,104 @@ app.get('/settings', requireAuth, async (req, res) => {
 app.get('/profile', requireAuth, (req, res) => {
     res.redirect('/settings');
 });
+// ===================== PORTFOLIO MANAGER (INSTITUTIONAL GRADE) =====================
+app.get('/portfolio-manager', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const selectedPortfolioId = req.query.portfolio || '';
+    // Fetch user's portfolios
+    const portfoliosData = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosData.error ? [] : portfoliosData;
+    // Get selected portfolio details if specified
+    let selectedPortfolio = null;
+    let holdings = [];
+    let sectors = [];
+    let analytics = null;
+    if (selectedPortfolioId && portfolios.length > 0) {
+        selectedPortfolio = portfolios.find((p) => p.id === selectedPortfolioId) || portfolios[0];
+        // Fetch holdings for selected portfolio
+        const holdingsData = await apiFetch(`/holdings?portfolioId=${selectedPortfolio.id}`, token);
+        holdings = holdingsData.error ? [] : holdingsData;
+        // Fetch analytics for selected portfolio
+        const analyticsData = await apiFetch(`/analytics/portfolio/${selectedPortfolio.id}`, token);
+        analytics = analyticsData.error ? null : analyticsData;
+        // Calculate sector allocation from holdings
+        const sectorMap = new Map();
+        holdings.forEach((h) => {
+            const sector = h.sector || 'Other';
+            const current = sectorMap.get(sector) || { name: sector, value: 0, count: 0 };
+            current.value += h.marketValue || 0;
+            current.count += 1;
+            sectorMap.set(sector, current);
+        });
+        sectors = Array.from(sectorMap.values());
+    }
+    else if (portfolios.length > 0) {
+        selectedPortfolio = portfolios[0];
+        const holdingsData = await apiFetch(`/holdings?portfolioId=${selectedPortfolio.id}`, token);
+        holdings = holdingsData.error ? [] : holdingsData;
+    }
+    // Calculate portfolio totals
+    const totals = {
+        value: holdings.reduce((sum, h) => sum + (h.marketValue || 0), 0) + (selectedPortfolio?.cashBalance || 0),
+        cost: holdings.reduce((sum, h) => sum + (h.totalCost || 0), 0),
+        gain: holdings.reduce((sum, h) => sum + (h.gain || 0), 0),
+        dayChange: holdings.reduce((sum, h) => sum + (h.dayChange || 0) * (h.shares || 0), 0),
+        dividendIncome: holdings.reduce((sum, h) => sum + ((h.dividendYield || 0) / 100 * (h.marketValue || 0)), 0),
+        cash: selectedPortfolio?.cashBalance || 0,
+        holdingsCount: holdings.length
+    };
+    // Calculate asset allocation
+    const allocation = {
+        equity: 0,
+        fixedIncome: 0,
+        other: 0
+    };
+    holdings.forEach((h) => {
+        const assetType = (h.assetType || 'stock').toLowerCase();
+        const value = h.marketValue || 0;
+        if (['stock', 'etf', 'equity'].includes(assetType)) {
+            allocation.equity += value;
+        }
+        else if (['bond', 'fixed income', 'fixed_income'].includes(assetType)) {
+            allocation.fixedIncome += value;
+        }
+        else {
+            allocation.other += value;
+        }
+    });
+    // Convert to percentages
+    const totalInvested = allocation.equity + allocation.fixedIncome + allocation.other;
+    if (totalInvested > 0) {
+        allocation.equity = (allocation.equity / totalInvested) * 100;
+        allocation.fixedIncome = (allocation.fixedIncome / totalInvested) * 100;
+        allocation.other = (allocation.other / totalInvested) * 100;
+    }
+    // Format helpers
+    const fmt = {
+        money: (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        compact: (v) => {
+            if (v >= 1000000)
+                return '$' + (v / 1000000).toFixed(2) + 'M';
+            if (v >= 1000)
+                return '$' + (v / 1000).toFixed(1) + 'K';
+            return '$' + (v || 0).toFixed(2);
+        },
+        pct: (v) => (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%',
+        number: (v) => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
+    };
+    res.render('pages/portfolio-manager', {
+        pageTitle: 'Portfolio Manager',
+        portfolios,
+        selectedPortfolio,
+        holdings,
+        sectors,
+        analytics,
+        totals,
+        allocation,
+        currentPage: 'portfolio-manager',
+        fmt
+    });
+});
 // ===================== API PROXY ROUTES =====================
 // Theme toggle
 app.post('/api/theme', (req, res) => {
@@ -2261,8 +2415,17 @@ app.post('/api/theme', (req, res) => {
     res.json({ success: true, theme });
 });
 // Proxy for frontend API calls
+// NOTE: File uploads are handled by http-proxy-middleware at line 30
+// This fallback handler is for JSON-based API calls only
 app.all('/api/*', async (req, res) => {
     const endpoint = req.path.replace('/api', '');
+    // Skip multipart/form-data requests - they're handled by the proxy middleware
+    const contentType = req.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+        // This shouldn't happen if proxy middleware is working, but just in case
+        console.log(`[API Fallback] Skipping multipart request for ${endpoint} - should be handled by proxy`);
+        return res.status(500).json({ error: 'File upload proxy error - multipart not supported in fallback handler' });
+    }
     const queryString = req.originalUrl.split('?')[1];
     const fullUrl = queryString ? `${API_URL}${endpoint}?${queryString}` : `${API_URL}${endpoint}`;
     const token = req.cookies.token;
@@ -2288,22 +2451,7 @@ app.all('/api/*', async (req, res) => {
         res.status(500).json({ error: 'API request failed' });
     }
 });
-// ===================== START SERVER =====================
-app.listen(PORT, () => {
-    console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║   🚀 WealthPilot Pro - Frontend Server                       ║
-║                                                              ║
-║   Frontend: http://localhost:${PORT}                             ║
-║   Backend API: ${API_URL}                           
-║                                                              ║
-║   Login: demo@wealthpilot.com / demo123456                   ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
-  `);
-});
-exports.default = app;
+// ===================== PORTFOLIO TOOLS ROUTE =====================
 // Portfolio Tools Route (rebalancing, tax loss harvesting, dividend forecasting)
 app.get('/portfolio-tools', requireAuth, async (req, res) => {
     const token = res.locals.token;
@@ -2351,4 +2499,20 @@ app.get('/portfolio-tools', requireAuth, async (req, res) => {
         fmt
     });
 });
+// ===================== START SERVER =====================
+app.listen(PORT, () => {
+    console.log(`
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   WealthPilot Pro - Frontend Server                          ║
+║                                                              ║
+║   Frontend: http://localhost:${PORT}                             ║
+║   Backend API: ${API_URL}
+║                                                              ║
+║   Ready for connections...                                   ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+  `);
+});
+exports.default = app;
 //# sourceMappingURL=server.js.map
