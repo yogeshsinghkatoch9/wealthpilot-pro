@@ -256,12 +256,13 @@ class PostgresAdapter {
   async createUser(email, password, firstName, lastName) {
     const id = uuidv4();
     const passwordHash = await bcrypt.hash(password, 10);
+    const now = new Date();
 
     const result = await this.pool.query(
-      `INSERT INTO users (id, email, password_hash, first_name, last_name)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO users (id, email, password_hash, first_name, last_name, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [id, email.toLowerCase(), passwordHash, firstName, lastName]
+      [id, email.toLowerCase(), passwordHash, firstName, lastName, now, now]
     );
 
     return result.rows[0];
