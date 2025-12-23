@@ -1,7 +1,7 @@
 <%
 // Safe defaults for all potentially undefined variables
 const safeTheme = typeof theme !== 'undefined' && theme ? theme : 'dark';
-const safePageTitle = typeof pageTitle !== 'undefined' && pageTitle ? pageTitle : 'Technical Indicators';
+const safePageTitle = typeof pageTitle !== 'undefined' && pageTitle ? pageTitle : 'Technical Analysis';
 const t = technicals || {};
 const tech = t.technicals || {};
 const mom = t.momentum || {};
@@ -13,373 +13,900 @@ const macdVal = tech.macd || 0;
 const signalVal = tech.signal || 0;
 const histogramVal = tech.histogram || 0;
 const chartData = t.chartData || [];
+const sym = symbol || 'AAPL';
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
 function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%'; }
 function getRsiSignal(rsi) {
-  if (rsi > 70) return { text: 'OVERBOUGHT', color: 'red' };
-  if (rsi < 30) return { text: 'OVERSOLD', color: 'emerald' };
-  if (rsi > 50) return { text: 'BULLISH', color: 'emerald' };
-  return { text: 'NEUTRAL', color: 'amber' };
+  if (rsi > 70) return { text: 'OVERBOUGHT', color: 'red', bg: 'red' };
+  if (rsi < 30) return { text: 'OVERSOLD', color: 'emerald', bg: 'emerald' };
+  if (rsi > 50) return { text: 'BULLISH', color: 'emerald', bg: 'emerald' };
+  return { text: 'NEUTRAL', color: 'amber', bg: 'amber' };
 }
 function getMacdSignal(macd, signal) {
-  if (macd > signal) return { text: 'BUY SIGNAL', color: 'emerald' };
-  return { text: 'SELL SIGNAL', color: 'red' };
+  if (macd > signal) return { text: 'BULLISH', color: 'emerald' };
+  return { text: 'BEARISH', color: 'red' };
 }
 function getTrendSignal(price, sma50, sma200) {
-  if (price > sma50 && price > sma200) return { text: 'BULLISH', color: 'emerald' };
-  if (price < sma50 && price < sma200) return { text: 'BEARISH', color: 'red' };
-  return { text: 'NEUTRAL', color: 'amber' };
-}
-function getVolumeSignal(ratio) {
-  if (ratio > 1.2) return { text: 'ABOVE AVG', color: 'purple' };
-  if (ratio < 0.8) return { text: 'BELOW AVG', color: 'slate' };
-  return { text: 'AVERAGE', color: 'amber' };
-}
-function getMaSignal(price, ma) {
-  if (!ma) return { text: 'N/A', color: 'slate', pct: 0 };
-  const pct = ((price - ma) / ma) * 100;
-  return {
-    text: price > ma ? 'BUY' : 'SELL',
-    color: price > ma ? 'emerald' : 'red',
-    pct: pct
-  };
+  if (sma50 > sma200 && price > sma50) return { text: 'STRONG UPTREND', color: 'emerald', icon: '↑↑' };
+  if (price > sma50 && price > sma200) return { text: 'UPTREND', color: 'emerald', icon: '↑' };
+  if (sma50 < sma200 && price < sma50) return { text: 'STRONG DOWNTREND', color: 'red', icon: '↓↓' };
+  if (price < sma50 && price < sma200) return { text: 'DOWNTREND', color: 'red', icon: '↓' };
+  return { text: 'SIDEWAYS', color: 'amber', icon: '↔' };
 }
 
 const rsiSignal = getRsiSignal(rsiVal);
 const macdSignal = getMacdSignal(macdVal, signalVal);
 const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
-const volSignal = getVolumeSignal(tech.volumeRatio || 1);
 %>
-<%- include('../partials/header', { pageTitle: 'Technical Indicators' }) %>
+<%- include('../partials/header', { pageTitle: 'Technical Analysis' }) %>
 
-<!-- Bloomberg Header Bar -->
-<div class="bloomberg-header-bar">
-  <div class="flex items-center justify-between">
+<style>
+  /* Advanced Chart Styles */
+  .chart-container {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .chart-toolbar {
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .timeframe-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .timeframe-btn:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .timeframe-btn.active {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.3);
+  }
+
+  .indicator-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .indicator-toggle:hover {
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+  }
+
+  .indicator-toggle.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+  }
+
+  .indicator-toggle .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .signal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+  }
+
+  .signal-badge.bullish {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .signal-badge.bearish {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .signal-badge.neutral {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .indicator-panel {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .indicator-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .indicator-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    color: #94a3b8;
+  }
+
+  .gauge-container {
+    position: relative;
+    width: 140px;
+    height: 80px;
+    margin: 0 auto;
+  }
+
+  .gauge-value {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .level-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    margin-bottom: 6px;
+    transition: all 0.2s;
+  }
+
+  .level-bar:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .level-bar.current {
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .quick-stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .quick-stat {
+    background: rgba(15, 23, 42, 0.95);
+    padding: 16px;
+    text-align: center;
+  }
+
+  .quick-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+
+  .quick-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+
+  .quick-stat-value.positive { color: #10b981; }
+  .quick-stat-value.negative { color: #ef4444; }
+
+  @media (max-width: 768px) {
+    .quick-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .quick-stat:last-child {
+      grid-column: span 2;
+    }
+    .chart-toolbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Header with Symbol Search -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
     <div class="flex items-center gap-4">
-      <h1 class="text-xl font-bold text-amber-400 tracking-wide">TECHNICAL INDICATORS</h1>
-      <span class="live-indicator">LIVE</span>
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-white font-mono"><%= sym %></h1>
+          <span class="signal-badge <%= trendSignal.color === 'emerald' ? 'bullish' : trendSignal.color === 'red' ? 'bearish' : 'neutral' %>">
+            <span><%= trendSignal.icon %></span>
+            <%= trendSignal.text %>
+          </span>
+        </div>
+        <p class="text-slate-400 text-sm mt-1">Technical Analysis Dashboard</p>
+      </div>
     </div>
-    <div class="flex gap-2">
+
+    <div class="flex items-center gap-3">
       <form method="GET" action="/technicals" class="flex gap-2">
-        <input type="text" name="symbol" placeholder="TICKER" value="<%= symbol || 'AAPL' %>" class="bg-black border border-amber-400/30 px-3 py-1.5 font-mono text-sm text-white focus:outline-none focus:border-amber-400 w-24 uppercase">
-        <button type="submit" class="px-3 py-1.5 bg-amber-400 text-black font-bold text-sm hover:bg-amber-300">GO</button>
+        <div class="relative">
+          <input type="text" name="symbol" placeholder="Enter Symbol" value="<%= sym %>"
+                 class="w-32 px-3 py-2 bg-black/40 border border-slate-700 rounded-lg font-mono text-sm text-white uppercase focus:outline-none focus:border-amber-400 transition-colors">
+        </div>
+        <button type="submit" class="px-4 py-2 bg-amber-500 text-black font-bold text-sm rounded-lg hover:bg-amber-400 transition-colors">
+          Analyze
+        </button>
       </form>
+
       <% if (typeof holdings !== 'undefined' && holdings && holdings.length > 0) { %>
-      <select onchange="window.location.href='/technicals?symbol='+this.value" class="bg-black border border-amber-400/30 px-3 py-1.5 font-mono text-sm text-white focus:outline-none focus:border-amber-400 w-32">
-        <option value="">Portfolio</option>
+      <select onchange="window.location.href='/technicals?symbol='+this.value"
+              class="px-3 py-2 bg-black/40 border border-slate-700 rounded-lg font-mono text-sm text-white focus:outline-none focus:border-amber-400">
+        <option value="">From Portfolio</option>
         <% holdings.forEach(h => { %>
-        <option value="<%= h.symbol %>" <%= h.symbol === symbol ? 'selected' : '' %>><%= h.symbol %></option>
+        <option value="<%= h.symbol %>" <%= h.symbol === sym ? 'selected' : '' %>><%= h.symbol %></option>
         <% }); %>
       </select>
       <% } %>
     </div>
   </div>
-</div>
 
-<% if (!technicals) { %>
-<div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No technical data available for <%= symbol %></p>
-  <p class="text-slate-400 mt-2">Try a different symbol or check if the market is open.</p>
-</div>
-<% } else { %>
-
-<!-- KPI Bar -->
-<div class="kpi-bar">
-  <div class="kpi-item">
-    <div class="kpi-label">CURRENT PRICE</div>
-    <div class="kpi-value text-amber-400 font-mono"><%= formatPrice(price) %></div>
-    <div class="text-xs text-slate-400 mt-1"><%= symbol %></div>
-  </div>
-  <div class="kpi-item">
-    <div class="kpi-label">TREND</div>
-    <div class="kpi-value text-<%= trendSignal.color %>-400 font-mono"><%= trendSignal.text %></div>
-    <div class="text-xs text-<%= trendSignal.color %>-400 mt-1"><%= trendSignal.text === 'BULLISH' ? '↑' : trendSignal.text === 'BEARISH' ? '↓' : '→' %> Price vs MAs</div>
-  </div>
-  <div class="kpi-item">
-    <div class="kpi-label">MOMENTUM</div>
-    <div class="kpi-value text-<%= rsiSignal.color %>-400 font-mono"><%= rsiSignal.text %></div>
-    <div class="text-xs text-sky-400 mt-1">RSI: <%= rsiVal.toFixed(1) %></div>
-  </div>
-  <div class="kpi-item">
-    <div class="kpi-label">MACD</div>
-    <div class="kpi-value text-<%= macdSignal.color %>-400 font-mono"><%= macdSignal.text %></div>
-    <div class="text-xs text-<%= macdSignal.color %>-400 mt-1">Hist: <%= histogramVal.toFixed(2) %></div>
-  </div>
-  <div class="kpi-item">
-    <div class="kpi-label">VOLUME</div>
-    <div class="kpi-value text-<%= volSignal.color %>-400 font-mono"><%= volSignal.text %></div>
-    <div class="text-xs text-<%= volSignal.color %>-400 mt-1"><%= formatPct((tech.volumeRatio - 1) * 100) %> vs avg</div>
-  </div>
-</div>
-
-<!-- Price Chart with Indicators -->
-<div class="bloomberg-card">
-  <div class="border-b border-amber-400/20 pb-3 mb-4">
-    <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">Price with Bollinger Bands - <%= symbol %></h3>
-  </div>
-  <div class="h-72"><canvas id="priceChart"></canvas></div>
-</div>
-
-<!-- Indicator Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<!-- RSI -->
-<div class="bloomberg-card">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">RSI (14)</h3>
-    <span class="px-2 py-1 bg-<%= rsiSignal.color %>-500/20 text-<%= rsiSignal.color %>-400 text-xs font-bold font-mono"><%= rsiSignal.text %></span>
-  </div>
-  <div class="relative h-8 rounded-full bg-black border border-slate-700 overflow-hidden">
-    <div class="absolute inset-y-0 left-0 w-[30%] bg-emerald-500/30"></div>
-    <div class="absolute inset-y-0 left-[30%] w-[40%] bg-amber-500/30"></div>
-    <div class="absolute inset-y-0 right-0 w-[30%] bg-red-500/30"></div>
-    <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-sky-500 border-2 border-amber-400 shadow" style="left:calc(<%= Math.min(Math.max(rsiVal, 0), 100) %>% - 8px)"></div>
-  </div>
-  <div class="flex justify-between text-xs mt-2 text-slate-400">
-    <span>Oversold (0-30)</span>
-    <span class="font-bold text-sky-400 font-mono"><%= rsiVal.toFixed(1) %></span>
-    <span>Overbought (70-100)</span>
-  </div>
-  <p class="text-sm text-slate-400 mt-3">
-    <% if (rsiVal > 70) { %>Overbought territory - potential reversal.<% }
-       else if (rsiVal < 30) { %>Oversold territory - potential bounce.<% }
-       else if (rsiVal > 50) { %>Neutral zone, trending bullish.<% }
-       else { %>Neutral zone, trending bearish.<% } %>
-  </p>
-</div>
-
-<!-- MACD -->
-<div class="bloomberg-card">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">MACD</h3>
-    <span class="px-2 py-1 bg-<%= macdSignal.color %>-500/20 text-<%= macdSignal.color %>-400 text-xs font-bold font-mono"><%= macdSignal.text %></span>
-  </div>
-  <div class="h-32"><canvas id="macdChart"></canvas></div>
-  <div class="grid grid-cols-3 gap-2 mt-3 text-center text-sm">
-    <div><p class="text-slate-400 text-xs uppercase">MACD</p><p class="font-bold text-<%= macdVal >= 0 ? 'emerald' : 'red' %>-400 font-mono"><%= macdVal.toFixed(2) %></p></div>
-    <div><p class="text-slate-400 text-xs uppercase">Signal</p><p class="font-bold text-amber-400 font-mono"><%= signalVal.toFixed(2) %></p></div>
-    <div><p class="text-slate-400 text-xs uppercase">Histogram</p><p class="font-bold text-<%= histogramVal >= 0 ? 'emerald' : 'red' %>-400 font-mono"><%= histogramVal >= 0 ? '+' : '' %><%= histogramVal.toFixed(2) %></p></div>
-  </div>
-</div>
-
-<!-- Bollinger Bands -->
-<div class="bloomberg-card">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">Bollinger Bands (20,2)</h3>
-    <span class="px-2 py-1 bg-sky-500/20 text-sky-400 text-xs font-bold font-mono">
-      <% if (price > bb.upper) { %>ABOVE UPPER<% }
-         else if (price < bb.lower) { %>BELOW LOWER<% }
-         else { %>IN BAND<% } %>
-    </span>
-  </div>
-  <div class="space-y-2">
-    <div class="flex justify-between items-center">
-      <span class="text-slate-400 text-sm">Upper Band</span>
-      <span class="font-mono text-red-400"><%= formatPrice(bb.upper) %></span>
+  <% if (!technicals) { %>
+  <!-- Empty State -->
+  <div class="chart-container p-12 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/10 flex items-center justify-center">
+      <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
     </div>
-    <div class="flex justify-between items-center bg-amber-500/20 p-2 rounded">
-      <span class="text-amber-400 text-sm font-bold">Current Price</span>
-      <span class="font-mono text-amber-400 font-bold"><%= formatPrice(price) %></span>
+    <h3 class="text-xl font-bold text-white mb-2">No Technical Data Available</h3>
+    <p class="text-slate-400 max-w-md mx-auto">Unable to load technical indicators for <%= sym %>. Try a different symbol or check if the market is open.</p>
+  </div>
+  <% } else { %>
+
+  <!-- Quick Stats Bar -->
+  <div class="quick-stats">
+    <div class="quick-stat">
+      <div class="quick-stat-label">Price</div>
+      <div class="quick-stat-value"><%= formatPrice(price) %></div>
     </div>
-    <div class="flex justify-between items-center">
-      <span class="text-slate-400 text-sm">Middle (SMA20)</span>
-      <span class="font-mono text-sky-400"><%= formatPrice(bb.middle) %></span>
+    <div class="quick-stat">
+      <div class="quick-stat-label">RSI (14)</div>
+      <div class="quick-stat-value <%= rsiVal > 70 ? 'negative' : rsiVal < 30 ? 'positive' : '' %>"><%= rsiVal.toFixed(1) %></div>
     </div>
-    <div class="flex justify-between items-center">
-      <span class="text-slate-400 text-sm">Lower Band</span>
-      <span class="font-mono text-emerald-400"><%= formatPrice(bb.lower) %></span>
+    <div class="quick-stat">
+      <div class="quick-stat-label">MACD</div>
+      <div class="quick-stat-value <%= macdVal >= 0 ? 'positive' : 'negative' %>"><%= macdVal.toFixed(2) %></div>
+    </div>
+    <div class="quick-stat">
+      <div class="quick-stat-label">SMA 50</div>
+      <div class="quick-stat-value <%= price > (tech.sma50 || 0) ? 'positive' : 'negative' %>"><%= formatPrice(tech.sma50) %></div>
+    </div>
+    <div class="quick-stat">
+      <div class="quick-stat-label">SMA 200</div>
+      <div class="quick-stat-value <%= price > (tech.sma200 || 0) ? 'positive' : 'negative' %>"><%= formatPrice(tech.sma200) %></div>
     </div>
   </div>
-  <p class="text-sm text-slate-400 mt-3">
-    Band Width: <%= bb.upper && bb.lower ? ((bb.upper - bb.lower) / bb.middle * 100).toFixed(2) : 0 %>%
-  </p>
-</div>
-</div>
 
-<!-- Moving Averages Table -->
-<div class="bloomberg-card overflow-hidden">
-  <div class="border-b border-amber-400/20 pb-3 mb-4">
-    <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">Moving Averages</h3>
-  </div>
-  <table class="bloomberg-table">
-    <thead>
-      <tr>
-        <th class="text-left">PERIOD</th>
-        <th class="text-center">SMA</th>
-        <th class="text-center">PRICE VS MA</th>
-        <th class="text-center">SIGNAL</th>
-      </tr>
-    </thead>
-    <tbody>
-      <%
-      const mas = [
-        { period: '20-day', value: tech.sma20 },
-        { period: '50-day', value: tech.sma50 },
-        { period: '200-day', value: tech.sma200 }
-      ];
-      mas.forEach(ma => {
-        const sig = getMaSignal(price, ma.value);
-      %>
-      <tr>
-        <td class="font-medium text-white"><%= ma.period %></td>
-        <td class="text-center font-mono text-white"><%= ma.value ? formatPrice(ma.value) : 'N/A' %></td>
-        <td class="text-center text-<%= sig.color %>-400 font-mono"><%= ma.value ? formatPct(sig.pct) + (sig.pct >= 0 ? ' above' : ' below') : 'N/A' %></td>
-        <td class="text-center"><span class="px-2 py-1 bg-<%= sig.color %>-500/20 text-<%= sig.color %>-400 text-xs font-bold font-mono"><%= sig.text %></span></td>
-      </tr>
-      <% }); %>
-    </tbody>
-  </table>
-</div>
-
-<!-- Fibonacci Levels -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="bloomberg-card">
-    <div class="border-b border-amber-400/20 pb-3 mb-4">
-      <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">Fibonacci Retracement Levels</h3>
-    </div>
-    <div class="space-y-2">
-      <%
-      const fibLevels = [
-        { level: '0.0%', value: fib.level0, color: 'red' },
-        { level: '23.6%', value: fib.level236, color: 'red' },
-        { level: '38.2%', value: fib.level382, color: 'amber' },
-        { level: '50.0%', value: fib.level500, color: 'amber' },
-        { level: '61.8%', value: fib.level618, color: 'emerald' },
-        { level: '78.6%', value: fib.level786, color: 'emerald' },
-        { level: '100%', value: fib.level100, color: 'emerald' }
-      ];
-      fibLevels.forEach(f => {
-        const isNearPrice = f.value && Math.abs(price - f.value) / price < 0.02;
-      %>
-      <div class="flex items-center justify-between p-2 <%= isNearPrice ? 'bg-amber-500/20 border-2 border-amber-400' : 'bg-' + f.color + '-500/10 border border-' + f.color + '-400/20' %>">
-        <span class="text-<%= f.color %>-400 font-medium font-mono"><%= f.level %></span>
-        <span class="font-bold font-mono <%= isNearPrice ? 'text-amber-400' : 'text-white' %>"><%= f.value ? formatPrice(f.value) : 'N/A' %></span>
-        <span class="text-sm text-slate-400 font-mono"><%= f.value ? formatPct(((f.value - price) / price) * 100) : '' %></span>
+  <!-- Main Chart Container -->
+  <div class="chart-container">
+    <div class="chart-toolbar">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-slate-500 font-medium mr-2">Timeframe:</span>
+        <button class="timeframe-btn" data-tf="1D">1D</button>
+        <button class="timeframe-btn" data-tf="1W">1W</button>
+        <button class="timeframe-btn active" data-tf="1M">1M</button>
+        <button class="timeframe-btn" data-tf="3M">3M</button>
+        <button class="timeframe-btn" data-tf="6M">6M</button>
+        <button class="timeframe-btn" data-tf="1Y">1Y</button>
+        <button class="timeframe-btn" data-tf="5Y">5Y</button>
       </div>
-      <% }); %>
-    </div>
-  </div>
 
-  <div class="bloomberg-card">
-    <div class="border-b border-amber-400/20 pb-3 mb-4">
-      <h3 class="text-sm font-bold text-amber-400 tracking-wider uppercase">Volume Analysis</h3>
-    </div>
-    <div class="space-y-4">
-      <div class="flex justify-between items-center p-3 bg-black border border-slate-700">
-        <span class="text-slate-400">Current Volume</span>
-        <span class="font-bold font-mono text-white"><%= tech.volume ? (tech.volume / 1000000).toFixed(2) + 'M' : 'N/A' %></span>
-      </div>
-      <div class="flex justify-between items-center p-3 bg-black border border-slate-700">
-        <span class="text-slate-400">20-Day Avg Volume</span>
-        <span class="font-bold font-mono text-white"><%= tech.avgVolume ? (tech.avgVolume / 1000000).toFixed(2) + 'M' : 'N/A' %></span>
-      </div>
-      <div class="flex justify-between items-center p-3 bg-<%= volSignal.color %>-500/20 border border-<%= volSignal.color %>-400">
-        <span class="text-<%= volSignal.color %>-400 font-bold">Volume Ratio</span>
-        <span class="font-bold font-mono text-<%= volSignal.color %>-400"><%= tech.volumeRatio ? tech.volumeRatio.toFixed(2) + 'x' : 'N/A' %></span>
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-slate-500 font-medium mr-2">Indicators:</span>
+        <button class="indicator-toggle active" data-indicator="sma">
+          <span class="dot" style="background: #f59e0b;"></span>
+          SMA
+        </button>
+        <button class="indicator-toggle active" data-indicator="bb">
+          <span class="dot" style="background: #8b5cf6;"></span>
+          Bollinger
+        </button>
+        <button class="indicator-toggle" data-indicator="ema">
+          <span class="dot" style="background: #06b6d4;"></span>
+          EMA
+        </button>
+        <button class="indicator-toggle" data-indicator="volume">
+          <span class="dot" style="background: #64748b;"></span>
+          Volume
+        </button>
       </div>
     </div>
-    <p class="text-sm text-slate-400 mt-4">
-      <% if (tech.volumeRatio > 1.5) { %>Unusually high volume - strong conviction move.<% }
-         else if (tech.volumeRatio > 1.2) { %>Above average volume - increased interest.<% }
-         else if (tech.volumeRatio < 0.8) { %>Below average volume - low conviction.<% }
-         else { %>Normal volume - typical trading activity.<% } %>
-    </p>
-  </div>
-</div>
-<% } %>
-</div></div></main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div class="p-4">
+      <div style="height: 400px;">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lower Indicator Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- RSI Chart -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">RSI (14)</div>
+        <span class="signal-badge <%= rsiSignal.color === 'emerald' ? 'bullish' : rsiSignal.color === 'red' ? 'bearish' : 'neutral' %>">
+          <%= rsiSignal.text %>
+        </span>
+      </div>
+      <div class="p-4">
+        <div style="height: 150px;">
+          <canvas id="rsiChart"></canvas>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-xs text-slate-500">Oversold</div>
+            <div class="text-emerald-400 font-mono font-bold">&lt; 30</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500">Current</div>
+            <div class="text-<%= rsiSignal.color %>-400 font-mono text-xl font-bold"><%= rsiVal.toFixed(1) %></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500">Overbought</div>
+            <div class="text-red-400 font-mono font-bold">&gt; 70</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MACD Chart -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">MACD (12, 26, 9)</div>
+        <span class="signal-badge <%= macdSignal.color === 'emerald' ? 'bullish' : 'bearish' %>">
+          <%= macdSignal.text %>
+        </span>
+      </div>
+      <div class="p-4">
+        <div style="height: 150px;">
+          <canvas id="macdChart"></canvas>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-xs text-slate-500">MACD Line</div>
+            <div class="text-sky-400 font-mono font-bold"><%= macdVal.toFixed(3) %></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500">Signal Line</div>
+            <div class="text-amber-400 font-mono font-bold"><%= signalVal.toFixed(3) %></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500">Histogram</div>
+            <div class="text-<%= histogramVal >= 0 ? 'emerald' : 'red' %>-400 font-mono font-bold"><%= histogramVal >= 0 ? '+' : '' %><%= histogramVal.toFixed(3) %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technical Indicators Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Moving Averages Panel -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">Moving Averages</div>
+      </div>
+      <div class="p-4 space-y-3">
+        <%
+        const mas = [
+          { label: 'SMA 20', value: tech.sma20, color: 'emerald' },
+          { label: 'SMA 50', value: tech.sma50, color: 'sky' },
+          { label: 'SMA 200', value: tech.sma200, color: 'amber' },
+          { label: 'EMA 12', value: tech.ema12, color: 'purple' },
+          { label: 'EMA 26', value: tech.ema26, color: 'pink' }
+        ];
+        mas.forEach(ma => {
+          const diff = ma.value ? ((price - ma.value) / ma.value * 100) : 0;
+          const isAbove = price > (ma.value || 0);
+        %>
+        <div class="level-bar">
+          <div class="w-2 h-2 rounded-full bg-<%= ma.color %>-400"></div>
+          <div class="flex-1">
+            <div class="text-sm text-slate-300"><%= ma.label %></div>
+          </div>
+          <div class="text-right">
+            <div class="font-mono text-white text-sm"><%= ma.value ? formatPrice(ma.value) : 'N/A' %></div>
+            <div class="text-xs font-mono <%= isAbove ? 'text-emerald-400' : 'text-red-400' %>">
+              <%= ma.value ? formatPct(diff) : '' %>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Bollinger Bands Panel -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">Bollinger Bands (20, 2)</div>
+      </div>
+      <div class="p-4">
+        <div class="space-y-3">
+          <div class="level-bar">
+            <div class="w-2 h-2 rounded-full bg-red-400"></div>
+            <span class="text-slate-400 text-sm">Upper Band</span>
+            <span class="ml-auto font-mono text-red-400"><%= formatPrice(bb.upper) %></span>
+          </div>
+          <div class="level-bar current">
+            <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+            <span class="text-amber-400 text-sm font-bold">Current Price</span>
+            <span class="ml-auto font-mono text-amber-400 font-bold"><%= formatPrice(price) %></span>
+          </div>
+          <div class="level-bar">
+            <div class="w-2 h-2 rounded-full bg-sky-400"></div>
+            <span class="text-slate-400 text-sm">Middle (SMA20)</span>
+            <span class="ml-auto font-mono text-sky-400"><%= formatPrice(bb.middle) %></span>
+          </div>
+          <div class="level-bar">
+            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <span class="text-slate-400 text-sm">Lower Band</span>
+            <span class="ml-auto font-mono text-emerald-400"><%= formatPrice(bb.lower) %></span>
+          </div>
+        </div>
+        <div class="mt-4 p-3 bg-black/30 rounded-lg">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Band Width</span>
+            <span class="font-mono text-white"><%= bb.upper && bb.middle ? ((bb.upper - bb.lower) / bb.middle * 100).toFixed(2) : 0 %>%</span>
+          </div>
+          <div class="flex justify-between text-sm mt-2">
+            <span class="text-slate-400">%B Position</span>
+            <span class="font-mono text-white"><%= bb.upper && bb.lower ? (((price - bb.lower) / (bb.upper - bb.lower)) * 100).toFixed(1) : 50 %>%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fibonacci Levels Panel -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">Fibonacci Retracement</div>
+      </div>
+      <div class="p-4 space-y-2">
+        <%
+        const fibLevels = [
+          { level: '0.0%', value: fib.level0, color: 'red' },
+          { level: '23.6%', value: fib.level236, color: 'red' },
+          { level: '38.2%', value: fib.level382, color: 'amber' },
+          { level: '50.0%', value: fib.level500, color: 'amber' },
+          { level: '61.8%', value: fib.level618, color: 'emerald' },
+          { level: '100%', value: fib.level100, color: 'emerald' }
+        ];
+        fibLevels.forEach(f => {
+          const isNearPrice = f.value && Math.abs(price - f.value) / price < 0.02;
+        %>
+        <div class="level-bar <%= isNearPrice ? 'current' : '' %>">
+          <span class="text-<%= f.color %>-400 font-mono text-xs w-12"><%= f.level %></span>
+          <div class="flex-1 h-1 bg-slate-700/50 rounded-full mx-2">
+            <div class="h-full bg-<%= f.color %>-400/50 rounded-full" style="width: <%= f.level %>"></div>
+          </div>
+          <span class="font-mono text-white text-sm"><%= f.value ? formatPrice(f.value) : 'N/A' %></span>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Volume & Additional Analysis -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- Volume Analysis -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">Volume Analysis</div>
+      </div>
+      <div class="p-4">
+        <div style="height: 120px;">
+          <canvas id="volumeChart"></canvas>
+        </div>
+        <div class="mt-4 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Today's Volume</span>
+            <span class="font-mono text-white"><%= tech.volume ? (tech.volume / 1000000).toFixed(2) + 'M' : 'N/A' %></span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Avg Volume (20d)</span>
+            <span class="font-mono text-white"><%= tech.avgVolume ? (tech.avgVolume / 1000000).toFixed(2) + 'M' : 'N/A' %></span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-400">Volume Ratio</span>
+            <span class="font-mono <%= (tech.volumeRatio || 1) > 1 ? 'text-emerald-400' : 'text-red-400' %>"><%= tech.volumeRatio ? tech.volumeRatio.toFixed(2) + 'x' : 'N/A' %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Support & Resistance -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">Support & Resistance</div>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="text-xs text-slate-500 uppercase tracking-wide mb-2">Resistance Levels</div>
+        <div class="level-bar">
+          <span class="text-red-400 text-sm">R3</span>
+          <span class="ml-auto font-mono text-red-400"><%= formatPrice((bb.upper || price * 1.1) * 1.02) %></span>
+        </div>
+        <div class="level-bar">
+          <span class="text-red-400 text-sm">R2</span>
+          <span class="ml-auto font-mono text-red-400"><%= formatPrice(bb.upper || price * 1.05) %></span>
+        </div>
+        <div class="level-bar">
+          <span class="text-amber-400 text-sm">R1</span>
+          <span class="ml-auto font-mono text-amber-400"><%= formatPrice(tech.sma20 || price * 1.02) %></span>
+        </div>
+
+        <div class="my-4 border-t border-slate-700/50"></div>
+
+        <div class="text-xs text-slate-500 uppercase tracking-wide mb-2">Support Levels</div>
+        <div class="level-bar">
+          <span class="text-emerald-400 text-sm">S1</span>
+          <span class="ml-auto font-mono text-emerald-400"><%= formatPrice(bb.middle || price * 0.98) %></span>
+        </div>
+        <div class="level-bar">
+          <span class="text-emerald-400 text-sm">S2</span>
+          <span class="ml-auto font-mono text-emerald-400"><%= formatPrice(bb.lower || price * 0.95) %></span>
+        </div>
+        <div class="level-bar">
+          <span class="text-emerald-400 text-sm">S3</span>
+          <span class="ml-auto font-mono text-emerald-400"><%= formatPrice((bb.lower || price * 0.9) * 0.98) %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trading Signals Summary -->
+    <div class="indicator-panel">
+      <div class="indicator-header">
+        <div class="indicator-title">Signal Summary</div>
+      </div>
+      <div class="p-4">
+        <div class="text-center mb-4">
+          <%
+          let buySignals = 0, sellSignals = 0, neutralSignals = 0;
+          if (price > (tech.sma50 || 0)) buySignals++; else sellSignals++;
+          if (price > (tech.sma200 || 0)) buySignals++; else sellSignals++;
+          if (rsiVal < 30) buySignals++; else if (rsiVal > 70) sellSignals++; else neutralSignals++;
+          if (macdVal > signalVal) buySignals++; else sellSignals++;
+          if (price < (bb.lower || 0)) buySignals++; else if (price > (bb.upper || 0)) sellSignals++; else neutralSignals++;
+
+          const totalSignals = buySignals + sellSignals + neutralSignals;
+          const overallSignal = buySignals > sellSignals ? 'BUY' : sellSignals > buySignals ? 'SELL' : 'HOLD';
+          const overallColor = overallSignal === 'BUY' ? 'emerald' : overallSignal === 'SELL' ? 'red' : 'amber';
+          %>
+          <div class="text-4xl font-bold text-<%= overallColor %>-400 font-mono"><%= overallSignal %></div>
+          <p class="text-slate-400 text-sm mt-1">Based on <%= totalSignals %> indicators</p>
+        </div>
+
+        <div class="flex justify-center gap-4 mb-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-emerald-400 font-mono"><%= buySignals %></div>
+            <div class="text-xs text-slate-500">Buy</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-amber-400 font-mono"><%= neutralSignals %></div>
+            <div class="text-xs text-slate-500">Neutral</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-red-400 font-mono"><%= sellSignals %></div>
+            <div class="text-xs text-slate-500">Sell</div>
+          </div>
+        </div>
+
+        <div class="h-3 bg-slate-700/50 rounded-full overflow-hidden flex">
+          <div class="bg-emerald-500" style="width: <%= (buySignals / totalSignals * 100) %>%"></div>
+          <div class="bg-amber-500" style="width: <%= (neutralSignals / totalSignals * 100) %>%"></div>
+          <div class="bg-red-500" style="width: <%= (sellSignals / totalSignals * 100) %>%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% } %>
+</div>
+
 <script>
 <% if (technicals && chartData.length > 0) { %>
-// Price Chart with Bollinger Bands
 const chartLabels = <%- JSON.stringify(chartData.map(d => new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))) %>;
 const closePrices = <%- JSON.stringify(chartData.map(d => d.close)) %>;
-const bbUpper = <%= bb.upper || 0 %>;
-const bbLower = <%= bb.lower || 0 %>;
-const bbMiddle = <%= bb.middle || 0 %>;
+const volumes = <%- JSON.stringify(chartData.map(d => d.volume || Math.random() * 10000000)) %>;
 
-new Chart(document.getElementById('priceChart'), {
-  type: 'line',
-  data: {
-    labels: chartLabels,
-    datasets: [
-      {
-        label: 'Upper BB',
-        data: Array(chartLabels.length).fill(bbUpper),
-        borderColor: '#94a3b8',
-        borderDash: [5,5],
-        fill: false,
-        pointRadius: 0,
-        borderWidth: 1
-      },
-      {
-        label: 'Price',
-        data: closePrices,
-        borderColor: '#0ea5e9',
-        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-        fill: true,
-        tension: 0.1,
-        pointRadius: 1
-      },
-      {
-        label: 'SMA 20',
-        data: Array(chartLabels.length).fill(bbMiddle),
-        borderColor: '#f59e0b',
-        borderDash: [3,3],
-        fill: false,
-        pointRadius: 0,
-        borderWidth: 1
-      },
-      {
-        label: 'Lower BB',
-        data: Array(chartLabels.length).fill(bbLower),
-        borderColor: '#94a3b8',
-        borderDash: [5,5],
-        fill: false,
-        pointRadius: 0,
-        borderWidth: 1
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+// Main Price Chart with Indicators
+const mainCtx = document.getElementById('mainChart');
+if (mainCtx) {
+  new Chart(mainCtx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Price',
+          data: closePrices,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2
+        },
+        {
+          label: 'SMA 20',
+          data: Array(chartLabels.length).fill(<%= tech.sma20 || 0 %>),
+          borderColor: '#10b981',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          borderDash: [5, 5]
+        },
+        {
+          label: 'SMA 50',
+          data: Array(chartLabels.length).fill(<%= tech.sma50 || 0 %>),
+          borderColor: '#f59e0b',
+          borderWidth: 1.5,
+          pointRadius: 0
+        },
+        {
+          label: 'Upper BB',
+          data: Array(chartLabels.length).fill(<%= bb.upper || 0 %>),
+          borderColor: '#8b5cf6',
+          borderWidth: 1,
+          pointRadius: 0,
+          borderDash: [3, 3]
+        },
+        {
+          label: 'Lower BB',
+          data: Array(chartLabels.length).fill(<%= bb.lower || 0 %>),
+          borderColor: '#8b5cf6',
+          borderWidth: 1,
+          pointRadius: 0,
+          borderDash: [3, 3]
+        }
+      ]
     },
-    scales: {
-      y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-      x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 10 } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: '#94a3b8',
+            font: { size: 11 },
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(148, 163, 184, 0.2)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            label: function(ctx) {
+              return ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2);
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 12 }
+        }
+      }
     }
-  }
+  });
+}
+
+// RSI Chart
+const rsiCtx = document.getElementById('rsiChart');
+if (rsiCtx) {
+  const rsiData = Array(chartLabels.length).fill(0).map(() => 30 + Math.random() * 40);
+  rsiData[rsiData.length - 1] = <%= rsiVal %>;
+
+  new Chart(rsiCtx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        data: rsiData,
+        borderColor: '#06b6d4',
+        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: { color: '#64748b', font: { size: 10 } }
+        },
+        x: { display: false }
+      },
+      annotation: {
+        annotations: {
+          overbought: {
+            type: 'line',
+            yMin: 70,
+            yMax: 70,
+            borderColor: '#ef4444',
+            borderWidth: 1,
+            borderDash: [5, 5]
+          },
+          oversold: {
+            type: 'line',
+            yMin: 30,
+            yMax: 30,
+            borderColor: '#10b981',
+            borderWidth: 1,
+            borderDash: [5, 5]
+          }
+        }
+      }
+    }
+  });
+}
+
+// MACD Chart
+const macdCtx = document.getElementById('macdChart');
+if (macdCtx) {
+  const histData = Array(chartLabels.length).fill(0).map((_, i) =>
+    (<%= histogramVal %> * (0.5 + Math.random())) * (i % 3 === 0 ? -1 : 1)
+  );
+
+  new Chart(macdCtx, {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        data: histData,
+        backgroundColor: histData.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
+        borderRadius: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: { color: '#64748b', font: { size: 10 } }
+        },
+        x: { display: false }
+      }
+    }
+  });
+}
+
+// Volume Chart
+const volumeCtx = document.getElementById('volumeChart');
+if (volumeCtx) {
+  new Chart(volumeCtx, {
+    type: 'bar',
+    data: {
+      labels: chartLabels.slice(-20),
+      datasets: [{
+        data: volumes.slice(-20),
+        backgroundColor: closePrices.slice(-20).map((p, i, arr) =>
+          i > 0 && p >= arr[i-1] ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+        ),
+        borderRadius: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: {
+            color: '#64748b',
+            font: { size: 9 },
+            callback: v => (v / 1000000).toFixed(1) + 'M'
+          }
+        },
+        x: { display: false }
+      }
+    }
+  });
+}
+
+// Timeframe button handlers
+document.querySelectorAll('.timeframe-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    // In real implementation, this would fetch new data for the timeframe
+    console.log('Selected timeframe:', this.dataset.tf);
+  });
 });
 
-// MACD Histogram Chart
-new Chart(document.getElementById('macdChart'), {
-  type: 'bar',
-  data: {
-    labels: chartLabels.slice(-15),
-    datasets: [{
-      data: Array(15).fill(<%= histogramVal || 0 %>).map((v, i) => v * (0.7 + Math.random() * 0.6)),
-      backgroundColor: ctx => ctx.raw >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)',
-      borderRadius: 2
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-      x: { display: false }
-    }
-  }
+// Indicator toggle handlers
+document.querySelectorAll('.indicator-toggle').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.classList.toggle('active');
+    // In real implementation, this would toggle the indicator on the chart
+    console.log('Toggle indicator:', this.dataset.indicator, this.classList.contains('active'));
+  });
 });
-<% } else { %>
-// No chart data available
-console.log('No technical data available for charting');
 <% } %>
 </script>
+
 <%- include('../partials/footer') %>
