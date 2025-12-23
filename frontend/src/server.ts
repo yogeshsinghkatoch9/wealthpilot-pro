@@ -27,12 +27,15 @@ app.get('/health', (req, res) => {
 });
 
 // API Proxy - Use http-proxy-middleware for proper proxying of all request types including file uploads
-// Note: app.use('/api', ...) strips /api prefix, so we need pathRewrite to add it back
 app.use('/api', createProxyMiddleware({
   target: API_URL,
   changeOrigin: true,
   pathRewrite: (path, req) => {
-    // app.use('/api', ...) strips /api, so add it back
+    // Path already contains /api from the original request, just pass it through
+    // If path doesn't start with /api, add it
+    if (path.startsWith('/api')) {
+      return path;
+    }
     return '/api' + path;
   },
   on: {
