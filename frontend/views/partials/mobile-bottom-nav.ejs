@@ -6,7 +6,7 @@
     <!-- Dashboard -->
     <a href="/dashboard" class="mobile-bottom-nav-item <%= page === 'dashboard' ? 'active' : '' %>" data-page="dashboard">
       <div class="mobile-bottom-nav-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
         </svg>
       </div>
@@ -16,38 +16,39 @@
     <!-- Portfolio -->
     <a href="/portfolios" class="mobile-bottom-nav-item <%= page === 'portfolios' || page === 'holdings' ? 'active' : '' %>" data-page="portfolios">
       <div class="mobile-bottom-nav-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
         </svg>
       </div>
       <span class="mobile-bottom-nav-label">Portfolio</span>
     </a>
 
-    <!-- Analysis (FAB style center button) -->
+    <!-- Quick Actions FAB (Center Button) -->
     <div class="mobile-bottom-nav-fab">
-      <button class="mobile-bottom-nav-item" onclick="openQuickActions()" aria-label="Quick actions">
-        <div class="mobile-bottom-nav-icon">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-          </svg>
-        </div>
+      <button class="mobile-fab-button" onclick="toggleQuickActions()" aria-label="Quick actions" id="fabButton">
+        <svg class="fab-icon fab-icon-plus" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        <svg class="fab-icon fab-icon-close" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
       </button>
     </div>
 
     <!-- Research -->
-    <a href="/research/market-overview" class="mobile-bottom-nav-item <%= page === 'research' ? 'active' : '' %>" data-page="research">
+    <a href="/market-overview" class="mobile-bottom-nav-item <%= page === 'research' || page === 'market' ? 'active' : '' %>" data-page="research">
       <div class="mobile-bottom-nav-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
       </div>
-      <span class="mobile-bottom-nav-label">Research</span>
+      <span class="mobile-bottom-nav-label">Market</span>
     </a>
 
     <!-- More Menu -->
     <button class="mobile-bottom-nav-item" onclick="toggleMoreMenu()" aria-label="More options" data-more="true">
       <div class="mobile-bottom-nav-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
         <% if (typeof notificationCount !== 'undefined' && notificationCount > 0) { %>
@@ -60,54 +61,141 @@
   </div>
 </nav>
 
+<!-- Quick Actions Sheet (FAB Menu) -->
+<div class="quick-actions-backdrop" id="quick-actions-backdrop" onclick="closeQuickActions()"></div>
+<div class="quick-actions-sheet" id="quick-actions-sheet">
+  <div class="quick-actions-header">
+    <h3>Quick Actions</h3>
+    <button class="quick-actions-close" onclick="closeQuickActions()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <div class="quick-actions-grid">
+    <a href="/holdings?action=add" class="quick-action-item" onclick="closeQuickActions()">
+      <div class="quick-action-icon quick-action-icon-green">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+        </svg>
+      </div>
+      <span>Add Holding</span>
+    </a>
+    <a href="/transactions?action=add" class="quick-action-item" onclick="closeQuickActions()">
+      <div class="quick-action-icon quick-action-icon-blue">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+        </svg>
+      </div>
+      <span>Transaction</span>
+    </a>
+    <a href="/watchlist" class="quick-action-item" onclick="closeQuickActions()">
+      <div class="quick-action-icon quick-action-icon-amber">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </div>
+      <span>Watchlist</span>
+    </a>
+    <a href="/alerts" class="quick-action-item" onclick="closeQuickActions()">
+      <div class="quick-action-icon quick-action-icon-red">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <span>Alerts</span>
+    </a>
+    <button class="quick-action-item" onclick="refreshAllPrices()">
+      <div class="quick-action-icon quick-action-icon-purple">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+      </div>
+      <span>Refresh</span>
+    </button>
+    <a href="/analytics" class="quick-action-item" onclick="closeQuickActions()">
+      <div class="quick-action-icon quick-action-icon-cyan">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <span>Analytics</span>
+    </a>
+  </div>
+</div>
+
 <!-- More Menu Overlay -->
 <div class="mobile-bottom-nav-backdrop" id="mobile-nav-backdrop" onclick="closeMoreMenu()"></div>
 
 <!-- More Menu -->
 <div class="mobile-bottom-nav-more-menu" id="mobile-more-menu">
-  <a href="/analysis/performance" class="mobile-bottom-nav-more-item">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-    </svg>
-    <span>Analysis</span>
-  </a>
+  <div class="more-menu-header">
+    <span>Menu</span>
+    <button onclick="closeMoreMenu()" class="more-menu-close">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
 
-  <a href="/tools/scanner" class="mobile-bottom-nav-more-item">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-    </svg>
-    <span>Stock Scanner</span>
-  </a>
+  <div class="more-menu-section">
+    <span class="more-menu-section-title">Tools</span>
+    <a href="/analytics" class="mobile-bottom-nav-more-item">
+      <div class="more-item-icon more-item-icon-blue">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <span>Analytics</span>
+    </a>
+    <a href="/scanner" class="mobile-bottom-nav-more-item">
+      <div class="more-item-icon more-item-icon-green">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+      <span>Stock Scanner</span>
+    </a>
+    <a href="/watchlist" class="mobile-bottom-nav-more-item">
+      <div class="more-item-icon more-item-icon-amber">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </div>
+      <span>Watchlist</span>
+    </a>
+    <a href="/alerts" class="mobile-bottom-nav-more-item">
+      <div class="more-item-icon more-item-icon-red">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <span>Alerts</span>
+    </a>
+  </div>
 
-  <a href="/tools/watchlist" class="mobile-bottom-nav-more-item">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-    </svg>
-    <span>Watchlist</span>
-  </a>
-
-  <a href="/tools/alerts" class="mobile-bottom-nav-more-item">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-    </svg>
-    <span>Alerts</span>
-  </a>
-
-  <a href="/profile" class="mobile-bottom-nav-more-item">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-    </svg>
-    <span>Profile</span>
-  </a>
-
-  <a href="/settings" class="mobile-bottom-nav-more-item">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-    </svg>
-    <span>Settings</span>
-  </a>
+  <div class="more-menu-section">
+    <span class="more-menu-section-title">Account</span>
+    <a href="/profile" class="mobile-bottom-nav-more-item">
+      <div class="more-item-icon more-item-icon-purple">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <span>Profile</span>
+    </a>
+    <a href="/settings" class="mobile-bottom-nav-more-item">
+      <div class="more-item-icon more-item-icon-slate">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </div>
+      <span>Settings</span>
+    </a>
+  </div>
 </div>
 
 <script>
@@ -115,20 +203,67 @@
 (function() {
   'use strict';
 
-  // Toggle more menu
+  let quickActionsOpen = false;
+  let moreMenuOpen = false;
+
+  // Toggle Quick Actions (FAB button)
+  window.toggleQuickActions = function() {
+    const sheet = document.getElementById('quick-actions-sheet');
+    const backdrop = document.getElementById('quick-actions-backdrop');
+    const fabButton = document.getElementById('fabButton');
+
+    if (!sheet || !backdrop) return;
+
+    quickActionsOpen = !quickActionsOpen;
+
+    if (quickActionsOpen) {
+      // Close more menu if open
+      if (moreMenuOpen) closeMoreMenu();
+
+      sheet.classList.add('open');
+      backdrop.classList.add('open');
+      fabButton.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      // Haptic feedback
+      if (navigator.vibrate) navigator.vibrate(15);
+    } else {
+      closeQuickActions();
+    }
+  };
+
+  window.closeQuickActions = function() {
+    const sheet = document.getElementById('quick-actions-sheet');
+    const backdrop = document.getElementById('quick-actions-backdrop');
+    const fabButton = document.getElementById('fabButton');
+
+    if (sheet) sheet.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    if (fabButton) fabButton.classList.remove('active');
+    document.body.style.overflow = '';
+    quickActionsOpen = false;
+  };
+
+  // Toggle More Menu
   window.toggleMoreMenu = function() {
     const menu = document.getElementById('mobile-more-menu');
     const backdrop = document.getElementById('mobile-nav-backdrop');
 
-    if (menu && backdrop) {
-      const isOpen = menu.classList.contains('open');
+    if (!menu || !backdrop) return;
 
-      if (isOpen) {
-        closeMoreMenu();
-      } else {
-        menu.classList.add('open');
-        backdrop.classList.add('open');
-      }
+    moreMenuOpen = !moreMenuOpen;
+
+    if (moreMenuOpen) {
+      // Close quick actions if open
+      if (quickActionsOpen) closeQuickActions();
+
+      menu.classList.add('open');
+      backdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      if (navigator.vibrate) navigator.vibrate(10);
+    } else {
+      closeMoreMenu();
     }
   };
 
@@ -138,25 +273,36 @@
 
     if (menu) menu.classList.remove('open');
     if (backdrop) backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    moreMenuOpen = false;
   };
 
-  // Quick actions menu
-  window.openQuickActions = function() {
-    // Open command palette or show quick action sheet
-    if (window.commandPalette) {
-      window.commandPalette.open();
-    } else {
-      // Fallback: show simple menu
-      const actions = [
-        { label: 'Add Holding', url: '/holdings?action=add' },
-        { label: 'Add Transaction', url: '/transactions?action=add' },
-        { label: 'Search Stock', action: () => window.commandPalette?.open() },
-        { label: 'Refresh Prices', action: () => window.refreshPrices?.() }
-      ];
+  // Refresh all prices
+  window.refreshAllPrices = function() {
+    closeQuickActions();
 
-      // Show action sheet (you can implement a custom modal here)
-      console.log('Quick actions:', actions);
+    // Show loading toast
+    if (typeof showToast === 'function') {
+      showToast('Refreshing prices...', 'info');
     }
+
+    fetch('/api/refresh-prices', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        if (typeof showToast === 'function') showToast(data.error, 'error');
+      } else {
+        if (typeof showToast === 'function') showToast('Prices refreshed!', 'success');
+        setTimeout(() => location.reload(), 500);
+      }
+    })
+    .catch(() => {
+      if (typeof showToast === 'function') showToast('Failed to refresh', 'error');
+    });
   };
 
   // Active state management
@@ -168,42 +314,421 @@
     }
   });
 
-  // Haptic feedback (if supported)
-  document.querySelectorAll('.mobile-bottom-nav-item').forEach(item => {
+  // Haptic feedback on all nav items
+  document.querySelectorAll('.mobile-bottom-nav-item, .mobile-fab-button').forEach(item => {
     item.addEventListener('click', function() {
-      // Vibrate on mobile devices
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
-      }
-
-      // Add haptic class for visual feedback
+      if (navigator.vibrate) navigator.vibrate(10);
       this.classList.add('haptic');
       setTimeout(() => this.classList.remove('haptic'), 100);
     });
   });
 
-  // Close more menu on navigation
-  document.querySelectorAll('.mobile-bottom-nav-more-item').forEach(item => {
-    item.addEventListener('click', closeMoreMenu);
+  // Close menus on navigation
+  document.querySelectorAll('.mobile-bottom-nav-more-item, .quick-action-item').forEach(item => {
+    item.addEventListener('click', function() {
+      setTimeout(() => {
+        closeMoreMenu();
+        closeQuickActions();
+      }, 100);
+    });
   });
 
-  // Handle swipe gestures to close more menu
-  let touchStartY = 0;
-  const moreMenu = document.getElementById('mobile-more-menu');
+  // Handle swipe down to close
+  function setupSwipeClose(elementId, closeFunction) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
 
-  if (moreMenu) {
-    moreMenu.addEventListener('touchstart', (e) => {
+    let touchStartY = 0;
+    let touchCurrentY = 0;
+
+    element.addEventListener('touchstart', (e) => {
       touchStartY = e.touches[0].clientY;
-    });
+    }, { passive: true });
 
-    moreMenu.addEventListener('touchmove', (e) => {
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchY - touchStartY;
+    element.addEventListener('touchmove', (e) => {
+      touchCurrentY = e.touches[0].clientY;
+      const deltaY = touchCurrentY - touchStartY;
 
-      if (deltaY > 50) {
-        closeMoreMenu();
+      if (deltaY > 0) {
+        element.style.transform = `translateY(${Math.min(deltaY, 100)}px)`;
+        element.style.opacity = 1 - (deltaY / 200);
       }
+    }, { passive: true });
+
+    element.addEventListener('touchend', () => {
+      const deltaY = touchCurrentY - touchStartY;
+
+      if (deltaY > 80) {
+        closeFunction();
+      }
+
+      element.style.transform = '';
+      element.style.opacity = '';
+      touchStartY = 0;
+      touchCurrentY = 0;
     });
   }
+
+  setupSwipeClose('quick-actions-sheet', closeQuickActions);
+  setupSwipeClose('mobile-more-menu', closeMoreMenu);
+
+  // Close on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (quickActionsOpen) closeQuickActions();
+      if (moreMenuOpen) closeMoreMenu();
+    }
+  });
 })();
 </script>
+
+<style>
+/* Quick Actions Sheet Styles */
+.quick-actions-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.quick-actions-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.quick-actions-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(21, 28, 37, 0.98), rgba(15, 20, 25, 0.99));
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  padding: 20px 20px calc(90px + env(safe-area-inset-bottom, 0));
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-actions-sheet::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.quick-actions-sheet.open {
+  transform: translateY(0);
+}
+
+.quick-actions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-top: 8px;
+}
+
+.quick-actions-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.quick-actions-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-actions-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+
+.quick-actions-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.quick-action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  text-decoration: none;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.quick-action-item:hover,
+.quick-action-item:active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: scale(0.98);
+}
+
+.quick-action-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  transition: all 0.2s;
+}
+
+.quick-action-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.quick-action-icon-green {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  color: #10b981;
+}
+
+.quick-action-icon-blue {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  color: #3b82f6;
+}
+
+.quick-action-icon-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1));
+  color: #f59e0b;
+}
+
+.quick-action-icon-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  color: #ef4444;
+}
+
+.quick-action-icon-purple {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1));
+  color: #8b5cf6;
+}
+
+.quick-action-icon-cyan {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(6, 182, 212, 0.1));
+  color: #06b6d4;
+}
+
+/* FAB Button Styling */
+.mobile-fab-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 8px 24px rgba(59, 130, 246, 0.4),
+    0 0 0 4px rgba(15, 23, 42, 0.9);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mobile-fab-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+  border-radius: 50%;
+}
+
+.mobile-fab-button:hover {
+  transform: scale(1.05);
+  box-shadow:
+    0 12px 32px rgba(59, 130, 246, 0.5),
+    0 0 0 4px rgba(15, 23, 42, 0.9);
+}
+
+.mobile-fab-button:active {
+  transform: scale(0.95);
+}
+
+.mobile-fab-button .fab-icon {
+  width: 28px;
+  height: 28px;
+  transition: all 0.3s ease;
+  position: absolute;
+}
+
+.mobile-fab-button .fab-icon-plus {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.mobile-fab-button .fab-icon-close {
+  opacity: 0;
+  transform: rotate(-90deg);
+}
+
+.mobile-fab-button.active .fab-icon-plus {
+  opacity: 0;
+  transform: rotate(90deg);
+}
+
+.mobile-fab-button.active .fab-icon-close {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.mobile-fab-button.active {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  box-shadow:
+    0 8px 24px rgba(239, 68, 68, 0.4),
+    0 0 0 4px rgba(15, 23, 42, 0.9);
+}
+
+/* More Menu Enhancements */
+.more-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+}
+
+.more-menu-header span {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.more-menu-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.more-menu-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.more-menu-section {
+  margin-bottom: 16px;
+}
+
+.more-menu-section-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+.mobile-bottom-nav-more-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  color: #e2e8f0;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mobile-bottom-nav-more-item:hover,
+.mobile-bottom-nav-more-item:active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.more-item-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.more-item-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.more-item-icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+.more-item-icon-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.more-item-icon-amber { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.more-item-icon-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.more-item-icon-purple { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+.more-item-icon-slate { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+
+/* Updated More Menu Styles */
+.mobile-bottom-nav-more-menu {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  right: 12px;
+  width: 260px;
+  background: linear-gradient(180deg, rgba(21, 28, 37, 0.98), rgba(15, 20, 25, 0.99));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 999;
+}
+
+.mobile-bottom-nav-more-menu.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+</style>
