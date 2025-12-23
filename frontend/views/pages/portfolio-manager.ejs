@@ -712,6 +712,301 @@
             </div>
         </div>
 
+        <!-- AI-POWERED INSIGHTS PANEL -->
+        <div class="glass-card-elevated p-5 mt-4">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">AI-Powered Insights</h3>
+                <p class="text-slate-400 text-xs">Smart analysis and recommendations</p>
+              </div>
+            </div>
+            <span class="badge badge-primary animate-pulse">AI</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- Portfolio Health Score -->
+            <div class="relative p-4 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50 overflow-hidden">
+              <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-2xl"></div>
+              <div class="relative">
+                <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3">Portfolio Health</h4>
+                <div class="flex items-center gap-4">
+                  <div class="relative w-20 h-20">
+                    <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1e293b" stroke-width="3"/>
+                      <path id="healthScoreCircle" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="url(#healthGradient)" stroke-width="3" stroke-dasharray="75, 100" stroke-linecap="round"/>
+                      <defs>
+                        <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" style="stop-color:#10b981"/>
+                          <stop offset="100%" style="stop-color:#34d399"/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                      <span id="healthScore" class="text-2xl font-bold text-white">75</span>
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <p id="healthStatus" class="text-emerald-400 font-semibold mb-1">Good</p>
+                    <p class="text-slate-400 text-xs">Your portfolio is well-diversified with moderate risk</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Risk Alerts -->
+            <div class="p-4 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50">
+              <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                Risk Alerts
+              </h4>
+              <div id="riskAlerts" class="space-y-2 max-h-32 overflow-y-auto">
+                <div class="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <span class="text-amber-400 text-xs mt-0.5">!</span>
+                  <p class="text-xs text-slate-300">No holdings detected - add positions to track risk</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Smart Recommendations -->
+            <div class="p-4 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-slate-700/50">
+              <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Recommendations
+              </h4>
+              <div id="recommendations" class="space-y-2 max-h-32 overflow-y-auto">
+                <div class="flex items-start gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <span class="text-blue-400 text-xs mt-0.5">+</span>
+                  <p class="text-xs text-slate-300">Consider adding index funds like SPY or VOO for diversification</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Concentration Analysis -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30">
+              <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3">Sector Concentration</h4>
+              <div id="sectorConcentration" class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500 rounded-full" style="width: 0%"></div>
+                  </div>
+                  <span class="text-xs text-slate-400 w-20">No data</span>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30">
+              <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3">Position Size Risk</h4>
+              <div id="positionRisk" class="space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Largest Position</span>
+                  <span id="largestPosition" class="text-white font-mono">-</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Top 3 Concentration</span>
+                  <span id="top3Concentration" class="text-white font-mono">-</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">HHI Index</span>
+                  <span id="hhiIndex" class="text-white font-mono">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REBALANCING TOOLS -->
+        <div class="glass-card-elevated p-5 mt-4">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">Rebalancing Tools</h3>
+                <p class="text-slate-400 text-xs">Target allocation vs actual comparison</p>
+              </div>
+            </div>
+            <button onclick="calculateRebalance()" class="btn-glass text-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
+              Calculate
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Target Allocation Inputs -->
+            <div class="space-y-4">
+              <h4 class="text-sm text-white font-medium">Target Allocation</h4>
+              <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 rounded bg-blue-500"></div>
+                  <span class="text-sm text-slate-300 w-24">Stocks</span>
+                  <input type="number" id="targetStocks" value="60" min="0" max="100"
+                         class="flex-1 bg-slate-800/50 border border-slate-600/50 rounded px-3 py-1.5 text-white text-sm font-mono text-right"
+                         onchange="updateTargetAllocation()">
+                  <span class="text-slate-400 text-sm">%</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 rounded bg-emerald-500"></div>
+                  <span class="text-sm text-slate-300 w-24">Bonds</span>
+                  <input type="number" id="targetBonds" value="30" min="0" max="100"
+                         class="flex-1 bg-slate-800/50 border border-slate-600/50 rounded px-3 py-1.5 text-white text-sm font-mono text-right"
+                         onchange="updateTargetAllocation()">
+                  <span class="text-slate-400 text-sm">%</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 rounded bg-amber-500"></div>
+                  <span class="text-sm text-slate-300 w-24">Cash/Other</span>
+                  <input type="number" id="targetCash" value="10" min="0" max="100"
+                         class="flex-1 bg-slate-800/50 border border-slate-600/50 rounded px-3 py-1.5 text-white text-sm font-mono text-right"
+                         onchange="updateTargetAllocation()">
+                  <span class="text-slate-400 text-sm">%</span>
+                </div>
+              </div>
+              <div id="targetTotalError" class="hidden text-red-400 text-xs p-2 bg-red-500/10 rounded">
+                Target allocation must equal 100%
+              </div>
+            </div>
+
+            <!-- Rebalance Preview -->
+            <div class="space-y-4">
+              <h4 class="text-sm text-white font-medium">Rebalance Actions</h4>
+              <div id="rebalanceActions" class="space-y-2 max-h-40 overflow-y-auto">
+                <div class="p-3 rounded-lg bg-slate-800/30 border border-slate-700/30 text-center">
+                  <p class="text-slate-400 text-sm">Add holdings to see rebalance suggestions</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIVIDEND TRACKING -->
+        <div class="glass-card-elevated p-5 mt-4">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/25">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">Dividend Tracker</h3>
+                <p class="text-slate-400 text-xs">Income calendar and projections</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400">Est. Annual:</span>
+              <span id="estAnnualDividend" class="text-emerald-400 font-mono font-semibold"><%= fmt.money(safeTotals.dividendIncome) %></span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- Monthly Income Projection -->
+            <div class="col-span-2 p-4 rounded-xl bg-slate-800/50 border border-slate-700/30">
+              <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3">Monthly Income Projection</h4>
+              <div style="height: 120px;">
+                <canvas id="dividendProjectionChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Upcoming Dividends -->
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30">
+              <h4 class="text-xs text-slate-400 uppercase tracking-wider mb-3">Upcoming Payments</h4>
+              <div id="upcomingDividends" class="space-y-2 max-h-32 overflow-y-auto">
+                <div class="text-center py-4">
+                  <p class="text-slate-500 text-xs">No upcoming dividends</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dividend Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="p-3 rounded-lg bg-slate-800/30 text-center">
+              <p class="text-slate-400 text-xs mb-1">Avg Yield</p>
+              <p id="avgDividendYield" class="text-white font-mono font-semibold">0.00%</p>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/30 text-center">
+              <p class="text-slate-400 text-xs mb-1">Yield on Cost</p>
+              <p id="dividendYOC" class="text-emerald-400 font-mono font-semibold">0.00%</p>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/30 text-center">
+              <p class="text-slate-400 text-xs mb-1">Payers</p>
+              <p id="dividendPayers" class="text-white font-mono font-semibold">0</p>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-800/30 text-center">
+              <p class="text-slate-400 text-xs mb-1">5Y Growth</p>
+              <p id="dividendGrowth" class="text-blue-400 font-mono font-semibold">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BENCHMARK COMPARISON -->
+        <div class="glass-card-elevated p-5 mt-4">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-white font-semibold">Benchmark Comparison</h3>
+                <p class="text-slate-400 text-xs">Compare performance against indices</p>
+              </div>
+            </div>
+            <select id="benchmarkSelect" onchange="updateBenchmarkComparison()" class="bg-slate-800/50 border border-slate-600/50 rounded px-3 py-1.5 text-white text-sm">
+              <option value="SPY">S&P 500 (SPY)</option>
+              <option value="QQQ">NASDAQ 100 (QQQ)</option>
+              <option value="DIA">Dow Jones (DIA)</option>
+              <option value="IWM">Russell 2000 (IWM)</option>
+              <option value="VTI">Total Market (VTI)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30 text-center">
+              <p class="text-slate-400 text-xs mb-2">Your Portfolio</p>
+              <p id="portfolioReturn" class="text-2xl font-bold <%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= fmt.pct(safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0) %>
+              </p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30 text-center">
+              <p class="text-slate-400 text-xs mb-2">Benchmark</p>
+              <p id="benchmarkReturn" class="text-2xl font-bold text-blue-400">+12.5%</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30 text-center">
+              <p class="text-slate-400 text-xs mb-2">Alpha</p>
+              <p id="portfolioAlpha" class="text-2xl font-bold text-amber-400">-</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/30 text-center">
+              <p class="text-slate-400 text-xs mb-2">Tracking Error</p>
+              <p id="trackingError" class="text-2xl font-bold text-slate-300">-</p>
+            </div>
+          </div>
+
+          <!-- Comparison Chart -->
+          <div class="p-4 rounded-xl bg-slate-800/30 border border-slate-700/30">
+            <div style="height: 180px;">
+              <canvas id="benchmarkComparisonChart"></canvas>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -736,9 +1031,360 @@ const portfolioState = {
 // ===================== INITIALIZATION =====================
 document.addEventListener('DOMContentLoaded', () => {
   initializeCharts();
+  initializeNewCharts();
   updateQuantitativeAnalytics();
+  updateAIInsights();
+  updateDividendTracker();
   setupWebSocket();
 });
+
+// ===================== AI INSIGHTS =====================
+function updateAIInsights() {
+  const holdings = portfolioState.holdings;
+  const totalValue = portfolioState.totals.value || 0;
+
+  // Calculate health score
+  let healthScore = 50; // Base score
+  let alerts = [];
+  let recommendations = [];
+
+  if (holdings.length === 0) {
+    healthScore = 0;
+    alerts.push({ type: 'warning', text: 'No holdings detected - add positions to track risk' });
+    recommendations.push({ type: 'info', text: 'Consider adding index funds like SPY or VOO for diversification' });
+  } else {
+    // Diversification score (0-25 points)
+    const diversificationScore = Math.min(25, holdings.length * 5);
+    healthScore += diversificationScore;
+
+    // Sector diversity (0-15 points)
+    const sectors = [...new Set(holdings.map(h => h.sector).filter(Boolean))];
+    healthScore += Math.min(15, sectors.length * 3);
+
+    // Position concentration check
+    const sorted = [...holdings].sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0));
+    const topPosition = sorted[0];
+    const topPct = totalValue > 0 ? ((topPosition?.marketValue || 0) / totalValue) * 100 : 0;
+
+    if (topPct > 25) {
+      healthScore -= 10;
+      alerts.push({ type: 'danger', text: `High concentration: ${topPosition.symbol} is ${topPct.toFixed(1)}% of portfolio` });
+    } else if (topPct > 15) {
+      alerts.push({ type: 'warning', text: `${topPosition.symbol} represents ${topPct.toFixed(1)}% - consider trimming` });
+    }
+
+    // Top 3 concentration
+    const top3Value = sorted.slice(0, 3).reduce((sum, h) => sum + (h.marketValue || 0), 0);
+    const top3Pct = totalValue > 0 ? (top3Value / totalValue) * 100 : 0;
+    document.getElementById('top3Concentration').textContent = top3Pct.toFixed(1) + '%';
+
+    if (top3Pct > 60) {
+      healthScore -= 5;
+      alerts.push({ type: 'warning', text: 'Top 3 positions are over 60% - consider diversifying' });
+    }
+
+    // HHI Index calculation
+    const hhi = holdings.reduce((sum, h) => {
+      const weight = totalValue > 0 ? (h.marketValue || 0) / totalValue : 0;
+      return sum + Math.pow(weight * 100, 2);
+    }, 0);
+    document.getElementById('hhiIndex').textContent = hhi.toFixed(0);
+
+    if (hhi > 2500) {
+      alerts.push({ type: 'warning', text: 'HHI > 2500: Portfolio is highly concentrated' });
+    }
+
+    // Recommendations based on analysis
+    if (holdings.length < 10) {
+      recommendations.push({ type: 'info', text: 'Add more positions for better diversification' });
+    }
+    if (sectors.length < 5) {
+      recommendations.push({ type: 'info', text: 'Consider adding exposure to more sectors' });
+    }
+
+    // Check for dividend income
+    const dividendPayers = holdings.filter(h => (h.dividendYield || 0) > 0);
+    if (dividendPayers.length === 0) {
+      recommendations.push({ type: 'info', text: 'Consider dividend stocks for passive income' });
+    }
+
+    // Largest position
+    document.getElementById('largestPosition').textContent = topPosition ? `${topPosition.symbol} (${topPct.toFixed(1)}%)` : '-';
+  }
+
+  // Cap health score
+  healthScore = Math.max(0, Math.min(100, healthScore));
+
+  // Update UI
+  document.getElementById('healthScore').textContent = healthScore;
+  document.getElementById('healthScoreCircle').setAttribute('stroke-dasharray', `${healthScore}, 100`);
+
+  // Health status
+  let statusText, statusClass;
+  if (healthScore >= 80) { statusText = 'Excellent'; statusClass = 'text-emerald-400'; }
+  else if (healthScore >= 60) { statusText = 'Good'; statusClass = 'text-emerald-400'; }
+  else if (healthScore >= 40) { statusText = 'Fair'; statusClass = 'text-amber-400'; }
+  else { statusText = 'Needs Work'; statusClass = 'text-red-400'; }
+
+  const statusEl = document.getElementById('healthStatus');
+  statusEl.textContent = statusText;
+  statusEl.className = statusClass + ' font-semibold mb-1';
+
+  // Update alerts
+  const alertsHtml = alerts.length > 0 ? alerts.map(a => `
+    <div class="flex items-start gap-2 p-2 rounded-lg bg-${a.type === 'danger' ? 'red' : 'amber'}-500/10 border border-${a.type === 'danger' ? 'red' : 'amber'}-500/20">
+      <span class="text-${a.type === 'danger' ? 'red' : 'amber'}-400 text-xs mt-0.5">!</span>
+      <p class="text-xs text-slate-300">${a.text}</p>
+    </div>
+  `).join('') : '<div class="p-2 text-center text-slate-500 text-xs">No alerts</div>';
+  document.getElementById('riskAlerts').innerHTML = alertsHtml;
+
+  // Update recommendations
+  const recsHtml = recommendations.length > 0 ? recommendations.map(r => `
+    <div class="flex items-start gap-2 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+      <span class="text-blue-400 text-xs mt-0.5">+</span>
+      <p class="text-xs text-slate-300">${r.text}</p>
+    </div>
+  `).join('') : '<div class="p-2 text-center text-slate-500 text-xs">Portfolio looks good!</div>';
+  document.getElementById('recommendations').innerHTML = recsHtml;
+
+  // Update sector concentration
+  updateSectorConcentration();
+}
+
+function updateSectorConcentration() {
+  const holdings = portfolioState.holdings;
+  const totalValue = portfolioState.totals.value || 1;
+
+  const sectorMap = {};
+  holdings.forEach(h => {
+    const sector = h.sector || 'Other';
+    sectorMap[sector] = (sectorMap[sector] || 0) + (h.marketValue || 0);
+  });
+
+  const sectors = Object.entries(sectorMap)
+    .map(([name, value]) => ({ name, value, pct: (value / totalValue) * 100 }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+
+  const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500'];
+  const html = sectors.length > 0 ? sectors.map((s, i) => `
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-400 w-20 truncate">${s.name}</span>
+      <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div class="h-full ${colors[i]} rounded-full transition-all" style="width: ${s.pct}%"></div>
+      </div>
+      <span class="text-xs text-white font-mono w-12 text-right">${s.pct.toFixed(1)}%</span>
+    </div>
+  `).join('') : '<div class="text-center text-slate-500 text-xs">No sector data</div>';
+
+  document.getElementById('sectorConcentration').innerHTML = html;
+}
+
+// ===================== REBALANCING TOOLS =====================
+function updateTargetAllocation() {
+  const stocks = parseFloat(document.getElementById('targetStocks').value) || 0;
+  const bonds = parseFloat(document.getElementById('targetBonds').value) || 0;
+  const cash = parseFloat(document.getElementById('targetCash').value) || 0;
+  const total = stocks + bonds + cash;
+
+  const errorEl = document.getElementById('targetTotalError');
+  if (Math.abs(total - 100) > 0.1) {
+    errorEl.classList.remove('hidden');
+  } else {
+    errorEl.classList.add('hidden');
+  }
+}
+
+function calculateRebalance() {
+  const totalValue = portfolioState.totals.value || 0;
+  const holdings = portfolioState.holdings;
+
+  if (holdings.length === 0 || totalValue === 0) {
+    document.getElementById('rebalanceActions').innerHTML = `
+      <div class="p-3 rounded-lg bg-slate-800/30 border border-slate-700/30 text-center">
+        <p class="text-slate-400 text-sm">Add holdings to see rebalance suggestions</p>
+      </div>
+    `;
+    return;
+  }
+
+  const targetStocks = parseFloat(document.getElementById('targetStocks').value) || 60;
+  const targetBonds = parseFloat(document.getElementById('targetBonds').value) || 30;
+  const targetCash = parseFloat(document.getElementById('targetCash').value) || 10;
+
+  // Calculate current allocation (simplified - treat all as stocks for now)
+  const currentStocks = 100;
+  const currentBonds = 0;
+  const currentCash = 0;
+
+  const actions = [];
+  const stocksDiff = targetStocks - currentStocks;
+  const bondsDiff = targetBonds - currentBonds;
+  const cashDiff = targetCash - currentCash;
+
+  if (Math.abs(stocksDiff) > 1) {
+    actions.push({
+      action: stocksDiff > 0 ? 'buy' : 'sell',
+      type: 'Stocks',
+      amount: Math.abs(stocksDiff * totalValue / 100),
+      pct: Math.abs(stocksDiff)
+    });
+  }
+  if (Math.abs(bondsDiff) > 1) {
+    actions.push({
+      action: bondsDiff > 0 ? 'buy' : 'sell',
+      type: 'Bonds',
+      amount: Math.abs(bondsDiff * totalValue / 100),
+      pct: Math.abs(bondsDiff)
+    });
+  }
+  if (Math.abs(cashDiff) > 1) {
+    actions.push({
+      action: cashDiff > 0 ? 'add' : 'reduce',
+      type: 'Cash',
+      amount: Math.abs(cashDiff * totalValue / 100),
+      pct: Math.abs(cashDiff)
+    });
+  }
+
+  const html = actions.length > 0 ? actions.map(a => `
+    <div class="flex items-center justify-between p-2 rounded-lg ${a.action === 'buy' || a.action === 'add' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-red-500/10 border border-red-500/20'}">
+      <div class="flex items-center gap-2">
+        <span class="${a.action === 'buy' || a.action === 'add' ? 'text-emerald-400' : 'text-red-400'} text-xs font-semibold uppercase">${a.action}</span>
+        <span class="text-white text-sm">${a.type}</span>
+      </div>
+      <span class="text-white font-mono text-sm">$${a.amount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})} (${a.pct.toFixed(1)}%)</span>
+    </div>
+  `).join('') : '<div class="p-3 rounded-lg bg-emerald-500/10 text-center"><p class="text-emerald-400 text-sm">Portfolio is balanced!</p></div>';
+
+  document.getElementById('rebalanceActions').innerHTML = html;
+}
+
+// ===================== DIVIDEND TRACKER =====================
+function updateDividendTracker() {
+  const holdings = portfolioState.holdings;
+  const totalValue = portfolioState.totals.value || 1;
+  const totalCost = portfolioState.totals.cost || 1;
+
+  // Calculate dividend metrics
+  let totalDividendIncome = 0;
+  let dividendPayers = 0;
+  let weightedYield = 0;
+
+  holdings.forEach(h => {
+    const divYield = h.dividendYield || 0;
+    const marketValue = h.marketValue || 0;
+    const annualDiv = (divYield / 100) * marketValue;
+    totalDividendIncome += annualDiv;
+    if (divYield > 0) dividendPayers++;
+    weightedYield += (marketValue / totalValue) * divYield;
+  });
+
+  // Update stats
+  document.getElementById('avgDividendYield').textContent = weightedYield.toFixed(2) + '%';
+  document.getElementById('dividendYOC').textContent = ((totalDividendIncome / totalCost) * 100).toFixed(2) + '%';
+  document.getElementById('dividendPayers').textContent = dividendPayers;
+  document.getElementById('estAnnualDividend').textContent = formatMoney(totalDividendIncome);
+}
+
+// ===================== BENCHMARK COMPARISON =====================
+function updateBenchmarkComparison() {
+  const benchmark = document.getElementById('benchmarkSelect').value;
+  // In production, fetch real benchmark data
+  const benchmarkReturns = { SPY: 12.5, QQQ: 18.2, DIA: 8.4, IWM: 5.2, VTI: 11.8 };
+  const benchmarkReturn = benchmarkReturns[benchmark] || 10;
+  document.getElementById('benchmarkReturn').textContent = '+' + benchmarkReturn.toFixed(1) + '%';
+
+  const portfolioReturn = portfolioState.totals.cost > 0 ? (portfolioState.totals.gain / portfolioState.totals.cost) * 100 : 0;
+  const alpha = portfolioReturn - benchmarkReturn;
+  document.getElementById('portfolioAlpha').textContent = (alpha >= 0 ? '+' : '') + alpha.toFixed(1) + '%';
+  document.getElementById('portfolioAlpha').className = 'text-2xl font-bold ' + (alpha >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+  // Update comparison chart
+  updateBenchmarkChart();
+}
+
+// ===================== NEW CHARTS =====================
+function initializeNewCharts() {
+  // Dividend Projection Chart
+  const divCtx = document.getElementById('dividendProjectionChart');
+  if (divCtx) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyIncome = portfolioState.totals.dividendIncome / 12;
+
+    portfolioState.charts.dividendProjection = new Chart(divCtx, {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Projected Income',
+          data: months.map(() => monthlyIncome),
+          backgroundColor: 'rgba(16, 185, 129, 0.6)',
+          borderColor: '#10b981',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', callback: v => '$' + v } }
+        }
+      }
+    });
+  }
+
+  // Benchmark Comparison Chart
+  const benchCtx = document.getElementById('benchmarkComparisonChart');
+  if (benchCtx) {
+    const months = Array.from({length: 12}, (_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - (11 - i));
+      return d.toLocaleDateString('en-US', { month: 'short' });
+    });
+
+    portfolioState.charts.benchmark = new Chart(benchCtx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Your Portfolio',
+          data: months.map((_, i) => 100 + i * 1.5 + Math.random() * 2),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.3
+        }, {
+          label: 'S&P 500',
+          data: months.map((_, i) => 100 + i * 1.2 + Math.random() * 1.5),
+          borderColor: '#64748b',
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#e5e7eb', boxWidth: 12 } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+          y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', callback: v => v + '%' } }
+        }
+      }
+    });
+  }
+}
+
+function updateBenchmarkChart() {
+  if (portfolioState.charts.benchmark) {
+    // In production, update with real data
+    portfolioState.charts.benchmark.update();
+  }
+}
 
 // ===================== CHART INITIALIZATION =====================
 function initializeCharts() {
@@ -1469,6 +2115,98 @@ input:focus, select:focus {
 }
 #addHoldingBtn:not(:disabled):hover {
   animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+/* ===================== MOBILE RESPONSIVE STYLES ===================== */
+@media (max-width: 768px) {
+  /* Stack columns on mobile */
+  .grid-cols-12 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .col-span-12, .lg\:col-span-4, .lg\:col-span-8 { grid-column: span 1; }
+
+  /* Adjust card padding */
+  .bloomberg-card, .glass-card-elevated { padding: 1rem; }
+
+  /* Stack stats cards */
+  .grid-cols-2.md\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Holdings table horizontal scroll */
+  .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+
+  /* Smaller text on mobile */
+  .stat-card-value { font-size: 1.25rem; }
+  .text-2xl { font-size: 1.25rem; }
+  .text-3xl { font-size: 1.5rem; }
+
+  /* Stack quick ticker buttons */
+  .quick-ticker-btn { padding: 0.5rem 0.75rem; }
+
+  /* Full width buttons on mobile */
+  .flex.gap-4.justify-center { flex-direction: column; }
+  .flex.gap-4.justify-center button { width: 100%; }
+
+  /* Collapsible sections hint */
+  .glass-card-elevated > div:first-child { cursor: pointer; }
+
+  /* Touch-friendly inputs */
+  input, select { min-height: 44px; font-size: 16px; }
+
+  /* Health score sizing */
+  #healthScore { font-size: 1.5rem; }
+  .w-20.h-20 { width: 4rem; height: 4rem; }
+}
+
+@media (max-width: 480px) {
+  /* Extra small screens */
+  .grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .md\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .md\:grid-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Smaller padding */
+  main.p-4 { padding: 0.75rem; }
+  .space-y-4 > * + * { margin-top: 0.75rem; }
+
+  /* Hide less important elements */
+  .hidden-mobile { display: none; }
+
+  /* Stack flex items */
+  .flex.items-center.justify-between { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+
+  /* Chart heights */
+  [style*="height: 220px"] { height: 180px !important; }
+  [style*="height: 200px"] { height: 160px !important; }
+  [style*="height: 180px"] { height: 150px !important; }
+}
+
+/* Touch-friendly hover alternatives */
+@media (hover: none) {
+  .quick-ticker-btn:active {
+    @apply bg-slate-600 border-amber-400;
+  }
+  #addHoldingBtn:not(:disabled):active {
+    transform: scale(0.98);
+  }
+}
+
+/* Smooth transitions */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Swipe hint for tables */
+.overflow-x-auto::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to left, rgba(15, 23, 42, 0.8), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.overflow-x-auto:hover::after {
+  opacity: 1;
 }
 </style>
 
