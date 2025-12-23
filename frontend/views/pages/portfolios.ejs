@@ -49,8 +49,14 @@
     <!-- Portfolio List Sidebar -->
     <div class="lg:col-span-1 space-y-3">
       <% if (safePortfolios.length === 0) { %>
-        <div class="bloomberg-card p-8 text-center">
-          <p class="text-slate-400">No portfolios</p>
+        <div class="bloomberg-card p-6 text-center border-dashed border-2 border-slate-600 bg-gradient-to-b from-slate-800/20 to-transparent">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-700/50 flex items-center justify-center">
+            <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <p class="text-slate-500 text-sm">No portfolios yet</p>
+          <p class="text-slate-600 text-xs mt-1">Create one to get started</p>
         </div>
       <% } else {
         safePortfolios.forEach(p => { %>
@@ -87,42 +93,143 @@
     <!-- Portfolio Details -->
     <div class="lg:col-span-3">
       <% if (safePortfolios.length === 0) { %>
-        <!-- Empty State - No Portfolios -->
-        <div class="bloomberg-card p-12 text-center">
-          <div class="mb-6">
-            <svg class="w-24 h-24 mx-auto text-amber-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
+        <!-- Empty State - No Portfolios (Professional Design) -->
+        <div class="bloomberg-card p-0 overflow-hidden">
+          <!-- Hero Section with Gradient -->
+          <div class="relative bg-gradient-to-br from-slate-800 via-slate-900 to-black p-10 text-center border-b border-slate-700/50">
+            <!-- Animated Background Pattern -->
+            <div class="absolute inset-0 opacity-5">
+              <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23f59e0b\" fill-opacity=\"0.4\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+            </div>
+
+            <!-- Icon with Glow Effect -->
+            <div class="relative mb-6">
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+              </div>
+              <div class="relative w-20 h-20 mx-auto bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 transform hover:scale-105 transition-transform">
+                <svg class="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Heading -->
+            <h3 class="text-2xl font-bold text-white mb-2">
+              Build Your Investment Portfolio
+            </h3>
+            <p class="text-amber-400 text-sm font-semibold tracking-widest uppercase mb-4">
+              Professional Wealth Management
+            </p>
+            <p class="text-slate-400 max-w-lg mx-auto leading-relaxed">
+              Track performance, analyze risk metrics, and make data-driven investment decisions with our institutional-grade portfolio tools.
+            </p>
+
+            <!-- CTA Buttons -->
+            <div class="flex gap-4 justify-center mt-8">
+              <button onclick="openModal('createModal')" class="group relative inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold px-8 py-3.5 rounded-lg shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:from-amber-400 hover:to-amber-500 transition-all duration-200 transform hover:-translate-y-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                CREATE PORTFOLIO
+              </button>
+              <button onclick="openModal('uploadModal')" class="group inline-flex items-center gap-2 bg-slate-700/80 text-white font-semibold px-8 py-3.5 rounded-lg border border-slate-600 hover:bg-slate-600 hover:border-slate-500 transition-all duration-200 transform hover:-translate-y-0.5">
+                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                IMPORT FILE
+              </button>
+            </div>
           </div>
-          <h3 class="text-2xl font-bold text-amber-400 mb-3 uppercase tracking-wide">
-            Get Started with Your First Portfolio
-          </h3>
-          <p class="text-slate-400 mb-6 max-w-md mx-auto">
-            Create a portfolio to start tracking your investments, analyzing performance, and managing your wealth.
-          </p>
-          <div class="flex gap-4 justify-center">
-            <button onclick="openModal('createModal')" class="bloomberg-btn bloomberg-btn-primary text-lg px-8 py-3">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              CREATE PORTFOLIO
-            </button>
-            <button onclick="openModal('uploadModal')" class="bloomberg-btn bloomberg-btn-secondary text-lg px-8 py-3">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              UPLOAD FILE
-            </button>
-          </div>
-          <div class="mt-8 p-4 bg-slate-800/50 rounded-lg border border-slate-700 max-w-md mx-auto text-left">
-            <p class="text-sm font-semibold text-amber-400 mb-2">Quick Tips:</p>
-            <ul class="text-sm text-slate-400 space-y-1">
-              <li>• Start with a simple portfolio of your current holdings</li>
-              <li>• You can upload from CSV, Excel, or JSON files</li>
-              <li>• Track multiple portfolios for different accounts</li>
-              <li>• Add holdings manually or import them in bulk</li>
-            </ul>
+
+          <!-- Feature Highlights -->
+          <div class="p-6 bg-slate-900/50">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Feature 1 -->
+              <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors group">
+                <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-3 group-hover:bg-emerald-500/20 transition-colors">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <h4 class="text-white font-semibold mb-1">Performance Tracking</h4>
+                <p class="text-slate-400 text-sm">Real-time P&L, returns analysis, and benchmark comparisons</p>
+              </div>
+
+              <!-- Feature 2 -->
+              <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors group">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3 group-hover:bg-blue-500/20 transition-colors">
+                  <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                  </svg>
+                </div>
+                <h4 class="text-white font-semibold mb-1">Allocation Analysis</h4>
+                <p class="text-slate-400 text-sm">Sector breakdown, diversification metrics, and rebalancing alerts</p>
+              </div>
+
+              <!-- Feature 3 -->
+              <div class="p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors group">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3 group-hover:bg-purple-500/20 transition-colors">
+                  <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <h4 class="text-white font-semibold mb-1">Risk Analytics</h4>
+                <p class="text-slate-400 text-sm">Volatility, Sharpe ratio, VaR, and correlation analysis</p>
+              </div>
+            </div>
+
+            <!-- Import Options -->
+            <div class="mt-6 p-4 rounded-lg bg-slate-800/30 border border-slate-700/30">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 class="text-white font-semibold">Supported Import Formats</h4>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700/50 text-slate-300 text-xs font-medium border border-slate-600/50">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  CSV Files
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700/50 text-slate-300 text-xs font-medium border border-slate-600/50">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  Excel (.xlsx)
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700/50 text-slate-300 text-xs font-medium border border-slate-600/50">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  JSON Data
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700/50 text-slate-300 text-xs font-medium border border-slate-600/50">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  Schwab Export
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700/50 text-slate-300 text-xs font-medium border border-slate-600/50">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  Fidelity Export
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700/50 text-slate-300 text-xs font-medium border border-slate-600/50">
+                  <svg class="w-3.5 h-3.5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  TD Ameritrade
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       <% } else if (safeSelected) { %>
