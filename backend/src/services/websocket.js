@@ -335,74 +335,108 @@ class WebSocketService {
     try {
       const MarketDataService = require('./marketData');
 
-      // Get all active alerts from database
-      const db = require('../db/database');
-      const activeAlerts = db.all(`
-        SELECT * FROM alerts
-        WHERE is_active = 1
-        AND (triggered_at IS NULL OR triggered_at < datetime('now', '-1 hour'))
-      `);
+      // Get all active alerts from database using Prisma
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const activeAlerts = await prisma.alert.findMany({
+        where: {
+          isActive: true,
+          isTriggered: false,
+          OR: [
+            { triggeredAt: null },
+            { triggeredAt: { lt: oneHourAgo } }
+          ]
+        },
+        include: {
+          user: {
+            select: { id: true, email: true }
+          }
+        }
+      });
 
       if (activeAlerts.length === 0) return;
 
-      // Get unique symbols from alerts
-      const symbols = [...new Set(activeAlerts.map(a => a.symbol))];
+      // Get unique symbols from alerts (filter out null symbols)
+      const symbols = [...new Set(activeAlerts.filter(a => a.symbol).map(a => a.symbol))];
+      if (symbols.length === 0) return;
 
       // Fetch LIVE quotes for all alert symbols
       const quotes = await MarketDataService.getQuotes(symbols);
-      const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
 
       // Check each alert against live price
       for (const alert of activeAlerts) {
-        const quote = quoteMap.get(alert.symbol);
+        if (!alert.symbol) continue;
+
+        const quote = quotes[alert.symbol];
         if (!quote) continue;
 
         const price = Number(quote.price);
-        const changePercent = Math.abs(((price - quote.previousClose) / quote.previousClose) * 100);
+        const previousClose = Number(quote.previousClose) || price;
+        const changePercent = previousClose > 0
+          ? Math.abs(((price - previousClose) / previousClose) * 100)
+          : 0;
+
         let triggered = false;
+        let condition = {};
+
+        // Parse condition JSON if it exists
+        try {
+          condition = alert.condition ? JSON.parse(alert.condition) : {};
+        } catch (e) {
+          condition = {};
+        }
 
         // Check trigger conditions based on alert type
-        if (alert.condition === 'above' && price >= alert.target_value) {
+        if (alert.type === 'price_above' && condition.targetPrice && price >= condition.targetPrice) {
           triggered = true;
-        } else if (alert.condition === 'below' && price <= alert.target_value) {
+        } else if (alert.type === 'price_below' && condition.targetPrice && price <= condition.targetPrice) {
           triggered = true;
-        } else if (alert.alert_type === 'percent_change' && changePercent >= alert.target_value) {
+        } else if (alert.type === 'price_change' && condition.threshold && changePercent >= condition.threshold) {
           triggered = true;
         }
 
         if (triggered) {
-          // Mark alert as triggered in database
-          db.run(`
-            UPDATE alerts
-            SET triggered_at = datetime('now'), is_active = 0
-            WHERE id = ?
-          `, [alert.id]);
+          const targetValue = condition.targetPrice || condition.threshold || 0;
+          const message = alert.message || `${alert.symbol} alert triggered at $${price.toFixed(2)}`;
 
-          // Record in alert history
-          db.run(`
-            INSERT INTO alert_history (id, alert_id, user_id, symbol, message, trigger_price, triggered_at)
-            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-          `, [
-            require('uuid').v4(),
-            alert.id,
-            alert.user_id,
-            alert.symbol,
-            alert.message || `${alert.symbol} ${alert.condition} $${alert.target_value}`,
-            price
-          ]);
+          // Mark alert as triggered in database using Prisma
+          await prisma.alert.update({
+            where: { id: alert.id },
+            data: {
+              isTriggered: true,
+              triggeredAt: new Date(),
+              message: message
+            }
+          });
+
+          // Create notification for persistence
+          await prisma.notification.create({
+            data: {
+              userId: alert.userId,
+              type: 'alert',
+              title: `Price Alert: ${alert.symbol}`,
+              message: message,
+              data: JSON.stringify({
+                alertId: alert.id,
+                symbol: alert.symbol,
+                triggerPrice: price,
+                targetValue: targetValue
+              }),
+              isRead: false
+            }
+          });
 
           // Broadcast alert to user via WebSocket
-          this.broadcastAlert(alert.user_id, {
+          this.broadcastAlert(alert.userId, {
             id: alert.id,
             symbol: alert.symbol,
-            condition: alert.condition,
-            targetValue: alert.target_value,
+            type: alert.type,
+            targetValue: targetValue,
             currentPrice: price,
-            message: alert.message || `${alert.symbol} alert triggered at $${price.toFixed(2)}`,
+            message: message,
             triggeredAt: new Date().toISOString()
           });
 
-          logger.debug(`🔔 Alert triggered: ${alert.symbol} ${alert.condition} ${alert.target_value} (current: $${price})`);
+          logger.debug(`🔔 Alert triggered: ${alert.symbol} ${alert.type} (current: $${price})`);
         }
       }
     } catch (err) {

@@ -83,6 +83,7 @@ const dividendsRoutes = require('./routes/dividends');
 const twoFactorRoutes = require('./routes/twoFactor');
 const monitoringRoutes = require('./routes/monitoring');
 const insightsRoutes = require('./routes/insights');
+const notificationsRoutes = require('./routes/notifications');
 const { requestMonitoringMiddleware } = require('./services/monitoringService');
 
 // Security middleware
@@ -610,6 +611,10 @@ app.use('/api/shared', sharingRoutes);
 // ==================== SETTINGS ROUTES ====================
 // User settings and preferences (protected)
 app.use('/api/settings', settingsRoutes);
+
+// ==================== NOTIFICATION ROUTES ====================
+// User notifications and push subscriptions (protected)
+app.use('/api/notifications', authenticate, notificationsRoutes);
 
 // ==================== FEATURE ROUTES (Protected) ====================
 // Mount all feature routes with authentication
