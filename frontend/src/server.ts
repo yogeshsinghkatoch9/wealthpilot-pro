@@ -652,48 +652,105 @@ app.get('/portfolios', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const portfolioId = req.query.id;
 
-  console.log('=== PORTFOLIOS ROUTE DEBUG ===');
-  console.log('Token exists:', !!token);
-  console.log('User ID from token:', res.locals.user?.id);
-  console.log('Requested portfolio ID:', portfolioId);
-
   let portfolio = null;
   const portfoliosResult = await apiFetch('/portfolios', token);
-
-  console.log('Portfolios API response:', JSON.stringify(portfoliosResult, null, 2));
-  console.log('Is array?', Array.isArray(portfoliosResult));
-  console.log('Has error?', !!portfoliosResult.error);
-
-  const portfolios = portfoliosResult.error ? [] : (Array.isArray(portfoliosResult) ? portfoliosResult : []);
-  console.log('Final portfolios count:', portfolios.length);
+  const portfoliosRaw = portfoliosResult.error ? [] : (Array.isArray(portfoliosResult) ? portfoliosResult : []);
 
   if (portfolioId) {
     portfolio = await apiFetch(`/portfolios/${portfolioId}`, token);
     if (portfolio.error) portfolio = null;
-  } else if (portfolios.length > 0) {
-    // Get default portfolio
-    const defaultP = portfolios.find((p: any) => p.isDefault) || portfolios[0];
-    console.log('Selected default portfolio:', defaultP?.id, defaultP?.name);
+  } else if (portfoliosRaw.length > 0) {
+    const defaultP = portfoliosRaw.find((p: any) => p.isDefault) || portfoliosRaw[0];
     portfolio = await apiFetch(`/portfolios/${defaultP.id}`, token);
     if (portfolio.error) portfolio = null;
   }
 
-  let holdings: any[] = [];
+  // Fetch holdings with live prices
+  let holdingsRaw: any[] = [];
   if (portfolio && !portfolio.error) {
     const holdingsResult = await apiFetch(`/portfolios/${portfolio.id}/holdings`, token);
-    holdings = holdingsResult.error ? [] : (Array.isArray(holdingsResult) ? holdingsResult : []);
+    holdingsRaw = holdingsResult.error ? [] : (Array.isArray(holdingsResult) ? holdingsResult : holdingsResult.holdings || []);
   }
 
-  console.log('Rendering with portfolios:', portfolios.length, 'holdings:', holdings.length);
-  console.log('=== END DEBUG ===');
+  // Transform holdings to match template expectations (snake_case)
+  const holdings = holdingsRaw.map((h: any) => ({
+    ...h,
+    id: h.id,
+    symbol: h.symbol,
+    name: h.name || h.symbol,
+    quantity: h.shares || h.quantity || 0,
+    shares: h.shares || h.quantity || 0,
+    current_price: h.currentPrice || h.price || h.current_price || 0,
+    currentPrice: h.currentPrice || h.price || 0,
+    market_value: h.marketValue || h.market_value || (h.shares || 0) * (h.currentPrice || h.price || 0),
+    marketValue: h.marketValue || (h.shares || 0) * (h.currentPrice || h.price || 0),
+    cost_basis: h.avgCostBasis || h.costBasis || h.cost_basis || 0,
+    avgCostBasis: h.avgCostBasis || h.costBasis || 0,
+    total_cost: (h.shares || 0) * (h.avgCostBasis || h.costBasis || 0),
+    gain: h.gain || (h.marketValue || 0) - ((h.shares || 0) * (h.avgCostBasis || 0)),
+    gain_pct: h.gainPct || h.gain_pct || 0,
+    gainPct: h.gainPct || 0,
+    day_change: h.dayChange || h.change || 0,
+    day_change_pct: h.dayChangePct || h.changePercent || 0,
+    sector: h.sector || 'Unknown',
+    weight: h.weight || 0,
+    dividend_yield: h.dividendYield || 0
+  }));
+
+  // Calculate totals from holdings
+  const totalValue = holdings.reduce((sum: number, h: any) => sum + (h.market_value || 0), 0);
+  const totalCost = holdings.reduce((sum: number, h: any) => sum + (h.total_cost || 0), 0);
+  const totalGain = totalValue - totalCost;
+  const totalGainPct = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+  const dayChange = holdings.reduce((sum: number, h: any) => sum + ((h.day_change || 0) * (h.shares || 0)), 0);
+  const income = holdings.reduce((sum: number, h: any) => sum + ((h.dividend_yield || 0) * (h.market_value || 0) / 100), 0);
+
+  // Calculate sector allocation
+  const sectorMap = new Map<string, number>();
+  holdings.forEach((h: any) => {
+    const sector = h.sector || 'Unknown';
+    sectorMap.set(sector, (sectorMap.get(sector) || 0) + (h.market_value || 0));
+  });
+  const sectors = Array.from(sectorMap.entries()).map(([name, value]) => ({
+    name,
+    value,
+    percentage: totalValue > 0 ? (value / totalValue) * 100 : 0
+  })).sort((a, b) => b.value - a.value);
+
+  // Transform portfolios list for sidebar (snake_case)
+  const portfolios = portfoliosRaw.map((p: any) => ({
+    ...p,
+    total_value: p.totalValue || 0,
+    total_gain: p.totalGain || 0,
+    total_gain_pct: p.totalGainPct || 0,
+    holdings_count: p.holdingsCount || (p.holdings ? p.holdings.length : 0)
+  }));
+
+  // Transform selected portfolio (snake_case)
+  const selected = portfolio ? {
+    ...portfolio,
+    id: portfolio.id,
+    name: portfolio.name,
+    description: portfolio.description || 'Portfolio',
+    total_value: totalValue,
+    total_cost: totalCost,
+    total_gain: totalGain,
+    total_gain_pct: totalGainPct,
+    day_change: dayChange,
+    income: income,
+    cash_balance: portfolio.cashBalance || 0,
+    holdings_count: holdings.length,
+    sectors: sectors
+  } : null;
 
   res.render('pages/portfolios', {
     pageTitle: 'Portfolio',
-    portfolio: portfolio,
+    portfolio: selected,
     portfolios: portfolios,
-    selectedPid: portfolio ? portfolio.id : null,
-    selected: portfolio,
+    selectedPid: selected ? selected.id : null,
+    selected: selected,
     holdings: holdings,
+    sectors: sectors,
     token: token,
     fmt: {
       money: (v: number) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -831,14 +888,68 @@ app.get('/performance', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const period = (req.query.period as string) || '1M';
 
-  const [performanceData, comparisonData] = await Promise.all([
+  // Fetch performance data, history for charts, and holdings
+  const [performanceData, historyData, dashboardData, comparisonData] = await Promise.all([
     apiFetch(`/analytics/portfolio-performance?period=${period}`, token),
+    apiFetch(`/analytics/performance-history?timeframe=${period}`, token),
+    apiFetch('/analytics/dashboard', token),
     apiFetch(`/analytics/comparison?period=${period}`, token)
   ]);
 
+  // Build history array for chart from performance-history API
+  let history: any[] = [];
+  if (!historyData.error && historyData.labels && historyData.portfolioValues) {
+    history = historyData.labels.map((date: string, i: number) => ({
+      date,
+      value: historyData.portfolioValues[i] || 0,
+      benchmark: historyData.benchmarkValues?.[i] || 0
+    }));
+  }
+
+  // Get holdings for performance table
+  const holdings = !dashboardData.error && dashboardData.holdings ? dashboardData.holdings.map((h: any) => ({
+    symbol: h.symbol,
+    name: h.name || h.symbol,
+    shares: h.shares || 0,
+    price: h.price || h.currentPrice || 0,
+    currentPrice: h.price || h.currentPrice || 0,
+    dayChange: h.change || 0,
+    dayChangePct: h.changePercent || 0,
+    value: h.value || h.marketValue || 0,
+    marketValue: h.value || h.marketValue || 0,
+    cost: h.cost || 0,
+    gain: h.gain || 0,
+    gainPct: h.gainPct || 0,
+    return: h.gainPct || 0
+  })) : [];
+
+  // Build comprehensive performance object
+  const performance = {
+    totalValue: dashboardData.value || performanceData.totalValue || 0,
+    totalCost: dashboardData.cost || performanceData.totalCost || 0,
+    totalReturn: dashboardData.gain || 0,
+    totalReturnPct: dashboardData.gainPct || ((dashboardData.gain || 0) / (dashboardData.cost || 1) * 100),
+    dayChange: dashboardData.dayChange || 0,
+    dayChangePct: dashboardData.dayChangePct || 0,
+    sharpeRatio: dashboardData.risk?.sharpe || performanceData.riskMetrics?.sharpe || 0,
+    volatility: dashboardData.risk?.volatility || performanceData.riskMetrics?.volatility || 0,
+    beta: dashboardData.risk?.beta || performanceData.riskMetrics?.beta || 1,
+    alpha: performanceData.riskMetrics?.alpha || 0,
+    maxDrawdown: dashboardData.risk?.maxDrawdown || performanceData.riskMetrics?.maxDrawdown || 0,
+    history: history,
+    holdings: holdings,
+    riskMetrics: {
+      beta: dashboardData.risk?.beta || 1,
+      alpha: 0,
+      sharpe: dashboardData.risk?.sharpe || 0,
+      maxDrawdown: dashboardData.risk?.maxDrawdown || 0,
+      volatility: dashboardData.risk?.volatility || 0
+    }
+  };
+
   res.render('pages/performance', {
     pageTitle: 'Performance',
-    performance: performanceData.error ? null : performanceData,
+    performance: performance,
     comparison: comparisonData.error ? null : comparisonData,
     period,
     fmt: {
@@ -1979,6 +2090,11 @@ app.get('/concentration-risk', requireAuth, async (req, res) => {
       pct: (v: number) => (v || 0).toFixed(1) + '%'
     }
   });
+});
+
+// Redirect /concentration to /concentration-risk
+app.get('/concentration', requireAuth, (req, res) => {
+  res.redirect('/concentration-risk');
 });
 
 app.get('/volatility', requireAuth, async (req, res) => {
