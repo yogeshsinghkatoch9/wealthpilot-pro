@@ -27,6 +27,13 @@
     <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-8">
       <h2 class="text-2xl font-semibold text-white mb-6">Welcome back</h2>
 
+      <!-- Success message -->
+      <% if (typeof success !== 'undefined' && success) { %>
+      <div class="mb-4 p-3 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-400 text-sm">
+        <%= success %>
+      </div>
+      <% } %>
+
       <!-- Error message -->
       <div id="error-message" class="hidden mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm"></div>
 
@@ -61,7 +68,7 @@
           <a href="/forgot-password" class="text-sm text-blue-400 hover:text-blue-300">Forgot password?</a>
         </div>
 
-        <button 
+        <button
           type="submit"
           class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition"
         >
@@ -70,34 +77,14 @@
       </form>
 
       <div class="mt-6 text-center text-slate-400 text-sm">
-        Don't have an account? 
+        Don't have an account?
         <a href="/register" class="text-blue-400 hover:text-blue-300">Sign up</a>
-      </div>
-
-      <!-- Demo credentials -->
-      <div class="mt-6 p-4 bg-slate-900/50 rounded-lg border border-slate-700">
-        <p class="text-xs text-slate-400 mb-2">Demo credentials:</p>
-        <p class="text-sm text-slate-300">Email: demo@wealthpilot.com</p>
-        <p class="text-sm text-slate-300">Password: demo123456</p>
-        <button 
-          onclick="fillDemo()"
-          class="mt-2 text-xs text-blue-400 hover:text-blue-300"
-        >
-          Fill demo credentials →
-        </button>
       </div>
     </div>
   </div>
 
   <script>
-    // Fill demo credentials
-    function fillDemo() {
-      document.querySelector('input[name="email"]').value = 'demo@wealthpilot.com';
-      document.querySelector('input[name="password"]').value = 'demo123456';
-    }
-
     <% if (typeof error !== 'undefined' && error) { %>
-    // Show error message if present
     document.getElementById('error-message').textContent = '<%= error %>';
     document.getElementById('error-message').classList.remove('hidden');
     <% } %>

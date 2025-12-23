@@ -73,6 +73,19 @@ model ApiKey {
   @@index([keyHash])
 }
 
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  type      String   @default("email_verification") // email_verification, password_reset
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([email])
+  @@map("verification_tokens")
+}
+
 model UserSettings {
   id                    String   @id @default(uuid())
   userId                String   @unique

@@ -1,13 +1,20 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const { prisma } = require('../db/simpleDb');
 const { v4: uuidv4 } = require('uuid');
 const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const emailService = require('../services/emailService');
 
 const router = express.Router();
+
+// Generate secure verification token
+const generateVerificationToken = () => {
+  return crypto.randomBytes(32).toString('hex');
+};
 
 /**
  * POST /api/auth/register
@@ -86,32 +93,22 @@ router.post('/register', [
       }
     });
 
-    // Create session
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
-
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt,
-        userAgent: req.get('user-agent'),
-        ipAddress: req.ip
-      }
+    // Mark user as verified (email verification disabled)
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true }
     });
 
     logger.info(`New user registered: ${email}`);
 
     res.status(201).json({
-      user,
-      token,
-      expiresAt
+      message: 'Registration successful! You can now login.',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
     });
   } catch (err) {
     logger.error('Registration error:', err);
@@ -349,6 +346,167 @@ router.put('/password', authenticate, [
   } catch (err) {
     logger.error('Password change error:', err);
     res.status(500).json({ error: 'Password change failed' });
+  }
+});
+
+/**
+ * GET /api/auth/verify-email
+ * Verify email with token
+ */
+router.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Verification token is required' });
+    }
+
+    // Find verification token
+    const verificationRecord = await prisma.verificationToken.findUnique({
+      where: { token }
+    });
+
+    if (!verificationRecord) {
+      return res.status(400).json({ error: 'Invalid or expired verification link' });
+    }
+
+    // Check if token is expired
+    if (new Date() > verificationRecord.expiresAt) {
+      // Delete expired token
+      await prisma.verificationToken.delete({
+        where: { id: verificationRecord.id }
+      });
+      return res.status(400).json({ error: 'Verification link has expired. Please request a new one.' });
+    }
+
+    // Find and update user
+    const user = await prisma.user.findUnique({
+      where: { email: verificationRecord.email }
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      // Delete token since already verified
+      await prisma.verificationToken.delete({
+        where: { id: verificationRecord.id }
+      });
+      return res.json({ message: 'Email already verified. You can now login.' });
+    }
+
+    // Update user to verified
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true }
+    });
+
+    // Delete the verification token
+    await prisma.verificationToken.delete({
+      where: { id: verificationRecord.id }
+    });
+
+    // Send welcome email
+    try {
+      await emailService.send({
+        to: user.email,
+        subject: 'Welcome to WealthPilot Pro!',
+        template: 'welcome',
+        data: {
+          name: user.firstName || user.email.split('@')[0],
+          loginUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+        }
+      });
+    } catch (emailErr) {
+      logger.warn('Failed to send welcome email:', emailErr.message);
+    }
+
+    logger.info(`Email verified for user: ${user.email}`);
+
+    res.json({
+      message: 'Email verified successfully! You can now login.',
+      verified: true
+    });
+  } catch (err) {
+    logger.error('Email verification error:', err);
+    res.status(500).json({ error: 'Email verification failed' });
+  }
+});
+
+/**
+ * POST /api/auth/resend-verification
+ * Resend verification email
+ */
+router.post('/resend-verification', [
+  body('email').isEmail().normalizeEmail()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email } = req.body;
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (!user) {
+      // Don't reveal if user exists
+      return res.json({ message: 'If an account exists with this email, a verification link will be sent.' });
+    }
+
+    if (user.isVerified) {
+      return res.json({ message: 'Email is already verified. You can login.' });
+    }
+
+    // Delete any existing verification tokens for this email
+    await prisma.verificationToken.deleteMany({
+      where: { email }
+    });
+
+    // Generate new verification token
+    const verificationToken = generateVerificationToken();
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setHours(tokenExpiresAt.getHours() + 24);
+
+    await prisma.verificationToken.create({
+      data: {
+        email,
+        token: verificationToken,
+        type: 'email_verification',
+        expiresAt: tokenExpiresAt
+      }
+    });
+
+    // Send verification email
+    const baseUrl = process.env.FRONTEND_URL || `http://${req.get('host')}`;
+    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+
+    try {
+      await emailService.send({
+        to: email,
+        subject: 'Verify Your Email - WealthPilot Pro',
+        template: 'emailVerification',
+        data: {
+          name: user.firstName || email.split('@')[0],
+          verificationUrl,
+          expiresIn: '24 hours'
+        }
+      });
+      logger.info(`Verification email resent to: ${email}`);
+    } catch (emailErr) {
+      logger.error('Failed to resend verification email:', emailErr);
+      return res.status(500).json({ error: 'Failed to send verification email' });
+    }
+
+    res.json({ message: 'Verification email sent! Please check your inbox.' });
+  } catch (err) {
+    logger.error('Resend verification error:', err);
+    res.status(500).json({ error: 'Failed to resend verification email' });
   }
 });
 

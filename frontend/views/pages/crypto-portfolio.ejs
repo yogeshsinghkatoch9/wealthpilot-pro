@@ -1,155 +1,757 @@
 <%- include('../partials/header', { pageTitle: 'Crypto Portfolio' }) %>
 
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Crypto Portfolio</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Track crypto assets, DeFi, and NFTs</p></div>
+<div>
+  <h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Crypto Portfolio</h1>
+  <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Track crypto assets, DeFi yields, and NFTs with real-time prices</p>
+</div>
 <div class="flex gap-2">
-<button onclick="openAddModal()" class="btn-primary">+ Add Asset</button>
+  <button onclick="refreshPrices()" class="btn-ghost" id="refreshBtn">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    <span class="ml-1 hidden sm:inline">Refresh</span>
+  </button>
+  <button onclick="openAddModal()" class="btn-primary">+ Add Asset</button>
 </div>
 </div>
 
-<!-- Portfolio Summary -->
+<!-- Market Overview Bar -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+  <div class="card p-3 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center">
+      <span class="text-white font-bold text-sm">₿</span>
+    </div>
+    <div>
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Bitcoin</p>
+      <p id="btcPrice" class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$--,---</p>
+      <p id="btcChange" class="text-xs">--%</p>
+    </div>
+  </div>
+  <div class="card p-3 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center">
+      <span class="text-white font-bold text-sm">Ξ</span>
+    </div>
+    <div>
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Ethereum</p>
+      <p id="ethPrice" class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$-,---</p>
+      <p id="ethChange" class="text-xs">--%</p>
+    </div>
+  </div>
+  <div class="card p-3">
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">BTC Dominance</p>
+    <p id="btcDom" class="text-lg font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--%</p>
+    <div class="w-full bg-slate-700 h-1.5 rounded-full mt-1"><div id="btcDomBar" class="bg-amber-500 h-1.5 rounded-full" style="width: 0%"></div></div>
+  </div>
+  <div class="card p-3">
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Fear & Greed</p>
+    <p id="fearGreed" class="text-lg font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+    <p id="fearGreedLabel" class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Loading...</p>
+  </div>
+  <div class="card p-3">
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">ETH Gas</p>
+    <p id="gasPrice" class="text-lg font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">-- Gwei</p>
+    <p id="gasLabel" class="text-xs text-emerald-400">Loading...</p>
+  </div>
+</div>
+
+<!-- Portfolio Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-<div class="card p-4">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Crypto Value</p>
-<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalValue || 0) %></p>
-<% const dayChange = totals.dayChange || 0; %>
-<p class="text-sm <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= dayChange >= 0 ? '+' : '' %><%= fmt.money(dayChange) %> (24h)</p>
+<div class="card p-5 relative overflow-hidden">
+  <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full"></div>
+  <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Crypto Value</p>
+  <p id="totalValue" class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalValue || 0) %></p>
+  <% const dayChange = totals.dayChange || 0; %>
+  <p class="text-sm <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+    <span id="dayChange"><%= dayChange >= 0 ? '+' : '' %><%= fmt.money(dayChange) %></span> (24h)
+  </p>
 </div>
-<div class="card p-4">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total P/L</p>
-<% const totalGain = totals.totalGain || 0; const gainPct = totals.totalCost > 0 ? (totalGain / totals.totalCost * 100) : 0; %>
-<p class="text-3xl font-bold <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></p>
-<p class="text-sm <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%</p>
+<div class="card p-5">
+  <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total P/L</p>
+  <% const totalGain = totals.totalGain || 0; const gainPct = totals.totalCost > 0 ? (totalGain / totals.totalCost * 100) : 0; %>
+  <p class="text-3xl font-bold <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></p>
+  <p class="text-sm <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>% all time</p>
 </div>
-<div class="card p-4">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Cost</p>
-<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalCost || 0) %></p>
-<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= holdings.length %> assets</p>
+<div class="card p-5">
+  <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Cost Basis</p>
+  <p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalCost || 0) %></p>
+  <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= holdings.length %> assets tracked</p>
 </div>
-<div class="card p-4">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Best Performer</p>
-<% const bestHolding = holdings.length > 0 ? holdings.reduce((a, b) => (a.gain_pct || 0) > (b.gain_pct || 0) ? a : b, holdings[0]) : null; %>
-<% if (bestHolding) { %>
-<p class="text-3xl font-bold text-emerald-400"><%= bestHolding.symbol %></p>
-<p class="text-sm text-emerald-400">+<%= (bestHolding.gain_pct || 0).toFixed(2) %>%</p>
-<% } else { %>
-<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
-<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No holdings</p>
-<% } %>
+<div class="card p-5">
+  <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Best Performer (24h)</p>
+  <% const bestHolding = holdings.length > 0 ? holdings.reduce((a, b) => (a.change_24h || 0) > (b.change_24h || 0) ? a : b, holdings[0]) : null; %>
+  <% if (bestHolding) { %>
+  <p class="text-3xl font-bold text-emerald-400"><%= bestHolding.symbol %></p>
+  <p class="text-sm text-emerald-400">+<%= (bestHolding.change_24h || 0).toFixed(2) %>%</p>
+  <% } else { %>
+  <p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+  <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No holdings</p>
+  <% } %>
 </div>
 </div>
 
-<!-- Holdings Table -->
-<div class="card overflow-hidden">
-<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
-<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings (<%= holdings.length %>)</h3>
-</div>
-<% if (holdings.length === 0) { %>
-<div class="p-12 text-center">
-<svg class="w-16 h-16 mx-auto <%= theme === 'light' ? 'text-gray-300' : 'text-slate-600' %> mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-</svg>
-<h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No crypto holdings</h4>
-<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">Add your first crypto asset to get started!</p>
-<button onclick="openAddModal()" class="btn-primary">Add Crypto Asset</button>
-</div>
-<% } else { %>
-<table class="w-full text-sm">
-<thead>
-<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
-<th class="px-4 py-3">Asset</th>
-<th class="px-4 py-3">Price</th>
-<th class="px-4 py-3">24h</th>
-<th class="px-4 py-3">Holdings</th>
-<th class="px-4 py-3">Value</th>
-<th class="px-4 py-3">P/L</th>
-<th class="px-4 py-3">Actions</th>
-</tr>
-</thead>
-<tbody>
-<% holdings.forEach(h => {
-  const change24h = h.change_24h || 0;
-  const gain = h.market_value - h.cost_basis;
-  const gainPct = h.cost_basis > 0 ? (gain / h.cost_basis * 100) : 0;
-%>
-<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
-<td class="px-4 py-4">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold"><%= h.symbol.substring(0, 2).toUpperCase() %></div>
-<div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name || h.symbol %></p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.symbol %></p></div>
-</div>
-</td>
-<td class="px-4 py-4 font-mono <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.current_price || 0) %></td>
-<td class="px-4 py-4 <%= change24h >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= change24h >= 0 ? '+' : '' %><%= change24h.toFixed(2) %>%</td>
-<td class="px-4 py-4 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><%= h.quantity %> <%= h.symbol %></td>
-<td class="px-4 py-4 font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.market_value || 0) %></td>
-<td class="px-4 py-4 <%= gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gain >= 0 ? '+' : '' %><%= fmt.money(gain) %> (<%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(1) %>%)</td>
-<td class="px-4 py-4">
-<button onclick="deleteCrypto('<%= h.id %>')" class="text-red-400 hover:text-red-300">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-</button>
-</td>
-</tr>
-<% }) %>
-</tbody>
-</table>
-<% } %>
+<!-- Tab Navigation -->
+<div class="flex gap-2 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+  <button onclick="switchTab('holdings')" class="tab-btn active" data-tab="holdings">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    Holdings
+  </button>
+  <button onclick="switchTab('performance')" class="tab-btn" data-tab="performance">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+    Performance
+  </button>
+  <button onclick="switchTab('defi')" class="tab-btn" data-tab="defi">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+    DeFi
+  </button>
+  <button onclick="switchTab('alerts')" class="tab-btn" data-tab="alerts">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+    Alerts
+  </button>
 </div>
 
-<% if (holdings.length > 0) { %>
-<!-- Allocation Chart -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-<div class="card p-5">
-<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Allocation</h3>
-<div class="h-48"><canvas id="cryptoAllocation"></canvas></div>
+<!-- Holdings Tab -->
+<div id="tab-holdings" class="tab-content">
+  <div class="card overflow-hidden">
+    <div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %> flex justify-between items-center">
+      <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings (<%= holdings.length %>)</h3>
+      <div class="flex gap-2">
+        <select id="sortBy" onchange="sortHoldings()" class="form-input py-1 text-sm">
+          <option value="value">Sort: Value</option>
+          <option value="change">Sort: 24h Change</option>
+          <option value="gain">Sort: P/L</option>
+          <option value="name">Sort: Name</option>
+        </select>
+      </div>
+    </div>
+    <% if (holdings.length === 0) { %>
+    <div class="p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-600/20 flex items-center justify-center">
+        <svg class="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No crypto holdings yet</h4>
+      <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">Start building your crypto portfolio today!</p>
+      <button onclick="openAddModal()" class="btn-primary">Add First Asset</button>
+    </div>
+    <% } else { %>
+    <div id="holdingsContainer">
+    <% holdings.forEach((h, idx) => {
+      const change24h = h.change_24h || 0;
+      const gain = h.market_value - h.cost_basis;
+      const gainPct = h.cost_basis > 0 ? (gain / h.cost_basis * 100) : 0;
+      const alloc = totals.totalValue > 0 ? (h.market_value / totals.totalValue * 100) : 0;
+    %>
+    <div class="holding-row p-4 border-b <%= theme === 'light' ? 'border-gray-100 hover:bg-gray-50' : 'border-slate-700/50 hover:bg-slate-800/50' %> cursor-pointer transition-colors"
+         data-symbol="<%= h.symbol %>" data-value="<%= h.market_value %>" data-change="<%= change24h %>" data-gain="<%= gainPct %>" data-name="<%= h.name || h.symbol %>"
+         onclick="showAssetDetails('<%= h.symbol %>')">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold shadow-lg">
+              <%= h.symbol.substring(0, 2).toUpperCase() %>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full <%= change24h >= 0 ? 'bg-emerald-500' : 'bg-red-500' %> border-2 <%= theme === 'light' ? 'border-white' : 'border-slate-900' %>"></div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <p class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name || h.symbol %></p>
+              <span class="px-2 py-0.5 text-xs rounded-full <%= theme === 'light' ? 'bg-gray-100 text-gray-600' : 'bg-slate-700 text-slate-300' %>"><%= h.symbol %></span>
+            </div>
+            <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.quantity %> <%= h.symbol %> · <%= alloc.toFixed(1) %>% of portfolio</p>
+          </div>
+        </div>
+        <div class="hidden md:flex items-center gap-8">
+          <div class="text-right">
+            <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Price</p>
+            <p class="font-mono font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" data-price="<%= h.symbol %>"><%= fmt.money(h.current_price || 0) %></p>
+          </div>
+          <div class="text-right w-24">
+            <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">24h</p>
+            <p class="font-medium <%= change24h >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <%= change24h >= 0 ? '▲' : '▼' %> <%= Math.abs(change24h).toFixed(2) %>%
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Value</p>
+            <p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.market_value || 0) %></p>
+          </div>
+          <div class="text-right w-28">
+            <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">P/L</p>
+            <p class="font-medium <%= gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <%= gain >= 0 ? '+' : '' %><%= fmt.money(gain) %>
+              <span class="text-xs">(<%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(1) %>%)</span>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="event.stopPropagation(); openAlertModal('<%= h.symbol %>', <%= h.current_price %>)" class="p-2 hover:bg-slate-700 rounded-lg transition-colors" title="Set Alert">
+            <svg class="w-5 h-5 <%= theme === 'light' ? 'text-gray-400' : 'text-slate-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          </button>
+          <button onclick="event.stopPropagation(); deleteCrypto('<%= h.id %>')" class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors" title="Delete">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>
+      <!-- Mobile Details -->
+      <div class="mt-3 pt-3 border-t <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %> grid grid-cols-4 gap-4 md:hidden">
+        <div><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Price</p><p class="font-mono text-sm"><%= fmt.money(h.current_price || 0) %></p></div>
+        <div><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">24h</p><p class="text-sm <%= change24h >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= change24h >= 0 ? '+' : '' %><%= change24h.toFixed(2) %>%</p></div>
+        <div><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Value</p><p class="font-medium text-sm"><%= fmt.money(h.market_value || 0) %></p></div>
+        <div><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">P/L</p><p class="text-sm <%= gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(1) %>%</p></div>
+      </div>
+    </div>
+    <% }) %>
+    </div>
+    <% } %>
+  </div>
+
+  <% if (holdings.length > 0) { %>
+  <!-- Allocation Charts -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Allocation</h3>
+      <div class="h-64"><canvas id="allocationChart"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">24h Performance</h3>
+      <div class="h-64"><canvas id="performanceChart"></canvas></div>
+    </div>
+  </div>
+  <% } %>
 </div>
-<div class="card p-5">
-<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Performance Summary</h3>
-<div class="space-y-3">
-<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total Invested</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium"><%= fmt.money(totals.totalCost || 0) %></span></div>
-<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Current Value</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium"><%= fmt.money(totals.totalValue || 0) %></span></div>
-<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total P/L</span><span class="<%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-medium"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></span></div>
-<div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Return %</span><span class="<%= gainPct >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-medium"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%</span></div>
+
+<!-- Performance Tab -->
+<div id="tab-performance" class="tab-content hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Portfolio Value History</h3>
+        <div class="flex gap-2">
+          <button onclick="setChartRange('24h')" class="chart-range-btn active" data-range="24h">24H</button>
+          <button onclick="setChartRange('7d')" class="chart-range-btn" data-range="7d">7D</button>
+          <button onclick="setChartRange('30d')" class="chart-range-btn" data-range="30d">30D</button>
+          <button onclick="setChartRange('90d')" class="chart-range-btn" data-range="90d">90D</button>
+          <button onclick="setChartRange('1y')" class="chart-range-btn" data-range="1y">1Y</button>
+        </div>
+      </div>
+      <div class="h-80"><canvas id="valueHistoryChart"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Performance Stats</h3>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">24h Change</span>
+          <span id="stat24h" class="font-bold text-emerald-400">+0.00%</span>
+        </div>
+        <div class="flex justify-between items-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">7d Change</span>
+          <span id="stat7d" class="font-bold text-emerald-400">+0.00%</span>
+        </div>
+        <div class="flex justify-between items-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">30d Change</span>
+          <span id="stat30d" class="font-bold text-red-400">-0.00%</span>
+        </div>
+        <div class="flex justify-between items-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">All-Time Return</span>
+          <span class="font-bold <%= gainPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%</span>
+        </div>
+        <div class="flex justify-between items-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Best Asset (All-Time)</span>
+          <% const bestAllTime = holdings.length > 0 ? holdings.reduce((a, b) => {
+            const aGain = a.cost_basis > 0 ? (a.market_value - a.cost_basis) / a.cost_basis : 0;
+            const bGain = b.cost_basis > 0 ? (b.market_value - b.cost_basis) / b.cost_basis : 0;
+            return aGain > bGain ? a : b;
+          }, holdings[0]) : null; %>
+          <span class="font-bold text-emerald-400"><%= bestAllTime ? bestAllTime.symbol : '--' %></span>
+        </div>
+        <div class="flex justify-between items-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Worst Asset (All-Time)</span>
+          <% const worstAllTime = holdings.length > 0 ? holdings.reduce((a, b) => {
+            const aGain = a.cost_basis > 0 ? (a.market_value - a.cost_basis) / a.cost_basis : 0;
+            const bGain = b.cost_basis > 0 ? (b.market_value - b.cost_basis) / b.cost_basis : 0;
+            return aGain < bGain ? a : b;
+          }, holdings[0]) : null; %>
+          <span class="font-bold text-red-400"><%= worstAllTime ? worstAllTime.symbol : '--' %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correlation Heatmap -->
+  <div class="card p-5">
+    <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Asset Correlation Matrix</h3>
+    <div class="h-80"><canvas id="correlationChart"></canvas></div>
+  </div>
 </div>
+
+<!-- DeFi Tab -->
+<div id="tab-defi" class="tab-content hidden">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">DeFi Yield</span>
+      </div>
+      <p class="text-3xl font-bold text-emerald-400">$0.00</p>
+      <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Estimated monthly yield</p>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Staked Assets</span>
+      </div>
+      <p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0.00</p>
+      <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total value staked</p>
+    </div>
+    <div class="card p-5">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Average APY</span>
+      </div>
+      <p class="text-3xl font-bold text-amber-400">0.00%</p>
+      <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Weighted average yield</p>
+    </div>
+  </div>
+
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">DeFi Positions</h3>
+      <button onclick="openDefiModal()" class="btn-primary text-sm">+ Add Position</button>
+    </div>
+    <div class="text-center py-12">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-500/20 flex items-center justify-center">
+        <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+      </div>
+      <h4 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No DeFi Positions</h4>
+      <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">Track your staking, liquidity pools, and yield farming</p>
+      <button onclick="openDefiModal()" class="btn-primary">Add DeFi Position</button>
+    </div>
+  </div>
+
+  <!-- Popular DeFi Protocols -->
+  <div class="card p-5">
+    <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Popular DeFi Yields</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="defiYields">
+      <div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">Aa</div>
+          <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Aave ETH</span>
+        </div>
+        <p class="text-2xl font-bold text-emerald-400">3.24%</p>
+        <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Supply APY</p>
+      </div>
+      <div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center text-white text-xs font-bold">🦄</div>
+          <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Uniswap ETH/USDC</span>
+        </div>
+        <p class="text-2xl font-bold text-emerald-400">12.5%</p>
+        <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Estimated APY</p>
+      </div>
+      <div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">Li</div>
+          <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Lido stETH</span>
+        </div>
+        <p class="text-2xl font-bold text-emerald-400">4.8%</p>
+        <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Staking APR</p>
+      </div>
+      <div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-full bg-yellow-500 flex items-center justify-center text-white text-xs font-bold">C</div>
+          <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Compound USDC</span>
+        </div>
+        <p class="text-2xl font-bold text-emerald-400">5.12%</p>
+        <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Supply APY</p>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Alerts Tab -->
+<div id="tab-alerts" class="tab-content hidden">
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Price Alerts</h3>
+      <button onclick="openAlertModal()" class="btn-primary text-sm">+ Create Alert</button>
+    </div>
+    <div id="alertsList" class="space-y-3">
+      <div class="text-center py-8">
+        <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </div>
+        <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">No price alerts set</p>
+        <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-1">Get notified when prices hit your targets</p>
+      </div>
+    </div>
+  </div>
 </div>
-<% } %>
 
 </div></div></main>
 
 <!-- Add Crypto Modal -->
 <div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
-<div class="card p-6 w-full max-w-md mx-4">
-<h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Add Crypto Asset</h3>
-<form id="addForm" class="space-y-4">
-<div>
-<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Symbol</label>
-<input type="text" name="symbol" class="form-input" placeholder="BTC" required>
-</div>
-<div>
-<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Name</label>
-<input type="text" name="name" class="form-input" placeholder="Bitcoin">
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Quantity</label>
-<input type="number" step="any" name="quantity" class="form-input" placeholder="0.5" required>
-</div>
-<div>
-<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Cost Basis</label>
-<input type="number" step="0.01" name="costBasis" class="form-input" placeholder="25000" required>
-</div>
-</div>
-</form>
-<div class="flex gap-3 mt-6">
-<button onclick="closeAddModal()" class="btn-ghost flex-1">Cancel</button>
-<button onclick="submitAdd()" class="btn-primary flex-1">Add</button>
-</div>
+<div class="card p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Add Crypto Asset</h3>
+    <button onclick="closeAddModal()" class="p-2 hover:bg-slate-700 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+  </div>
+
+  <!-- Quick Add Buttons -->
+  <div class="mb-4">
+    <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-2">Quick Add:</p>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="quickAdd('BTC', 'Bitcoin')" class="px-3 py-1.5 text-sm rounded-lg <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-700 hover:bg-slate-600' %> transition-colors">₿ Bitcoin</button>
+      <button onclick="quickAdd('ETH', 'Ethereum')" class="px-3 py-1.5 text-sm rounded-lg <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-700 hover:bg-slate-600' %> transition-colors">Ξ Ethereum</button>
+      <button onclick="quickAdd('SOL', 'Solana')" class="px-3 py-1.5 text-sm rounded-lg <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-700 hover:bg-slate-600' %> transition-colors">◎ Solana</button>
+      <button onclick="quickAdd('USDT', 'Tether')" class="px-3 py-1.5 text-sm rounded-lg <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-700 hover:bg-slate-600' %> transition-colors">₮ USDT</button>
+    </div>
+  </div>
+
+  <form id="addForm" class="space-y-4">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Symbol *</label>
+        <input type="text" name="symbol" id="addSymbol" class="form-input" placeholder="BTC" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Name</label>
+        <input type="text" name="name" id="addName" class="form-input" placeholder="Bitcoin">
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Quantity *</label>
+        <input type="number" step="any" name="quantity" class="form-input" placeholder="0.5" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Cost Basis ($) *</label>
+        <input type="number" step="0.01" name="costBasis" class="form-input" placeholder="25000" required>
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Purchase Date</label>
+      <input type="date" name="purchaseDate" class="form-input">
+    </div>
+    <div>
+      <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Notes</label>
+      <textarea name="notes" class="form-input" rows="2" placeholder="Optional notes..."></textarea>
+    </div>
+  </form>
+  <div class="flex gap-3 mt-6">
+    <button onclick="closeAddModal()" class="btn-ghost flex-1">Cancel</button>
+    <button onclick="submitAdd()" class="btn-primary flex-1">Add Asset</button>
+  </div>
 </div>
 </div>
 
+<!-- Price Alert Modal -->
+<div id="alertModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="card p-6 w-full max-w-md mx-4">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Create Price Alert</h3>
+    <button onclick="closeAlertModal()" class="p-2 hover:bg-slate-700 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+  </div>
+  <form id="alertForm" class="space-y-4">
+    <div>
+      <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Asset</label>
+      <input type="text" name="alertSymbol" id="alertSymbol" class="form-input" placeholder="BTC" required>
+    </div>
+    <div>
+      <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Current Price</label>
+      <input type="text" id="alertCurrentPrice" class="form-input bg-slate-800" readonly>
+    </div>
+    <div>
+      <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Condition</label>
+      <select name="alertCondition" class="form-input">
+        <option value="above">Price goes above</option>
+        <option value="below">Price goes below</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Target Price ($)</label>
+      <input type="number" step="0.01" name="alertTarget" id="alertTarget" class="form-input" placeholder="50000" required>
+    </div>
+  </form>
+  <div class="flex gap-3 mt-6">
+    <button onclick="closeAlertModal()" class="btn-ghost flex-1">Cancel</button>
+    <button onclick="submitAlert()" class="btn-primary flex-1">Create Alert</button>
+  </div>
+</div>
+</div>
+
+<!-- Asset Details Modal -->
+<div id="assetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="card p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <div id="assetIcon" class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold">BT</div>
+      <div>
+        <h3 id="assetName" class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Bitcoin</h3>
+        <p id="assetSymbol" class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">BTC</p>
+      </div>
+    </div>
+    <button onclick="closeAssetModal()" class="p-2 hover:bg-slate-700 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Price</p>
+      <p id="assetPrice" class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0.00</p>
+    </div>
+    <div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">24h Change</p>
+      <p id="assetChange" class="font-bold text-emerald-400">+0.00%</p>
+    </div>
+    <div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Market Cap</p>
+      <p id="assetMcap" class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0B</p>
+    </div>
+    <div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+      <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Volume 24h</p>
+      <p id="assetVolume" class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0B</p>
+    </div>
+  </div>
+  <div class="h-48 mb-6"><canvas id="assetChart"></canvas></div>
+  <div class="grid grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+      <h4 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Your Position</h4>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Quantity</span><span id="posQty" class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">0</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Avg Cost</span><span id="posAvgCost" class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total Cost</span><span id="posCost" class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Current Value</span><span id="posValue" class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0</span></div>
+        <div class="flex justify-between border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-600' %> pt-2 mt-2"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Profit/Loss</span><span id="posPL" class="font-bold text-emerald-400">+$0</span></div>
+      </div>
+    </div>
+    <div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+      <h4 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Market Data</h4>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">24h High</span><span id="assetHigh" class="text-emerald-400">$0</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">24h Low</span><span id="assetLow" class="text-red-400">$0</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">ATH</span><span id="assetATH" class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$0</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">ATH Date</span><span id="assetATHDate" class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">--</span></div>
+        <div class="flex justify-between"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">From ATH</span><span id="assetFromATH" class="text-red-400">-0%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<style>
+.tab-btn {
+  @apply px-4 py-2 -mb-px flex items-center gap-2 text-sm font-medium border-b-2 border-transparent transition-colors;
+}
+.tab-btn:hover { @apply <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>; }
+.tab-btn.active { @apply border-blue-500 text-blue-500; }
+.chart-range-btn {
+  @apply px-3 py-1 text-xs rounded-lg transition-colors;
+}
+.chart-range-btn:not(.active) { @apply <%= theme === 'light' ? 'text-gray-500 hover:bg-gray-100' : 'text-slate-400 hover:bg-slate-700' %>; }
+.chart-range-btn.active { @apply bg-blue-500 text-white; }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+const holdingsData = <%- JSON.stringify(holdings) %>;
+const totalsData = <%- JSON.stringify(totals) %>;
+let allocationChart, performanceChart, valueHistoryChart, correlationChart, assetChart;
+
+// Tab Switching
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabName).classList.remove('hidden');
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+  if (tabName === 'performance' && !valueHistoryChart) {
+    initPerformanceCharts();
+  }
+}
+
+// Initialize Charts
+function initCharts() {
+  if (holdingsData.length === 0) return;
+
+  // Allocation Chart
+  const labels = holdingsData.map(h => h.symbol);
+  const values = holdingsData.map(h => h.market_value || 0);
+  const colors = ['#f59e0b', '#6366f1', '#0ea5e9', '#8b5cf6', '#10b981', '#f43f5e', '#ec4899', '#14b8a6', '#84cc16', '#f97316'];
+
+  allocationChart = new Chart(document.getElementById('allocationChart'), {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'right', labels: { color: '<%= theme === "light" ? "#374151" : "#94a3b8" %>', padding: 12 } }
+      }
+    }
+  });
+
+  // Performance Chart (24h changes)
+  const changes = holdingsData.map(h => h.change_24h || 0);
+  const bgColors = changes.map(c => c >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)');
+
+  performanceChart = new Chart(document.getElementById('performanceChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: changes,
+        backgroundColor: bgColors,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { color: '<%= theme === "light" ? "#e5e7eb" : "#334155" %>' },
+          ticks: { color: '<%= theme === "light" ? "#6b7280" : "#94a3b8" %>', callback: v => v + '%' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '<%= theme === "light" ? "#6b7280" : "#94a3b8" %>' }
+        }
+      }
+    }
+  });
+}
+
+function initPerformanceCharts() {
+  // Simulated portfolio value history
+  const days = 30;
+  const labels = [];
+  const values = [];
+  let value = totalsData.totalValue || 10000;
+
+  for (let i = days; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    value = value * (1 + (Math.random() - 0.48) * 0.05);
+    values.push(value);
+  }
+
+  valueHistoryChart = new Chart(document.getElementById('valueHistoryChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '<%= theme === "light" ? "#6b7280" : "#94a3b8" %>' } },
+        y: { grid: { color: '<%= theme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { color: '<%= theme === "light" ? "#6b7280" : "#94a3b8" %>', callback: v => '$' + (v/1000).toFixed(1) + 'K' } }
+      }
+    }
+  });
+
+  // Simulate stats
+  document.getElementById('stat24h').textContent = '+' + (Math.random() * 5).toFixed(2) + '%';
+  document.getElementById('stat7d').textContent = '+' + (Math.random() * 10).toFixed(2) + '%';
+  document.getElementById('stat30d').textContent = (Math.random() > 0.5 ? '+' : '-') + (Math.random() * 15).toFixed(2) + '%';
+}
+
+function setChartRange(range) {
+  document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-range="${range}"]`).classList.add('active');
+  // In production, fetch real historical data for the range
+}
+
+// Sorting
+function sortHoldings() {
+  const sortBy = document.getElementById('sortBy').value;
+  const container = document.getElementById('holdingsContainer');
+  const rows = Array.from(container.querySelectorAll('.holding-row'));
+
+  rows.sort((a, b) => {
+    switch (sortBy) {
+      case 'value': return parseFloat(b.dataset.value) - parseFloat(a.dataset.value);
+      case 'change': return parseFloat(b.dataset.change) - parseFloat(a.dataset.change);
+      case 'gain': return parseFloat(b.dataset.gain) - parseFloat(a.dataset.gain);
+      case 'name': return a.dataset.name.localeCompare(b.dataset.name);
+    }
+  });
+
+  rows.forEach(row => container.appendChild(row));
+}
+
+// Market Data
+async function fetchMarketData() {
+  try {
+    // Simulated market data - in production, use CoinGecko API
+    const btcPrice = 43500 + Math.random() * 2000;
+    const ethPrice = 2250 + Math.random() * 150;
+    const btcChange = (Math.random() - 0.5) * 10;
+    const ethChange = (Math.random() - 0.5) * 12;
+
+    document.getElementById('btcPrice').textContent = '$' + btcPrice.toLocaleString('en-US', {maximumFractionDigits: 0});
+    document.getElementById('btcChange').textContent = (btcChange >= 0 ? '+' : '') + btcChange.toFixed(2) + '%';
+    document.getElementById('btcChange').className = 'text-xs ' + (btcChange >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+    document.getElementById('ethPrice').textContent = '$' + ethPrice.toLocaleString('en-US', {maximumFractionDigits: 0});
+    document.getElementById('ethChange').textContent = (ethChange >= 0 ? '+' : '') + ethChange.toFixed(2) + '%';
+    document.getElementById('ethChange').className = 'text-xs ' + (ethChange >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+    const btcDom = 48 + Math.random() * 4;
+    document.getElementById('btcDom').textContent = btcDom.toFixed(1) + '%';
+    document.getElementById('btcDomBar').style.width = btcDom + '%';
+
+    const fearGreed = Math.floor(30 + Math.random() * 50);
+    document.getElementById('fearGreed').textContent = fearGreed;
+    const fgLabel = fearGreed < 25 ? 'Extreme Fear' : fearGreed < 45 ? 'Fear' : fearGreed < 55 ? 'Neutral' : fearGreed < 75 ? 'Greed' : 'Extreme Greed';
+    document.getElementById('fearGreedLabel').textContent = fgLabel;
+    document.getElementById('fearGreedLabel').className = 'text-xs ' + (fearGreed < 45 ? 'text-red-400' : fearGreed > 55 ? 'text-emerald-400' : 'text-amber-400');
+
+    const gas = Math.floor(15 + Math.random() * 40);
+    document.getElementById('gasPrice').textContent = gas + ' Gwei';
+    document.getElementById('gasLabel').textContent = gas < 20 ? 'Low' : gas < 40 ? 'Average' : 'High';
+    document.getElementById('gasLabel').className = 'text-xs ' + (gas < 20 ? 'text-emerald-400' : gas < 40 ? 'text-amber-400' : 'text-red-400');
+  } catch (e) {
+    console.error('Failed to fetch market data:', e);
+  }
+}
+
+async function refreshPrices() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.querySelector('svg').classList.add('animate-spin');
+
+  await fetchMarketData();
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.querySelector('svg').classList.remove('animate-spin');
+    showToast('Prices updated!', 'success');
+  }, 1000);
+}
+
+// Modal Functions
 function openAddModal() {
   document.getElementById('addModal').classList.remove('hidden');
   document.getElementById('addModal').classList.add('flex');
@@ -158,12 +760,23 @@ function openAddModal() {
 function closeAddModal() {
   document.getElementById('addModal').classList.add('hidden');
   document.getElementById('addModal').classList.remove('flex');
+  document.getElementById('addForm').reset();
+}
+
+function quickAdd(symbol, name) {
+  document.getElementById('addSymbol').value = symbol;
+  document.getElementById('addName').value = name;
 }
 
 async function submitAdd() {
   const form = document.getElementById('addForm');
   const formData = new FormData(form);
   const data = Object.fromEntries(formData);
+
+  if (!data.symbol || !data.quantity || !data.costBasis) {
+    showToast('Please fill required fields', 'error');
+    return;
+  }
 
   try {
     const res = await fetch('/api/crypto', {
@@ -172,11 +785,11 @@ async function submitAdd() {
       body: JSON.stringify(data)
     });
     if (res.ok) {
-      showToast('Crypto added!', 'success');
+      showToast('Crypto asset added!', 'success');
       setTimeout(() => location.reload(), 500);
     } else {
       const err = await res.json();
-      showToast(err.error || 'Failed to add', 'error');
+      showToast(err.error || 'Failed to add asset', 'error');
     }
   } catch (e) {
     showToast('Error adding crypto', 'error');
@@ -185,36 +798,111 @@ async function submitAdd() {
 }
 
 async function deleteCrypto(id) {
-  if (!confirm('Delete this crypto holding?')) return;
+  if (!confirm('Remove this crypto holding?')) return;
   try {
     const res = await fetch('/api/crypto/' + id, { method: 'DELETE' });
     if (res.ok) {
-      showToast('Deleted!', 'success');
+      showToast('Asset removed!', 'success');
       setTimeout(() => location.reload(), 500);
     }
   } catch (e) {
-    showToast('Error deleting', 'error');
+    showToast('Error removing asset', 'error');
   }
 }
 
-<% if (holdings.length > 0) { %>
-// Allocation Chart
-const holdingsData = <%- JSON.stringify(holdings) %>;
-const labels = holdingsData.map(h => h.symbol);
-const values = holdingsData.map(h => h.market_value || 0);
-const colors = ['#f59e0b', '#6366f1', '#0ea5e9', '#8b5cf6', '#10b981', '#f43f5e', '#ec4899', '#14b8a6'];
+// Alert Modal
+function openAlertModal(symbol = '', price = 0) {
+  document.getElementById('alertModal').classList.remove('hidden');
+  document.getElementById('alertModal').classList.add('flex');
+  if (symbol) {
+    document.getElementById('alertSymbol').value = symbol;
+    document.getElementById('alertCurrentPrice').value = '$' + price.toLocaleString();
+  }
+}
 
-new Chart(document.getElementById('cryptoAllocation'), {
-  type: 'doughnut',
-  data: {
-    labels: labels,
-    datasets: [{
-      data: values,
-      backgroundColor: colors.slice(0, labels.length)
-    }]
-  },
-  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+function closeAlertModal() {
+  document.getElementById('alertModal').classList.add('hidden');
+  document.getElementById('alertModal').classList.remove('flex');
+}
+
+function submitAlert() {
+  const symbol = document.getElementById('alertSymbol').value;
+  const target = document.getElementById('alertTarget').value;
+  // In production, save to database
+  showToast(`Alert created for ${symbol} at $${target}`, 'success');
+  closeAlertModal();
+}
+
+// Asset Details Modal
+function showAssetDetails(symbol) {
+  const holding = holdingsData.find(h => h.symbol === symbol);
+  if (!holding) return;
+
+  document.getElementById('assetModal').classList.remove('hidden');
+  document.getElementById('assetModal').classList.add('flex');
+
+  document.getElementById('assetIcon').textContent = symbol.substring(0, 2).toUpperCase();
+  document.getElementById('assetName').textContent = holding.name || symbol;
+  document.getElementById('assetSymbol').textContent = symbol;
+  document.getElementById('assetPrice').textContent = '$' + (holding.current_price || 0).toLocaleString();
+
+  const change = holding.change_24h || 0;
+  document.getElementById('assetChange').textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+  document.getElementById('assetChange').className = 'font-bold ' + (change >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+  // Simulated market data
+  const mcap = (holding.current_price || 0) * (symbol === 'BTC' ? 19500000 : symbol === 'ETH' ? 120000000 : 1000000000);
+  document.getElementById('assetMcap').textContent = '$' + (mcap / 1e9).toFixed(1) + 'B';
+  document.getElementById('assetVolume').textContent = '$' + ((mcap * 0.05) / 1e9).toFixed(1) + 'B';
+
+  // Position data
+  document.getElementById('posQty').textContent = holding.quantity + ' ' + symbol;
+  document.getElementById('posAvgCost').textContent = '$' + ((holding.cost_basis || 0) / (holding.quantity || 1)).toLocaleString();
+  document.getElementById('posCost').textContent = '$' + (holding.cost_basis || 0).toLocaleString();
+  document.getElementById('posValue').textContent = '$' + (holding.market_value || 0).toLocaleString();
+
+  const pl = (holding.market_value || 0) - (holding.cost_basis || 0);
+  document.getElementById('posPL').textContent = (pl >= 0 ? '+' : '') + '$' + pl.toLocaleString();
+  document.getElementById('posPL').className = 'font-bold ' + (pl >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+  // Simulated price range
+  const price = holding.current_price || 0;
+  document.getElementById('assetHigh').textContent = '$' + (price * 1.05).toLocaleString();
+  document.getElementById('assetLow').textContent = '$' + (price * 0.95).toLocaleString();
+  document.getElementById('assetATH').textContent = '$' + (price * 1.5).toLocaleString();
+  document.getElementById('assetATHDate').textContent = 'Nov 2021';
+  document.getElementById('assetFromATH').textContent = '-33.3%';
+
+  // Mini chart
+  if (assetChart) assetChart.destroy();
+  const ctx = document.getElementById('assetChart');
+  const data = Array.from({length: 24}, () => price * (0.95 + Math.random() * 0.1));
+  assetChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length: 24}, (_, i) => i + 'h'),
+      datasets: [{ data, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4, pointRadius: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+  });
+}
+
+function closeAssetModal() {
+  document.getElementById('assetModal').classList.add('hidden');
+  document.getElementById('assetModal').classList.remove('flex');
+}
+
+function openDefiModal() {
+  showToast('DeFi tracking coming soon!', 'info');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  fetchMarketData();
+
+  // Auto-refresh every 30 seconds
+  setInterval(fetchMarketData, 30000);
 });
-<% } %>
 </script>
 <%- include('../partials/footer') %>

@@ -1,0 +1,583 @@
+<%- include('../partials/header', { pageTitle: 'Customizable Dashboard' }) %>
+<%
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0, dayChange: 0, ytdReturn: 0, income: 0, cash: 0 };
+  const safeWatchlist = typeof watchlist !== 'undefined' && watchlist ? watchlist : [];
+  const safeSectors = typeof sectors !== 'undefined' && sectors ? sectors : [];
+  const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">My Dashboard</h1>
+    <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Drag and drop to customize your view</p>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="toggleEditMode()" id="editBtn" class="btn-ghost">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      <span class="ml-1">Edit Layout</span>
+    </button>
+    <button onclick="openWidgetLibrary()" class="btn-primary">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+      <span class="ml-1 hidden sm:inline">Add Widget</span>
+    </button>
+  </div>
+</div>
+
+<!-- Edit Mode Banner -->
+<div id="editBanner" class="hidden p-4 rounded-lg bg-blue-500/20 border border-blue-500/50 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+    <span class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Edit Mode Active</span>
+    <span class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Drag widgets to reorder, click X to remove</span>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="resetLayout()" class="btn-ghost text-sm">Reset to Default</button>
+    <button onclick="saveLayout()" class="btn-primary text-sm">Save Layout</button>
+  </div>
+</div>
+
+<!-- Dashboard Grid -->
+<div id="dashboardGrid" class="grid grid-cols-12 gap-4 auto-rows-[minmax(150px,auto)]">
+
+  <!-- Portfolio Value Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-3 row-span-1" data-widget="portfolio-value" data-size="small">
+    <div class="widget-header">
+      <span class="widget-title">Portfolio Value</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body">
+      <p class="text-4xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(safeTotals.value) %></p>
+      <p class="text-sm mt-2 <%= safeTotals.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <%= safeTotals.dayChange >= 0 ? '▲' : '▼' %> <%= fmt.money(Math.abs(safeTotals.dayChange || 0)) %> today
+      </p>
+    </div>
+  </div>
+
+  <!-- Day P&L Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-3 row-span-1" data-widget="day-pl" data-size="small">
+    <div class="widget-header">
+      <span class="widget-title">Day P&L</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body">
+      <p class="text-4xl font-bold <%= safeTotals.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <%= safeTotals.dayChange >= 0 ? '+' : '' %><%= fmt.money(safeTotals.dayChange || 0) %>
+      </p>
+      <% const dayPct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0; %>
+      <p class="text-sm mt-2 <%= dayPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <%= dayPct >= 0 ? '+' : '' %><%= dayPct.toFixed(2) %>%
+      </p>
+    </div>
+  </div>
+
+  <!-- Total P&L Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-3 row-span-1" data-widget="total-pl" data-size="small">
+    <div class="widget-header">
+      <span class="widget-title">Total P&L</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body">
+      <% const gainPct = safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0; %>
+      <p class="text-4xl font-bold <%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
+      </p>
+      <p class="text-sm mt-2 <%= gainPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>% return
+      </p>
+    </div>
+  </div>
+
+  <!-- Dividend Income Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-3 row-span-1" data-widget="dividends" data-size="small">
+    <div class="widget-header">
+      <span class="widget-title">Annual Dividends</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body">
+      <p class="text-4xl font-bold text-blue-400"><%= fmt.money(safeTotals.income || 0) %></p>
+      <p class="text-sm mt-2 <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">
+        <%= safeTotals.value > 0 ? ((safeTotals.income / safeTotals.value) * 100).toFixed(2) : '0.00' %>% yield
+      </p>
+    </div>
+  </div>
+
+  <!-- Performance Chart Widget -->
+  <div class="widget col-span-12 lg:col-span-8 row-span-2" data-widget="performance-chart" data-size="large">
+    <div class="widget-header">
+      <span class="widget-title">Portfolio Performance</span>
+      <div class="flex gap-1">
+        <button onclick="setChartPeriod('1D')" class="chart-period active" data-period="1D">1D</button>
+        <button onclick="setChartPeriod('1W')" class="chart-period" data-period="1W">1W</button>
+        <button onclick="setChartPeriod('1M')" class="chart-period" data-period="1M">1M</button>
+        <button onclick="setChartPeriod('YTD')" class="chart-period" data-period="YTD">YTD</button>
+        <button onclick="setChartPeriod('1Y')" class="chart-period" data-period="1Y">1Y</button>
+      </div>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body h-64"><canvas id="performanceChart"></canvas></div>
+  </div>
+
+  <!-- Watchlist Widget -->
+  <div class="widget col-span-12 lg:col-span-4 row-span-2" data-widget="watchlist" data-size="medium">
+    <div class="widget-header">
+      <span class="widget-title">Watchlist</span>
+      <a href="/watchlist" class="text-xs text-blue-400 hover:underline">View All</a>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body p-0 overflow-y-auto max-h-64">
+      <% if (safeWatchlist.length > 0) { %>
+        <% safeWatchlist.slice(0, 8).forEach(w => {
+          const change = w.changePercent || 0;
+        %>
+        <div class="flex items-center justify-between px-4 py-2 border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %> hover:bg-slate-800/50 transition-colors">
+          <div>
+            <span class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-sm"><%= w.symbol %></span>
+          </div>
+          <div class="text-right">
+            <p class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-sm font-medium">$<%= (w.price || 0).toFixed(2) %></p>
+            <p class="text-xs <%= change >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= change >= 0 ? '+' : '' %><%= change.toFixed(2) %>%</p>
+          </div>
+        </div>
+        <% }) %>
+      <% } else { %>
+        <div class="p-4 text-center <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No watchlist items</div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Holdings Table Widget -->
+  <div class="widget col-span-12 lg:col-span-8 row-span-2" data-widget="holdings" data-size="large">
+    <div class="widget-header">
+      <span class="widget-title">Top Holdings (<%= safeHoldings.length %>)</span>
+      <a href="/holdings" class="text-xs text-blue-400 hover:underline">View All</a>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body p-0 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <tr class="text-left">
+            <th class="px-4 py-2 <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Symbol</th>
+            <th class="px-4 py-2 text-right <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Price</th>
+            <th class="px-4 py-2 text-right <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Change</th>
+            <th class="px-4 py-2 text-right <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Value</th>
+            <th class="px-4 py-2 text-right <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">P&L</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% safeHoldings.slice(0, 8).forEach(h => {
+            const mktVal = (h.shares || 0) * (h.currentPrice || h.price || 0);
+            const cost = (h.shares || 0) * (h.avgCost || h.avg_cost_basis || 0);
+            const pl = mktVal - cost;
+            const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+            const change = h.changePercent || h.change_percent || 0;
+          %>
+          <tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+            <td class="px-4 py-2">
+              <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.symbol %></p>
+              <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.shares %> shares</p>
+            </td>
+            <td class="px-4 py-2 text-right <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$<%= (h.currentPrice || h.price || 0).toFixed(2) %></td>
+            <td class="px-4 py-2 text-right <%= change >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= change >= 0 ? '+' : '' %><%= change.toFixed(2) %>%</td>
+            <td class="px-4 py-2 text-right <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(mktVal) %></td>
+            <td class="px-4 py-2 text-right <%= pl >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= pl >= 0 ? '+' : '' %><%= fmt.money(pl) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sector Allocation Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-4 row-span-2" data-widget="sector-allocation" data-size="medium">
+    <div class="widget-header">
+      <span class="widget-title">Sector Allocation</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body h-48"><canvas id="sectorChart"></canvas></div>
+  </div>
+
+  <!-- Market Overview Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-4 row-span-1" data-widget="market-overview" data-size="small">
+    <div class="widget-header">
+      <span class="widget-title">Market Overview</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body">
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">S&P 500</p>
+          <p id="spy-price" class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+          <p id="spy-change" class="text-xs">--</p>
+        </div>
+        <div>
+          <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">NASDAQ</p>
+          <p id="qqq-price" class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+          <p id="qqq-change" class="text-xs">--</p>
+        </div>
+        <div>
+          <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">DOW</p>
+          <p id="dia-price" class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">--</p>
+          <p id="dia-change" class="text-xs">--</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Links Widget -->
+  <div class="widget col-span-12 md:col-span-6 lg:col-span-4 row-span-1" data-widget="quick-links" data-size="small">
+    <div class="widget-header">
+      <span class="widget-title">Quick Links</span>
+      <button class="widget-remove hidden" onclick="removeWidget(this)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="widget-body">
+      <div class="grid grid-cols-2 gap-2">
+        <a href="/screener" class="quick-link">Stock Screener</a>
+        <a href="/analytics" class="quick-link">Analytics</a>
+        <a href="/simulator" class="quick-link">Simulator</a>
+        <a href="/alerts" class="quick-link">Alerts</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Widget Library Modal -->
+<div id="widgetLibrary" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="card p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Widget Library</h3>
+      <button onclick="closeWidgetLibrary()" class="p-2 hover:bg-slate-700 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <!-- Portfolio Widgets -->
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('portfolio-value')">
+        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Portfolio Value</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total portfolio value</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('performance-chart')">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Performance Chart</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Historical performance</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('holdings')">
+        <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings Table</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Your positions</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('watchlist')">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Watchlist</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Tracked stocks</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('sector-allocation')">
+        <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center text-pink-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Sector Allocation</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Sector breakdown</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('market-overview')">
+        <div class="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Market Overview</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Index prices</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('day-pl')">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Day P&L</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Today's change</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('dividends')">
+        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Dividends</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Income overview</p>
+      </div>
+
+      <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer transition-colors" onclick="addWidget('quick-links')">
+        <div class="w-10 h-10 rounded-lg bg-slate-500/20 flex items-center justify-center text-slate-400 mb-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        </div>
+        <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Quick Links</p>
+        <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Navigation shortcuts</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div></div></main>
+
+<style>
+.widget {
+  @apply card overflow-hidden transition-all duration-300;
+}
+.widget.dragging {
+  @apply opacity-50 scale-95;
+}
+.widget.drag-over {
+  @apply ring-2 ring-blue-500 ring-offset-2 <%= safeTheme === 'light' ? 'ring-offset-white' : 'ring-offset-slate-900' %>;
+}
+.widget-header {
+  @apply px-4 py-3 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %> flex items-center justify-between gap-2;
+}
+.widget-title {
+  @apply font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-sm;
+}
+.widget-body {
+  @apply p-4;
+}
+.widget-remove {
+  @apply p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors;
+}
+.edit-mode .widget {
+  @apply cursor-move;
+}
+.edit-mode .widget-remove {
+  @apply block;
+}
+.edit-mode .widget:hover {
+  @apply ring-2 ring-blue-400/50;
+}
+.chart-period {
+  @apply px-2 py-1 text-xs rounded transition-colors;
+}
+.chart-period:not(.active) {
+  @apply <%= safeTheme === 'light' ? 'text-gray-500 hover:bg-gray-100' : 'text-slate-400 hover:bg-slate-700' %>;
+}
+.chart-period.active {
+  @apply bg-blue-500 text-white;
+}
+.quick-link {
+  @apply px-3 py-2 rounded-lg text-sm text-center font-medium transition-colors;
+  @apply <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %>;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let editMode = false;
+let sortable = null;
+
+// Toggle Edit Mode
+function toggleEditMode() {
+  editMode = !editMode;
+  const grid = document.getElementById('dashboardGrid');
+  const banner = document.getElementById('editBanner');
+  const btn = document.getElementById('editBtn');
+
+  if (editMode) {
+    grid.classList.add('edit-mode');
+    banner.classList.remove('hidden');
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg><span class="ml-1">Done</span>';
+    btn.classList.add('btn-primary');
+    btn.classList.remove('btn-ghost');
+
+    // Initialize Sortable
+    sortable = new Sortable(grid, {
+      animation: 150,
+      ghostClass: 'dragging',
+      chosenClass: 'drag-over',
+      handle: '.widget-header',
+      onEnd: () => {
+        // Layout changed
+      }
+    });
+  } else {
+    grid.classList.remove('edit-mode');
+    banner.classList.add('hidden');
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg><span class="ml-1">Edit Layout</span>';
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-ghost');
+
+    if (sortable) {
+      sortable.destroy();
+      sortable = null;
+    }
+  }
+}
+
+// Remove Widget
+function removeWidget(btn) {
+  const widget = btn.closest('.widget');
+  if (confirm('Remove this widget?')) {
+    widget.remove();
+    showToast('Widget removed', 'success');
+  }
+}
+
+// Save Layout
+function saveLayout() {
+  const widgets = [];
+  document.querySelectorAll('.widget').forEach(w => {
+    widgets.push({
+      id: w.dataset.widget,
+      size: w.dataset.size
+    });
+  });
+
+  localStorage.setItem('dashboardLayout', JSON.stringify(widgets));
+  showToast('Layout saved!', 'success');
+  toggleEditMode();
+}
+
+// Reset Layout
+function resetLayout() {
+  if (confirm('Reset to default layout?')) {
+    localStorage.removeItem('dashboardLayout');
+    location.reload();
+  }
+}
+
+// Widget Library
+function openWidgetLibrary() {
+  document.getElementById('widgetLibrary').classList.remove('hidden');
+  document.getElementById('widgetLibrary').classList.add('flex');
+}
+
+function closeWidgetLibrary() {
+  document.getElementById('widgetLibrary').classList.add('hidden');
+  document.getElementById('widgetLibrary').classList.remove('flex');
+}
+
+function addWidget(type) {
+  showToast(`Adding ${type} widget...`, 'info');
+  closeWidgetLibrary();
+  // In production, would clone widget template and add to grid
+}
+
+// Chart Period
+function setChartPeriod(period) {
+  document.querySelectorAll('.chart-period').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-period="${period}"]`).classList.add('active');
+  // In production, would reload chart data
+}
+
+// Initialize Charts
+document.addEventListener('DOMContentLoaded', () => {
+  // Performance Chart
+  const perfCtx = document.getElementById('performanceChart');
+  if (perfCtx) {
+    const days = 30;
+    const labels = [];
+    const values = [];
+    let value = <%= safeTotals.value || 10000 %>;
+
+    for (let i = days; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      value = value * (1 + (Math.random() - 0.48) * 0.02);
+      values.push(value);
+    }
+
+    new Chart(perfCtx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>' } },
+          y: { grid: { color: '<%= safeTheme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>', callback: v => '$' + (v/1000).toFixed(0) + 'K' } }
+        }
+      }
+    });
+  }
+
+  // Sector Chart
+  const sectorCtx = document.getElementById('sectorChart');
+  if (sectorCtx) {
+    const sectors = <%- JSON.stringify(safeSectors) %>;
+    if (sectors.length > 0) {
+      new Chart(sectorCtx, {
+        type: 'doughnut',
+        data: {
+          labels: sectors.map(s => s.name || s.sector),
+          datasets: [{
+            data: sectors.map(s => s.value || s.weight),
+            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#84cc16'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: { legend: { position: 'right', labels: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>', boxWidth: 10 } } }
+        }
+      });
+    }
+  }
+
+  // Simulated market data
+  const indices = [
+    { el: 'spy', price: 475 + Math.random() * 10, change: (Math.random() - 0.5) * 2 },
+    { el: 'qqq', price: 410 + Math.random() * 10, change: (Math.random() - 0.5) * 2.5 },
+    { el: 'dia', price: 380 + Math.random() * 8, change: (Math.random() - 0.5) * 1.5 }
+  ];
+
+  indices.forEach(idx => {
+    document.getElementById(`${idx.el}-price`).textContent = '$' + idx.price.toFixed(2);
+    const changeEl = document.getElementById(`${idx.el}-change`);
+    changeEl.textContent = (idx.change >= 0 ? '+' : '') + idx.change.toFixed(2) + '%';
+    changeEl.className = 'text-xs ' + (idx.change >= 0 ? 'text-emerald-400' : 'text-red-400');
+  });
+});
+</script>
+<%- include('../partials/footer') %>

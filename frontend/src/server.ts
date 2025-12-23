@@ -143,7 +143,9 @@ function requireAuth(req: any, res: any, next: any) {
 
 app.get('/login', (req, res) => {
   if (res.locals.isAuthenticated) return res.redirect('/');
-  res.render('pages/login', { pageTitle: 'Login', error: null });
+  const success = req.query.registered === 'true' ? 'Registration successful! Please login.' : null;
+  const error = req.query.error as string || null;
+  res.render('pages/login', { pageTitle: 'Login', error, success });
 });
 
 app.post('/login', async (req, res) => {
@@ -154,7 +156,12 @@ app.post('/login', async (req, res) => {
   });
 
   if (data.error) {
-    return res.render('pages/login', { pageTitle: 'Login', error: data.error });
+    // Pass email for resend verification functionality
+    return res.render('pages/login', {
+      pageTitle: 'Login',
+      error: data.error,
+      email: data.code === 'EMAIL_NOT_VERIFIED' ? (data.email || email) : null
+    });
   }
 
   res.cookie('token', data.token, {
@@ -182,13 +189,56 @@ app.post('/register', async (req, res) => {
     return res.render('pages/register', { pageTitle: 'Register', error: data.error });
   }
 
-  res.cookie('token', data.token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: false,
-    sameSite: 'lax',
-    secure: false
+  // Redirect to login page after successful registration
+  res.redirect('/login?registered=true');
+});
+
+// Check email page - shown after registration
+app.get('/check-email', (req, res) => {
+  const email = req.query.email as string || '';
+  res.render('pages/check-email', {
+    pageTitle: 'Verify Your Email',
+    email,
+    theme: req.cookies?.theme || 'dark'
   });
-  res.redirect('/');
+});
+
+// Email verification page
+app.get('/verify-email', async (req, res) => {
+  const token = req.query.token as string;
+
+  if (!token) {
+    return res.render('pages/verify-email', {
+      pageTitle: 'Email Verification',
+      success: false,
+      message: 'Invalid verification link. Please use the link from your email.',
+      theme: req.cookies?.theme || 'dark'
+    });
+  }
+
+  // Call the API to verify the email
+  const data = await apiFetch(`/auth/verify-email?token=${token}`, null, {
+    method: 'GET'
+  });
+
+  res.render('pages/verify-email', {
+    pageTitle: 'Email Verification',
+    success: !data.error,
+    message: data.message || data.error,
+    theme: req.cookies?.theme || 'dark'
+  });
+});
+
+// Resend verification email
+app.post('/resend-verification', async (req, res) => {
+  const { email } = req.body;
+
+  const data = await apiFetch('/auth/resend-verification', null, {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  });
+
+  res.json(data);
 });
 
 app.get('/logout', (req, res) => {
@@ -2966,6 +3016,73 @@ app.get('/portfolio-tools', requireAuth, async (req, res) => {
     toolData: toolData?.error ? null : toolData,
     currentPage: 'portfolio-tools',
     fmt
+  });
+});
+
+// ===================== SIMULATOR ROUTE =====================
+
+app.get('/simulator', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  const selectedPid = req.query.portfolio || (portfolios.length > 0 ? portfolios[0].id : null);
+
+  // Default analysis data for simulator
+  const analysis = {
+    summary: { total_value: 100000 },
+    performance: { annualized_return: 0.08 },
+    risk: { volatility: 0.15 }
+  };
+
+  res.render('pages/simulator', {
+    pageTitle: 'Monte Carlo Simulator',
+    portfolios,
+    selectedPid,
+    analysis,
+    currentPage: 'simulator',
+    theme: req.cookies?.theme || 'dark'
+  });
+});
+
+// ===================== CRYPTO PORTFOLIO ROUTE =====================
+
+app.get('/crypto-portfolio', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+
+  res.render('pages/crypto-portfolio', {
+    pageTitle: 'Crypto Portfolio',
+    currentPage: 'crypto-portfolio',
+    theme: req.cookies?.theme || 'dark'
+  });
+});
+
+// ===================== ESG ROUTE =====================
+
+app.get('/esg', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+
+  res.render('pages/esg', {
+    pageTitle: 'ESG Analysis',
+    portfolios,
+    currentPage: 'esg',
+    theme: req.cookies?.theme || 'dark'
+  });
+});
+
+// ===================== CUSTOMIZABLE DASHBOARD ROUTE =====================
+
+app.get('/dashboard-custom', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+
+  res.render('pages/dashboard-custom', {
+    pageTitle: 'Custom Dashboard',
+    portfolios,
+    currentPage: 'dashboard-custom',
+    theme: req.cookies?.theme || 'dark'
   });
 });
 

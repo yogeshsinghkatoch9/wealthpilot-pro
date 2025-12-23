@@ -2,295 +2,709 @@
 // Safe defaults for all potentially undefined variables
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const safeUser = typeof user !== 'undefined' ? user : {};
-const safePageTitle = 'ESG Ratings';
+const safePageTitle = 'ESG Analysis';
+
+// Sample ESG data
+const portfolioESG = {
+  overall: 72,
+  environmental: 68,
+  social: 75,
+  governance: 78,
+  carbonIntensity: 145.2,
+  greenRevenue: 23.5,
+  controversies: 4
+};
+
+const holdings = [
+  { symbol: 'MSFT', name: 'Microsoft', overall: 92, e: 95, s: 88, g: 92, rating: 'AAA', controversies: 0, carbonIntensity: 12.3, weight: 18 },
+  { symbol: 'AAPL', name: 'Apple', overall: 88, e: 92, s: 82, g: 88, rating: 'AA', controversies: 1, carbonIntensity: 8.5, weight: 15 },
+  { symbol: 'JNJ', name: 'Johnson & Johnson', overall: 85, e: 78, s: 88, g: 90, rating: 'AA', controversies: 2, carbonIntensity: 35.2, weight: 12 },
+  { symbol: 'NVDA', name: 'NVIDIA', overall: 76, e: 72, s: 78, g: 80, rating: 'A', controversies: 0, carbonIntensity: 18.4, weight: 14 },
+  { symbol: 'GOOGL', name: 'Alphabet', overall: 74, e: 80, s: 65, g: 75, rating: 'A', controversies: 2, carbonIntensity: 22.1, weight: 10 },
+  { symbol: 'AMZN', name: 'Amazon', overall: 58, e: 55, s: 52, g: 68, rating: 'BBB', controversies: 3, carbonIntensity: 85.3, weight: 11 },
+  { symbol: 'META', name: 'Meta Platforms', overall: 54, e: 68, s: 42, g: 58, rating: 'BB', controversies: 5, carbonIntensity: 15.8, weight: 8 },
+  { symbol: 'XOM', name: 'Exxon Mobil', overall: 32, e: 18, s: 45, g: 42, rating: 'CCC', controversies: 8, carbonIntensity: 425.6, weight: 12 }
+];
+
+const sdgAlignment = [
+  { goal: 7, name: 'Affordable & Clean Energy', score: 45, icon: '☀️' },
+  { goal: 8, name: 'Decent Work & Economic Growth', score: 72, icon: '📈' },
+  { goal: 9, name: 'Industry, Innovation & Infrastructure', score: 85, icon: '🏭' },
+  { goal: 12, name: 'Responsible Consumption & Production', score: 58, icon: '♻️' },
+  { goal: 13, name: 'Climate Action', score: 52, icon: '🌍' }
+];
 %>
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
-<!-- Bloomberg Header Bar -->
-<div class="bg-black border-b-2 border-amber-400 px-6 py-3 -mx-6 -mt-6 mb-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-bold text-amber-400 font-mono tracking-tight">ESG RATINGS</h1>
-      <p class="text-slate-400 text-sm mt-1">Environmental, Social & Governance Analysis</p>
-    </div>
-    <select class="bg-slate-900 border border-slate-700 text-white px-4 py-2 rounded font-mono text-sm hover:border-amber-400 transition-colors">
-      <option>All Holdings</option>
-      <option>Low ESG Risk</option>
-      <option>High ESG Risk</option>
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">ESG Analysis</h1>
+    <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Environmental, Social & Governance scoring for your portfolio</p>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="exportESGReport()" class="btn-ghost">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span class="ml-1 hidden sm:inline">Export Report</span>
+    </button>
+    <select id="esgProvider" class="form-input py-2 text-sm">
+      <option value="msci">MSCI ESG</option>
+      <option value="sustainalytics">Sustainalytics</option>
+      <option value="refinitiv">Refinitiv</option>
     </select>
   </div>
 </div>
 
-<!-- KPI Bar -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-  <div class="bg-black border border-emerald-500/30 p-4">
-    <div class="flex items-center justify-between">
+<!-- Portfolio ESG Score Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Overall Score Card -->
+  <div class="card p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Portfolio ESG Score</h3>
+      <span class="px-2 py-1 text-xs font-bold rounded bg-emerald-500/20 text-emerald-400">ABOVE AVERAGE</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <div class="relative w-32 h-32">
+        <svg class="w-32 h-32 transform -rotate-90">
+          <circle cx="64" cy="64" r="56" fill="none" stroke="<%= safeTheme === 'light' ? '#e5e7eb' : '#334155' %>" stroke-width="12"/>
+          <circle cx="64" cy="64" r="56" fill="none" stroke="url(#esgGradient)" stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="<%= 351.86 * (portfolioESG.overall / 100) %> 351.86"/>
+          <defs>
+            <linearGradient id="esgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#10b981"/>
+              <stop offset="50%" stop-color="#3b82f6"/>
+              <stop offset="100%" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-4xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.overall %></span>
+          <span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">/ 100</span>
+        </div>
+      </div>
+      <div class="flex-1 space-y-3">
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="flex items-center gap-1 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="text-emerald-400">E</span> Environmental</span>
+            <span class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.environmental %></span>
+          </div>
+          <div class="h-2 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>">
+            <div class="h-2 rounded-full bg-emerald-500" style="width: <%= portfolioESG.environmental %>%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="flex items-center gap-1 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="text-blue-400">S</span> Social</span>
+            <span class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.social %></span>
+          </div>
+          <div class="h-2 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>">
+            <div class="h-2 rounded-full bg-blue-500" style="width: <%= portfolioESG.social %>%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="flex items-center gap-1 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="text-purple-400">G</span> Governance</span>
+            <span class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.governance %></span>
+          </div>
+          <div class="h-2 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>">
+            <div class="h-2 rounded-full bg-purple-500" style="width: <%= portfolioESG.governance %>%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESG Radar Chart -->
+  <div class="card p-6">
+    <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">ESG Breakdown Radar</h3>
+    <div class="h-48"><canvas id="esgRadarChart"></canvas></div>
+  </div>
+
+  <!-- Carbon Metrics -->
+  <div class="card p-6">
+    <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Carbon Metrics</h3>
+    <div class="space-y-4">
+      <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-xl">🏭</div>
+          <div>
+            <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Carbon Intensity</p>
+            <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.carbonIntensity %> tCO2e/$M</p>
+          </div>
+        </div>
+        <span class="px-2 py-1 text-xs rounded bg-amber-500/20 text-amber-400">Medium</span>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center text-xl">🌱</div>
+          <div>
+            <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Green Revenue</p>
+            <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.greenRevenue %>%</p>
+          </div>
+        </div>
+        <span class="px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400">Good</span>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-xl">⚠️</div>
+          <div>
+            <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Controversies</p>
+            <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.controversies %> issues</p>
+          </div>
+        </div>
+        <span class="px-2 py-1 text-xs rounded bg-amber-500/20 text-amber-400">Moderate</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab Navigation -->
+<div class="flex gap-2 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+  <button onclick="switchTab('holdings')" class="tab-btn active" data-tab="holdings">Holdings Analysis</button>
+  <button onclick="switchTab('simulator')" class="tab-btn" data-tab="simulator">ESG Simulator</button>
+  <button onclick="switchTab('sdg')" class="tab-btn" data-tab="sdg">UN SDG Alignment</button>
+  <button onclick="switchTab('screener')" class="tab-btn" data-tab="screener">ESG Screener</button>
+</div>
+
+<!-- Holdings Analysis Tab -->
+<div id="tab-holdings" class="tab-content">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- ESG Leaders -->
+    <div class="card p-5">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> flex items-center gap-2 mb-4">
+        <span class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">⭐</span>
+        ESG Leaders
+      </h3>
+      <div class="space-y-3">
+        <% holdings.filter(h => h.overall >= 80).slice(0, 3).forEach(h => { %>
+        <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors cursor-pointer" onclick="showStockDetail('<%= h.symbol %>')">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold"><%= h.symbol.substring(0, 4) %></div>
+            <div>
+              <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name %></p>
+              <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.weight %>% of portfolio</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-bold text-emerald-400"><%= h.overall %></p>
+            <p class="text-xs font-bold text-emerald-400"><%= h.rating %></p>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- ESG Laggards -->
+    <div class="card p-5">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> flex items-center gap-2 mb-4">
+        <span class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-400">⚠️</span>
+        ESG Laggards
+      </h3>
+      <div class="space-y-3">
+        <% holdings.filter(h => h.overall < 60).slice(0, 3).forEach(h => { %>
+        <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors cursor-pointer" onclick="showStockDetail('<%= h.symbol %>')">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold"><%= h.symbol.substring(0, 4) %></div>
+            <div>
+              <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name %></p>
+              <p class="text-xs text-red-400"><%= h.controversies %> controversies</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-2xl font-bold text-red-400"><%= h.overall %></p>
+            <p class="text-xs font-bold text-red-400"><%= h.rating %></p>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Holdings Table -->
+  <div class="card overflow-hidden">
+    <div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %> flex justify-between items-center">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">All Holdings ESG Scores</h3>
+      <div class="flex gap-2">
+        <select id="sortESG" class="form-input py-1 text-sm" onchange="sortESGTable()">
+          <option value="overall">Sort: Overall</option>
+          <option value="e">Sort: Environmental</option>
+          <option value="s">Sort: Social</option>
+          <option value="g">Sort: Governance</option>
+          <option value="carbon">Sort: Carbon</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+            <th class="px-4 py-3">Stock</th>
+            <th class="px-4 py-3 text-center">Overall</th>
+            <th class="px-4 py-3 text-center">E</th>
+            <th class="px-4 py-3 text-center">S</th>
+            <th class="px-4 py-3 text-center">G</th>
+            <th class="px-4 py-3 text-center">Carbon tCO2e/$M</th>
+            <th class="px-4 py-3 text-center">Controversies</th>
+            <th class="px-4 py-3">Rating</th>
+          </tr>
+        </thead>
+        <tbody id="esgTableBody">
+          <% holdings.forEach(h => {
+            const scoreColor = h.overall >= 70 ? 'text-emerald-400' : h.overall >= 50 ? 'text-amber-400' : 'text-red-400';
+            const ratingColor = h.rating.startsWith('A') ? 'bg-emerald-500/20 text-emerald-400' : h.rating.startsWith('B') ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400';
+          %>
+          <tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100 hover:bg-gray-50' : 'border-slate-700/50 hover:bg-slate-800/50' %> cursor-pointer" onclick="showStockDetail('<%= h.symbol %>')">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold"><%= h.symbol.substring(0, 3) %></div>
+                <div>
+                  <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name %></p>
+                  <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.symbol %></p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-center font-bold <%= scoreColor %>"><%= h.overall %></td>
+            <td class="px-4 py-3 text-center <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= h.e %></td>
+            <td class="px-4 py-3 text-center <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= h.s %></td>
+            <td class="px-4 py-3 text-center <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= h.g %></td>
+            <td class="px-4 py-3 text-center <%= h.carbonIntensity > 100 ? 'text-red-400' : h.carbonIntensity > 50 ? 'text-amber-400' : 'text-emerald-400' %>"><%= h.carbonIntensity %></td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-1 text-xs rounded <%= h.controversies === 0 ? 'bg-emerald-500/20 text-emerald-400' : h.controversies <= 2 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400' %>">
+                <%= h.controversies === 0 ? 'None' : h.controversies %>
+              </span>
+            </td>
+            <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-bold rounded <%= ratingColor %>"><%= h.rating %></span></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ESG Simulator Tab -->
+<div id="tab-simulator" class="tab-content hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">ESG Portfolio Simulator</h3>
+      <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">See how portfolio changes would affect your ESG score</p>
+
+      <div class="space-y-4">
+        <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <h4 class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Scenario: Replace XOM with NEE</h4>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Current Score</p>
+              <p class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">72</p>
+            </div>
+            <div>
+              <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Score</p>
+              <p class="text-2xl font-bold text-emerald-400">78 <span class="text-sm">+6</span></p>
+            </div>
+          </div>
+          <div class="mt-3 space-y-2">
+            <div class="flex justify-between text-xs">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Environmental</span>
+              <span class="text-emerald-400">+12 points</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Carbon Intensity</span>
+              <span class="text-emerald-400">-85% reduction</span>
+            </div>
+          </div>
+          <button onclick="applyScenario('xom-nee')" class="btn-primary w-full mt-4">Apply This Scenario</button>
+        </div>
+
+        <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <h4 class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Scenario: Reduce META by 50%</h4>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Current Score</p>
+              <p class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">72</p>
+            </div>
+            <div>
+              <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Score</p>
+              <p class="text-2xl font-bold text-emerald-400">74 <span class="text-sm">+2</span></p>
+            </div>
+          </div>
+          <div class="mt-3 space-y-2">
+            <div class="flex justify-between text-xs">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Social Score</span>
+              <span class="text-emerald-400">+4 points</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Controversies</span>
+              <span class="text-emerald-400">-2 issues</span>
+            </div>
+          </div>
+          <button onclick="applyScenario('reduce-meta')" class="btn-primary w-full mt-4">Apply This Scenario</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Custom Simulator</h3>
+      <form id="simulatorForm" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Action</label>
+            <select class="form-input" id="simAction">
+              <option value="replace">Replace Stock</option>
+              <option value="add">Add Stock</option>
+              <option value="remove">Remove Stock</option>
+              <option value="adjust">Adjust Weight</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Current Stock</label>
+            <select class="form-input" id="simCurrent">
+              <% holdings.forEach(h => { %>
+              <option value="<%= h.symbol %>"><%= h.symbol %> - <%= h.name %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">New Stock (for Replace/Add)</label>
+          <input type="text" class="form-input" id="simNew" placeholder="Enter ticker symbol">
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Weight %</label>
+          <input type="number" class="form-input" id="simWeight" placeholder="10" min="0" max="100">
+        </div>
+        <button type="button" onclick="runSimulation()" class="btn-primary w-full">Run Simulation</button>
+      </form>
+
+      <div id="simResults" class="mt-6 hidden">
+        <h4 class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Simulation Results</h4>
+        <div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Before</p>
+              <p id="simBefore" class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">72</p>
+            </div>
+            <div>
+              <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">After</p>
+              <p id="simAfter" class="text-2xl font-bold text-emerald-400">--</p>
+            </div>
+            <div>
+              <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Change</p>
+              <p id="simChange" class="text-2xl font-bold">--</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESG Score Trend -->
+  <div class="card p-5">
+    <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio ESG Score Trend</h3>
+    <div class="h-64"><canvas id="esgTrendChart"></canvas></div>
+  </div>
+</div>
+
+<!-- UN SDG Alignment Tab -->
+<div id="tab-sdg" class="tab-content hidden">
+  <div class="card p-5 mb-6">
+    <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">UN Sustainable Development Goals Alignment</h3>
+    <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-6">Your portfolio's contribution to the 17 UN SDGs based on company activities and impact</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <% sdgAlignment.forEach(sdg => {
+        const bgColor = sdg.score >= 70 ? 'from-emerald-500/20 to-emerald-600/20' : sdg.score >= 50 ? 'from-amber-500/20 to-amber-600/20' : 'from-red-500/20 to-red-600/20';
+        const textColor = sdg.score >= 70 ? 'text-emerald-400' : sdg.score >= 50 ? 'text-amber-400' : 'text-red-400';
+      %>
+      <div class="p-4 rounded-lg bg-gradient-to-br <%= bgColor %> border <%= sdg.score >= 70 ? 'border-emerald-500/30' : sdg.score >= 50 ? 'border-amber-500/30' : 'border-red-500/30' %>">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl"><%= sdg.icon %></span>
+            <div>
+              <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">SDG <%= sdg.goal %></p>
+              <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-sm"><%= sdg.name %></p>
+            </div>
+          </div>
+          <span class="text-2xl font-bold <%= textColor %>"><%= sdg.score %></span>
+        </div>
+        <div class="h-2 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>">
+          <div class="h-2 rounded-full <%= sdg.score >= 70 ? 'bg-emerald-500' : sdg.score >= 50 ? 'bg-amber-500' : 'bg-red-500' %>" style="width: <%= sdg.score %>%"></div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- SDG Impact Chart -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">SDG Contribution by Holding</h3>
+      <div class="h-64"><canvas id="sdgContributionChart"></canvas></div>
+    </div>
+    <div class="card p-5">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">SDG Impact Summary</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Positive Impact Areas</span>
+          <span class="font-bold text-emerald-400">3 SDGs</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Neutral Impact Areas</span>
+          <span class="font-bold text-amber-400">1 SDG</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Needs Improvement</span>
+          <span class="font-bold text-red-400">1 SDG</span>
+        </div>
+        <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Top Contributor</span>
+          <span class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">MSFT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESG Screener Tab -->
+<div id="tab-screener" class="tab-content hidden">
+  <div class="card p-5">
+    <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">ESG Stock Screener</h3>
+    <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">Find stocks that match your ESG criteria</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div>
-        <p class="text-slate-400 text-xs font-mono mb-1">ENVIRONMENTAL</p>
-        <p class="text-3xl font-bold text-emerald-400 font-mono">68</p>
+        <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Min ESG Score</label>
+        <input type="number" id="screenMinESG" class="form-input" value="60" min="0" max="100">
       </div>
-      <div class="text-emerald-400 text-2xl">🌿</div>
-    </div>
-    <div class="h-1 bg-slate-800 mt-3">
-      <div class="h-1 bg-emerald-400" style="width:68%"></div>
-    </div>
-  </div>
-
-  <div class="bg-black border border-sky-500/30 p-4">
-    <div class="flex items-center justify-between">
       <div>
-        <p class="text-slate-400 text-xs font-mono mb-1">SOCIAL</p>
-        <p class="text-3xl font-bold text-sky-400 font-mono">75</p>
+        <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Max Controversies</label>
+        <input type="number" id="screenMaxContro" class="form-input" value="2" min="0">
       </div>
-      <div class="text-sky-400 text-2xl">👥</div>
-    </div>
-    <div class="h-1 bg-slate-800 mt-3">
-      <div class="h-1 bg-sky-400" style="width:75%"></div>
-    </div>
-  </div>
-
-  <div class="bg-black border border-purple-500/30 p-4">
-    <div class="flex items-center justify-between">
       <div>
-        <p class="text-slate-400 text-xs font-mono mb-1">GOVERNANCE</p>
-        <p class="text-3xl font-bold text-purple-400 font-mono">78</p>
+        <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Min Rating</label>
+        <select id="screenMinRating" class="form-input">
+          <option value="CCC">CCC (Any)</option>
+          <option value="B">B or better</option>
+          <option value="BB">BB or better</option>
+          <option value="BBB">BBB or better</option>
+          <option value="A" selected>A or better</option>
+          <option value="AA">AA or better</option>
+          <option value="AAA">AAA only</option>
+        </select>
       </div>
-      <div class="text-purple-400 text-2xl">🏛️</div>
+      <div>
+        <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Sector</label>
+        <select id="screenSector" class="form-input">
+          <option value="">All Sectors</option>
+          <option value="tech">Technology</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="finance">Finance</option>
+          <option value="energy">Energy</option>
+          <option value="consumer">Consumer</option>
+        </select>
+      </div>
     </div>
-    <div class="h-1 bg-slate-800 mt-3">
-      <div class="h-1 bg-purple-400" style="width:78%"></div>
+    <button onclick="runScreener()" class="btn-primary">Screen Stocks</button>
+  </div>
+
+  <div id="screenerResults" class="card overflow-hidden mt-6">
+    <div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+      <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Screener Results</h3>
     </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+          <th class="px-4 py-3">Stock</th>
+          <th class="px-4 py-3 text-center">ESG</th>
+          <th class="px-4 py-3 text-center">E</th>
+          <th class="px-4 py-3 text-center">S</th>
+          <th class="px-4 py-3 text-center">G</th>
+          <th class="px-4 py-3">Rating</th>
+          <th class="px-4 py-3">Action</th>
+        </tr>
+      </thead>
+      <tbody id="screenerTableBody">
+        <tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+          <td colspan="7" class="px-4 py-8 text-center <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Click "Screen Stocks" to find matching companies</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
-<!-- Portfolio ESG Summary -->
-<div class="bloomberg-card p-6">
-  <div class="border-l-4 border-amber-400 pl-4 mb-6">
-    <h2 class="text-sm font-mono text-slate-400 mb-1">PORTFOLIO ESG SCORE</h2>
-    <div class="flex items-end gap-3">
-      <p class="text-5xl font-bold text-amber-400 font-mono">72</p>
-      <p class="text-lg text-emerald-400 font-mono mb-2">ABOVE AVERAGE</p>
-    </div>
-  </div>
-</div>
-
-<!-- ESG Leaders & Laggards -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="bloomberg-card p-5">
-    <div class="border-l-4 border-emerald-400 pl-4 mb-4">
-      <h3 class="font-mono text-sm text-emerald-400 flex items-center gap-2">🏆 ESG LEADERS</h3>
-    </div>
-    <div class="space-y-3">
-      <div class="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-emerald-500 flex items-center justify-center text-black text-xs font-bold font-mono">MSFT</div>
-          <div>
-            <p class="font-bold text-white">Microsoft</p>
-            <p class="text-xs text-slate-400">Carbon negative by 2030</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-emerald-400 font-mono">92</p>
-          <p class="text-xs text-emerald-400 font-mono">AAA</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-sky-500 flex items-center justify-center text-black text-xs font-bold font-mono">AAPL</div>
-          <div>
-            <p class="font-bold text-white">Apple</p>
-            <p class="text-xs text-slate-400">100% renewable energy</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-emerald-400 font-mono">88</p>
-          <p class="text-xs text-emerald-400 font-mono">AA</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/20">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-amber-500 flex items-center justify-center text-black text-xs font-bold font-mono">JNJ</div>
-          <div>
-            <p class="font-bold text-white">Johnson & Johnson</p>
-            <p class="text-xs text-slate-400">Strong governance</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-emerald-400 font-mono">85</p>
-          <p class="text-xs text-emerald-400 font-mono">AA</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="bloomberg-card p-5">
-    <div class="border-l-4 border-red-400 pl-4 mb-4">
-      <h3 class="font-mono text-sm text-red-400 flex items-center gap-2">⚠️ ESG LAGGARDS</h3>
-    </div>
-    <div class="space-y-3">
-      <div class="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/20">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-red-500 flex items-center justify-center text-black text-xs font-bold font-mono">XOM</div>
-          <div>
-            <p class="font-bold text-white">Exxon Mobil</p>
-            <p class="text-xs text-slate-400">High carbon emissions</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-red-400 font-mono">32</p>
-          <p class="text-xs text-red-400 font-mono">CCC</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/20">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-amber-500 flex items-center justify-center text-black text-xs font-bold font-mono">META</div>
-          <div>
-            <p class="font-bold text-white">Meta Platforms</p>
-            <p class="text-xs text-slate-400">Privacy concerns</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-amber-400 font-mono">54</p>
-          <p class="text-xs text-amber-400 font-mono">BB</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/20">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-purple-500 flex items-center justify-center text-black text-xs font-bold font-mono">AMZN</div>
-          <div>
-            <p class="font-bold text-white">Amazon</p>
-            <p class="text-xs text-slate-400">Labor practices</p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold text-amber-400 font-mono">58</p>
-          <p class="text-xs text-amber-400 font-mono">BBB</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Holdings ESG Table -->
-<div class="bloomberg-card overflow-hidden">
-  <div class="p-4 border-b border-slate-700">
-    <h3 class="font-mono text-sm text-amber-400">ALL HOLDINGS ESG BREAKDOWN</h3>
-  </div>
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="bg-slate-900 text-slate-400 text-left font-mono text-xs">
-        <th class="px-4 py-3">STOCK</th>
-        <th class="px-4 py-3 text-center">OVERALL</th>
-        <th class="px-4 py-3 text-center">🌿 E</th>
-        <th class="px-4 py-3 text-center">👥 S</th>
-        <th class="px-4 py-3 text-center">🏛️ G</th>
-        <th class="px-4 py-3">CONTROVERSIES</th>
-        <th class="px-4 py-3">RATING</th>
-      </tr>
-    </thead>
-    <tbody class="text-white">
-      <tr class="border-b border-slate-800 hover:bg-slate-900/50">
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-emerald-500 flex items-center justify-center text-black text-xs font-bold font-mono">MSFT</div>
-            <span class="font-medium">Microsoft</span>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">92</td>
-        <td class="px-4 py-3 text-center font-mono">95</td>
-        <td class="px-4 py-3 text-center font-mono">88</td>
-        <td class="px-4 py-3 text-center font-mono">92</td>
-        <td class="px-4 py-3"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-mono">None</span></td>
-        <td class="px-4 py-3 font-bold text-emerald-400 font-mono">AAA</td>
-      </tr>
-      <tr class="border-b border-slate-800 hover:bg-slate-900/50">
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-sky-500 flex items-center justify-center text-black text-xs font-bold font-mono">AAPL</div>
-            <span class="font-medium">Apple</span>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">88</td>
-        <td class="px-4 py-3 text-center font-mono">92</td>
-        <td class="px-4 py-3 text-center font-mono">82</td>
-        <td class="px-4 py-3 text-center font-mono">88</td>
-        <td class="px-4 py-3"><span class="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-mono">1 Minor</span></td>
-        <td class="px-4 py-3 font-bold text-emerald-400 font-mono">AA</td>
-      </tr>
-      <tr class="border-b border-slate-800 hover:bg-slate-900/50">
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-purple-500 flex items-center justify-center text-black text-xs font-bold font-mono">NVDA</div>
-            <span class="font-medium">NVIDIA</span>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-center font-bold text-sky-400 font-mono">76</td>
-        <td class="px-4 py-3 text-center font-mono">72</td>
-        <td class="px-4 py-3 text-center font-mono">78</td>
-        <td class="px-4 py-3 text-center font-mono">80</td>
-        <td class="px-4 py-3"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-mono">None</span></td>
-        <td class="px-4 py-3 font-bold text-sky-400 font-mono">A</td>
-      </tr>
-      <tr class="border-b border-slate-800 hover:bg-slate-900/50">
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-amber-500 flex items-center justify-center text-black text-xs font-bold font-mono">META</div>
-            <span class="font-medium">Meta</span>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-center font-bold text-amber-400 font-mono">54</td>
-        <td class="px-4 py-3 text-center font-mono">68</td>
-        <td class="px-4 py-3 text-center font-mono">42</td>
-        <td class="px-4 py-3 text-center font-mono">58</td>
-        <td class="px-4 py-3"><span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-mono">3 Major</span></td>
-        <td class="px-4 py-3 font-bold text-amber-400 font-mono">BB</td>
-      </tr>
-      <tr class="border-b border-slate-800 hover:bg-slate-900/50">
-        <td class="px-4 py-3">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-red-500 flex items-center justify-center text-black text-xs font-bold font-mono">XOM</div>
-            <span class="font-medium">Exxon</span>
-          </div>
-        </td>
-        <td class="px-4 py-3 text-center font-bold text-red-400 font-mono">32</td>
-        <td class="px-4 py-3 text-center font-mono">18</td>
-        <td class="px-4 py-3 text-center font-mono">45</td>
-        <td class="px-4 py-3 text-center font-mono">42</td>
-        <td class="px-4 py-3"><span class="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-mono">5 Major</span></td>
-        <td class="px-4 py-3 font-bold text-red-400 font-mono">CCC</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- ESG Improvement Suggestions -->
-<div class="bloomberg-card p-5">
-  <div class="border-l-4 border-amber-400 pl-4 mb-4">
-    <h3 class="font-mono text-sm text-amber-400">💡 ESG IMPROVEMENT SUGGESTIONS</h3>
-  </div>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div class="p-4 bg-emerald-500/10 border border-emerald-500/20">
-      <p class="font-bold text-emerald-400 mb-2 font-mono">Replace XOM with NEE</p>
-      <p class="text-sm text-slate-400">NextEra Energy has ESG score of <span class="font-mono text-emerald-400">84</span> vs XOM's <span class="font-mono text-red-400">32</span>. Similar dividend yield.</p>
-      <button class="bloomberg-btn-secondary mt-3 w-full">
-        <span class="font-mono text-xs">ANALYZE SWAP</span>
-      </button>
-    </div>
-    <div class="p-4 bg-sky-500/10 border border-sky-500/20">
-      <p class="font-bold text-sky-400 mb-2 font-mono">Add More Clean Tech</p>
-      <p class="text-sm text-slate-400">Consider <span class="font-mono text-sky-400">ENPH</span>, <span class="font-mono text-sky-400">FSLR</span> for renewable energy exposure.</p>
-      <button class="bloomberg-btn-secondary mt-3 w-full">
-        <span class="font-mono text-xs">VIEW OPTIONS</span>
-      </button>
-    </div>
-    <div class="p-4 bg-purple-500/10 border border-purple-500/20">
-      <p class="font-bold text-purple-400 mb-2 font-mono">Reduce META Position</p>
-      <p class="text-sm text-slate-400">Privacy controversies impact ESG. Consider <span class="font-mono text-purple-400">CRM</span> instead.</p>
-      <button class="bloomberg-btn-secondary mt-3 w-full">
-        <span class="font-mono text-xs">COMPARE</span>
-      </button>
-    </div>
-  </div>
-</div>
 </div></div></main>
+
+<style>
+.tab-btn {
+  @apply px-4 py-2 -mb-px text-sm font-medium border-b-2 border-transparent transition-colors;
+}
+.tab-btn:hover { @apply <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>; }
+.tab-btn.active { @apply border-blue-500 text-blue-500; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const holdingsData = <%- JSON.stringify(holdings) %>;
+const portfolioESGData = <%- JSON.stringify(portfolioESG) %>;
+const sdgData = <%- JSON.stringify(sdgAlignment) %>;
+
+// Tab switching
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabName).classList.remove('hidden');
+  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+}
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', () => {
+  // ESG Radar Chart
+  new Chart(document.getElementById('esgRadarChart'), {
+    type: 'radar',
+    data: {
+      labels: ['Environmental', 'Social', 'Governance', 'Carbon', 'Controversies', 'Green Revenue'],
+      datasets: [{
+        label: 'Portfolio',
+        data: [portfolioESGData.environmental, portfolioESGData.social, portfolioESGData.governance, 100 - (portfolioESGData.carbonIntensity / 5), 100 - (portfolioESGData.controversies * 10), portfolioESGData.greenRevenue * 3],
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        borderColor: '#3b82f6',
+        pointBackgroundColor: '#3b82f6'
+      }, {
+        label: 'Benchmark',
+        data: [65, 65, 65, 60, 70, 50],
+        backgroundColor: 'rgba(148, 163, 184, 0.1)',
+        borderColor: '#64748b',
+        pointBackgroundColor: '#64748b'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { r: { beginAtZero: true, max: 100, grid: { color: '<%= safeTheme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { display: false } } },
+      plugins: { legend: { position: 'bottom', labels: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>' } } }
+    }
+  });
+
+  // ESG Trend Chart
+  const trendLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  new Chart(document.getElementById('esgTrendChart'), {
+    type: 'line',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'ESG Score',
+        data: [68, 69, 70, 69, 71, 72, 71, 72, 73, 72, 72, 72],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>' } },
+        y: { min: 60, max: 80, grid: { color: '<%= safeTheme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>' } }
+      }
+    }
+  });
+
+  // SDG Contribution Chart
+  new Chart(document.getElementById('sdgContributionChart'), {
+    type: 'bar',
+    data: {
+      labels: sdgData.map(s => 'SDG ' + s.goal),
+      datasets: [{
+        label: 'Score',
+        data: sdgData.map(s => s.score),
+        backgroundColor: sdgData.map(s => s.score >= 70 ? '#10b981' : s.score >= 50 ? '#f59e0b' : '#ef4444'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>' } },
+        y: { max: 100, grid: { color: '<%= safeTheme === "light" ? "#e5e7eb" : "#334155" %>' }, ticks: { color: '<%= safeTheme === "light" ? "#6b7280" : "#94a3b8" %>' } }
+      }
+    }
+  });
+});
+
+function showStockDetail(symbol) {
+  const stock = holdingsData.find(h => h.symbol === symbol);
+  if (!stock) return;
+  showToast(`${stock.name}: ESG ${stock.overall} (${stock.rating})`, 'info');
+}
+
+function runSimulation() {
+  const action = document.getElementById('simAction').value;
+  const current = document.getElementById('simCurrent').value;
+  const newStock = document.getElementById('simNew').value;
+
+  // Simulated calculation
+  const currentScore = 72;
+  const newScore = Math.floor(70 + Math.random() * 10);
+  const change = newScore - currentScore;
+
+  document.getElementById('simResults').classList.remove('hidden');
+  document.getElementById('simBefore').textContent = currentScore;
+  document.getElementById('simAfter').textContent = newScore;
+  document.getElementById('simChange').textContent = (change >= 0 ? '+' : '') + change;
+  document.getElementById('simChange').className = 'text-2xl font-bold ' + (change >= 0 ? 'text-emerald-400' : 'text-red-400');
+
+  showToast('Simulation complete!', 'success');
+}
+
+function applyScenario(scenario) {
+  showToast(`Scenario "${scenario}" would be applied`, 'info');
+}
+
+function runScreener() {
+  const minESG = parseInt(document.getElementById('screenMinESG').value);
+  const maxContro = parseInt(document.getElementById('screenMaxContro').value);
+
+  const results = holdingsData.filter(h => h.overall >= minESG && h.controversies <= maxContro);
+
+  const tbody = document.getElementById('screenerTableBody');
+  if (results.length === 0) {
+    tbody.innerHTML = '<tr class="border-b <%= safeTheme === "light" ? "border-gray-100" : "border-slate-700/50" %>"><td colspan="7" class="px-4 py-8 text-center <%= safeTheme === "light" ? "text-gray-500" : "text-slate-400" %>">No stocks match your criteria</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = results.map(h => {
+    const scoreColor = h.overall >= 70 ? 'text-emerald-400' : h.overall >= 50 ? 'text-amber-400' : 'text-red-400';
+    const ratingColor = h.rating.startsWith('A') ? 'bg-emerald-500/20 text-emerald-400' : h.rating.startsWith('B') ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400';
+    return `
+      <tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+        <td class="px-4 py-3 font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">${h.symbol}</td>
+        <td class="px-4 py-3 text-center font-bold ${scoreColor}">${h.overall}</td>
+        <td class="px-4 py-3 text-center">${h.e}</td>
+        <td class="px-4 py-3 text-center">${h.s}</td>
+        <td class="px-4 py-3 text-center">${h.g}</td>
+        <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-bold rounded ${ratingColor}">${h.rating}</span></td>
+        <td class="px-4 py-3"><button onclick="addToPortfolio('${h.symbol}')" class="btn-primary text-xs py-1">Add</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  showToast(`Found ${results.length} stocks`, 'success');
+}
+
+function addToPortfolio(symbol) {
+  showToast(`${symbol} would be added to portfolio`, 'info');
+}
+
+function exportESGReport() {
+  showToast('Generating ESG Report PDF...', 'info');
+}
+
+function sortESGTable() {
+  const sortBy = document.getElementById('sortESG').value;
+  showToast(`Sorting by ${sortBy}`, 'info');
+}
+</script>
 <%- include('../partials/footer') %>

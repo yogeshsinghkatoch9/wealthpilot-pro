@@ -564,6 +564,35 @@ ${this.getButton('Secure My Account', securityUrl || `${process.env.FRONTEND_URL
     return this.getBaseTemplate(content, `Security Alert: ${alertType}`);
   }
 
+  // Email verification
+  emailVerificationTemplate(data) {
+    const { name, verificationUrl, expiresIn = '24 hours' } = data;
+    const content = `
+<h2 style="margin: 0 0 20px 0; color: #1a365d; font-size: 22px;">Verify Your Email Address 📧</h2>
+<p style="margin: 0 0 15px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+  Hi ${name || 'there'},
+</p>
+<p style="margin: 0 0 15px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+  Thank you for signing up for WealthPilot Pro! Please verify your email address by clicking the button below:
+</p>
+${this.getButton('Verify Email Address', verificationUrl, '#10b981')}
+<p style="margin: 20px 0 15px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+  This verification link will expire in <strong>${expiresIn}</strong>.
+</p>
+<p style="margin: 0 0 15px 0; color: #64748b; font-size: 14px; line-height: 1.6;">
+  If you didn't create an account with WealthPilot Pro, you can safely ignore this email.
+</p>
+<div style="margin-top: 25px; padding: 15px; background-color: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
+  <p style="margin: 0 0 8px 0; color: #64748b; font-size: 12px;">
+    If the button doesn't work, copy and paste this link into your browser:
+  </p>
+  <p style="margin: 0; color: #3b82f6; font-size: 12px; word-break: break-all;">
+    ${verificationUrl}
+  </p>
+</div>`;
+    return this.getBaseTemplate(content, 'Please verify your email to activate your WealthPilot Pro account');
+  }
+
   // Dividend received notification
   dividendReceivedTemplate(data) {
     const { name, symbol, shares, dividendPerShare, totalAmount, exDate, payDate, portfolioName } = data;
