@@ -1062,14 +1062,14 @@ MSFT,50,300.00,2023-02-20</pre>
         throw new Error(data.error);
       }
 
-      updateProgress(100, 'Upload complete!');
+      updateProgress(100, 'Upload complete! Refreshing...');
 
-      // Poll for upload status
-      if (data.uploadId) {
-        await pollUploadStatus(data.uploadId);
-      } else {
-        setTimeout(() => location.reload(), 1000);
-      }
+      // Portfolio is created immediately - just reload to show it
+      // Status polling is unreliable on some deployments, so skip it
+      setTimeout(() => {
+        closeModal('uploadModal');
+        location.reload();
+      }, 1500);
 
     } catch (err) {
       console.error('Upload error:', err);
