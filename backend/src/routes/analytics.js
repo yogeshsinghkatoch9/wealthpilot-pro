@@ -16,6 +16,8 @@ router.use(authenticate);
  */
 router.get('/dashboard', async (req, res) => {
   try {
+    logger.info(`[Dashboard API] Fetching for user ${req.user.id}`);
+
     const portfolios = await prisma.portfolio.findMany({
       where: { userId: req.user.id },
       include: {
@@ -23,6 +25,9 @@ router.get('/dashboard', async (req, res) => {
         _count: { select: { transactions: true } }
       }
     });
+
+    const totalHoldings = portfolios.reduce((sum, p) => sum + p.holdings.length, 0);
+    logger.info(`[Dashboard API] Found ${portfolios.length} portfolios with ${totalHoldings} total holdings`);
 
     const recentTransactions = await prisma.transaction.findMany({
       where: { userId: req.user.id },
@@ -57,7 +62,9 @@ router.get('/dashboard', async (req, res) => {
 
     // Collect all unique symbols first for single batch fetch
     const allSymbols = [...new Set(portfolios.flatMap(p => p.holdings.map(h => h.symbol)))];
+    logger.info(`[Dashboard API] Fetching quotes for ${allSymbols.length} unique symbols`);
     const quotes = allSymbols.length > 0 ? await MarketDataService.getQuotes(allSymbols) : {};
+    logger.info(`[Dashboard API] Got ${Object.keys(quotes).length} quotes`);
 
     for (const portfolio of portfolios) {
       totalCash += Number(portfolio.cashBalance);
@@ -141,6 +148,8 @@ router.get('/dashboard', async (req, res) => {
       const drawdown = (peak - cumulative) / peak;
       if (drawdown > maxDrawdown) maxDrawdown = drawdown;
     }
+
+    logger.info(`[Dashboard API] Calculated: ${allHoldings.length} holdings, ${sectors.length} sectors, value=$${totalValue.toFixed(2)}`);
 
     res.json({
       value: totalValue,
