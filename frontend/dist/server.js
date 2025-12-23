@@ -288,6 +288,15 @@ app.get(['/', '/dashboard'], requireAuth, async (req, res) => {
         const risk = dashboard?.risk || { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
         const transactions = dashboard?.recentTransactions || [];
         const alerts = dashboard?.activeAlerts || [];
+        // Debug logging
+        console.log('[Dashboard] Data extracted:', {
+            dashboardExists: !!dashboard,
+            holdingsCount: holdings.length,
+            sectorsCount: sectors.length,
+            transactionsCount: transactions.length,
+            totalValue: dashboard?.value,
+            totalHoldingsCount: dashboard?.holdingsCount
+        });
         const totals = dashboard ? {
             value: dashboard.value || 0,
             cost: dashboard.cost || 0,
