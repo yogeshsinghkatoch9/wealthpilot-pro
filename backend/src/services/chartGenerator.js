@@ -3,23 +3,49 @@
  * Server-side chart rendering for PDF reports using chartjs-node-canvas
  */
 
-const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+let ChartJSNodeCanvas;
+let canvasAvailable = false;
+
+try {
+  ChartJSNodeCanvas = require('chartjs-node-canvas').ChartJSNodeCanvas;
+  canvasAvailable = true;
+  console.log('[ChartGenerator] Canvas module loaded successfully');
+} catch (error) {
+  console.warn('[ChartGenerator] Canvas module not available - chart generation disabled:', error.message);
+}
 
 class ChartGenerator {
   constructor() {
     this.width = 800;
     this.height = 400;
-    this.chartJSNodeCanvas = new ChartJSNodeCanvas({
-      width: this.width,
-      height: this.height,
-      backgroundColour: 'white'
-    });
+    this.chartJSNodeCanvas = null;
+
+    if (canvasAvailable) {
+      try {
+        this.chartJSNodeCanvas = new ChartJSNodeCanvas({
+          width: this.width,
+          height: this.height,
+          backgroundColour: 'white'
+        });
+      } catch (error) {
+        console.warn('[ChartGenerator] Failed to initialize canvas:', error.message);
+      }
+    }
+  }
+
+  isAvailable() {
+    return this.chartJSNodeCanvas !== null;
   }
 
   /**
    * Generate allocation pie chart
    */
   async generateAllocationPieChart(allocations) {
+    if (!this.chartJSNodeCanvas) {
+      console.warn('[ChartGenerator] Canvas not available, skipping pie chart');
+      return null;
+    }
+
     const labels = allocations.map(a => a.name || a.sector);
     const data = allocations.map(a => a.percentage || a.value);
     const colors = this.generateColors(labels.length);
@@ -61,6 +87,7 @@ class ChartGenerator {
    * Generate performance line chart
    */
   async generatePerformanceChart(performanceData) {
+    if (!this.chartJSNodeCanvas) return null;
     const labels = performanceData.map(p => p.date);
     const portfolioValues = performanceData.map(p => p.portfolioValue);
     const benchmarkValues = performanceData.map(p => p.benchmarkValue);
@@ -124,6 +151,7 @@ class ChartGenerator {
    * Generate sector breakdown bar chart
    */
   async generateSectorBarChart(sectorData) {
+    if (!this.chartJSNodeCanvas) return null;
     const labels = sectorData.map(s => s.sector);
     const portfolioWeights = sectorData.map(s => s.portfolioWeight);
     const benchmarkWeights = sectorData.map(s => s.benchmarkWeight || 0);
@@ -179,6 +207,7 @@ class ChartGenerator {
    * Generate risk radar chart
    */
   async generateRiskRadarChart(riskMetrics) {
+    if (!this.chartJSNodeCanvas) return null;
     const configuration = {
       type: 'radar',
       data: {
@@ -230,6 +259,7 @@ class ChartGenerator {
    * Generate holdings bar chart (top 10)
    */
   async generateHoldingsChart(holdings) {
+    if (!this.chartJSNodeCanvas) return null;
     const topHoldings = holdings.slice(0, 10);
     const labels = topHoldings.map(h => h.symbol);
     const values = topHoldings.map(h => h.marketValue || (h.shares * (h.currentPrice || h.avgCostBasis || 0)));
@@ -276,6 +306,7 @@ class ChartGenerator {
    * Generate dividend income chart
    */
   async generateDividendChart(dividendData) {
+    if (!this.chartJSNodeCanvas) return null;
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyIncome = dividendData.monthlyIncome || months.map(() => 0);
 
@@ -320,6 +351,7 @@ class ChartGenerator {
    * Generate gain/loss chart
    */
   async generateGainLossChart(holdings) {
+    if (!this.chartJSNodeCanvas) return null;
     const sortedByGain = [...holdings].sort((a, b) => (b.gainPercent || 0) - (a.gainPercent || 0));
     const topGainers = sortedByGain.slice(0, 5);
     const topLosers = sortedByGain.slice(-5).reverse();
@@ -370,6 +402,7 @@ class ChartGenerator {
    * Generate correlation heatmap (simplified as bar chart)
    */
   async generateCorrelationChart(correlationData) {
+    if (!this.chartJSNodeCanvas) return null;
     const pairs = correlationData.pairs || [];
     const labels = pairs.map(p => `${p.symbol1}-${p.symbol2}`);
     const values = pairs.map(p => p.correlation);
