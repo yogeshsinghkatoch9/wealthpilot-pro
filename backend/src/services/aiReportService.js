@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const unifiedAI = require('./unifiedAIService');
 const chartGenerator = require('./chartGenerator');
-const pdfGenerator = require('./pdfReportGenerator');
+const visualPdfGenerator = require('./visualPdfGenerator');
 const { masterReportPrompt } = require('./prompts/masterReportPrompt');
 const StockDataEnrichment = require('./stockDataEnrichment');
 const { prisma } = require('../db/simpleDb');
@@ -58,12 +58,12 @@ class AIReportService {
         console.log('[AIReport] Chart generation skipped (canvas not available)');
       }
 
-      // Step 4: Generate PDF
-      console.log('[AIReport] Creating PDF document...');
+      // Step 4: Generate Visual PDF with client-friendly summary pages
+      console.log('[AIReport] Creating visual PDF document with summary pages...');
       const fileName = `report_${portfolioId}_${Date.now()}.pdf`;
       const filePath = path.join(this.reportsDir, fileName);
 
-      await pdfGenerator.generateReport(portfolioData, aiContent, charts, filePath);
+      await visualPdfGenerator.generateReport(portfolioData, aiContent, charts, filePath);
 
       // Step 5: Save report record
       const report = await this.saveReportRecord(userId, portfolioId, filePath, reportType);
