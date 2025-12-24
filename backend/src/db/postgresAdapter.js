@@ -414,7 +414,7 @@ class PostgresAdapter {
 
   getWatchlistsByUserId(userId) {
     return this.pool.query(
-      'SELECT * FROM watchlists WHERE user_id = $1 ORDER BY created_at DESC',
+      'SELECT * FROM "Watchlist" WHERE "userId" = $1 ORDER BY "createdAt" DESC',
       [userId]
     ).then(r => r.rows);
   }
@@ -423,7 +423,7 @@ class PostgresAdapter {
     const id = uuidv4();
     const now = new Date();
     return this.pool.query(
-      `INSERT INTO watchlists (id, user_id, name, description, created_at, updated_at)
+      `INSERT INTO "Watchlist" (id, "userId", name, description, "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [id, userId, name, description, now, now]
