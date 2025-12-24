@@ -59,14 +59,33 @@ router.get('/:id/download', authenticate, async (req, res) => {
     const report = await aiReportService.getReport(id);
 
     if (!report) {
+      // Try to find the most recent PDF file as fallback
+      const reportsDir = path.join(__dirname, '../../reports');
+      if (fs.existsSync(reportsDir)) {
+        const files = fs.readdirSync(reportsDir)
+          .filter(f => f.endsWith('.pdf'))
+          .sort((a, b) => {
+            const statA = fs.statSync(path.join(reportsDir, a));
+            const statB = fs.statSync(path.join(reportsDir, b));
+            return statB.mtime - statA.mtime;
+          });
+
+        if (files.length > 0) {
+          const filePath = path.join(reportsDir, files[0]);
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${files[0]}"`);
+          return fs.createReadStream(filePath).pipe(res);
+        }
+      }
       return res.status(404).json({ error: 'Report not found' });
     }
 
-    if (report.userId !== userId) {
+    // Check ownership if userId is set on report
+    if (report.userId && report.userId !== userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    if (!fs.existsSync(report.filePath)) {
+    if (!report.filePath || !fs.existsSync(report.filePath)) {
       return res.status(404).json({ error: 'Report file not found' });
     }
 

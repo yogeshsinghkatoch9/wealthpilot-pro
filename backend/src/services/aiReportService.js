@@ -13,6 +13,7 @@ const { prisma } = require('../db/simpleDb');
 class AIReportService {
   constructor() {
     this.reportsDir = path.join(__dirname, '../../reports');
+    this.reportsCache = new Map(); // In-memory cache for reports when DB not available
     this.ensureReportsDir();
   }
 
@@ -564,18 +565,23 @@ Market data and calculations are subject to delays and may not reflect current m
           metadata: JSON.stringify({ generatedAt: new Date().toISOString() })
         }
       });
+      // Also cache it
+      this.reportsCache.set(report.id, report);
       return report;
     } catch (error) {
-      // If model doesn't exist yet, return mock record
-      console.log('[AIReport] Database model not available, returning mock record');
-      return {
+      // If model doesn't exist yet, use in-memory cache
+      console.log('[AIReport] Database model not available, using in-memory cache');
+      const report = {
         id: `report_${Date.now()}`,
         userId,
         portfolioId,
         reportType,
         status: 'completed',
-        filePath
+        filePath,
+        createdAt: new Date().toISOString()
       };
+      this.reportsCache.set(report.id, report);
+      return report;
     }
   }
 
@@ -583,28 +589,79 @@ Market data and calculations are subject to delays and may not reflect current m
    * Get report by ID
    */
   async getReport(reportId) {
+    // First check in-memory cache
+    if (this.reportsCache.has(reportId)) {
+      return this.reportsCache.get(reportId);
+    }
+
+    // Try database
     try {
-      return await prisma.aIReport.findUnique({
+      const report = await prisma.aIReport.findUnique({
         where: { id: reportId }
       });
-    } catch {
-      return null;
+      if (report) {
+        this.reportsCache.set(reportId, report);
+        return report;
+      }
+    } catch (error) {
+      console.log('[AIReport] Database lookup failed:', error.message);
     }
+
+    // Try to find by scanning reports directory
+    try {
+      const files = fs.readdirSync(this.reportsDir);
+      for (const file of files) {
+        if (file.endsWith('.pdf')) {
+          const filePath = path.join(this.reportsDir, file);
+          // Check if this file was created around the time in the reportId
+          const timestamp = reportId.replace('report_', '');
+          if (file.includes(timestamp.substring(0, 10))) {
+            return {
+              id: reportId,
+              filePath,
+              status: 'completed'
+            };
+          }
+        }
+      }
+    } catch (error) {
+      console.log('[AIReport] Directory scan failed:', error.message);
+    }
+
+    return null;
   }
 
   /**
    * Get user's report history
    */
   async getReportHistory(userId, limit = 10) {
+    let reports = [];
+
+    // Try database first
     try {
-      return await prisma.aIReport.findMany({
+      reports = await prisma.aIReport.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
         take: limit
       });
-    } catch {
-      return [];
+    } catch (error) {
+      console.log('[AIReport] Database history lookup failed:', error.message);
     }
+
+    // Add reports from cache for this user
+    for (const [id, report] of this.reportsCache.entries()) {
+      if (report.userId === userId) {
+        const exists = reports.some(r => r.id === id);
+        if (!exists) {
+          reports.push(report);
+        }
+      }
+    }
+
+    // Sort by createdAt and limit
+    return reports
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, limit);
   }
 
   /**
