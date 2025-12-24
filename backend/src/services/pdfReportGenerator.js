@@ -270,14 +270,46 @@ class PDFReportGenerator {
     // Content - handle markdown-style formatting
     const cleanContent = this.formatContent(content);
 
-    doc.fillColor(this.colors.text)
-       .font(this.fonts.regular)
-       .fontSize(11)
-       .text(cleanContent, 50, 100, {
-         align: 'justify',
-         lineGap: 4,
-         width: 495
-       });
+    // Split content into paragraphs for better handling
+    const paragraphs = cleanContent.split('\n\n');
+    let y = 100;
+
+    paragraphs.forEach(para => {
+      // Check if we need a new page
+      const lineHeight = 14;
+      const estimatedLines = Math.ceil(para.length / 80);
+      const estimatedHeight = estimatedLines * lineHeight;
+
+      if (y + estimatedHeight > 750) {
+        doc.addPage();
+        y = 50;
+      }
+
+      // Check for section separators
+      if (para.includes('━━━')) {
+        doc.fillColor(this.colors.primary)
+           .font(this.fonts.bold)
+           .fontSize(12)
+           .text(para.replace(/━/g, ''), 50, y, { width: 495 });
+        y = doc.y + 10;
+      } else if (para.startsWith('▸')) {
+        doc.fillColor(this.colors.secondary)
+           .font(this.fonts.bold)
+           .fontSize(11)
+           .text(para.replace('▸ ', ''), 50, y, { width: 495 });
+        y = doc.y + 8;
+      } else {
+        doc.fillColor(this.colors.text)
+           .font(this.fonts.regular)
+           .fontSize(10)
+           .text(para, 50, y, {
+             align: 'left',
+             lineGap: 3,
+             width: 495
+           });
+        y = doc.y + 10;
+      }
+    });
   }
 
   /**
@@ -286,16 +318,32 @@ class PDFReportGenerator {
   formatContent(content) {
     if (!content) return 'Content not available.';
 
-    return content
-      // Remove markdown headers but keep text
-      .replace(/^#{1,6}\s+/gm, '')
-      // Convert bold markdown to uppercase for emphasis
+    let result = content
+      // Remove markdown headers but keep text with separator
+      .replace(/^#{1,2}\s+(.+)$/gm, '\n━━━ $1 ━━━\n')
+      .replace(/^#{3,6}\s+(.+)$/gm, '\n▸ $1\n')
+      // Convert bold markdown
       .replace(/\*\*(.*?)\*\*/g, '$1')
+      // Convert italic markdown
+      .replace(/\*(.*?)\*/g, '$1')
       // Convert bullet points
-      .replace(/^\s*[-*]\s+/gm, '• ')
-      // Clean up extra whitespace
+      .replace(/^\s*[-*]\s+/gm, '  • ')
+      // Convert numbered lists
+      .replace(/^\s*\d+\.\s+/gm, (match) => `  ${match.trim()} `)
+      // Clean up table formatting - convert to readable format
+      .replace(/\|[^\n]+\|/g, (match) => {
+        // Skip header separator rows
+        if (match.match(/^\|[-:|\s]+\|$/)) return '';
+        // Convert table row to formatted text
+        const cells = match.split('|').filter(c => c.trim());
+        return cells.map(c => c.trim()).join('  |  ');
+      })
+      // Remove empty lines from table processing
       .replace(/\n{3,}/g, '\n\n')
+      // Clean up extra whitespace
       .trim();
+
+    return result;
   }
 
   /**
