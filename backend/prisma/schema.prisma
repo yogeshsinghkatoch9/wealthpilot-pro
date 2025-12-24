@@ -223,8 +223,6 @@ model PortfolioShare {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  shareEvents     ShareEvent[]
-
   @@index([shareToken])
   @@index([portfolioId])
   @@map("portfolio_shares")
