@@ -919,13 +919,22 @@ app.get('/analytics', requireAuth, async (req, res) => {
   const attribution = attributionData.error ? null : attributionData;
   const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
 
+  // Transform chartData from { labels, values } to [{ date, value }] for charts
+  let history: { date: string; value: number }[] = [];
+  if (performance?.chartData?.labels && performance?.chartData?.values) {
+    history = performance.chartData.labels.map((date: string, i: number) => ({
+      date,
+      value: performance.chartData.values[i] || 0
+    }));
+  }
+
   res.render('pages/analytics', {
     pageTitle: 'Portfolio Analytics',
     analytics: performance,
     performance: performance || { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 },
     metrics: performance?.riskMetrics || { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0 },
     attribution: attribution || { factors: [], sectors: [], holdings: [] },
-    history: performance?.chartData?.values || [],
+    history,
     returns: { daily: [], monthly: [], annual: [] },
     period,
     holdings: performance?.holdings || [],
@@ -1979,14 +1988,47 @@ app.get('/ipo-tracker', requireAuth, async (req, res) => {
 // Other Analysis Pages
 app.get('/attribution', requireAuth, async (req, res) => {
   const token = res.locals.token;
-  const [portfolios, attribution] = await Promise.all([
+  const [portfolios, attributionData] = await Promise.all([
     apiFetch('/portfolios', token),
     apiFetch('/analytics/attribution', token)
   ]);
+
+  // Transform API response to match template expected format
+  let attribution = null;
+  if (!attributionData.error && attributionData) {
+    attribution = {
+      summary: {
+        totalReturn: attributionData.totalReturn || 0,
+        totalGain: (attributionData.totalReturn || 0) * 100, // Estimate
+        benchmarkReturn: attributionData.benchmarkReturn || 0,
+        alpha: attributionData.alpha || 0,
+        informationRatio: attributionData.informationRatio || 0
+      },
+      factors: (attributionData.factorAttribution || []).map((f: any) => ({
+        name: f.factor,
+        icon: f.factor === 'Market Beta' ? '📈' : f.factor === 'Quality' ? '💎' : f.factor === 'Momentum' ? '🚀' : f.factor === 'Size' ? '📊' : f.factor === 'Value' ? '💰' : '⚡',
+        exposure: f.exposure || 0,
+        factorReturn: (f.contribution || 0) / (f.exposure || 1),
+        contribution: f.contribution || 0
+      })),
+      sectors: (attributionData.sectorAttribution || []).map((s: any) => ({
+        name: s.sector,
+        weight: s.weight || 0,
+        benchmarkWeight: s.benchmarkWeight || 0,
+        sectorReturn: s.sectorReturn || 0,
+        contribution: s.contribution || 0,
+        allocationEffect: s.allocationEffect || 0,
+        selectionEffect: s.selectionEffect || 0
+      })),
+      topContributors: attributionData.topContributors || [],
+      topDetractors: attributionData.topDetractors || []
+    };
+  }
+
   res.render('pages/attribution', {
     pageTitle: 'Attribution',
     portfolios: portfolios.error ? [] : portfolios,
-    attribution: attribution.error ? null : attribution,
+    attribution,
     fmt
   });
 });
@@ -2663,11 +2705,61 @@ app.get('/copy-trading', requireAuth, async (req, res) => {
 app.get('/share-portfolio', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const portfolios = await apiFetch('/portfolios', token);
+  const portfolioList = portfolios.error ? [] : portfolios;
+
+  // Fetch share settings for each portfolio
+  const sharedPortfolios: any[] = [];
+  for (const portfolio of portfolioList) {
+    try {
+      const shareSettings = await apiFetch(`/sharing/${portfolio.id}/settings`, token);
+      if (shareSettings && shareSettings.shared) {
+        sharedPortfolios.push({
+          ...portfolio,
+          shareSettings
+        });
+      }
+    } catch (e) {
+      // Portfolio not shared - ignore
+    }
+  }
+
   res.render('pages/share-portfolio', {
     pageTitle: 'Share Portfolio',
-    portfolios: portfolios.error ? [] : portfolios,
+    portfolios: portfolioList,
+    sharedPortfolios,
     fmt
   });
+});
+
+// Public shared portfolio view (no auth required)
+app.get('/shared/:shareToken', async (req, res) => {
+  const { shareToken } = req.params;
+
+  try {
+    const response = await fetch(`${API_URL}/sharing/public/${shareToken}`);
+    const data = await response.json();
+
+    if (!data.success || !data.portfolio) {
+      return res.render('pages/shared-portfolio', {
+        pageTitle: 'Portfolio Not Found',
+        error: data.error || 'This shared portfolio link is invalid or has expired.',
+        portfolio: null
+      });
+    }
+
+    res.render('pages/shared-portfolio', {
+      pageTitle: `${data.portfolio.name} - Shared Portfolio`,
+      error: null,
+      portfolio: data.portfolio
+    });
+  } catch (error) {
+    console.error('Shared portfolio error:', error);
+    res.render('pages/shared-portfolio', {
+      pageTitle: 'Error',
+      error: 'Failed to load shared portfolio. Please try again later.',
+      portfolio: null
+    });
+  }
 });
 
 // ==================== COMMUNITY (with real data) ====================

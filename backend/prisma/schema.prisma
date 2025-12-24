@@ -208,6 +208,41 @@ model PortfolioSnapshot {
   @@index([snapshotDate])
 }
 
+// ============== PORTFOLIO SHARING ==============
+
+model PortfolioShare {
+  id              String    @id @default(uuid())
+  portfolioId     String    @unique @map("portfolio_id")
+  shareToken      String    @unique @map("share_token")
+  isPublic        Boolean   @default(false) @map("is_public")
+  expiresAt       DateTime? @map("expires_at")
+  allowedFields   String    @default("[\"holdings\",\"performance\",\"allocation\"]") @map("allowed_fields")
+  showValues      Boolean   @default(true) @map("show_values")
+  showQuantities  Boolean   @default(true) @map("show_quantities")
+  viewCount       Int       @default(0) @map("view_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  shareEvents     ShareEvent[]
+
+  @@index([shareToken])
+  @@index([portfolioId])
+  @@map("portfolio_shares")
+}
+
+model ShareEvent {
+  id              String    @id @default(uuid())
+  portfolioId     String    @map("portfolio_id")
+  eventType       String    @map("event_type")
+  eventData       String?   @map("event_data")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([portfolioId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("share_events")
+}
+
 // ============== WATCHLIST ==============
 
 model Watchlist {

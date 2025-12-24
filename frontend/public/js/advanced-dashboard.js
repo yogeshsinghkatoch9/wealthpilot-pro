@@ -9,6 +9,16 @@ class AdvancedDashboard {
   }
 
   init() {
+    // Auto-select first portfolio if 'all' is default (required for analytics endpoints)
+    const portfolioSelect = document.getElementById('portfolio-select');
+    if (portfolioSelect && portfolioSelect.options.length > 1) {
+      // Select first real portfolio (skip 'all' option)
+      const firstPortfolio = portfolioSelect.options[1]?.value;
+      if (firstPortfolio && firstPortfolio !== 'all') {
+        portfolioSelect.value = firstPortfolio;
+        this.currentPortfolio = firstPortfolio;
+      }
+    }
     this.setupEventListeners();
     this.loadCurrentTab();
   }
@@ -343,7 +353,13 @@ class AdvancedDashboard {
 
   async fetchData(endpoint) {
     try {
-      const portfolioParam = this.currentPortfolio !== 'all' ? `?portfolioId=${this.currentPortfolio}` : '';
+      // If no portfolio is selected, show a message
+      if (!this.currentPortfolio || this.currentPortfolio === 'all') {
+        console.warn('No portfolio selected for analytics. Please select a specific portfolio.');
+        return null;
+      }
+
+      const portfolioParam = `?portfolioId=${this.currentPortfolio}`;
       const response = await this.authFetch(`/api${endpoint}${portfolioParam}`);
 
       if (!response.ok) {
