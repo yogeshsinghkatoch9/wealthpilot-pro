@@ -4,7 +4,7 @@
  */
 
 const crypto = require('crypto');
-const db = require('../db');
+const { prisma } = require('../db/simpleDb');
 
 class SharingService {
   constructor() {
@@ -32,42 +32,48 @@ class SharingService {
 
     try {
       // Verify portfolio ownership
-      const portfolio = await db.query(
-        `SELECT id, name FROM portfolios WHERE id = $1 AND user_id = $2`,
-        [portfolioId, userId]
-      );
+      const portfolio = await prisma.portfolio.findFirst({
+        where: { id: portfolioId, userId }
+      });
 
-      if (portfolio.rows.length === 0) {
+      if (!portfolio) {
         throw new Error('Portfolio not found or access denied');
       }
 
       // Check for existing share
-      const existing = await db.query(
-        `SELECT share_token FROM portfolio_shares WHERE portfolio_id = $1`,
-        [portfolioId]
-      );
+      const existing = await prisma.portfolioShare.findUnique({
+        where: { portfolioId }
+      });
 
       let shareToken;
 
-      if (existing.rows.length > 0) {
+      if (existing) {
         // Update existing share
-        shareToken = existing.rows[0].share_token;
-        await db.query(
-          `UPDATE portfolio_shares
-           SET is_public = $1, expires_at = $2, allowed_fields = $3,
-               show_values = $4, show_quantities = $5, updated_at = NOW()
-           WHERE portfolio_id = $6`,
-          [isPublic, expiresAt, JSON.stringify(allowedFields), showValues, showQuantities, portfolioId]
-        );
+        shareToken = existing.shareToken;
+        await prisma.portfolioShare.update({
+          where: { portfolioId },
+          data: {
+            isPublic,
+            expiresAt: expiresAt ? new Date(expiresAt) : null,
+            allowedFields: JSON.stringify(allowedFields),
+            showValues,
+            showQuantities
+          }
+        });
       } else {
         // Create new share
         shareToken = this.generateShareToken();
-        await db.query(
-          `INSERT INTO portfolio_shares
-           (portfolio_id, share_token, is_public, expires_at, allowed_fields, show_values, show_quantities)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [portfolioId, shareToken, isPublic, expiresAt, JSON.stringify(allowedFields), showValues, showQuantities]
-        );
+        await prisma.portfolioShare.create({
+          data: {
+            portfolioId,
+            shareToken,
+            isPublic,
+            expiresAt: expiresAt ? new Date(expiresAt) : null,
+            allowedFields: JSON.stringify(allowedFields),
+            showValues,
+            showQuantities
+          }
+        });
       }
 
       // Track share event
@@ -96,32 +102,37 @@ class SharingService {
    */
   async getShareSettings(userId, portfolioId) {
     try {
-      const result = await db.query(
-        `SELECT ps.*, p.name as portfolio_name
-         FROM portfolio_shares ps
-         JOIN portfolios p ON ps.portfolio_id = p.id
-         WHERE ps.portfolio_id = $1 AND p.user_id = $2`,
-        [portfolioId, userId]
-      );
+      // First verify ownership
+      const portfolio = await prisma.portfolio.findFirst({
+        where: { id: portfolioId, userId }
+      });
 
-      if (result.rows.length === 0) {
+      if (!portfolio) {
         return null;
       }
 
-      const share = result.rows[0];
+      const share = await prisma.portfolioShare.findUnique({
+        where: { portfolioId }
+      });
+
+      if (!share) {
+        return { shared: false };
+      }
+
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       return {
-        shareToken: share.share_token,
-        shareUrl: `${baseUrl}/shared/${share.share_token}`,
-        isPublic: share.is_public,
-        expiresAt: share.expires_at,
-        allowedFields: JSON.parse(share.allowed_fields || '[]'),
-        showValues: share.show_values,
-        showQuantities: share.show_quantities,
-        viewCount: share.view_count,
-        createdAt: share.created_at,
-        updatedAt: share.updated_at
+        shared: true,
+        shareToken: share.shareToken,
+        shareUrl: `${baseUrl}/shared/${share.shareToken}`,
+        isPublic: share.isPublic,
+        expiresAt: share.expiresAt,
+        allowedFields: JSON.parse(share.allowedFields || '[]'),
+        showValues: share.showValues,
+        showQuantities: share.showQuantities,
+        viewCount: share.viewCount,
+        createdAt: share.createdAt,
+        updatedAt: share.updatedAt
       };
     } catch (error) {
       console.error('Get share settings error:', error.message);
@@ -135,19 +146,17 @@ class SharingService {
   async disableSharing(userId, portfolioId) {
     try {
       // Verify ownership
-      const portfolio = await db.query(
-        `SELECT id FROM portfolios WHERE id = $1 AND user_id = $2`,
-        [portfolioId, userId]
-      );
+      const portfolio = await prisma.portfolio.findFirst({
+        where: { id: portfolioId, userId }
+      });
 
-      if (portfolio.rows.length === 0) {
+      if (!portfolio) {
         throw new Error('Portfolio not found or access denied');
       }
 
-      await db.query(
-        `DELETE FROM portfolio_shares WHERE portfolio_id = $1`,
-        [portfolioId]
-      );
+      await prisma.portfolioShare.delete({
+        where: { portfolioId }
+      }).catch(() => {}); // Ignore if doesn't exist
 
       await this.logShareEvent(portfolioId, 'sharing_disabled', {});
 
@@ -163,71 +172,69 @@ class SharingService {
    */
   async getSharedPortfolio(shareToken) {
     try {
-      const result = await db.query(
-        `SELECT ps.*, p.id as portfolio_id, p.name, p.description, p.currency,
-                u.id as user_id
-         FROM portfolio_shares ps
-         JOIN portfolios p ON ps.portfolio_id = p.id
-         JOIN users u ON p.user_id = u.id
-         WHERE ps.share_token = $1`,
-        [shareToken]
-      );
+      const share = await prisma.portfolioShare.findUnique({
+        where: { shareToken }
+      });
 
-      if (result.rows.length === 0) {
+      if (!share) {
         return null;
       }
 
-      const share = result.rows[0];
-
       // Check expiration
-      if (share.expires_at && new Date(share.expires_at) < new Date()) {
+      if (share.expiresAt && new Date(share.expiresAt) < new Date()) {
         return { expired: true };
       }
 
-      // Increment view count
-      await db.query(
-        `UPDATE portfolio_shares SET view_count = view_count + 1 WHERE share_token = $1`,
-        [shareToken]
-      );
+      // Get portfolio
+      const portfolio = await prisma.portfolio.findUnique({
+        where: { id: share.portfolioId },
+        include: { holdings: true }
+      });
 
-      const allowedFields = JSON.parse(share.allowed_fields || '[]');
+      if (!portfolio) {
+        return null;
+      }
+
+      // Increment view count
+      await prisma.portfolioShare.update({
+        where: { shareToken },
+        data: { viewCount: { increment: 1 } }
+      });
+
+      const allowedFields = JSON.parse(share.allowedFields || '[]');
 
       // Build response based on allowed fields
       const response = {
-        name: share.name,
-        description: share.description,
-        currency: share.currency,
-        isPublic: share.is_public,
-        viewCount: share.view_count + 1
+        name: portfolio.name,
+        description: portfolio.description,
+        currency: portfolio.currency,
+        isPublic: share.isPublic,
+        viewCount: share.viewCount + 1
       };
 
       // Get holdings if allowed
       if (allowedFields.includes('holdings')) {
-        const holdingsResult = await db.query(
-          `SELECT h.symbol, h.name, h.shares, h.avg_cost_basis,
-                  h.current_price, h.sector, h.asset_type
-           FROM holdings h
-           WHERE h.portfolio_id = $1`,
-          [share.portfolio_id]
-        );
-
-        response.holdings = holdingsResult.rows.map(h => {
+        response.holdings = portfolio.holdings.map(h => {
           const holding = {
             symbol: h.symbol,
             name: h.name,
             sector: h.sector,
-            assetType: h.asset_type
+            assetType: h.assetType
           };
 
-          if (share.show_quantities) {
+          if (share.showQuantities) {
             holding.shares = parseFloat(h.shares);
           }
 
-          if (share.show_values) {
-            holding.currentPrice = parseFloat(h.current_price);
-            holding.avgCost = parseFloat(h.avg_cost_basis);
-            holding.marketValue = parseFloat(h.shares) * parseFloat(h.current_price);
-            holding.costBasis = parseFloat(h.shares) * parseFloat(h.avg_cost_basis);
+          if (share.showValues) {
+            const currentPrice = parseFloat(h.currentPrice || h.avgCostBasis || 0);
+            const avgCost = parseFloat(h.avgCostBasis || 0);
+            const shares = parseFloat(h.shares || 0);
+
+            holding.currentPrice = currentPrice;
+            holding.avgCost = avgCost;
+            holding.marketValue = shares * currentPrice;
+            holding.costBasis = shares * avgCost;
             holding.gain = holding.marketValue - holding.costBasis;
             holding.gainPercent = holding.costBasis > 0
               ? ((holding.gain / holding.costBasis) * 100)
@@ -238,7 +245,7 @@ class SharingService {
         });
 
         // Calculate totals
-        if (share.show_values) {
+        if (share.showValues) {
           response.totalValue = response.holdings.reduce((sum, h) => sum + (h.marketValue || 0), 0);
           response.totalCost = response.holdings.reduce((sum, h) => sum + (h.costBasis || 0), 0);
           response.totalGain = response.totalValue - response.totalCost;
@@ -250,27 +257,29 @@ class SharingService {
 
       // Get allocation if allowed
       if (allowedFields.includes('allocation')) {
-        const holdingsResult = await db.query(
-          `SELECT h.sector, SUM(h.shares * h.current_price) as value
-           FROM holdings h
-           WHERE h.portfolio_id = $1
-           GROUP BY h.sector`,
-          [share.portfolio_id]
-        );
+        const sectorMap = {};
+        let total = 0;
 
-        const total = holdingsResult.rows.reduce((sum, r) => sum + parseFloat(r.value), 0);
+        portfolio.holdings.forEach(h => {
+          const currentPrice = parseFloat(h.currentPrice || h.avgCostBasis || 0);
+          const value = parseFloat(h.shares || 0) * currentPrice;
+          const sector = h.sector || 'Unknown';
 
-        response.sectorAllocation = holdingsResult.rows.map(r => ({
-          sector: r.sector || 'Unknown',
-          percentage: total > 0 ? (parseFloat(r.value) / total * 100) : 0,
-          value: share.show_values ? parseFloat(r.value) : undefined
+          sectorMap[sector] = (sectorMap[sector] || 0) + value;
+          total += value;
+        });
+
+        response.sectorAllocation = Object.entries(sectorMap).map(([sector, value]) => ({
+          sector,
+          percentage: total > 0 ? (value / total * 100) : 0,
+          value: share.showValues ? value : undefined
         }));
       }
 
       // Log view event
-      await this.logShareEvent(share.portfolio_id, 'viewed', {
+      await this.logShareEvent(share.portfolioId, 'viewed', {
         shareToken,
-        viewCount: share.view_count + 1
+        viewCount: share.viewCount + 1
       });
 
       return response;
@@ -285,11 +294,13 @@ class SharingService {
    */
   async logShareEvent(portfolioId, eventType, data) {
     try {
-      await db.query(
-        `INSERT INTO share_events (portfolio_id, event_type, event_data)
-         VALUES ($1, $2, $3)`,
-        [portfolioId, eventType, JSON.stringify(data)]
-      );
+      await prisma.shareEvent.create({
+        data: {
+          portfolioId,
+          eventType,
+          eventData: JSON.stringify(data)
+        }
+      });
     } catch (error) {
       // Don't throw, just log
       console.error('Log share event error:', error.message);
@@ -302,52 +313,32 @@ class SharingService {
   async getShareAnalytics(userId, portfolioId) {
     try {
       // Verify ownership
-      const portfolio = await db.query(
-        `SELECT id FROM portfolios WHERE id = $1 AND user_id = $2`,
-        [portfolioId, userId]
-      );
+      const portfolio = await prisma.portfolio.findFirst({
+        where: { id: portfolioId, userId }
+      });
 
-      if (portfolio.rows.length === 0) {
+      if (!portfolio) {
         throw new Error('Portfolio not found or access denied');
       }
 
-      // Get view count
-      const viewResult = await db.query(
-        `SELECT view_count FROM portfolio_shares WHERE portfolio_id = $1`,
-        [portfolioId]
-      );
+      // Get share info
+      const share = await prisma.portfolioShare.findUnique({
+        where: { portfolioId }
+      });
 
       // Get recent events
-      const eventsResult = await db.query(
-        `SELECT event_type, event_data, created_at
-         FROM share_events
-         WHERE portfolio_id = $1
-         ORDER BY created_at DESC
-         LIMIT 50`,
-        [portfolioId]
-      );
-
-      // Get daily views for last 30 days
-      const dailyViewsResult = await db.query(
-        `SELECT DATE(created_at) as date, COUNT(*) as views
-         FROM share_events
-         WHERE portfolio_id = $1 AND event_type = 'viewed'
-           AND created_at > NOW() - INTERVAL '30 days'
-         GROUP BY DATE(created_at)
-         ORDER BY date`,
-        [portfolioId]
-      );
+      const events = await prisma.shareEvent.findMany({
+        where: { portfolioId },
+        orderBy: { createdAt: 'desc' },
+        take: 50
+      });
 
       return {
-        totalViews: viewResult.rows[0]?.view_count || 0,
-        recentEvents: eventsResult.rows.map(e => ({
-          type: e.event_type,
-          data: JSON.parse(e.event_data || '{}'),
-          timestamp: e.created_at
-        })),
-        dailyViews: dailyViewsResult.rows.map(d => ({
-          date: d.date,
-          views: parseInt(d.views)
+        totalViews: share?.viewCount || 0,
+        recentEvents: events.map(e => ({
+          type: e.eventType,
+          data: JSON.parse(e.eventData || '{}'),
+          timestamp: e.createdAt
         }))
       };
     } catch (error) {
