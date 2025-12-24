@@ -736,3 +736,52 @@ model SectorRotation {
   @@index([fromSector])
   @@index([toSector])
 }
+
+// ============== AI SERVICES ==============
+
+model AIChatSession {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String?
+  messages  String   @default("[]") // JSON string of messages
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_chat_sessions")
+}
+
+model AIReport {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  portfolioId  String    @map("portfolio_id")
+  reportType   String    @map("report_type")
+  status       String    @default("pending")
+  filePath     String?   @map("file_path")
+  metadata     String?   // JSON string for additional metadata
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([portfolioId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_reports")
+}
+
+model AIUsage {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  provider     String   // claude or openai
+  model        String   // model name
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  cost         Float?   // estimated cost in USD
+  endpoint     String   // which endpoint was called
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([provider])
+  @@index([createdAt])
+  @@map("ai_usage")
+}

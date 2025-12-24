@@ -84,6 +84,8 @@ const twoFactorRoutes = require('./routes/twoFactor');
 const monitoringRoutes = require('./routes/monitoring');
 const insightsRoutes = require('./routes/insights');
 const notificationsRoutes = require('./routes/notifications');
+const aiReportsRoutes = require('./routes/aiReports');
+const aiChatRoutes = require('./routes/aiChat');
 const { requestMonitoringMiddleware } = require('./services/monitoringService');
 
 // Security middleware
@@ -547,6 +549,12 @@ app.use('/api/research', researchRoutes);
 // AI-powered portfolio analysis, trade ideas, risk warnings, market sentiment
 // Rate limited to 30 requests/hour, cached for 15 minutes
 app.use('/api/insights', insightsLimiter, insightsRoutes);
+
+// ==================== AI CHAT & REPORTS ROUTES ====================
+// AI-powered streaming chat with Claude/OpenAI integration
+app.use('/api/ai/chat', authenticate, aiChatRoutes);
+// AI-powered portfolio report generation (PDF with charts)
+app.use('/api/ai-reports', authenticate, aiReportsRoutes);
 
 // ==================== SENTIMENT ANALYSIS ROUTES ====================
 // Sentiment analysis routes (protected) - Social media, news, analyst sentiment
