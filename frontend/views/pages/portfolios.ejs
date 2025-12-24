@@ -81,7 +81,8 @@
                   <%= safeFmt.compact(p.total_value) %>
                 </p>
                 <p class="text-xs font-mono <%= p.total_gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-                  <%= safeFmt.pct((p.total_gain / (p.total_cost || 1)) * 100) %>
+                  <% const gainPct = p.total_cost > 0 ? (p.total_gain / p.total_cost) * 100 : 0; %>
+                  <%= safeFmt.pct(Math.min(Math.max(gainPct, -99.99), 9999.99)) %>
                 </p>
               </div>
             </div>
@@ -295,153 +296,442 @@
             </div>
           <% } %>
 
-          <!-- Portfolio Statistics -->
-          <div class="grid grid-cols-4 gap-4 mb-6">
-            <div class="p-4 bg-slate-800/50 border border-slate-700 rounded text-center">
-              <p class="text-amber-400 text-xs uppercase font-semibold tracking-wider mb-1">Value</p>
-              <p class="font-mono font-bold text-white text-lg">
+          <!-- Portfolio Statistics - Enhanced -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Total Value Card -->
+            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-amber-500/30 transition-all duration-300">
+              <div class="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full -mr-10 -mt-10"></div>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Total Value</p>
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="font-mono font-bold text-white text-2xl mb-1">
                 <%= safeFmt.money(safeSelected.total_value) %>
               </p>
+              <% const dayChangeVal = safeSelected.day_change || 0; %>
+              <div class="flex items-center gap-1 text-xs <%= dayChangeVal >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <svg class="w-3 h-3 <%= dayChangeVal >= 0 ? '' : 'rotate-180' %>" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span><%= safeFmt.money(Math.abs(dayChangeVal)) %> today</span>
+              </div>
             </div>
-            <div class="p-4 bg-slate-800/50 border border-slate-700 rounded text-center">
-              <p class="text-amber-400 text-xs uppercase font-semibold tracking-wider mb-1">Cost</p>
-              <p class="font-mono font-semibold text-slate-400 text-lg">
+
+            <!-- Cost Basis Card -->
+            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-blue-500/30 transition-all duration-300">
+              <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -mr-10 -mt-10"></div>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Cost Basis</p>
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="font-mono font-bold text-slate-300 text-2xl mb-1">
                 <%= safeFmt.money(safeSelected.total_cost) %>
               </p>
+              <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span><%= safeHoldings.length %> positions</span>
+                <span class="w-1 h-1 rounded-full bg-slate-600"></span>
+                <span>Avg: <%= safeFmt.money(safeSelected.total_cost / (safeHoldings.length || 1)) %></span>
+              </div>
             </div>
-            <div class="p-4 bg-slate-800/50 border border-slate-700 rounded text-center">
-              <p class="text-amber-400 text-xs uppercase font-semibold tracking-wider mb-1">Gain/Loss</p>
-              <p class="font-mono font-bold text-lg <%= safeSelected.total_gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-                <%= safeFmt.money(safeSelected.total_gain) %>
+
+            <!-- Gain/Loss Card -->
+            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-emerald-500/30 transition-all duration-300">
+              <% const totalGainPct = safeSelected.total_cost > 0 ? (safeSelected.total_gain / safeSelected.total_cost) * 100 : 0; %>
+              <div class="absolute top-0 right-0 w-20 h-20 <%= safeSelected.total_gain >= 0 ? 'bg-emerald-500/5' : 'bg-red-500/5' %> rounded-full -mr-10 -mt-10"></div>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Total Gain/Loss</p>
+                <div class="w-8 h-8 rounded-lg <%= safeSelected.total_gain >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' %> flex items-center justify-center">
+                  <svg class="w-4 h-4 <%= safeSelected.total_gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= safeSelected.total_gain >= 0 ? 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' : 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6' %>" />
+                  </svg>
+                </div>
+              </div>
+              <p class="font-mono font-bold text-2xl mb-1 <%= safeSelected.total_gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= safeSelected.total_gain >= 0 ? '+' : '' %><%= safeFmt.money(safeSelected.total_gain) %>
               </p>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-xs font-semibold <%= safeSelected.total_gain >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400' %>">
+                  <%= totalGainPct >= 0 ? '+' : '' %><%= totalGainPct.toFixed(2) %>%
+                </span>
+                <span class="text-xs text-slate-500">all time</span>
+              </div>
             </div>
-            <div class="p-4 bg-slate-800/50 border border-slate-700 rounded text-center">
-              <p class="text-amber-400 text-xs uppercase font-semibold tracking-wider mb-1">Income</p>
-              <p class="font-mono font-bold text-purple-400 text-lg">
-                <%= safeFmt.money(safeSelected.total_income) %>
+
+            <!-- Dividend Income Card -->
+            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-purple-500/30 transition-all duration-300">
+              <div class="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full -mr-10 -mt-10"></div>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Div. Income</p>
+                <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p class="font-mono font-bold text-purple-400 text-2xl mb-1">
+                <%= safeFmt.money(safeSelected.total_income || 0) %>
               </p>
+              <% const yieldPct = safeSelected.total_value > 0 ? ((safeSelected.total_income || 0) / safeSelected.total_value * 100) : 0; %>
+              <div class="flex items-center gap-2 text-xs text-slate-500">
+                <span class="text-purple-400"><%= yieldPct.toFixed(2) %>% yield</span>
+                <span class="w-1 h-1 rounded-full bg-slate-600"></span>
+                <span>annual est.</span>
+              </div>
             </div>
           </div>
 
-          <!-- Allocation Charts -->
+          <!-- Quick Stats Bar -->
+          <div class="flex items-center gap-6 mb-6 p-3 bg-slate-800/30 rounded-lg border border-slate-700/30">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500 text-xs uppercase">Day Change:</span>
+              <span class="font-mono text-sm font-semibold <%= dayChangeVal >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= dayChangeVal >= 0 ? '+' : '' %><%= safeFmt.money(dayChangeVal) %> (<%= ((dayChangeVal / (safeSelected.total_value - dayChangeVal)) * 100).toFixed(2) %>%)
+              </span>
+            </div>
+            <div class="w-px h-4 bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500 text-xs uppercase">Benchmark:</span>
+              <span class="font-mono text-sm text-amber-400"><%= safeSelected.benchmark || 'SPY' %></span>
+            </div>
+            <div class="w-px h-4 bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500 text-xs uppercase">Currency:</span>
+              <span class="font-mono text-sm text-slate-300"><%= safeSelected.currency || 'USD' %></span>
+            </div>
+            <div class="flex-1"></div>
+            <div class="flex items-center gap-2 text-xs text-slate-500">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Live prices</span>
+            </div>
+          </div>
+
+          <!-- Allocation Charts - Enhanced -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <!-- Sector Allocation Chart -->
-            <div class="p-4 bg-slate-800/50 border border-slate-700 rounded">
-              <h3 class="text-amber-400 text-sm font-semibold uppercase tracking-wider mb-4">Sector Allocation</h3>
-              <div class="h-64">
-                <canvas id="sectorChart"></canvas>
+            <!-- Sector/Symbol Allocation Chart -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl shadow-lg">
+              <!-- Header -->
+              <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-white font-semibold">Asset Allocation</h3>
+                    <p class="text-slate-400 text-xs">Portfolio distribution by holding</p>
+                  </div>
+                </div>
+                <div class="px-2 py-1 rounded-full bg-violet-500/10 border border-violet-500/20">
+                  <span class="text-violet-400 text-xs font-medium"><%= safeHoldings.length %> Assets</span>
+                </div>
+              </div>
+              <!-- Chart Container -->
+              <div class="p-5">
+                <% if (safeHoldings.length === 0) { %>
+                  <div class="h-56 flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mb-3">
+                      <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                      </svg>
+                    </div>
+                    <p class="text-slate-400 text-sm">No holdings to display</p>
+                    <p class="text-slate-500 text-xs mt-1">Add holdings to see allocation</p>
+                  </div>
+                <% } else { %>
+                  <div class="h-56 relative">
+                    <canvas id="sectorChart"></canvas>
+                  </div>
+                  <!-- Legend -->
+                  <div class="mt-4 grid grid-cols-2 gap-2" id="allocationLegend"></div>
+                <% } %>
               </div>
             </div>
 
             <!-- Top Holdings Chart -->
-            <div class="p-4 bg-slate-800/50 border border-slate-700 rounded">
-              <h3 class="text-amber-400 text-sm font-semibold uppercase tracking-wider mb-4">Top Holdings</h3>
-              <div class="h-64">
-                <canvas id="holdingsChart"></canvas>
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl shadow-lg">
+              <!-- Header -->
+              <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/50">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 class="text-white font-semibold">Top Holdings</h3>
+                    <p class="text-slate-400 text-xs">Largest positions by value</p>
+                  </div>
+                </div>
+                <% if (safeHoldings.length > 0) {
+                   const topValue = Math.max(...safeHoldings.map(h => h.quantity * h.current_price));
+                %>
+                  <div class="text-right">
+                    <p class="text-amber-400 font-mono font-semibold text-sm"><%= safeFmt.compact(topValue) %></p>
+                    <p class="text-slate-500 text-xs">Top position</p>
+                  </div>
+                <% } %>
+              </div>
+              <!-- Chart Container -->
+              <div class="p-5">
+                <% if (safeHoldings.length === 0) { %>
+                  <div class="h-56 flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mb-3">
+                      <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z"/>
+                      </svg>
+                    </div>
+                    <p class="text-slate-400 text-sm">No holdings yet</p>
+                    <p class="text-slate-500 text-xs mt-1">Add your first holding</p>
+                  </div>
+                <% } else { %>
+                  <div class="h-56 relative">
+                    <canvas id="holdingsChart"></canvas>
+                  </div>
+                  <!-- Quick Stats -->
+                  <div class="mt-4 grid grid-cols-3 gap-3">
+                    <div class="bg-slate-700/30 rounded-lg p-2 text-center">
+                      <p class="text-slate-400 text-xs">Holdings</p>
+                      <p class="text-white font-semibold"><%= safeHoldings.length %></p>
+                    </div>
+                    <div class="bg-slate-700/30 rounded-lg p-2 text-center">
+                      <p class="text-slate-400 text-xs">Top Weight</p>
+                      <%
+                        const totalVal = safeHoldings.reduce((s, h) => s + (h.quantity * h.current_price), 0);
+                        const topWeight = totalVal > 0 ? (Math.max(...safeHoldings.map(h => h.quantity * h.current_price)) / totalVal * 100) : 0;
+                      %>
+                      <p class="text-amber-400 font-semibold"><%= topWeight.toFixed(1) %>%</p>
+                    </div>
+                    <div class="bg-slate-700/30 rounded-lg p-2 text-center">
+                      <p class="text-slate-400 text-xs">Concentration</p>
+                      <% const concentration = safeHoldings.length > 0 && topWeight > 50 ? 'High' : topWeight > 25 ? 'Med' : 'Low'; %>
+                      <p class="<%= concentration === 'High' ? 'text-red-400' : concentration === 'Med' ? 'text-amber-400' : 'text-emerald-400' %> font-semibold"><%= concentration %></p>
+                    </div>
+                  </div>
+                <% } %>
               </div>
             </div>
           </div>
 
-          <!-- Search and Refresh -->
-          <div class="mb-4 flex gap-3">
-            <div class="relative flex-1">
-              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input type="text" id="searchHoldings" onkeyup="filterHoldings()"
-                placeholder="Search symbol or name..."
-                class="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded focus:outline-none focus:ring-2 focus:ring-amber-400 text-white placeholder-slate-500">
+          <!-- Enhanced Search, Filter & Actions Bar -->
+          <div class="bg-slate-800/30 rounded-xl p-4 mb-6 border border-slate-700/50">
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Search Input -->
+              <div class="relative flex-1 min-w-[200px]">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" id="searchHoldings" onkeyup="filterHoldings()"
+                  placeholder="Search holdings..."
+                  class="w-full pl-10 pr-4 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400 text-white placeholder-slate-500 text-sm transition-all">
+              </div>
+              <!-- Filter Dropdown -->
+              <select id="holdingsFilter" onchange="filterHoldings()"
+                class="px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50">
+                <option value="all">All Holdings</option>
+                <option value="gainers">Gainers Only</option>
+                <option value="losers">Losers Only</option>
+                <option value="dividend">Has Dividend</option>
+              </select>
+              <!-- Sort Dropdown -->
+              <select id="holdingsSort" onchange="sortHoldings()"
+                class="px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50">
+                <option value="value-desc">Value (High→Low)</option>
+                <option value="value-asc">Value (Low→High)</option>
+                <option value="gain-desc">Gain % (High→Low)</option>
+                <option value="gain-asc">Gain % (Low→High)</option>
+                <option value="symbol-asc">Symbol (A→Z)</option>
+              </select>
+              <!-- Refresh Button -->
+              <button onclick="refreshAllPrices()" id="refreshPricesBtn"
+                class="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-900 font-semibold rounded-lg transition-all shadow-lg shadow-amber-500/20">
+                <svg class="w-4 h-4" id="refreshIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span id="refreshBtnText" class="text-sm">Refresh</span>
+              </button>
             </div>
-            <button onclick="refreshAllPrices()" id="refreshPricesBtn"
-              class="bloomberg-btn bloomberg-btn-primary whitespace-nowrap">
-              <svg class="w-5 h-5" id="refreshIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span id="refreshBtnText">REFRESH PRICES</span>
-            </button>
+            <!-- Quick Stats Row -->
+            <div class="flex items-center gap-6 mt-3 pt-3 border-t border-slate-700/30">
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-slate-500">Total:</span>
+                <span class="text-white font-semibold"><%= safeHoldings.length %> holdings</span>
+              </div>
+              <%
+                const gainerCount = safeHoldings.filter(h => (h.current_price - h.cost_basis) >= 0).length;
+                const loserCount = safeHoldings.length - gainerCount;
+              %>
+              <div class="flex items-center gap-2 text-xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-emerald-400"><%= gainerCount %> gainers</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                <span class="text-red-400"><%= loserCount %> losers</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Holdings Table -->
-          <div class="overflow-x-auto">
-            <table class="w-full" id="holdingsTable">
-              <thead>
-                <tr class="border-b border-amber-400/30 text-amber-400 text-xs font-semibold uppercase tracking-wider text-left">
-                  <th class="pb-3">Symbol</th>
-                  <th class="pb-3">Qty</th>
-                  <th class="pb-3 text-right">Price</th>
-                  <th class="pb-3 text-right">Value</th>
-                  <th class="pb-3 text-right">G/L</th>
-                  <th class="pb-3 text-right">Yield</th>
-                  <th class="pb-3 w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <% if (safeHoldings.length === 0) { %>
-                  <tr>
-                    <td colspan="7" class="py-8 text-center text-slate-400">
-                      No holdings
-                    </td>
+          <!-- Enhanced Holdings Table -->
+          <div class="bg-slate-800/20 rounded-xl border border-slate-700/50 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full" id="holdingsTable">
+                <thead>
+                  <tr class="bg-slate-800/50">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Shares</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Price</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Cost</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Mkt Value</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Weight</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Total P/L</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Yield</th>
+                    <th class="px-4 py-3 w-20"></th>
                   </tr>
-                <% } else {
-                  const colors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
-                  safeHoldings.forEach((h, i) => {
-                    const gl = (h.current_price - h.cost_basis) * h.quantity;
-                    const glp = h.cost_basis > 0 ? (h.current_price - h.cost_basis) / h.cost_basis * 100 : 0;
-                %>
-                  <tr class="border-b border-slate-700/50 hover:bg-slate-800/50 holding-row" data-symbol="<%= h.symbol %>">
-                    <td class="py-3">
-                      <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded flex items-center justify-center text-white text-xs font-bold"
-                          style="background-color: <%= colors[i % colors.length] %>">
-                          <%= h.symbol ? h.symbol.slice(0, 2) : '??' %>
+                </thead>
+                <tbody class="divide-y divide-slate-700/30">
+                  <% if (safeHoldings.length === 0) { %>
+                    <tr>
+                      <td colspan="9" class="py-12 text-center">
+                        <div class="flex flex-col items-center">
+                          <div class="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                            </svg>
+                          </div>
+                          <p class="text-slate-400 font-medium">No holdings yet</p>
+                          <p class="text-slate-500 text-sm mt-1">Add your first holding to get started</p>
+                          <button onclick="openAddHoldingModal()" class="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold rounded-lg text-sm transition-colors">
+                            + Add Holding
+                          </button>
                         </div>
-                        <div>
-                          <p class="text-white font-semibold symbol-text">
-                            <%= h.symbol %>
-                          </p>
-                          <p class="text-slate-500 text-xs truncate max-w-[100px] name-text">
-                            <%= h.name %>
-                          </p>
+                      </td>
+                    </tr>
+                  <% } else {
+                    const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#3b82f6', '#14b8a6'];
+                    const totalValue = safeHoldings.reduce((sum, h) => sum + (h.quantity * h.current_price), 0);
+                    safeHoldings.forEach((h, i) => {
+                      const gl = (h.current_price - h.cost_basis) * h.quantity;
+                      const glp = h.cost_basis > 0 ? (h.current_price - h.cost_basis) / h.cost_basis * 100 : 0;
+                      const mktValue = h.quantity * h.current_price;
+                      const weight = totalValue > 0 ? (mktValue / totalValue * 100) : 0;
+                      const isGainer = gl >= 0;
+                  %>
+                    <tr class="hover:bg-slate-700/20 transition-colors holding-row"
+                        data-symbol="<%= h.symbol %>"
+                        data-gain="<%= gl %>"
+                        data-value="<%= mktValue %>"
+                        data-dividend="<%= h.dividend_yield || 0 %>">
+                      <!-- Asset Column -->
+                      <td class="px-4 py-4">
+                        <div class="flex items-center gap-3">
+                          <div class="relative">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-lg"
+                              style="background: linear-gradient(135deg, <%= colors[i % colors.length] %>, <%= colors[(i + 1) % colors.length] %>)">
+                              <%= h.symbol ? h.symbol.slice(0, 2) : '??' %>
+                            </div>
+                            <% if (isGainer) { %>
+                              <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                                <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"/>
+                                </svg>
+                              </div>
+                            <% } else { %>
+                              <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-500 flex items-center justify-center">
+                                <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                              </div>
+                            <% } %>
+                          </div>
+                          <div>
+                            <p class="text-white font-semibold symbol-text"><%= h.symbol %></p>
+                            <p class="text-slate-500 text-xs truncate max-w-[140px] name-text"><%= h.name || 'Unknown' %></p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td class="py-3 text-slate-300 font-mono">
-                      <%= h.quantity ? h.quantity.toLocaleString() : 0 %>
-                    </td>
-                    <td class="py-3 text-right text-slate-300 font-mono price">
-                      <%= safeFmt.money(h.current_price, 2) %>
-                    </td>
-                    <td class="py-3 text-right text-white font-mono font-semibold">
-                      <%= safeFmt.money(h.quantity * h.current_price) %>
-                    </td>
-                    <td class="py-3 text-right font-mono font-semibold <%= gl >= 0 ? 'text-emerald-400' : 'text-red-400' %> change">
-                      <%= safeFmt.money(gl) %> (<%= glp.toFixed(1) %>%)
-                    </td>
-                    <td class="py-3 text-right text-purple-400 font-mono">
-                      <%= ((h.dividend_yield || 0) * 100).toFixed(2) %>%
-                    </td>
-                    <td class="py-3 text-right">
-                      <div class="flex items-center justify-end gap-1">
-                        <button onclick="openEditHoldingModal('<%= h.id %>', '<%= h.symbol %>', '<%= h.name %>', <%= h.quantity %>, <%= h.cost_basis %>, '<%= h.asset_type || 'stock' %>')"
-                          class="p-1 text-slate-400 hover:text-amber-400 transition-colors" title="Edit holding">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button onclick="confirmDeleteHolding('<%= h.id %>', '<%= h.symbol %>')" class="p-1 text-slate-400 hover:text-red-400 transition-colors" title="Delete holding">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                <% }) } %>
+                      </td>
+                      <!-- Shares -->
+                      <td class="px-4 py-4 text-right">
+                        <span class="text-slate-200 font-mono text-sm"><%= h.quantity ? h.quantity.toLocaleString() : 0 %></span>
+                      </td>
+                      <!-- Current Price -->
+                      <td class="px-4 py-4 text-right price">
+                        <span class="text-white font-mono text-sm font-medium"><%= safeFmt.money(h.current_price, 2) %></span>
+                      </td>
+                      <!-- Avg Cost -->
+                      <td class="px-4 py-4 text-right">
+                        <span class="text-slate-400 font-mono text-sm"><%= safeFmt.money(h.cost_basis, 2) %></span>
+                      </td>
+                      <!-- Market Value -->
+                      <td class="px-4 py-4 text-right">
+                        <span class="text-white font-mono text-sm font-semibold"><%= safeFmt.money(mktValue) %></span>
+                      </td>
+                      <!-- Weight -->
+                      <td class="px-4 py-4 text-right">
+                        <div class="inline-flex items-center gap-2">
+                          <div class="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                            <div class="h-full rounded-full" style="width: <%= Math.min(weight, 100) %>%; background-color: <%= colors[i % colors.length] %>"></div>
+                          </div>
+                          <span class="text-slate-300 font-mono text-xs w-10 text-right"><%= weight.toFixed(1) %>%</span>
+                        </div>
+                      </td>
+                      <!-- Total P/L -->
+                      <td class="px-4 py-4 text-right change">
+                        <div class="flex flex-col items-end">
+                          <span class="font-mono text-sm font-semibold <%= isGainer ? 'text-emerald-400' : 'text-red-400' %>">
+                            <%= isGainer ? '+' : '' %><%= safeFmt.money(gl) %>
+                          </span>
+                          <span class="font-mono text-xs <%= isGainer ? 'text-emerald-400/70' : 'text-red-400/70' %>">
+                            <%= isGainer ? '+' : '' %><%= glp.toFixed(2) %>%
+                          </span>
+                        </div>
+                      </td>
+                      <!-- Dividend Yield -->
+                      <td class="px-4 py-4 text-right">
+                        <% if ((h.dividend_yield || 0) > 0) { %>
+                          <div class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                            <svg class="w-3 h-3 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-1h2v1zm0-2H9V7h2v4z"/>
+                            </svg>
+                            <span class="text-purple-400 font-mono text-xs font-medium"><%= ((h.dividend_yield || 0) * 100).toFixed(2) %>%</span>
+                          </div>
+                        <% } else { %>
+                          <span class="text-slate-600 text-xs">—</span>
+                        <% } %>
+                      </td>
+                      <!-- Actions -->
+                      <td class="px-4 py-4 text-right">
+                        <div class="flex items-center justify-end gap-1">
+                          <button onclick="openEditHoldingModal('<%= h.id %>', '<%= h.symbol %>', '<%= h.name %>', <%= h.quantity %>, <%= h.cost_basis %>, '<%= h.asset_type || 'stock' %>')"
+                            class="p-2 text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 rounded-lg transition-all" title="Edit">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button onclick="confirmDeleteHolding('<%= h.id %>', '<%= h.symbol %>')"
+                            class="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all" title="Delete">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) } %>
               </tbody>
             </table>
           </div>
@@ -776,95 +1066,123 @@ MSFT,50,300.00,2023-02-20</pre>
   const theme = '<%= safeTheme %>';
 
   /**
-   * Initialize allocation charts
+   * Initialize allocation charts - Enhanced with symbol-based allocation
    */
   document.addEventListener('DOMContentLoaded', function() {
     <% if (safeSelected && safeHoldings.length > 0) { %>
-      // Calculate sector allocation from holdings
-      const sectorData = {};
+      // Calculate allocation by symbol (more useful than sector when sector data is missing)
       const holdingsData = [];
+      const totalPortfolioValue = <%= safeHoldings.reduce((sum, h) => sum + (h.quantity * h.current_price), 0) %>;
 
       <% safeHoldings.forEach(h => { %>
-        const sector = '<%= h.sector || "Unknown" %>';
-        const value = <%= h.quantity * h.current_price %>;
-        const symbol = '<%= h.symbol %>';
-
-        // Aggregate by sector
-        if (!sectorData[sector]) sectorData[sector] = 0;
-        sectorData[sector] += value;
-
-        // Track individual holdings
-        holdingsData.push({ symbol, value });
+        holdingsData.push({
+          symbol: '<%= h.symbol %>',
+          value: <%= h.quantity * h.current_price %>,
+          gain: <%= ((h.current_price - h.cost_basis) * h.quantity) %>,
+          gainPct: <%= h.cost_basis > 0 ? ((h.current_price - h.cost_basis) / h.cost_basis * 100) : 0 %>
+        });
       <% }) %>
 
-      // Sort and get top holdings
+      // Sort by value descending
       holdingsData.sort((a, b) => b.value - a.value);
-      const topHoldings = holdingsData.slice(0, 10);
+      const topHoldings = holdingsData.slice(0, 8);
 
-      // Sector Allocation Pie Chart
+      // Modern color palette with gradients
+      const chartColors = [
+        '#8b5cf6', // violet
+        '#06b6d4', // cyan
+        '#10b981', // emerald
+        '#f59e0b', // amber
+        '#ef4444', // red
+        '#ec4899', // pink
+        '#3b82f6', // blue
+        '#14b8a6', // teal
+      ];
+
+      // Asset Allocation Doughnut Chart (by symbol)
       const sectorCtx = document.getElementById('sectorChart');
       if (sectorCtx) {
-        const sectorLabels = Object.keys(sectorData);
-        const sectorValues = Object.values(sectorData);
-        const sectorColors = [
-          '#f59e0b', // amber
-          '#10b981', // emerald
-          '#8b5cf6', // violet
-          '#06b6d4', // cyan
-          '#ef4444', // red
-          '#ec4899', // pink
-          '#3b82f6', // blue
-          '#14b8a6', // teal
-        ];
+        const allocationLabels = topHoldings.map(h => h.symbol);
+        const allocationValues = topHoldings.map(h => h.value);
 
-        new Chart(sectorCtx, {
+        // Add "Other" if there are more holdings
+        if (holdingsData.length > 8) {
+          const otherValue = holdingsData.slice(8).reduce((sum, h) => sum + h.value, 0);
+          allocationLabels.push('Other');
+          allocationValues.push(otherValue);
+        }
+
+        const allocationChart = new Chart(sectorCtx, {
           type: 'doughnut',
           data: {
-            labels: sectorLabels,
+            labels: allocationLabels,
             datasets: [{
-              data: sectorValues,
-              backgroundColor: sectorColors,
-              borderColor: '#1e293b',
-              borderWidth: 2
+              data: allocationValues,
+              backgroundColor: chartColors.slice(0, allocationLabels.length),
+              borderColor: '#0f172a',
+              borderWidth: 3,
+              hoverOffset: 8
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            cutout: '65%',
             plugins: {
               legend: {
-                position: 'bottom',
-                labels: {
-                  color: '#cbd5e1',
-                  font: { family: 'monospace', size: 10 },
-                  padding: 10
-                }
+                display: false // Using custom legend
               },
               tooltip: {
-                backgroundColor: '#1e293b',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
                 titleColor: '#f59e0b',
                 bodyColor: '#e2e8f0',
                 borderColor: '#475569',
                 borderWidth: 1,
+                padding: 12,
+                cornerRadius: 8,
+                displayColors: true,
                 callbacks: {
                   label: function(context) {
                     const value = context.parsed;
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                    const percent = ((value / total) * 100).toFixed(1);
-                    return context.label + ': $' + value.toLocaleString() + ' (' + percent + '%)';
+                    const percent = ((value / totalPortfolioValue) * 100).toFixed(1);
+                    return ' $' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' (' + percent + '%)';
                   }
                 }
               }
             }
           }
         });
+
+        // Build custom legend
+        const legendContainer = document.getElementById('allocationLegend');
+        if (legendContainer) {
+          legendContainer.innerHTML = allocationLabels.map((label, i) => {
+            const value = allocationValues[i];
+            const pct = ((value / totalPortfolioValue) * 100).toFixed(1);
+            return `
+              <div class="flex items-center gap-2 p-1.5 rounded hover:bg-slate-700/30 transition-colors cursor-pointer"
+                   onclick="highlightSegment(${i})">
+                <div class="w-3 h-3 rounded-full" style="background-color: ${chartColors[i]}"></div>
+                <span class="text-slate-300 text-xs font-medium flex-1">${label}</span>
+                <span class="text-slate-400 text-xs font-mono">${pct}%</span>
+              </div>
+            `;
+          }).join('');
+        }
       }
 
-      // Top Holdings Bar Chart
+      // Top Holdings Horizontal Bar Chart with gradient
       const holdingsCtx = document.getElementById('holdingsChart');
       if (holdingsCtx) {
         const holdingLabels = topHoldings.map(h => h.symbol);
         const holdingValues = topHoldings.map(h => h.value);
+        const holdingGains = topHoldings.map(h => h.gain);
+
+        // Create gradient for bars
+        const ctx = holdingsCtx.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, holdingsCtx.width, 0);
+        gradient.addColorStop(0, '#f59e0b');
+        gradient.addColorStop(1, '#d97706');
 
         new Chart(holdingsCtx, {
           type: 'bar',
@@ -873,9 +1191,11 @@ MSFT,50,300.00,2023-02-20</pre>
             datasets: [{
               label: 'Market Value',
               data: holdingValues,
-              backgroundColor: '#f59e0b',
-              borderColor: '#d97706',
-              borderWidth: 1
+              backgroundColor: topHoldings.map((h, i) => chartColors[i]),
+              borderColor: 'transparent',
+              borderWidth: 0,
+              borderRadius: 4,
+              barThickness: 20
             }]
           },
           options: {
@@ -887,14 +1207,24 @@ MSFT,50,300.00,2023-02-20</pre>
                 display: false
               },
               tooltip: {
-                backgroundColor: '#1e293b',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
                 titleColor: '#f59e0b',
                 bodyColor: '#e2e8f0',
                 borderColor: '#475569',
                 borderWidth: 1,
+                padding: 12,
+                cornerRadius: 8,
                 callbacks: {
                   label: function(context) {
-                    return '$' + context.parsed.x.toLocaleString();
+                    const idx = context.dataIndex;
+                    const value = context.parsed.x;
+                    const gain = holdingGains[idx];
+                    const gainPct = topHoldings[idx].gainPct;
+                    const gainSymbol = gain >= 0 ? '+' : '';
+                    return [
+                      'Value: $' + value.toLocaleString(undefined, {minimumFractionDigits: 2}),
+                      'P/L: ' + gainSymbol + '$' + gain.toLocaleString(undefined, {minimumFractionDigits: 2}) + ' (' + gainSymbol + gainPct.toFixed(1) + '%)'
+                    ];
                   }
                 }
               }
@@ -911,15 +1241,23 @@ MSFT,50,300.00,2023-02-20</pre>
                   }
                 },
                 grid: {
-                  color: '#334155'
+                  color: 'rgba(51, 65, 85, 0.5)',
+                  drawBorder: false
+                },
+                border: {
+                  display: false
                 }
               },
               y: {
                 ticks: {
-                  color: '#94a3b8',
-                  font: { family: 'monospace', size: 11, weight: 'bold' }
+                  color: '#e2e8f0',
+                  font: { family: 'ui-monospace, monospace', size: 11, weight: '600' },
+                  padding: 8
                 },
                 grid: {
+                  display: false
+                },
+                border: {
                   display: false
                 }
               }
@@ -927,6 +1265,12 @@ MSFT,50,300.00,2023-02-20</pre>
           }
         });
       }
+
+      // Helper function to highlight chart segments on legend hover
+      window.highlightSegment = function(index) {
+        // This could be enhanced to interact with the chart
+        console.log('Segment', index, 'clicked');
+      };
     <% } %>
   });
 
@@ -1028,12 +1372,65 @@ MSFT,50,300.00,2023-02-20</pre>
   }
 
   function filterHoldings() {
-    const s = document.getElementById('searchHoldings').value.toLowerCase();
-    document.querySelectorAll('.holding-row').forEach(r => {
-      const sym = r.querySelector('.symbol-text').textContent.toLowerCase();
-      const name = r.querySelector('.name-text').textContent.toLowerCase();
-      r.style.display = sym.includes(s) || name.includes(s) ? '' : 'none';
+    const search = document.getElementById('searchHoldings').value.toLowerCase();
+    const filter = document.getElementById('holdingsFilter')?.value || 'all';
+
+    document.querySelectorAll('.holding-row').forEach(row => {
+      const sym = row.querySelector('.symbol-text')?.textContent.toLowerCase() || '';
+      const name = row.querySelector('.name-text')?.textContent.toLowerCase() || '';
+      const gain = parseFloat(row.dataset.gain) || 0;
+      const dividend = parseFloat(row.dataset.dividend) || 0;
+
+      // Search filter
+      const matchesSearch = sym.includes(search) || name.includes(search);
+
+      // Category filter
+      let matchesFilter = true;
+      switch (filter) {
+        case 'gainers':
+          matchesFilter = gain >= 0;
+          break;
+        case 'losers':
+          matchesFilter = gain < 0;
+          break;
+        case 'dividend':
+          matchesFilter = dividend > 0;
+          break;
+        default:
+          matchesFilter = true;
+      }
+
+      row.style.display = matchesSearch && matchesFilter ? '' : 'none';
     });
+  }
+
+  function sortHoldings() {
+    const sort = document.getElementById('holdingsSort')?.value || 'value-desc';
+    const tbody = document.querySelector('#holdingsTable tbody');
+    if (!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll('.holding-row'));
+    if (rows.length === 0) return;
+
+    rows.sort((a, b) => {
+      switch (sort) {
+        case 'value-desc':
+          return (parseFloat(b.dataset.value) || 0) - (parseFloat(a.dataset.value) || 0);
+        case 'value-asc':
+          return (parseFloat(a.dataset.value) || 0) - (parseFloat(b.dataset.value) || 0);
+        case 'gain-desc':
+          return (parseFloat(b.dataset.gain) || 0) - (parseFloat(a.dataset.gain) || 0);
+        case 'gain-asc':
+          return (parseFloat(a.dataset.gain) || 0) - (parseFloat(b.dataset.gain) || 0);
+        case 'symbol-asc':
+          return (a.dataset.symbol || '').localeCompare(b.dataset.symbol || '');
+        default:
+          return 0;
+      }
+    });
+
+    // Re-append sorted rows
+    rows.forEach(row => tbody.appendChild(row));
   }
 
   async function handleCreatePortfolio(e) {
