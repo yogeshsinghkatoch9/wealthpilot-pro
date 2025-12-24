@@ -329,11 +329,12 @@ class PostgresAdapter {
 
   createPortfolio(userId, name, description, currency, benchmark, cashBalance, isDefault) {
     const id = uuidv4();
+    const now = new Date();
     return this.pool.query(
-      `INSERT INTO portfolios (id, user_id, name, description, currency, benchmark, cash_balance, is_default)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO portfolios (id, user_id, name, description, currency, benchmark, cash_balance, is_default, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [id, userId, name, description, currency, benchmark, cashBalance, isDefault]
+      [id, userId, name, description, currency, benchmark, cashBalance, isDefault, now, now]
     ).then(r => r.rows[0]);
   }
 
@@ -374,11 +375,12 @@ class PostgresAdapter {
 
   createHolding(portfolioId, symbol, name, shares, avgCostBasis, sector, assetType) {
     const id = uuidv4();
+    const now = new Date();
     return this.pool.query(
-      `INSERT INTO holdings (id, portfolio_id, symbol, name, shares, avg_cost_basis, sector, asset_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO holdings (id, portfolio_id, symbol, name, shares, avg_cost_basis, sector, asset_type, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [id, portfolioId, symbol.toUpperCase(), name, shares, avgCostBasis, sector, assetType]
+      [id, portfolioId, symbol.toUpperCase(), name, shares, avgCostBasis, sector, assetType, now, now]
     ).then(r => r.rows[0]);
   }
 
@@ -419,11 +421,12 @@ class PostgresAdapter {
 
   createWatchlist(userId, name, description) {
     const id = uuidv4();
+    const now = new Date();
     return this.pool.query(
-      `INSERT INTO watchlists (id, user_id, name, description)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO watchlists (id, user_id, name, description, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [id, userId, name, description]
+      [id, userId, name, description, now, now]
     ).then(r => r.rows[0]);
   }
 
@@ -444,11 +447,12 @@ class PostgresAdapter {
 
   createAlert(userId, symbol, alertType, condition, targetValue, message) {
     const id = uuidv4();
+    const now = new Date();
     return this.pool.query(
-      `INSERT INTO alerts (id, user_id, symbol, alert_type, condition, target_value, message)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO alerts (id, user_id, symbol, alert_type, condition, target_value, message, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [id, userId, symbol.toUpperCase(), alertType, condition, targetValue, message]
+      [id, userId, symbol.toUpperCase(), alertType, condition, targetValue, message, now, now]
     ).then(r => r.rows[0]);
   }
 
