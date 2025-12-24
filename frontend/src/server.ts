@@ -2412,8 +2412,13 @@ app.get('/reports', requireAuth, async (req, res) => {
 
 app.get('/reports-ai', requireAuth, async (req, res) => {
   const token = res.locals.token;
-  const reports = await apiFetch('/reports', token);
-  res.render('pages/reports-ai', { pageTitle: 'AI Reports', reports: reports.error ? [] : reports, fmt });
+  const portfolios = await apiFetch('/portfolios', token);
+  res.render('pages/reports-ai', {
+    pageTitle: 'AI Reports',
+    portfolios: portfolios.error ? [] : portfolios,
+    token,
+    fmt
+  });
 });
 
 app.get('/tax', requireAuth, async (req, res) => {

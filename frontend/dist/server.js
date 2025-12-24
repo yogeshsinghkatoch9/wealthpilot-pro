@@ -27,12 +27,15 @@ app.get('/health', (req, res) => {
     });
 });
 // API Proxy - Use http-proxy-middleware for proper proxying of all request types including file uploads
-// Note: app.use('/api', ...) strips /api prefix, so we need pathRewrite to add it back
 app.use('/api', (0, http_proxy_middleware_1.createProxyMiddleware)({
     target: API_URL,
     changeOrigin: true,
     pathRewrite: (path, req) => {
-        // app.use('/api', ...) strips /api, so add it back
+        // Path already contains /api from the original request, just pass it through
+        // If path doesn't start with /api, add it
+        if (path.startsWith('/api')) {
+            return path;
+        }
         return '/api' + path;
     },
     on: {
@@ -128,7 +131,9 @@ function requireAuth(req, res, next) {
 app.get('/login', (req, res) => {
     if (res.locals.isAuthenticated)
         return res.redirect('/');
-    res.render('pages/login', { pageTitle: 'Login', error: null });
+    const success = req.query.registered === 'true' ? 'Registration successful! Please login.' : null;
+    const error = req.query.error || null;
+    res.render('pages/login', { pageTitle: 'Login', error, success });
 });
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -137,7 +142,12 @@ app.post('/login', async (req, res) => {
         body: JSON.stringify({ email, password })
     });
     if (data.error) {
-        return res.render('pages/login', { pageTitle: 'Login', error: data.error });
+        // Pass email for resend verification functionality
+        return res.render('pages/login', {
+            pageTitle: 'Login',
+            error: data.error,
+            email: data.code === 'EMAIL_NOT_VERIFIED' ? (data.email || email) : null
+        });
     }
     res.cookie('token', data.token, {
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -161,13 +171,48 @@ app.post('/register', async (req, res) => {
     if (data.error) {
         return res.render('pages/register', { pageTitle: 'Register', error: data.error });
     }
-    res.cookie('token', data.token, {
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: false,
-        sameSite: 'lax',
-        secure: false
+    // Redirect to login page after successful registration
+    res.redirect('/login?registered=true');
+});
+// Check email page - shown after registration
+app.get('/check-email', (req, res) => {
+    const email = req.query.email || '';
+    res.render('pages/check-email', {
+        pageTitle: 'Verify Your Email',
+        email,
+        theme: req.cookies?.theme || 'dark'
     });
-    res.redirect('/');
+});
+// Email verification page
+app.get('/verify-email', async (req, res) => {
+    const token = req.query.token;
+    if (!token) {
+        return res.render('pages/verify-email', {
+            pageTitle: 'Email Verification',
+            success: false,
+            message: 'Invalid verification link. Please use the link from your email.',
+            theme: req.cookies?.theme || 'dark'
+        });
+    }
+    // Call the API to verify the email
+    const data = await apiFetch(`/auth/verify-email?token=${token}`, null, {
+        method: 'GET'
+    });
+    res.render('pages/verify-email', {
+        pageTitle: 'Email Verification',
+        success: !data.error,
+        message: data.message || data.error,
+        theme: req.cookies?.theme || 'dark'
+    });
+});
+// Resend verification email
+app.post('/resend-verification', async (req, res) => {
+    const { email } = req.body;
+    const data = await apiFetch('/auth/resend-verification', null, {
+        method: 'POST',
+        body: JSON.stringify({ email })
+    });
+    res.json(data);
 });
 app.get('/logout', (req, res) => {
     res.clearCookie('token');
@@ -572,44 +617,100 @@ app.get('/portfolio', requireAuth, (req, res) => {
 app.get('/portfolios', requireAuth, async (req, res) => {
     const token = res.locals.token;
     const portfolioId = req.query.id;
-    console.log('=== PORTFOLIOS ROUTE DEBUG ===');
-    console.log('Token exists:', !!token);
-    console.log('User ID from token:', res.locals.user?.id);
-    console.log('Requested portfolio ID:', portfolioId);
     let portfolio = null;
     const portfoliosResult = await apiFetch('/portfolios', token);
-    console.log('Portfolios API response:', JSON.stringify(portfoliosResult, null, 2));
-    console.log('Is array?', Array.isArray(portfoliosResult));
-    console.log('Has error?', !!portfoliosResult.error);
-    const portfolios = portfoliosResult.error ? [] : (Array.isArray(portfoliosResult) ? portfoliosResult : []);
-    console.log('Final portfolios count:', portfolios.length);
+    const portfoliosRaw = portfoliosResult.error ? [] : (Array.isArray(portfoliosResult) ? portfoliosResult : []);
     if (portfolioId) {
         portfolio = await apiFetch(`/portfolios/${portfolioId}`, token);
         if (portfolio.error)
             portfolio = null;
     }
-    else if (portfolios.length > 0) {
-        // Get default portfolio
-        const defaultP = portfolios.find((p) => p.isDefault) || portfolios[0];
-        console.log('Selected default portfolio:', defaultP?.id, defaultP?.name);
+    else if (portfoliosRaw.length > 0) {
+        const defaultP = portfoliosRaw.find((p) => p.isDefault) || portfoliosRaw[0];
         portfolio = await apiFetch(`/portfolios/${defaultP.id}`, token);
         if (portfolio.error)
             portfolio = null;
     }
-    let holdings = [];
+    // Fetch holdings with live prices
+    let holdingsRaw = [];
     if (portfolio && !portfolio.error) {
         const holdingsResult = await apiFetch(`/portfolios/${portfolio.id}/holdings`, token);
-        holdings = holdingsResult.error ? [] : (Array.isArray(holdingsResult) ? holdingsResult : []);
+        holdingsRaw = holdingsResult.error ? [] : (Array.isArray(holdingsResult) ? holdingsResult : holdingsResult.holdings || []);
     }
-    console.log('Rendering with portfolios:', portfolios.length, 'holdings:', holdings.length);
-    console.log('=== END DEBUG ===');
+    // Transform holdings to match template expectations (snake_case)
+    const holdings = holdingsRaw.map((h) => ({
+        ...h,
+        id: h.id,
+        symbol: h.symbol,
+        name: h.name || h.symbol,
+        quantity: h.shares || h.quantity || 0,
+        shares: h.shares || h.quantity || 0,
+        current_price: h.currentPrice || h.price || h.current_price || 0,
+        currentPrice: h.currentPrice || h.price || 0,
+        market_value: h.marketValue || h.market_value || (h.shares || 0) * (h.currentPrice || h.price || 0),
+        marketValue: h.marketValue || (h.shares || 0) * (h.currentPrice || h.price || 0),
+        cost_basis: h.avgCostBasis || h.costBasis || h.cost_basis || 0,
+        avgCostBasis: h.avgCostBasis || h.costBasis || 0,
+        total_cost: (h.shares || 0) * (h.avgCostBasis || h.costBasis || 0),
+        gain: h.gain || (h.marketValue || 0) - ((h.shares || 0) * (h.avgCostBasis || 0)),
+        gain_pct: h.gainPct || h.gain_pct || 0,
+        gainPct: h.gainPct || 0,
+        day_change: h.dayChange || h.change || 0,
+        day_change_pct: h.dayChangePct || h.changePercent || 0,
+        sector: h.sector || 'Unknown',
+        weight: h.weight || 0,
+        dividend_yield: h.dividendYield || 0
+    }));
+    // Calculate totals from holdings
+    const totalValue = holdings.reduce((sum, h) => sum + (h.market_value || 0), 0);
+    const totalCost = holdings.reduce((sum, h) => sum + (h.total_cost || 0), 0);
+    const totalGain = totalValue - totalCost;
+    const totalGainPct = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+    const dayChange = holdings.reduce((sum, h) => sum + ((h.day_change || 0) * (h.shares || 0)), 0);
+    const income = holdings.reduce((sum, h) => sum + ((h.dividend_yield || 0) * (h.market_value || 0) / 100), 0);
+    // Calculate sector allocation
+    const sectorMap = new Map();
+    holdings.forEach((h) => {
+        const sector = h.sector || 'Unknown';
+        sectorMap.set(sector, (sectorMap.get(sector) || 0) + (h.market_value || 0));
+    });
+    const sectors = Array.from(sectorMap.entries()).map(([name, value]) => ({
+        name,
+        value,
+        percentage: totalValue > 0 ? (value / totalValue) * 100 : 0
+    })).sort((a, b) => b.value - a.value);
+    // Transform portfolios list for sidebar (snake_case)
+    const portfolios = portfoliosRaw.map((p) => ({
+        ...p,
+        total_value: p.totalValue || 0,
+        total_gain: p.totalGain || 0,
+        total_gain_pct: p.totalGainPct || 0,
+        holdings_count: p.holdingsCount || (p.holdings ? p.holdings.length : 0)
+    }));
+    // Transform selected portfolio (snake_case)
+    const selected = portfolio ? {
+        ...portfolio,
+        id: portfolio.id,
+        name: portfolio.name,
+        description: portfolio.description || 'Portfolio',
+        total_value: totalValue,
+        total_cost: totalCost,
+        total_gain: totalGain,
+        total_gain_pct: totalGainPct,
+        day_change: dayChange,
+        income: income,
+        cash_balance: portfolio.cashBalance || 0,
+        holdings_count: holdings.length,
+        sectors: sectors
+    } : null;
     res.render('pages/portfolios', {
         pageTitle: 'Portfolio',
-        portfolio: portfolio,
+        portfolio: selected,
         portfolios: portfolios,
-        selectedPid: portfolio ? portfolio.id : null,
-        selected: portfolio,
+        selectedPid: selected ? selected.id : null,
+        selected: selected,
         holdings: holdings,
+        sectors: sectors,
         token: token,
         fmt: {
             money: (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -705,13 +806,21 @@ app.get('/analytics', requireAuth, async (req, res) => {
     const performance = performanceData.error ? null : performanceData;
     const attribution = attributionData.error ? null : attributionData;
     const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
+    // Transform chartData from { labels, values } to [{ date, value }] for charts
+    let history = [];
+    if (performance?.chartData?.labels && performance?.chartData?.values) {
+        history = performance.chartData.labels.map((date, i) => ({
+            date,
+            value: performance.chartData.values[i] || 0
+        }));
+    }
     res.render('pages/analytics', {
         pageTitle: 'Portfolio Analytics',
         analytics: performance,
         performance: performance || { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 },
         metrics: performance?.riskMetrics || { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0 },
         attribution: attribution || { factors: [], sectors: [], holdings: [] },
-        history: performance?.chartData?.values || [],
+        history,
         returns: { daily: [], monthly: [], annual: [] },
         period,
         holdings: performance?.holdings || [],
@@ -725,13 +834,64 @@ app.get('/analytics', requireAuth, async (req, res) => {
 app.get('/performance', requireAuth, async (req, res) => {
     const token = res.locals.token;
     const period = req.query.period || '1M';
-    const [performanceData, comparisonData] = await Promise.all([
+    // Fetch performance data, history for charts, and holdings
+    const [performanceData, historyData, dashboardData, comparisonData] = await Promise.all([
         apiFetch(`/analytics/portfolio-performance?period=${period}`, token),
+        apiFetch(`/analytics/performance-history?timeframe=${period}`, token),
+        apiFetch('/analytics/dashboard', token),
         apiFetch(`/analytics/comparison?period=${period}`, token)
     ]);
+    // Build history array for chart from performance-history API
+    let history = [];
+    if (!historyData.error && historyData.labels && historyData.portfolioValues) {
+        history = historyData.labels.map((date, i) => ({
+            date,
+            value: historyData.portfolioValues[i] || 0,
+            benchmark: historyData.benchmarkValues?.[i] || 0
+        }));
+    }
+    // Get holdings for performance table
+    const holdings = !dashboardData.error && dashboardData.holdings ? dashboardData.holdings.map((h) => ({
+        symbol: h.symbol,
+        name: h.name || h.symbol,
+        shares: h.shares || 0,
+        price: h.price || h.currentPrice || 0,
+        currentPrice: h.price || h.currentPrice || 0,
+        dayChange: h.change || 0,
+        dayChangePct: h.changePercent || 0,
+        value: h.value || h.marketValue || 0,
+        marketValue: h.value || h.marketValue || 0,
+        cost: h.cost || 0,
+        gain: h.gain || 0,
+        gainPct: h.gainPct || 0,
+        return: h.gainPct || 0
+    })) : [];
+    // Build comprehensive performance object
+    const performance = {
+        totalValue: dashboardData.value || performanceData.totalValue || 0,
+        totalCost: dashboardData.cost || performanceData.totalCost || 0,
+        totalReturn: dashboardData.gain || 0,
+        totalReturnPct: dashboardData.gainPct || ((dashboardData.gain || 0) / (dashboardData.cost || 1) * 100),
+        dayChange: dashboardData.dayChange || 0,
+        dayChangePct: dashboardData.dayChangePct || 0,
+        sharpeRatio: dashboardData.risk?.sharpe || performanceData.riskMetrics?.sharpe || 0,
+        volatility: dashboardData.risk?.volatility || performanceData.riskMetrics?.volatility || 0,
+        beta: dashboardData.risk?.beta || performanceData.riskMetrics?.beta || 1,
+        alpha: performanceData.riskMetrics?.alpha || 0,
+        maxDrawdown: dashboardData.risk?.maxDrawdown || performanceData.riskMetrics?.maxDrawdown || 0,
+        history: history,
+        holdings: holdings,
+        riskMetrics: {
+            beta: dashboardData.risk?.beta || 1,
+            alpha: 0,
+            sharpe: dashboardData.risk?.sharpe || 0,
+            maxDrawdown: dashboardData.risk?.maxDrawdown || 0,
+            volatility: dashboardData.risk?.volatility || 0
+        }
+    };
     res.render('pages/performance', {
         pageTitle: 'Performance',
-        performance: performanceData.error ? null : performanceData,
+        performance: performance,
         comparison: comparisonData.error ? null : comparisonData,
         period,
         fmt: {
@@ -1595,14 +1755,45 @@ app.get('/ipo-tracker', requireAuth, async (req, res) => {
 // Other Analysis Pages
 app.get('/attribution', requireAuth, async (req, res) => {
     const token = res.locals.token;
-    const [portfolios, attribution] = await Promise.all([
+    const [portfolios, attributionData] = await Promise.all([
         apiFetch('/portfolios', token),
         apiFetch('/analytics/attribution', token)
     ]);
+    // Transform API response to match template expected format
+    let attribution = null;
+    if (!attributionData.error && attributionData) {
+        attribution = {
+            summary: {
+                totalReturn: attributionData.totalReturn || 0,
+                totalGain: (attributionData.totalReturn || 0) * 100, // Estimate
+                benchmarkReturn: attributionData.benchmarkReturn || 0,
+                alpha: attributionData.alpha || 0,
+                informationRatio: attributionData.informationRatio || 0
+            },
+            factors: (attributionData.factorAttribution || []).map((f) => ({
+                name: f.factor,
+                icon: f.factor === 'Market Beta' ? '📈' : f.factor === 'Quality' ? '💎' : f.factor === 'Momentum' ? '🚀' : f.factor === 'Size' ? '📊' : f.factor === 'Value' ? '💰' : '⚡',
+                exposure: f.exposure || 0,
+                factorReturn: (f.contribution || 0) / (f.exposure || 1),
+                contribution: f.contribution || 0
+            })),
+            sectors: (attributionData.sectorAttribution || []).map((s) => ({
+                name: s.sector,
+                weight: s.weight || 0,
+                benchmarkWeight: s.benchmarkWeight || 0,
+                sectorReturn: s.sectorReturn || 0,
+                contribution: s.contribution || 0,
+                allocationEffect: s.allocationEffect || 0,
+                selectionEffect: s.selectionEffect || 0
+            })),
+            topContributors: attributionData.topContributors || [],
+            topDetractors: attributionData.topDetractors || []
+        };
+    }
     res.render('pages/attribution', {
         pageTitle: 'Attribution',
         portfolios: portfolios.error ? [] : portfolios,
-        attribution: attribution.error ? null : attribution,
+        attribution,
         fmt
     });
 });
@@ -1749,6 +1940,10 @@ app.get('/concentration-risk', requireAuth, async (req, res) => {
             pct: (v) => (v || 0).toFixed(1) + '%'
         }
     });
+});
+// Redirect /concentration to /concentration-risk
+app.get('/concentration', requireAuth, (req, res) => {
+    res.redirect('/concentration-risk');
 });
 app.get('/volatility', requireAuth, async (req, res) => {
     const token = res.locals.token;
@@ -1931,8 +2126,13 @@ app.get('/reports', requireAuth, async (req, res) => {
 });
 app.get('/reports-ai', requireAuth, async (req, res) => {
     const token = res.locals.token;
-    const reports = await apiFetch('/reports', token);
-    res.render('pages/reports-ai', { pageTitle: 'AI Reports', reports: reports.error ? [] : reports, fmt });
+    const portfolios = await apiFetch('/portfolios', token);
+    res.render('pages/reports-ai', {
+        pageTitle: 'AI Reports',
+        portfolios: portfolios.error ? [] : portfolios,
+        token,
+        fmt
+    });
 });
 app.get('/tax', requireAuth, async (req, res) => {
     const token = res.locals.token;
@@ -2192,11 +2392,57 @@ app.get('/copy-trading', requireAuth, async (req, res) => {
 app.get('/share-portfolio', requireAuth, async (req, res) => {
     const token = res.locals.token;
     const portfolios = await apiFetch('/portfolios', token);
+    const portfolioList = portfolios.error ? [] : portfolios;
+    // Fetch share settings for each portfolio
+    const sharedPortfolios = [];
+    for (const portfolio of portfolioList) {
+        try {
+            const shareSettings = await apiFetch(`/sharing/${portfolio.id}/settings`, token);
+            if (shareSettings && shareSettings.shared) {
+                sharedPortfolios.push({
+                    ...portfolio,
+                    shareSettings
+                });
+            }
+        }
+        catch (e) {
+            // Portfolio not shared - ignore
+        }
+    }
     res.render('pages/share-portfolio', {
         pageTitle: 'Share Portfolio',
-        portfolios: portfolios.error ? [] : portfolios,
+        portfolios: portfolioList,
+        sharedPortfolios,
         fmt
     });
+});
+// Public shared portfolio view (no auth required)
+app.get('/shared/:shareToken', async (req, res) => {
+    const { shareToken } = req.params;
+    try {
+        const response = await fetch(`${API_URL}/sharing/public/${shareToken}`);
+        const data = await response.json();
+        if (!data.success || !data.portfolio) {
+            return res.render('pages/shared-portfolio', {
+                pageTitle: 'Portfolio Not Found',
+                error: data.error || 'This shared portfolio link is invalid or has expired.',
+                portfolio: null
+            });
+        }
+        res.render('pages/shared-portfolio', {
+            pageTitle: `${data.portfolio.name} - Shared Portfolio`,
+            error: null,
+            portfolio: data.portfolio
+        });
+    }
+    catch (error) {
+        console.error('Shared portfolio error:', error);
+        res.render('pages/shared-portfolio', {
+            pageTitle: 'Error',
+            error: 'Failed to load shared portfolio. Please try again later.',
+            portfolio: null
+        });
+    }
 });
 // ==================== COMMUNITY (with real data) ====================
 app.get('/social', requireAuth, async (req, res) => {
@@ -2506,6 +2752,60 @@ app.get('/portfolio-tools', requireAuth, async (req, res) => {
         toolData: toolData?.error ? null : toolData,
         currentPage: 'portfolio-tools',
         fmt
+    });
+});
+// ===================== SIMULATOR ROUTE =====================
+app.get('/simulator', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const portfoliosData = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosData.error ? [] : portfoliosData;
+    const selectedPid = req.query.portfolio || (portfolios.length > 0 ? portfolios[0].id : null);
+    // Default analysis data for simulator
+    const analysis = {
+        summary: { total_value: 100000 },
+        performance: { annualized_return: 0.08 },
+        risk: { volatility: 0.15 }
+    };
+    res.render('pages/simulator', {
+        pageTitle: 'Monte Carlo Simulator',
+        portfolios,
+        selectedPid,
+        analysis,
+        currentPage: 'simulator',
+        theme: req.cookies?.theme || 'dark'
+    });
+});
+// ===================== CRYPTO PORTFOLIO ROUTE =====================
+app.get('/crypto-portfolio', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    res.render('pages/crypto-portfolio', {
+        pageTitle: 'Crypto Portfolio',
+        currentPage: 'crypto-portfolio',
+        theme: req.cookies?.theme || 'dark'
+    });
+});
+// ===================== ESG ROUTE =====================
+app.get('/esg', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const portfoliosData = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosData.error ? [] : portfoliosData;
+    res.render('pages/esg', {
+        pageTitle: 'ESG Analysis',
+        portfolios,
+        currentPage: 'esg',
+        theme: req.cookies?.theme || 'dark'
+    });
+});
+// ===================== CUSTOMIZABLE DASHBOARD ROUTE =====================
+app.get('/dashboard-custom', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const portfoliosData = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosData.error ? [] : portfoliosData;
+    res.render('pages/dashboard-custom', {
+        pageTitle: 'Custom Dashboard',
+        portfolios,
+        currentPage: 'dashboard-custom',
+        theme: req.cookies?.theme || 'dark'
     });
 });
 // ===================== START SERVER =====================

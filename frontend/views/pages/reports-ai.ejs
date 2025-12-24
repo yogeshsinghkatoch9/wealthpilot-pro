@@ -3,7 +3,8 @@
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const safeUser = typeof user !== 'undefined' ? user : {};
 const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'AI Reports';
-const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+const safePortfolios = typeof portfolios !== 'undefined' && Array.isArray(portfolios) ? portfolios : [];
+const safeToken = typeof token !== 'undefined' ? token : '';
 %>
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
@@ -17,6 +18,9 @@ const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 <div class="flex gap-2 items-center">
 <select id="portfolioSelect" class="bloomberg-input bg-slate-800 text-white border-slate-600 rounded px-3 py-2">
 <option value="">Select Portfolio</option>
+<% safePortfolios.forEach(p => { %>
+<option value="<%= p.id %>"><%= p.name %></option>
+<% }); %>
 </select>
 <button onclick="generateReport()" class="bloomberg-btn bloomberg-btn-primary" id="genBtn">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
@@ -111,33 +115,50 @@ let selectedType = 'comprehensive';
 let currentReportId = null;
 let currentDownloadUrl = null;
 
-// Load portfolios and check AI status on page load
+// Server token for API authentication
+const serverToken = '<%= safeToken %>';
+
+function getToken() {
+  if (serverToken && serverToken.length > 0) {
+    return serverToken;
+  }
+  // Fallback to localStorage
+  const storedToken = localStorage.getItem('token');
+  if (storedToken) {
+    return storedToken;
+  }
+  console.error('[Auth] NO TOKEN AVAILABLE - user needs to log in again');
+  return '';
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+
+  if (!token) {
+    console.error('[Auth] Cannot make authenticated request - no token!');
+    return {
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'No authentication token. Please log out and log back in.' })
+    };
+  }
+
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
+    ...options.headers,
+    'Authorization': `Bearer ${token}`
+  };
+
+  return fetch(url, { ...options, headers });
+}
+
+// Load AI status and report history on page load
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadPortfolios();
+  console.log('[Reports] Page loaded, token present:', !!serverToken);
   await checkAIStatus();
   await loadReportHistory();
 });
-
-async function loadPortfolios() {
-  try {
-    const response = await authFetch('/api/portfolios');
-    const data = await response.json();
-
-    const select = document.getElementById('portfolioSelect');
-    select.innerHTML = '<option value="">Select Portfolio</option>';
-
-    if (data && Array.isArray(data)) {
-      data.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p.id;
-        option.textContent = p.name;
-        select.appendChild(option);
-      });
-    }
-  } catch (error) {
-    console.error('Failed to load portfolios:', error);
-  }
-}
 
 async function checkAIStatus() {
   try {
