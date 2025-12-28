@@ -60,7 +60,18 @@ class UnifiedMarketDataService {
     return this.getCached(cacheKey, this.cacheTTL.quote, async () => {
       logger.info(`[Quote] Fetching ${symbol} with multi-provider fallback`);
 
-      // Try Finnhub first (best rate limits)
+      // Try Yahoo Finance FIRST (PRIMARY - no API key required, most reliable)
+      try {
+        const quote = await this.fetchQuoteYahoo(symbol);
+        if (quote) {
+          logger.info(`[Quote] SUCCESS via Yahoo Finance: ${symbol}`);
+          return quote;
+        }
+      } catch (err) {
+        logger.warn(`[Quote] Yahoo Finance failed for ${symbol}:`, err.message);
+      }
+
+      // Try Finnhub second
       try {
         const quote = await this.fetchQuoteFinnhub(symbol);
         if (quote) {
@@ -71,7 +82,7 @@ class UnifiedMarketDataService {
         logger.warn(`[Quote] Finnhub failed for ${symbol}:`, err.message);
       }
 
-      // Try FMP second
+      // Try FMP third
       try {
         const quote = await this.fetchQuoteFMP(symbol);
         if (quote) {
@@ -80,17 +91,6 @@ class UnifiedMarketDataService {
         }
       } catch (err) {
         logger.warn(`[Quote] FMP failed for ${symbol}:`, err.message);
-      }
-
-      // Try Yahoo Finance third (no API key required - most reliable)
-      try {
-        const quote = await this.fetchQuoteYahoo(symbol);
-        if (quote) {
-          logger.info(`[Quote] SUCCESS via Yahoo Finance: ${symbol}`);
-          return quote;
-        }
-      } catch (err) {
-        logger.warn(`[Quote] Yahoo Finance failed for ${symbol}:`, err.message);
       }
 
       // Try Alpha Vantage fourth
