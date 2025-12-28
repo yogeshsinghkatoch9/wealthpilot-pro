@@ -167,6 +167,10 @@ jobs:
             echo "Running migrations..."
             docker exec wealthpilot-backend npx prisma db push --accept-data-loss || echo "Prisma push done"
 
+            # Seed database with demo user
+            echo "Seeding database..."
+            docker exec wealthpilot-backend node prisma/seed.js || echo "Seeding done"
+
             # Start frontend
             echo "Starting frontend..."
             docker-compose -f docker-compose.aws.yml up -d frontend
