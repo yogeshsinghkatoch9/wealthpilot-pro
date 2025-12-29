@@ -192,6 +192,19 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Database readiness middleware - protect API routes from being called before DB is ready
+app.use('/api', (req, res, next) => {
+  if (!dbConnected) {
+    logger.warn(`API request blocked - database not ready: ${req.method} ${req.path}`);
+    return res.status(503).json({
+      error: 'Service temporarily unavailable',
+      message: 'Database is still connecting. Please try again in a few seconds.',
+      retryAfter: 5
+    });
+  }
+  next();
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

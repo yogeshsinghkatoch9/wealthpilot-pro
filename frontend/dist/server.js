@@ -151,9 +151,9 @@ app.post('/login', async (req, res) => {
     }
     res.cookie('token', data.token, {
         maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: false, // Allow JavaScript access for API calls
+        httpOnly: true, // Secure: prevent XSS from stealing tokens
         sameSite: 'lax',
-        secure: false // Set to true if using HTTPS
+        secure: process.env.NODE_ENV === 'production' // Use secure in production (HTTPS)
     });
     res.redirect('/');
 });

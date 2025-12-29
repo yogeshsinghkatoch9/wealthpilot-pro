@@ -180,10 +180,9 @@ router.post('/login', [
     logger.info(`User logged in: ${email}`);
 
     // Set token as HTTP-only cookie for browser-based auth
-    // Note: secure:false allows HTTP in development/non-HTTPS environments
     res.cookie('token', token, {
-      httpOnly: false, // Allow JavaScript access for API calls
-      secure: false, // Allow HTTP (set to true when using HTTPS)
+      httpOnly: true, // Secure: prevent XSS from stealing tokens
+      secure: process.env.NODE_ENV === 'production', // Use secure in production (HTTPS)
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
