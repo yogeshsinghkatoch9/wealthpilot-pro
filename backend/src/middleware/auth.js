@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 
+// Use consistent JWT_SECRET with fallback (must match server.js)
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+
 /**
  * Authentication middleware
  * Verifies JWT token and attaches user to request
@@ -20,7 +23,7 @@ const authenticate = async (req, res, next) => {
     logger.info('[Auth] Token received (first 30 chars):', token.substring(0, 30) + '...');
 
     // Verify JWT token first
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     logger.info('[Auth] Token verified, user ID:', decoded.userId);
 
     // Check if session exists and is valid using Prisma
@@ -87,7 +90,7 @@ const optionalAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const session = await prisma.session.findFirst({
       where: { token },

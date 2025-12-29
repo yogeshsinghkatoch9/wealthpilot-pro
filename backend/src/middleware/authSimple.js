@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const db = require('../db/sqliteCompat');
 const logger = require('../utils/logger');
 
+// Use consistent JWT_SECRET with fallback (must match server.js)
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
 
 /**
  * Simple authentication middleware using direct SQL
@@ -19,7 +21,7 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
 
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Check if session exists and is valid in database
     const session = db.prepare(`
@@ -85,7 +87,7 @@ const optionalAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     const session = db.prepare(`
       SELECT s.*, u.email, u.first_name, u.last_name, u.plan, u.is_active

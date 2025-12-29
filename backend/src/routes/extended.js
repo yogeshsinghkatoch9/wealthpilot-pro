@@ -20,17 +20,16 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// Auth middleware
+// Auth middleware - use consistent JWT_SECRET with fallback (must match server.js)
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+const jwt = require('jsonwebtoken');
+
 const authenticate = (req, res, next) => {
-  // Simplified - use actual auth middleware in production
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  
+
   try {
-    const jwt = require('jsonwebtoken');
-    const jwtSecret = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-insecure-key' : null);
-    if (!jwtSecret) throw new Error('JWT_SECRET required in production');
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = { id: decoded.userId };
     next();
   } catch (err) {

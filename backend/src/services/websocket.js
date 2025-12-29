@@ -8,8 +8,8 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../db/simpleDb');
 
 const logger = require('../utils/logger');
-// JWT Secret - must be set in production
-const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-only-insecure-key' : (() => { throw new Error('JWT_SECRET required in production'); })());
+// JWT Secret - must be consistent with server.js fallback
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
 
 class WebSocketService {
   constructor(server) {

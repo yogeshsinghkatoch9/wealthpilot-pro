@@ -9,6 +9,9 @@ const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
 
+// Use consistent JWT_SECRET with fallback (must match server.js)
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+
 const router = express.Router();
 
 // Generate secure verification token
@@ -157,7 +160,7 @@ router.post('/login', [
     // Create session token with unique identifier
     const token = jwt.sign(
       { userId: user.id, email: user.email, sessionId },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
@@ -250,7 +253,7 @@ router.post('/refresh', authenticate, async (req, res) => {
     // Create new token with unique identifier
     const token = jwt.sign(
       { userId: req.user.id, email: req.user.email, sessionId },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
