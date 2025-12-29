@@ -168,7 +168,7 @@ app.post('/login', async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true, // Secure: prevent XSS from stealing tokens
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production' // Use secure in production (HTTPS)
+    secure: false // Disabled until HTTPS is configured
   });
   res.redirect('/');
 });
