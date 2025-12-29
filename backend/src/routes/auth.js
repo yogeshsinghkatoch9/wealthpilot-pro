@@ -151,15 +151,23 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Create session
+    // Generate unique session ID to prevent token collisions
+    const sessionId = uuidv4();
+
+    // Create session token with unique identifier
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, sessionId },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Delete any existing sessions with duplicate tokens (shouldn't happen with sessionId)
+    await prisma.session.deleteMany({
+      where: { token }
+    }).catch(() => {});
 
     await prisma.session.create({
       data: {
@@ -234,11 +242,14 @@ router.post('/refresh', authenticate, async (req, res) => {
     // Delete old session
     await prisma.session.delete({
       where: { id: req.session.id }
-    });
+    }).catch(() => {});
 
-    // Create new token
+    // Generate unique session ID for new token
+    const sessionId = uuidv4();
+
+    // Create new token with unique identifier
     const token = jwt.sign(
-      { userId: req.user.id, email: req.user.email },
+      { userId: req.user.id, email: req.user.email, sessionId },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );

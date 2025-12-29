@@ -380,9 +380,13 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user.id, email }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
+    // Generate unique session ID to prevent token collisions
+    const sessionId = uuidv4();
+    const token = jwt.sign({ userId: user.id, email, sessionId }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
+    // Delete any existing sessions with the same token (shouldn't happen with sessionId)
+    await Database.deleteSession(token).catch(() => {});
     await Database.createSession(user.id, token, expiresAt, req.get('user-agent'), req.ip);
 
     // Set token as HTTP-only cookie for browser-based auth
