@@ -55,20 +55,19 @@
 
 <!-- Portfolio Summary Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-<div class="card p-5 relative overflow-hidden">
-  <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/20 to-transparent rounded-bl-full"></div>
+<div class="tufte-stat-card">
   <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Crypto Value</p>
-  <p id="totalValue" class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(totals.totalValue || 0) %></p>
+  <p id="totalValue" class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums"><%= fmt.money(totals.totalValue || 0) %></p>
   <% const dayChange = totals.dayChange || 0; %>
-  <p class="text-sm <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+  <p class="text-sm <%= dayChange >= 0 ? 'positive' : 'negative' %> tabular-nums">
     <span id="dayChange"><%= dayChange >= 0 ? '+' : '' %><%= fmt.money(dayChange) %></span> (24h)
   </p>
 </div>
-<div class="card p-5">
+<div class="tufte-stat-card">
   <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total P/L</p>
   <% const totalGain = totals.totalGain || 0; const gainPct = totals.totalCost > 0 ? (totalGain / totals.totalCost * 100) : 0; %>
-  <p class="text-3xl font-bold <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></p>
-  <p class="text-sm <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>% all time</p>
+  <p class="text-3xl font-bold <%= totalGain >= 0 ? 'positive' : 'negative' %> tabular-nums"><%= totalGain >= 0 ? '+' : '' %><%= fmt.money(totalGain) %></p>
+  <p class="text-sm <%= totalGain >= 0 ? 'positive' : 'negative' %> tabular-nums"><%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>% all time</p>
 </div>
 <div class="card p-5">
   <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Cost Basis</p>
@@ -147,10 +146,6 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <div class="relative">
-            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold shadow-lg">
-              <%= h.symbol.substring(0, 2).toUpperCase() %>
-            </div>
-            <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full <%= change24h >= 0 ? 'bg-emerald-500' : 'bg-red-500' %> border-2 <%= theme === 'light' ? 'border-white' : 'border-slate-900' %>"></div>
           </div>
           <div>
             <div class="flex items-center gap-2">
@@ -163,21 +158,21 @@
         <div class="hidden md:flex items-center gap-8">
           <div class="text-right">
             <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Price</p>
-            <p class="font-mono font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" data-price="<%= h.symbol %>"><%= fmt.money(h.current_price || 0) %></p>
+            <p class="tabular-nums font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" data-price="<%= h.symbol %>"><%= fmt.money(h.current_price || 0) %></p>
           </div>
           <div class="text-right w-24">
             <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">24h</p>
-            <p class="font-medium <%= change24h >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-              <%= change24h >= 0 ? '▲' : '▼' %> <%= Math.abs(change24h).toFixed(2) %>%
+            <p class="font-medium <%= change24h >= 0 ? 'positive' : 'negative' %> tabular-nums">
+              <%= change24h >= 0 ? '+' : '' %><%= Math.abs(change24h).toFixed(2) %>%
             </p>
           </div>
           <div class="text-right">
             <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Value</p>
-            <p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.market_value || 0) %></p>
+            <p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums"><%= fmt.money(h.market_value || 0) %></p>
           </div>
           <div class="text-right w-28">
             <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">P/L</p>
-            <p class="font-medium <%= gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+            <p class="font-medium <%= gain >= 0 ? 'positive' : 'negative' %> tabular-nums">
               <%= gain >= 0 ? '+' : '' %><%= fmt.money(gain) %>
               <span class="text-xs">(<%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(1) %>%)</span>
             </p>

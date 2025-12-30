@@ -49,28 +49,38 @@
       </div>
     </div>
 
-    <!-- KPI Stats Grid - Glassmorphism -->
+    <!-- KPI Stats Grid - Tufte Style -->
     <% if (safeItems.length > 0) { %>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="stat-card group">
-        <div class="stat-card-label">Watching</div>
-        <div class="stat-card-value"><%= safeItems.length %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Watching</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeItems.length %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Gainers Today</div>
-        <div class="stat-card-value positive"><%= gainers %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Gainers Today</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums positive"><%= gainers %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Losers Today</div>
-        <div class="stat-card-value negative"><%= losers %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Losers Today</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums negative"><%= losers %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">At Target</div>
-        <div class="stat-card-value" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><%= atTarget %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">At Target</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= atTarget %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Neutral</div>
-        <div class="stat-card-value"><%= safeItems.length - gainers - losers %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Neutral</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeItems.length - gainers - losers %></span>
+        </div>
       </div>
     </div>
     <% } %>
@@ -152,9 +162,9 @@
                   </div>
                 </div>
               </td>
-              <td class="text-right text-white font-medium font-mono price">$<%= currentPrice.toFixed(2) %></td>
-              <td class="text-right change <%= changePct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-                <span class="font-mono font-bold"><%= changePct >= 0 ? '+' : '' %><%= changePct.toFixed(2) %>%</span>
+              <td class="text-right text-white font-medium font-mono tabular-nums price">$<%= currentPrice.toFixed(2) %></td>
+              <td class="text-right change">
+                <span class="font-mono font-bold tabular-nums <%= changePct >= 0 ? 'positive' : 'negative' %>"><%= changePct >= 0 ? '+' : '' %><%= changePct.toFixed(2) %>%</span>
               </td>
               <td class="text-right">
                 <% if (high && low) { %>
@@ -183,7 +193,7 @@
               <td class="text-right">
                 <% if (item.target_price) { %>
                 <div class="flex items-center justify-end gap-2">
-                  <span class="font-mono font-bold <%= distanceToTarget > 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                  <span class="font-mono font-bold tabular-nums <%= distanceToTarget > 0 ? 'positive' : 'negative' %>">
                     <%= distanceToTarget > 0 ? '+' : '' %><%= distanceToTarget.toFixed(2) %>%
                   </span>
                   <% const progress = item.target_price > 0 ? Math.min(100, (currentPrice / item.target_price) * 100) : 0; %>
@@ -312,7 +322,7 @@
               </div>
               <div class="text-right">
                 <div class="text-xs text-slate-500">Distance</div>
-                <div class="font-semibold font-mono <%= distanceToTarget > 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <div class="font-semibold font-mono tabular-nums <%= distanceToTarget > 0 ? 'positive' : 'negative' %>">
                   <%= distanceToTarget > 0 ? '+' : '' %><%= distanceToTarget.toFixed(2) %>%
                 </div>
               </div>

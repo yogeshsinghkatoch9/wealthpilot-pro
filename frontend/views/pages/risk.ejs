@@ -111,19 +111,12 @@ const stressTests = safeData.stressTests || [
 
     <!-- Risk Score Overview -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bloomberg-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-mono mb-1">RISK SCORE</p>
-            <p class="text-3xl font-bold font-mono <%= riskScore > 70 ? 'text-red-400' : riskScore > 40 ? 'text-amber-400' : 'text-emerald-400' %>">
-              <%= Math.round(riskScore) %><span class="text-lg text-slate-500">/100</span>
-            </p>
-          </div>
-          <div class="w-12 h-12 rounded-sm <%= riskScore > 70 ? 'bg-red-500/20' : riskScore > 40 ? 'bg-amber-500/20' : 'bg-emerald-500/20' %> flex items-center justify-center">
-            <span class="text-xl <%= riskScore > 70 ? 'text-red-400' : riskScore > 40 ? 'text-amber-400' : 'text-emerald-400' %>">
-              <%= riskScore > 70 ? '!' : riskScore > 40 ? '~' : '+' %>
-            </span>
-          </div>
+      <div class="tufte-stat-card">
+        <div>
+          <p class="text-xs text-slate-500 font-mono mb-1">RISK SCORE</p>
+          <p class="text-3xl font-bold font-mono tabular-nums <%= riskScore > 70 ? 'text-red-400' : riskScore > 40 ? 'text-amber-400' : 'text-emerald-400' %>">
+            <%= Math.round(riskScore) %><span class="text-lg text-slate-500">/100</span>
+          </p>
         </div>
         <div class="mt-3 pt-3 border-t border-slate-800">
           <p class="text-xs text-slate-400 font-mono uppercase">
@@ -132,38 +125,24 @@ const stressTests = safeData.stressTests || [
         </div>
       </div>
 
-      <div class="bloomberg-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-mono mb-1">VAR (95%)</p>
-            <p class="text-3xl font-bold font-mono text-red-400">
-              <%= safeFmt.compact(Math.abs(var95Value)) %>
-            </p>
-          </div>
-          <div class="w-12 h-12 rounded-sm bg-red-500/20 flex items-center justify-center">
-            <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
-            </svg>
-          </div>
+      <div class="tufte-stat-card">
+        <div>
+          <p class="text-xs text-slate-500 font-mono mb-1">VAR (95%)</p>
+          <p class="text-3xl font-bold font-mono tabular-nums negative">
+            <%= safeFmt.compact(Math.abs(var95Value)) %>
+          </p>
         </div>
         <div class="mt-3 pt-3 border-t border-slate-800">
           <p class="text-xs text-slate-400 font-mono uppercase">DAILY 95% VAR</p>
         </div>
       </div>
 
-      <div class="bloomberg-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-mono mb-1">ALPHA (ANN)</p>
-            <p class="text-3xl font-bold font-mono <%= alpha >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-              <%= alpha >= 0 ? '+' : '' %><%= alpha.toFixed(1) %>%
-            </p>
-          </div>
-          <div class="w-12 h-12 rounded-sm <%= alpha >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20' %> flex items-center justify-center">
-            <svg class="w-6 h-6 <%= alpha >= 0 ? 'text-emerald-400' : 'text-red-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-            </svg>
-          </div>
+      <div class="tufte-stat-card">
+        <div>
+          <p class="text-xs text-slate-500 font-mono mb-1">ALPHA (ANN)</p>
+          <p class="text-3xl font-bold font-mono tabular-nums <%= alpha >= 0 ? 'positive' : 'negative' %>">
+            <%= alpha >= 0 ? '+' : '' %><%= alpha.toFixed(1) %>%
+          </p>
         </div>
         <div class="mt-3 pt-3 border-t border-slate-800">
           <p class="text-xs text-slate-400 font-mono uppercase">
@@ -172,19 +151,12 @@ const stressTests = safeData.stressTests || [
         </div>
       </div>
 
-      <div class="bloomberg-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-mono mb-1">SORTINO RATIO</p>
-            <p class="text-3xl font-bold font-mono <%= sortinoRatio >= 1 ? 'text-emerald-400' : sortinoRatio >= 0.5 ? 'text-amber-400' : 'text-red-400' %>">
-              <%= sortinoRatio.toFixed(2) %>
-            </p>
-          </div>
-          <div class="w-12 h-12 rounded-sm <%= sortinoRatio >= 1 ? 'bg-emerald-500/20' : 'bg-amber-500/20' %> flex items-center justify-center">
-            <span class="text-xl <%= sortinoRatio >= 1 ? 'text-emerald-400' : 'text-amber-400' %>">
-              <%= sortinoRatio >= 1 ? '+' : '~' %>
-            </span>
-          </div>
+      <div class="tufte-stat-card">
+        <div>
+          <p class="text-xs text-slate-500 font-mono mb-1">SORTINO RATIO</p>
+          <p class="text-3xl font-bold font-mono tabular-nums <%= sortinoRatio >= 1 ? 'text-emerald-400' : sortinoRatio >= 0.5 ? 'text-amber-400' : 'text-red-400' %>">
+            <%= sortinoRatio.toFixed(2) %>
+          </p>
         </div>
         <div class="mt-3 pt-3 border-t border-slate-800">
           <p class="text-xs text-slate-400 font-mono uppercase">

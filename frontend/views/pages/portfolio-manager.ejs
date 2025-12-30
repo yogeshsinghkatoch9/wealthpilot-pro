@@ -334,35 +334,39 @@
       <!-- RIGHT PANEL: Portfolio Table & Charts (8 cols) -->
       <div class="col-span-12 lg:col-span-8 space-y-4">
 
-        <!-- Portfolio Summary Cards - Glassmorphism -->
+        <!-- Portfolio Summary Cards - Tufte Style -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div class="stat-card group">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="stat-card-label">Total Value</div>
-            <div class="stat-card-value" id="totalValueCard"><%= fmt.money(safeTotals.value) %></div>
-            <div class="text-xs text-slate-400 mt-2">Portfolio Net Worth</div>
-          </div>
-          <div class="stat-card group">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="stat-card-label">Total Return</div>
-            <div class="stat-card-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>" id="totalReturnCard">
-              <%= fmt.pct(safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0) %>
+          <div class="tufte-stat-card">
+            <div class="stat-label">Total Value</div>
+            <div class="stat-value-row">
+              <span class="stat-value tabular-nums" id="totalValueCard"><%= fmt.money(safeTotals.value) %></span>
             </div>
-            <div class="text-xs <%= safeTotals.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %> mt-2">
+            <div class="stat-subtext">Portfolio Net Worth</div>
+          </div>
+          <div class="tufte-stat-card">
+            <div class="stat-label">Total Return</div>
+            <div class="stat-value-row">
+              <span class="stat-value tabular-nums <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>" id="totalReturnCard">
+                <%= fmt.pct(safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0) %>
+              </span>
+            </div>
+            <div class="stat-subtext <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %> tabular-nums">
               <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
             </div>
           </div>
-          <div class="stat-card group">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="stat-card-label">Annual Income</div>
-            <div class="stat-card-value" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="annualIncomeCard"><%= fmt.money(safeTotals.dividendIncome) %></div>
-            <div class="text-xs text-purple-400 mt-2"><%= fmt.money(safeTotals.dividendIncome / 12) %>/month</div>
+          <div class="tufte-stat-card">
+            <div class="stat-label">Annual Income</div>
+            <div class="stat-value-row">
+              <span class="stat-value tabular-nums" id="annualIncomeCard"><%= fmt.money(safeTotals.dividendIncome) %></span>
+            </div>
+            <div class="stat-subtext tabular-nums"><%= fmt.money(safeTotals.dividendIncome / 12) %>/month</div>
           </div>
-          <div class="stat-card group">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div class="stat-card-label">Holdings</div>
-            <div class="stat-card-value" id="holdingsCountCard"><%= safeTotals.holdingsCount %></div>
-            <div class="text-xs text-slate-400 mt-2"><%= safeSectors.length %> sectors</div>
+          <div class="tufte-stat-card">
+            <div class="stat-label">Holdings</div>
+            <div class="stat-value-row">
+              <span class="stat-value tabular-nums" id="holdingsCountCard"><%= safeTotals.holdingsCount %></span>
+            </div>
+            <div class="stat-subtext"><%= safeSectors.length %> sectors</div>
           </div>
         </div>
 

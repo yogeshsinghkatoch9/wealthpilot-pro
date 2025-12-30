@@ -1,161 +1,64 @@
 <%- include('../partials/header', { pageTitle: 'Top Market Movers' }) %>
 
 <style>
-  /* Modern animations */
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideInRight {
-    from {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes pulse-ring {
-    0% {
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-    }
-  }
-
-  @keyframes gradient-shift {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  .fade-in-up {
-    animation: fadeInUp 0.6s ease-out forwards;
-  }
-
-  .slide-in-right {
-    animation: slideInRight 0.5s ease-out forwards;
-  }
-
-  .live-pulse {
-    width: 8px;
-    height: 8px;
-    background: #10b981;
-    border-radius: 50%;
-    animation: pulse-ring 1.5s ease-out infinite;
-  }
-
-  .gradient-hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    background-size: 200% 200%;
-    animation: gradient-shift 8s ease infinite;
-  }
-
-  .glass-card {
-    background: <%= theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.05)' %>;
-    backdrop-filter: blur(10px);
-    border: 1px solid <%= theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)' %>;
-  }
-
-  .glass-card:hover {
-    background: <%= theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.08)' %>;
-    border-color: <%= theme === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)' %>;
-    transform: translateY(-2px);
-    transition: all 0.3s ease;
-  }
-
-  .stock-row {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .stock-row:hover {
-    transform: translateX(8px) scale(1.01);
-    box-shadow: 0 8px 25px <%= theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.4)' %>;
-  }
-
-  .stock-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    transition: width 0.3s ease;
-  }
-
-  .stock-row:hover::before {
-    width: 8px;
-  }
-
-  .stock-row-positive::before {
-    background: linear-gradient(180deg, #10b981, #059669);
-  }
-
-  .stock-row-negative::before {
-    background: linear-gradient(180deg, #ef4444, #dc2626);
-  }
-
-  .stock-row-neutral::before {
-    background: linear-gradient(180deg, #f59e0b, #d97706);
-  }
-
   .stat-number {
     font-feature-settings: 'tnum';
     font-variant-numeric: tabular-nums;
   }
 
-  .tab-btn {
-    transition: all 0.3s ease;
+  .positive {
+    color: #10b981;
+  }
+
+  .negative {
+    color: #ef4444;
+  }
+
+  .stock-row {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
     position: relative;
+    padding: 16px;
+    border-radius: 8px;
+    background: <%= theme === 'light' ? '#ffffff' : '#0f1419' %>;
+    border: 1px solid <%= theme === 'light' ? '#e5e7eb' : '#30363d' %>;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .stock-row:hover {
+    border-color: <%= theme === 'light' ? '#d1d5db' : '#484f58' %>;
+  }
+
+  .stock-row-positive {
+    border-left: 3px solid #10b981;
+  }
+
+  .stock-row-negative {
+    border-left: 3px solid #ef4444;
+  }
+
+  .stock-row-neutral {
+    border-left: 3px solid #f59e0b;
+  }
+
+  .tab-btn {
+    transition: all 0.2s ease;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    border: 1px solid <%= theme === 'light' ? '#e5e7eb' : '#30363d' %>;
   }
 
   .tab-btn.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  }
-
-  .tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 8px solid <%= theme === 'light' ? '#f9fafb' : '#0f172a' %>;
+    background: <%= theme === 'light' ? '#111827' : '#f9fafb' %>;
+    color: <%= theme === 'light' ? 'white' : '#111827' %>;
+    border-color: <%= theme === 'light' ? '#111827' : '#f9fafb' %>;
   }
 
   .badge-modern {
-    padding: 6px 12px;
-    border-radius: 12px;
-    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
     font-size: 13px;
     display: inline-flex;
     align-items: center;
@@ -163,168 +66,109 @@
   }
 
   .badge-gain {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1));
+    background: rgba(16, 185, 129, 0.1);
     color: #10b981;
     border: 1px solid rgba(16, 185, 129, 0.3);
   }
 
   .badge-loss {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+    background: rgba(239, 68, 68, 0.1);
     color: #ef4444;
     border: 1px solid rgba(239, 68, 68, 0.3);
-  }
-
-  .metric-card {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .metric-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 100px;
-    height: 100px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .metric-card:hover::after {
-    opacity: 1;
-  }
-
-  .updating {
-    position: relative;
-  }
-
-  .updating::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
-    animation: shimmer 1.5s infinite;
   }
 
   .rank-badge {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
+    font-weight: 700;
     font-size: 14px;
+    background: <%= theme === 'light' ? '#f3f4f6' : '#374151' %>;
+    color: <%= theme === 'light' ? '#6b7280' : '#9ca3af' %>;
+  }
+
+  .rank-1, .rank-2, .rank-3 {
+    color: #111827;
   }
 
   .rank-1 {
-    background: linear-gradient(135deg, #ffd700, #ffed4e);
-    color: #78350f;
-    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+    background: #fde68a;
   }
 
   .rank-2 {
-    background: linear-gradient(135deg, #c0c0c0, #e8e8e8);
-    color: #1f2937;
-    box-shadow: 0 4px 12px rgba(192, 192, 192, 0.4);
+    background: #e5e7eb;
   }
 
   .rank-3 {
-    background: linear-gradient(135deg, #cd7f32, #e9a96a);
-    color: #1f2937;
-    box-shadow: 0 4px 12px rgba(205, 127, 50, 0.4);
-  }
-
-  .rank-default {
-    background: <%= theme === 'light' ? '#e5e7eb' : '#374151' %>;
-    color: <%= theme === 'light' ? '#6b7280' : '#9ca3af' %>;
+    background: #fcd6bb;
   }
 </style>
 
-<!-- Hero Section -->
-<div class="gradient-hero rounded-2xl p-8 mb-6 relative overflow-hidden fade-in-up" style="animation-delay: 0s;">
-  <div class="relative z-10">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-      <div>
-        <div class="flex items-center gap-3 mb-2">
-          <h1 class="text-4xl md:text-5xl font-bold text-white">Market Movers</h1>
-          <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white bg-opacity-20 backdrop-blur-sm">
-            <div class="live-pulse"></div>
-            <span class="text-white text-sm font-semibold" id="ws-status">LIVE</span>
-          </div>
-        </div>
-        <p class="text-white text-opacity-90 text-lg">Real-time market data • Auto-refresh every 30s</p>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl px-4 py-2 border border-white border-opacity-20">
-          <div class="text-white text-opacity-70 text-xs font-semibold mb-1">LAST UPDATED</div>
-          <div class="text-white text-sm font-mono stat-number" id="lastUpdate">
-            <%= lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : new Date().toLocaleTimeString() %>
-          </div>
-        </div>
-        <button onclick="refreshData()" class="px-6 py-3 rounded-xl bg-white text-purple-600 font-semibold hover:bg-opacity-90 transition-all flex items-center gap-2" id="refreshBtn">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          REFRESH
-        </button>
-      </div>
+<!-- Header Section -->
+<div class="tufte-stat-card mb-6">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-2xl font-semibold text-white mb-1">Market Movers</h1>
+      <p class="text-slate-400 text-sm">Real-time market data • Auto-refresh every 30s</p>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20 metric-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-white text-opacity-80 text-xs font-semibold mb-1">📈 TOP GAINERS</div>
-            <div class="text-white text-3xl font-bold stat-number" id="gainersCount"><%= gainers.length %></div>
-          </div>
-          <div class="text-emerald-400 text-4xl">↗</div>
+    <div class="flex items-center gap-3">
+      <div class="text-right">
+        <div class="text-xs text-slate-500">LAST UPDATED</div>
+        <div class="text-sm text-white font-mono stat-number" id="lastUpdate">
+          <%= lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : new Date().toLocaleTimeString() %>
         </div>
       </div>
-
-      <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20 metric-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-white text-opacity-80 text-xs font-semibold mb-1">📉 TOP LOSERS</div>
-            <div class="text-white text-3xl font-bold stat-number" id="losersCount"><%= losers.length %></div>
-          </div>
-          <div class="text-red-400 text-4xl">↘</div>
-        </div>
-      </div>
-
-      <div class="bg-white bg-opacity-15 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20 metric-card">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="text-white text-opacity-80 text-xs font-semibold mb-1">🔥 MOST ACTIVE</div>
-            <div class="text-white text-3xl font-bold stat-number" id="activeCount"><%= active.length %></div>
-          </div>
-          <div class="text-amber-400 text-4xl">⚡</div>
-        </div>
-      </div>
+      <button onclick="refreshData()" class="px-4 py-2 border border-slate-600 rounded-lg text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-2" id="refreshBtn">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        REFRESH
+      </button>
     </div>
   </div>
 
-  <!-- Decorative elements -->
-  <div class="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -mr-48 -mt-48"></div>
-  <div class="absolute bottom-0 left-0 w-64 h-64 bg-white opacity-5 rounded-full -ml-32 -mb-32"></div>
+  <!-- Quick Stats -->
+  <div class="grid grid-cols-3 gap-4">
+    <div class="tufte-stat-card">
+      <div class="stat-label">Top Gainers</div>
+      <div class="stat-value-row">
+        <span class="stat-value tabular-nums" id="gainersCount"><%= gainers.length %></span>
+      </div>
+    </div>
+
+    <div class="tufte-stat-card">
+      <div class="stat-label">Top Losers</div>
+      <div class="stat-value-row">
+        <span class="stat-value tabular-nums" id="losersCount"><%= losers.length %></span>
+      </div>
+    </div>
+
+    <div class="tufte-stat-card">
+      <div class="stat-label">Most Active</div>
+      <div class="stat-value-row">
+        <span class="stat-value tabular-nums" id="activeCount"><%= active.length %></span>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Tabs -->
-<div class="flex gap-2 mb-6 overflow-x-auto pb-2 fade-in-up" style="animation-delay: 0.1s;">
-  <button class="tab-btn active px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap" data-tab="gainers" onclick="switchTab('gainers')">
-    📈 Top Gainers
+<div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+  <button class="tab-btn active" data-tab="gainers" onclick="switchTab('gainers')">
+    Top Gainers
   </button>
-  <button class="tab-btn px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="losers" onclick="switchTab('losers')">
-    📉 Top Losers
+  <button class="tab-btn <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="losers" onclick="switchTab('losers')">
+    Top Losers
   </button>
-  <button class="tab-btn px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="active" onclick="switchTab('active')">
-    🔥 Most Active
+  <button class="tab-btn <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="active" onclick="switchTab('active')">
+    Most Active
   </button>
-  <button class="tab-btn px-6 py-3 rounded-xl font-semibold text-sm whitespace-nowrap <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="all" onclick="switchTab('all')">
-    📊 All Movers
+  <button class="tab-btn <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-gray-800 hover:bg-gray-700' %>" data-tab="all" onclick="switchTab('all')">
+    All Movers
   </button>
 </div>
 
@@ -332,14 +176,11 @@
 <div>
   <!-- Gainers Tab -->
   <div id="gainers-tab" class="tab-content">
-    <div class="card p-6 mb-6 fade-in-up" id="gainersCard" style="animation-delay: 0.2s;">
+    <div class="tufte-stat-card p-6 mb-6" id="gainersCard">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Gainers</h2>
-        <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500 bg-opacity-20 border border-emerald-500 border-opacity-30">
-          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-          </svg>
-          <span class="text-emerald-400 text-sm font-semibold"><%= gainers.length %> stocks</span>
+        <h2 class="text-xl font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Gainers</h2>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500 bg-opacity-10 border border-emerald-500 border-opacity-30">
+          <span class="text-emerald-400 text-sm font-semibold stat-number"><%= gainers.length %> stocks</span>
         </div>
       </div>
 
@@ -347,21 +188,18 @@
         <% if (gainers && gainers.length > 0) { %>
           <% gainers.forEach((stock, index) => { %>
             <a href="/charts?symbol=<%= stock.symbol %>" class="block">
-              <div class="stock-row stock-row-positive glass-card rounded-2xl p-5 slide-in-right" style="animation-delay: <%= index * 0.05 %>s;">
+              <div class="stock-row stock-row-positive">
                 <div class="flex items-center gap-4">
                   <!-- Rank Badge -->
-                  <div class="rank-badge <%= index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-default' %>">
+                  <div class="rank-badge <%= index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '' %>">
                     <%= index + 1 %>
                   </div>
 
                   <!-- Stock Info -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1">
-                      <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-lg"><%= stock.symbol %></h3>
-                      <span class="badge-modern badge-gain">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                        </svg>
+                      <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-base"><%= stock.symbol %></h3>
+                      <span class="badge-modern badge-gain stat-number">
                         +<%= stock.changePercent.toFixed(2) %>%
                       </span>
                     </div>
@@ -370,10 +208,10 @@
 
                   <!-- Price Info -->
                   <div class="text-right">
-                    <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-2xl stat-number mb-1">
+                    <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-xl stat-number mb-1">
                       $<%= stock.price.toFixed(2) %>
                     </div>
-                    <div class="text-emerald-400 font-semibold text-sm stat-number">
+                    <div class="positive font-semibold text-sm stat-number">
                       +$<%= Math.abs(stock.change).toFixed(2) %>
                     </div>
                   </div>
@@ -383,9 +221,6 @@
           <% }); %>
         <% } else { %>
           <div class="text-center py-12">
-            <div class="w-20 h-20 rounded-full bg-<%= theme === 'light' ? 'gray-100' : 'gray-800' %> flex items-center justify-center mx-auto mb-4">
-              <span class="text-4xl">📈</span>
-            </div>
             <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %>">No gainers data available</p>
           </div>
         <% } %>
@@ -395,14 +230,11 @@
 
   <!-- Losers Tab -->
   <div id="losers-tab" class="tab-content" style="display: none;">
-    <div class="card p-6 mb-6 fade-in-up" id="losersCard">
+    <div class="tufte-stat-card p-6 mb-6" id="losersCard">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Losers</h2>
-        <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500 bg-opacity-20 border border-red-500 border-opacity-30">
-          <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>
-          </svg>
-          <span class="text-red-400 text-sm font-semibold"><%= losers.length %> stocks</span>
+        <h2 class="text-xl font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Losers</h2>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500 bg-opacity-10 border border-red-500 border-opacity-30">
+          <span class="text-red-400 text-sm font-semibold stat-number"><%= losers.length %> stocks</span>
         </div>
       </div>
 
@@ -410,21 +242,18 @@
         <% if (losers && losers.length > 0) { %>
           <% losers.forEach((stock, index) => { %>
             <a href="/charts?symbol=<%= stock.symbol %>" class="block">
-              <div class="stock-row stock-row-negative glass-card rounded-2xl p-5 slide-in-right" style="animation-delay: <%= index * 0.05 %>s;">
+              <div class="stock-row stock-row-negative">
                 <div class="flex items-center gap-4">
                   <!-- Rank Badge -->
-                  <div class="rank-badge <%= index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-default' %>">
+                  <div class="rank-badge <%= index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '' %>">
                     <%= index + 1 %>
                   </div>
 
                   <!-- Stock Info -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1">
-                      <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-lg"><%= stock.symbol %></h3>
-                      <span class="badge-modern badge-loss">
-                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
+                      <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-base"><%= stock.symbol %></h3>
+                      <span class="badge-modern badge-loss stat-number">
                         <%= stock.changePercent.toFixed(2) %>%
                       </span>
                     </div>
@@ -433,10 +262,10 @@
 
                   <!-- Price Info -->
                   <div class="text-right">
-                    <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-2xl stat-number mb-1">
+                    <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-xl stat-number mb-1">
                       $<%= stock.price.toFixed(2) %>
                     </div>
-                    <div class="text-red-400 font-semibold text-sm stat-number">
+                    <div class="negative font-semibold text-sm stat-number">
                       $<%= stock.change.toFixed(2) %>
                     </div>
                   </div>
@@ -446,9 +275,6 @@
           <% }); %>
         <% } else { %>
           <div class="text-center py-12">
-            <div class="w-20 h-20 rounded-full bg-<%= theme === 'light' ? 'gray-100' : 'gray-800' %> flex items-center justify-center mx-auto mb-4">
-              <span class="text-4xl">📉</span>
-            </div>
             <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %>">No losers data available</p>
           </div>
         <% } %>
@@ -458,14 +284,11 @@
 
   <!-- Most Active Tab -->
   <div id="active-tab" class="tab-content" style="display: none;">
-    <div class="card p-6 mb-6 fade-in-up" id="activeCard">
+    <div class="tufte-stat-card p-6 mb-6" id="activeCard">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Most Active by Volume</h2>
-        <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500 bg-opacity-20 border border-amber-500 border-opacity-30">
-          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-          </svg>
-          <span class="text-amber-400 text-sm font-semibold"><%= active.length %> stocks</span>
+        <h2 class="text-xl font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Most Active by Volume</h2>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500 bg-opacity-10 border border-amber-500 border-opacity-30">
+          <span class="text-amber-400 text-sm font-semibold stat-number"><%= active.length %> stocks</span>
         </div>
       </div>
 
@@ -475,41 +298,32 @@
             const isPositive = stock.changePercent >= 0;
           %>
             <a href="/charts?symbol=<%= stock.symbol %>" class="block">
-              <div class="stock-row <%= isPositive ? 'stock-row-positive' : 'stock-row-negative' %> glass-card rounded-2xl p-5 slide-in-right" style="animation-delay: <%= index * 0.05 %>s;">
+              <div class="stock-row <%= isPositive ? 'stock-row-positive' : 'stock-row-negative' %>">
                 <div class="flex items-center gap-4">
                   <!-- Rank Badge -->
-                  <div class="rank-badge <%= index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'rank-default' %>">
+                  <div class="rank-badge <%= index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : '' %>">
                     <%= index + 1 %>
                   </div>
 
                   <!-- Stock Info -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-1">
-                      <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-lg"><%= stock.symbol %></h3>
-                      <span class="badge-modern <%= isPositive ? 'badge-gain' : 'badge-loss' %>">
-                        <% if (isPositive) { %>
-                          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                        <% } else { %>
-                          <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                        <% } %>
+                      <h3 class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-base"><%= stock.symbol %></h3>
+                      <span class="badge-modern <%= isPositive ? 'badge-gain' : 'badge-loss' %> stat-number">
                         <%= isPositive ? '+' : '' %><%= stock.changePercent.toFixed(2) %>%
                       </span>
                     </div>
                     <div class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %> text-sm">
-                      Volume: <span class="font-semibold"><%= (stock.volume / 1000000).toFixed(1) %>M</span>
+                      Volume: <span class="font-semibold stat-number"><%= (stock.volume / 1000000).toFixed(1) %>M</span>
                     </div>
                   </div>
 
                   <!-- Price Info -->
                   <div class="text-right">
-                    <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-2xl stat-number mb-1">
+                    <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-xl stat-number mb-1">
                       $<%= stock.price.toFixed(2) %>
                     </div>
-                    <div class="<%= isPositive ? 'text-emerald-400' : 'text-red-400' %> font-semibold text-sm stat-number">
+                    <div class="<%= isPositive ? 'positive' : 'negative' %> font-semibold text-sm stat-number">
                       <%= isPositive ? '+' : '' %>$<%= Math.abs(stock.change).toFixed(2) %>
                     </div>
                   </div>
@@ -519,9 +333,6 @@
           <% }); %>
         <% } else { %>
           <div class="text-center py-12">
-            <div class="w-20 h-20 rounded-full bg-<%= theme === 'light' ? 'gray-100' : 'gray-800' %> flex items-center justify-center mx-auto mb-4">
-              <span class="text-4xl">🔥</span>
-            </div>
             <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-gray-400' %>">No activity data available</p>
           </div>
         <% } %>
@@ -531,21 +342,21 @@
 
   <!-- All Movers Tab -->
   <div id="all-tab" class="tab-content" style="display: none;">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 fade-in-up">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Gainers Column -->
-      <div class="card p-6">
+      <div class="tufte-stat-card p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">📈 Gainers</h3>
-          <span class="text-emerald-400 text-sm font-semibold"><%= gainers.length %></span>
+          <h3 class="text-base font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Gainers</h3>
+          <span class="positive text-sm font-semibold stat-number"><%= gainers.length %></span>
         </div>
         <div class="space-y-2 max-h-[600px] overflow-y-auto">
           <% gainers.slice(0, 10).forEach((stock, index) => { %>
             <a href="/charts?symbol=<%= stock.symbol %>" class="block">
-              <div class="glass-card rounded-xl p-3 hover:scale-102 transition-all" style="animation-delay: <%= index * 0.03 %>s;">
+              <div class="p-3 rounded-lg hover:bg-slate-800 transition-all border border-transparent hover:border-slate-600">
                 <div class="flex items-center justify-between">
                   <div>
                     <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-sm"><%= stock.symbol %></div>
-                    <div class="text-emerald-400 font-semibold text-xs stat-number">+<%= stock.changePercent.toFixed(2) %>%</div>
+                    <div class="positive font-semibold text-xs stat-number">+<%= stock.changePercent.toFixed(2) %>%</div>
                   </div>
                   <div class="text-right">
                     <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold text-sm stat-number">$<%= stock.price.toFixed(2) %></div>
@@ -558,19 +369,19 @@
       </div>
 
       <!-- Losers Column -->
-      <div class="card p-6">
+      <div class="tufte-stat-card p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">📉 Losers</h3>
-          <span class="text-red-400 text-sm font-semibold"><%= losers.length %></span>
+          <h3 class="text-base font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Losers</h3>
+          <span class="negative text-sm font-semibold stat-number"><%= losers.length %></span>
         </div>
         <div class="space-y-2 max-h-[600px] overflow-y-auto">
           <% losers.slice(0, 10).forEach((stock, index) => { %>
             <a href="/charts?symbol=<%= stock.symbol %>" class="block">
-              <div class="glass-card rounded-xl p-3 hover:scale-102 transition-all" style="animation-delay: <%= index * 0.03 %>s;">
+              <div class="p-3 rounded-lg hover:bg-slate-800 transition-all border border-transparent hover:border-slate-600">
                 <div class="flex items-center justify-between">
                   <div>
                     <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-sm"><%= stock.symbol %></div>
-                    <div class="text-red-400 font-semibold text-xs stat-number"><%= stock.changePercent.toFixed(2) %>%</div>
+                    <div class="negative font-semibold text-xs stat-number"><%= stock.changePercent.toFixed(2) %>%</div>
                   </div>
                   <div class="text-right">
                     <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold text-sm stat-number">$<%= stock.price.toFixed(2) %></div>
@@ -583,21 +394,21 @@
       </div>
 
       <!-- Most Active Column -->
-      <div class="card p-6">
+      <div class="tufte-stat-card p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">🔥 Most Active</h3>
-          <span class="text-amber-400 text-sm font-semibold"><%= active.length %></span>
+          <h3 class="text-base font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Most Active</h3>
+          <span class="text-amber-400 text-sm font-semibold stat-number"><%= active.length %></span>
         </div>
         <div class="space-y-2 max-h-[600px] overflow-y-auto">
           <% active.slice(0, 10).forEach((stock, index) => {
             const isPositive = stock.changePercent >= 0;
           %>
             <a href="/charts?symbol=<%= stock.symbol %>" class="block">
-              <div class="glass-card rounded-xl p-3 hover:scale-102 transition-all" style="animation-delay: <%= index * 0.03 %>s;">
+              <div class="p-3 rounded-lg hover:bg-slate-800 transition-all border border-transparent hover:border-slate-600">
                 <div class="flex items-center justify-between">
                   <div>
                     <div class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-bold text-sm"><%= stock.symbol %></div>
-                    <div class="<%= isPositive ? 'text-emerald-400' : 'text-red-400' %> font-semibold text-xs stat-number">
+                    <div class="<%= isPositive ? 'positive' : 'negative' %> font-semibold text-xs stat-number">
                       <%= isPositive ? '+' : '' %><%= stock.changePercent.toFixed(2) %>%
                     </div>
                   </div>
@@ -625,12 +436,8 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === tabName) {
       btn.classList.add('active');
-      btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-      btn.style.color = 'white';
     } else {
       btn.classList.remove('active');
-      btn.style.background = '';
-      btn.style.color = '';
     }
   });
 
@@ -644,7 +451,6 @@ function switchTab(tabName) {
 // Refresh Data
 function refreshData() {
   const btn = document.getElementById('refreshBtn');
-  btn.classList.add('updating');
   btn.disabled = true;
 
   setTimeout(() => {

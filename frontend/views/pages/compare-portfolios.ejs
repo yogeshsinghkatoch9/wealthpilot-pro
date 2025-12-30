@@ -6,7 +6,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Compare Po
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-l-4 border-amber-400 px-6 py-4 mb-6">
+<div class="bg-slate-900 border-b border-amber-400 px-6 py-4 mb-6">
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 <div>
 <h1 class="text-2xl font-bold text-amber-400 tracking-tight">PORTFOLIO COMPARISON</h1>
@@ -76,39 +76,39 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Compare Po
 <tbody>
 <tr>
 <td class="py-3">1Y Return</td>
-<td class="py-3 text-center font-mono font-bold text-emerald-400">+32.4%</td>
-<td class="py-3 text-center font-mono">+28.2%</td>
-<td class="py-3 text-center font-mono text-emerald-400">+4.2%</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">+32.4%</td>
+<td class="py-3 text-center font-mono tabular-nums">+28.2%</td>
+<td class="py-3 text-center font-mono positive tabular-nums">+4.2%</td>
 </tr>
 <tr>
 <td class="py-3">Volatility</td>
-<td class="py-3 text-center font-mono">18.4%</td>
-<td class="py-3 text-center font-mono font-bold text-emerald-400">16.2%</td>
-<td class="py-3 text-center font-mono text-red-400">+2.2%</td>
+<td class="py-3 text-center font-mono tabular-nums">18.4%</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">16.2%</td>
+<td class="py-3 text-center font-mono negative tabular-nums">+2.2%</td>
 </tr>
 <tr>
 <td class="py-3">Sharpe Ratio</td>
-<td class="py-3 text-center font-mono font-bold text-emerald-400">1.42</td>
-<td class="py-3 text-center font-mono">1.38</td>
-<td class="py-3 text-center font-mono text-emerald-400">+0.04</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">1.42</td>
+<td class="py-3 text-center font-mono tabular-nums">1.38</td>
+<td class="py-3 text-center font-mono positive tabular-nums">+0.04</td>
 </tr>
 <tr>
 <td class="py-3">Max Drawdown</td>
-<td class="py-3 text-center font-mono">-12.4%</td>
-<td class="py-3 text-center font-mono font-bold text-emerald-400">-10.1%</td>
-<td class="py-3 text-center font-mono text-red-400">-2.3%</td>
+<td class="py-3 text-center font-mono tabular-nums">-12.4%</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">-10.1%</td>
+<td class="py-3 text-center font-mono negative tabular-nums">-2.3%</td>
 </tr>
 <tr>
 <td class="py-3">Beta</td>
-<td class="py-3 text-center font-mono">1.12</td>
-<td class="py-3 text-center font-mono">1.00</td>
-<td class="py-3 text-center font-mono text-amber-400">+0.12</td>
+<td class="py-3 text-center font-mono tabular-nums">1.12</td>
+<td class="py-3 text-center font-mono tabular-nums">1.00</td>
+<td class="py-3 text-center font-mono text-amber-400 tabular-nums">+0.12</td>
 </tr>
 <tr>
 <td class="py-3">Dividend Yield</td>
-<td class="py-3 text-center font-mono font-bold text-emerald-400">1.84%</td>
-<td class="py-3 text-center font-mono">1.42%</td>
-<td class="py-3 text-center font-mono text-emerald-400">+0.42%</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">1.84%</td>
+<td class="py-3 text-center font-mono tabular-nums">1.42%</td>
+<td class="py-3 text-center font-mono positive tabular-nums">+0.42%</td>
 </tr>
 </tbody>
 </table>
@@ -161,12 +161,12 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Compare Po
 <h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wider uppercase border-b border-slate-700 pb-2">Analysis Summary</h3>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
-<p class="font-bold text-emerald-400 mb-2 tracking-wide">OUTPERFORMING</p>
-<p class="text-sm text-slate-300">Your portfolio beat the S&P 500 by <span class="font-mono text-emerald-400">4.2%</span> over the past year with a better Sharpe ratio.</p>
+<p class="font-bold positive mb-2 tracking-wide">OUTPERFORMING</p>
+<p class="text-sm text-slate-300">Your portfolio beat the S&P 500 by <span class="font-mono positive tabular-nums">4.2%</span> over the past year with a better Sharpe ratio.</p>
 </div>
 <div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
 <p class="font-bold text-amber-400 mb-2 tracking-wide">HIGHER RISK</p>
-<p class="text-sm text-slate-300">Your portfolio has higher volatility (<span class="font-mono">18.4%</span> vs <span class="font-mono">16.2%</span>) and larger drawdowns (<span class="font-mono">-12.4%</span> vs <span class="font-mono">-10.1%</span>).</p>
+<p class="text-sm text-slate-300">Your portfolio has higher volatility (<span class="font-mono tabular-nums">18.4%</span> vs <span class="font-mono tabular-nums">16.2%</span>) and larger drawdowns (<span class="font-mono tabular-nums">-12.4%</span> vs <span class="font-mono tabular-nums">-10.1%</span>).</p>
 </div>
 <div class="p-4 rounded-lg bg-sky-500/10 border border-sky-500/30">
 <p class="font-bold text-sky-400 mb-2 tracking-wide">SUGGESTION</p>
@@ -200,33 +200,33 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Compare Po
 <tbody>
 <tr>
 <td class="py-2 font-medium">You</td>
-<td class="text-center font-mono text-emerald-400">+2.1</td>
-<td class="text-center font-mono text-emerald-400">+4.2</td>
-<td class="text-center font-mono text-emerald-400">+1.8</td>
-<td class="text-center font-mono text-red-400">-2.4</td>
-<td class="text-center font-mono text-emerald-400">+3.2</td>
-<td class="text-center font-mono text-emerald-400">+2.8</td>
-<td class="text-center font-mono text-emerald-400">+1.4</td>
-<td class="text-center font-mono text-red-400">-1.2</td>
-<td class="text-center font-mono text-red-400">-3.8</td>
-<td class="text-center font-mono text-emerald-400">+5.2</td>
-<td class="text-center font-mono text-emerald-400">+6.4</td>
-<td class="text-center font-mono text-emerald-400">+2.1</td>
+<td class="text-center font-mono positive tabular-nums">+2.1</td>
+<td class="text-center font-mono positive tabular-nums">+4.2</td>
+<td class="text-center font-mono positive tabular-nums">+1.8</td>
+<td class="text-center font-mono negative tabular-nums">-2.4</td>
+<td class="text-center font-mono positive tabular-nums">+3.2</td>
+<td class="text-center font-mono positive tabular-nums">+2.8</td>
+<td class="text-center font-mono positive tabular-nums">+1.4</td>
+<td class="text-center font-mono negative tabular-nums">-1.2</td>
+<td class="text-center font-mono negative tabular-nums">-3.8</td>
+<td class="text-center font-mono positive tabular-nums">+5.2</td>
+<td class="text-center font-mono positive tabular-nums">+6.4</td>
+<td class="text-center font-mono positive tabular-nums">+2.1</td>
 </tr>
 <tr>
 <td class="py-2 font-medium">S&P</td>
-<td class="text-center font-mono text-emerald-400">+1.6</td>
-<td class="text-center font-mono text-emerald-400">+5.2</td>
-<td class="text-center font-mono text-emerald-400">+3.1</td>
-<td class="text-center font-mono text-red-400">-4.2</td>
-<td class="text-center font-mono text-emerald-400">+4.8</td>
-<td class="text-center font-mono text-emerald-400">+3.5</td>
-<td class="text-center font-mono text-emerald-400">+1.1</td>
-<td class="text-center font-mono text-red-400">-1.8</td>
-<td class="text-center font-mono text-red-400">-4.9</td>
-<td class="text-center font-mono text-red-400">-0.9</td>
-<td class="text-center font-mono text-emerald-400">+8.9</td>
-<td class="text-center font-mono text-emerald-400">+1.8</td>
+<td class="text-center font-mono positive tabular-nums">+1.6</td>
+<td class="text-center font-mono positive tabular-nums">+5.2</td>
+<td class="text-center font-mono positive tabular-nums">+3.1</td>
+<td class="text-center font-mono negative tabular-nums">-4.2</td>
+<td class="text-center font-mono positive tabular-nums">+4.8</td>
+<td class="text-center font-mono positive tabular-nums">+3.5</td>
+<td class="text-center font-mono positive tabular-nums">+1.1</td>
+<td class="text-center font-mono negative tabular-nums">-1.8</td>
+<td class="text-center font-mono negative tabular-nums">-4.9</td>
+<td class="text-center font-mono negative tabular-nums">-0.9</td>
+<td class="text-center font-mono positive tabular-nums">+8.9</td>
+<td class="text-center font-mono positive tabular-nums">+1.8</td>
 </tr>
 </tbody>
 </table>

@@ -25,19 +25,10 @@ const avgGrowthRate = safeSummary.avgGrowthRate || 5;
 <main class="p-4 lg:p-6 min-h-screen">
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- Hero Header with Glassmorphism -->
-    <div class="relative overflow-hidden glass-card p-5">
-      <!-- Background Gradient Orbs -->
-      <div class="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"></div>
-      <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-full blur-3xl"></div>
-
-      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+    <!-- Hero Header -->
+    <div class="bloomberg-card p-5">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-          </div>
           <div>
             <div class="flex items-center gap-3">
               <h1 class="text-2xl lg:text-3xl font-bold text-white">Dividend Analysis</h1>
@@ -46,10 +37,7 @@ const avgGrowthRate = safeSummary.avgGrowthRate || 5;
             <p class="text-slate-400 text-sm mt-1">Real-time dividend income tracking and yield metrics</p>
           </div>
         </div>
-        <button onclick="refreshDividends()" class="btn-glass flex items-center gap-2 px-4 py-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
+        <button onclick="refreshDividends()" class="bloomberg-btn bloomberg-btn-secondary flex items-center gap-2">
           Refresh Data
         </button>
       </div>
@@ -57,36 +45,31 @@ const avgGrowthRate = safeSummary.avgGrowthRate || 5;
 
     <% if (safeData && safeSummary && Object.keys(safeSummary).length > 0) { %>
 
-    <!-- KPI Stats Grid - Glassmorphism -->
+    <!-- KPI Stats Grid -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div class="tufte-stat-card">
         <div class="stat-card-label">Annual Income</div>
-        <div class="stat-card-value text-emerald-400"><%= safeFmt.compact(annualIncome) %></div>
+        <div class="stat-card-value tabular-nums positive"><%= safeFmt.compact(annualIncome) %></div>
         <div class="text-xs text-slate-500 mt-1">Projected yearly</div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div class="tufte-stat-card">
         <div class="stat-card-label">Monthly Income</div>
-        <div class="stat-card-value text-sky-400"><%= safeFmt.compact(monthlyIncome) %></div>
+        <div class="stat-card-value tabular-nums text-white"><%= safeFmt.compact(monthlyIncome) %></div>
         <div class="text-xs text-slate-500 mt-1">Average per month</div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div class="tufte-stat-card">
         <div class="stat-card-label">Portfolio Yield</div>
-        <div class="stat-card-value text-cyan-400"><%= portfolioYield.toFixed(2) %>%</div>
+        <div class="stat-card-value tabular-nums text-white"><%= portfolioYield.toFixed(2) %>%</div>
         <div class="text-xs text-slate-500 mt-1">Weighted average</div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div class="tufte-stat-card">
         <div class="stat-card-label">Dividend Payers</div>
-        <div class="stat-card-value text-amber-400"><%= dividendPayers %></div>
+        <div class="stat-card-value tabular-nums text-white"><%= dividendPayers %></div>
         <div class="text-xs text-slate-500 mt-1">of <%= totalHoldings %> holdings</div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <div class="tufte-stat-card">
         <div class="stat-card-label">Yield on Cost</div>
-        <div class="stat-card-value text-purple-400"><%= yieldOnCost.toFixed(2) %>%</div>
+        <div class="stat-card-value tabular-nums text-white"><%= yieldOnCost.toFixed(2) %>%</div>
         <div class="text-xs text-slate-500 mt-1">Based on cost basis</div>
       </div>
     </div>

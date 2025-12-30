@@ -46,13 +46,13 @@ const safeToken = typeof token !== 'undefined' ? token : '';
 <!-- Data Container -->
 <div id="dataContainer">
   <!-- Portfolio Margin Summary -->
-  <div class="bloomberg-card p-5 bg-gradient-to-r <%= safeTheme === 'light' ? 'from-emerald-50 to-sky-50' : 'from-emerald-900/20 to-sky-900/20' %>">
+  <div class="bloomberg-card p-5">
     <h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Margin Overview</h3>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="text-center">
+      <div class="tufte-stat-card">
         <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Gross Margin</p>
-        <p id="avgGrossMargin" class="text-3xl font-bold font-mono text-emerald-400">--</p>
-        <p class="text-xs text-emerald-400">Loading...</p>
+        <p id="avgGrossMargin" class="text-3xl font-bold tabular-nums positive">--</p>
+        <p class="text-xs positive">Loading...</p>
       </div>
       <div class="text-center">
         <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Operating Margin</p>
@@ -109,19 +109,19 @@ const safeToken = typeof token !== 'undefined' ? token : '';
   <!-- Margin Insights -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="card p-5">
-      <h4 class="font-bold text-emerald-400 mb-3">🏆 Highest Margins</h4>
+      <h4 class="font-bold positive mb-3">Highest Margins</h4>
       <div id="highestMargins" class="space-y-2 text-slate-400">
         Click Update to load data
       </div>
     </div>
     <div class="card p-5">
-      <h4 class="font-bold text-sky-400 mb-3">📈 Biggest Expansion</h4>
+      <h4 class="font-bold text-sky-400 mb-3">Biggest Expansion</h4>
       <div id="biggestExpansion" class="space-y-2 text-slate-400">
         Click Update to load data
       </div>
     </div>
     <div class="card p-5">
-      <h4 class="font-bold text-red-400 mb-3">⚠️ Watch List</h4>
+      <h4 class="font-bold negative mb-3">Watch List</h4>
       <div id="watchList" class="space-y-2 text-slate-400">
         Click Update to load data
       </div>

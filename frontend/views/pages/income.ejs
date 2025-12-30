@@ -38,48 +38,44 @@ const fmt = typeof fmt !== 'undefined' ? fmt : { money: (val) => '$' + (val || 0
       <!-- KPI Bar -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Annual Income -->
-        <div class="bg-slate-900 border border-slate-800 p-4">
+        <div class="tufte-stat-card">
           <div class="flex items-center justify-between mb-2">
             <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Annual Income</span>
-            <span class="text-emerald-400 text-xs">■</span>
           </div>
-          <div class="text-2xl font-bold font-mono text-emerald-400">
+          <div class="text-2xl font-bold font-mono tabular-nums positive">
             <%= fmt.money(incomeData.annual_income || 0) %>
           </div>
           <div class="text-xs text-slate-500 font-mono mt-1">TTM</div>
         </div>
 
         <!-- Monthly Average -->
-        <div class="bg-slate-900 border border-slate-800 p-4">
+        <div class="tufte-stat-card">
           <div class="flex items-center justify-between mb-2">
             <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Monthly Avg</span>
-            <span class="text-emerald-400 text-xs">■</span>
           </div>
-          <div class="text-2xl font-bold font-mono text-emerald-400">
+          <div class="text-2xl font-bold font-mono tabular-nums positive">
             <%= fmt.money(incomeData.monthly_average || 0) %>
           </div>
           <div class="text-xs text-slate-500 font-mono mt-1">Per Month</div>
         </div>
 
         <!-- Yield on Cost -->
-        <div class="bg-slate-900 border border-slate-800 p-4">
+        <div class="tufte-stat-card">
           <div class="flex items-center justify-between mb-2">
             <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Yield on Cost</span>
-            <span class="text-amber-400 text-xs">■</span>
           </div>
-          <div class="text-2xl font-bold font-mono text-amber-400">
+          <div class="text-2xl font-bold font-mono tabular-nums text-amber-400">
             <%= (incomeData.yield_on_cost || 0).toFixed(2) %>%
           </div>
           <div class="text-xs text-slate-500 font-mono mt-1">YoC</div>
         </div>
 
         <!-- Top Payers Count -->
-        <div class="bg-slate-900 border border-slate-800 p-4">
+        <div class="tufte-stat-card">
           <div class="flex items-center justify-between mb-2">
             <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Top Payers</span>
-            <span class="text-cyan-400 text-xs">■</span>
           </div>
-          <div class="text-2xl font-bold font-mono text-cyan-400">
+          <div class="text-2xl font-bold font-mono tabular-nums text-cyan-400">
             <%= incomeData.top_payers ? incomeData.top_payers.length : 0 %>
           </div>
           <div class="text-xs text-slate-500 font-mono mt-1">Holdings</div>
@@ -141,14 +137,14 @@ const fmt = typeof fmt !== 'undefined' ? fmt : { money: (val) => '$' + (val || 0
                       </div>
                     </td>
                     <td class="text-right">
-                      <span class="text-emerald-400 font-mono font-bold"><%= fmt.money(p.annual || 0) %></span>
+                      <span class="positive font-mono font-bold tabular-nums"><%= fmt.money(p.annual || 0) %></span>
                       <span class="text-slate-500 text-xs font-mono ml-1">/yr</span>
                     </td>
                     <td class="text-right">
-                      <span class="text-cyan-400 font-mono font-medium"><%= (p.yield || 0).toFixed(2) %>%</span>
+                      <span class="text-cyan-400 font-mono font-medium tabular-nums"><%= (p.yield || 0).toFixed(2) %>%</span>
                     </td>
                     <td class="text-right">
-                      <span class="text-slate-300 font-mono"><%= (p.pct_of_income || 0).toFixed(1) %>%</span>
+                      <span class="text-slate-300 font-mono tabular-nums"><%= (p.pct_of_income || 0).toFixed(1) %>%</span>
                     </td>
                   </tr>
                 <% }) %>

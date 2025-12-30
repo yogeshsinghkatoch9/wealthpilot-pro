@@ -21,9 +21,9 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Cash Flow 
 </div>
 
 <!-- Company Header -->
-<div class="bloomberg-card p-5 bg-gradient-to-r from-emerald-900/20 to-sky-900/20 border-l-4 border-amber-400">
+<div class="bloomberg-card p-5 border-l-4 border-amber-400">
   <div class="flex items-center gap-4">
-    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-slate-900 font-bold text-xl">AAPL</div>
+    <div class="w-14 h-14 rounded bg-slate-700 flex items-center justify-center text-white font-bold text-xl">AAPL</div>
     <div class="flex-1">
       <h2 class="text-xl font-bold text-white">Apple Inc.</h2>
       <p class="text-slate-400">FY 2024 Cash Flow Statement</p>
@@ -32,19 +32,19 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Cash Flow 
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
     <div class="text-center">
       <p class="text-sm text-slate-400">Operating CF</p>
-      <p class="text-3xl font-bold font-mono text-emerald-400">$118.3B</p>
+      <p class="text-3xl font-bold font-mono tabular-nums positive">$118.3B</p>
     </div>
     <div class="text-center">
       <p class="text-sm text-slate-400">Free Cash Flow</p>
-      <p class="text-3xl font-bold font-mono text-emerald-400">$99.6B</p>
+      <p class="text-3xl font-bold font-mono tabular-nums positive">$99.6B</p>
     </div>
     <div class="text-center">
       <p class="text-sm text-slate-400">FCF Yield</p>
-      <p class="text-3xl font-bold font-mono text-sky-400">3.4%</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white">3.4%</p>
     </div>
     <div class="text-center">
       <p class="text-sm text-slate-400">FCF/Share</p>
-      <p class="text-3xl font-bold font-mono text-white">$6.43</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white">$6.43</p>
     </div>
   </div>
 </div>
@@ -91,17 +91,17 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Cash Flow 
       </tr>
       <tr class="border-b border-slate-700/50">
         <td class="px-4 py-2 pl-6">Working Capital Δ</td>
-        <td class="px-4 py-2 text-right font-mono text-emerald-400">$1.2</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(2.4)</td>
-        <td class="px-4 py-2 text-right font-mono text-emerald-400">$3.8</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(4.2)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums positive">$1.2</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(2.4)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums positive">$3.8</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(4.2)</td>
       </tr>
       <tr class="border-b border-slate-700 bg-slate-800/50">
         <td class="px-4 py-2 font-bold">Cash from Operations</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-emerald-400">$31.5</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-emerald-400">$24.7</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-emerald-400">$32.6</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-emerald-400">$35.3</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums positive">$31.5</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums positive">$24.7</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums positive">$32.6</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums positive">$35.3</td>
       </tr>
 
       <tr class="border-b border-slate-700/50 bg-amber-500/5">
@@ -109,24 +109,24 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Cash Flow 
       </tr>
       <tr class="border-b border-slate-700/50">
         <td class="px-4 py-2 pl-6">CapEx</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(3.2)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(2.9)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(2.4)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(2.8)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(3.2)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(2.9)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(2.4)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(2.8)</td>
       </tr>
       <tr class="border-b border-slate-700/50">
         <td class="px-4 py-2 pl-6">Acquisitions</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(0.2)</td>
-        <td class="px-4 py-2 text-right font-mono">$0</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(0.8)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(0.4)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(0.2)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums">$0</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(0.8)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(0.4)</td>
       </tr>
       <tr class="border-b border-slate-700 bg-slate-800/50">
         <td class="px-4 py-2 font-bold">Cash from Investing</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(4.8)</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(2.9)</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(8.2)</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(6.4)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(4.8)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(2.9)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(8.2)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(6.4)</td>
       </tr>
 
       <tr class="border-b border-slate-700/50 bg-sky-500/5">
@@ -134,24 +134,24 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Cash Flow 
       </tr>
       <tr class="border-b border-slate-700/50">
         <td class="px-4 py-2 pl-6">Dividends Paid</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(3.8)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(3.8)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(3.7)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(3.7)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(3.8)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(3.8)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(3.7)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(3.7)</td>
       </tr>
       <tr class="border-b border-slate-700/50">
         <td class="px-4 py-2 pl-6">Share Repurchases</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(24.2)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(22.8)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(23.4)</td>
-        <td class="px-4 py-2 text-right font-mono text-red-400">$(27.1)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(24.2)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(22.8)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(23.4)</td>
+        <td class="px-4 py-2 text-right font-mono tabular-nums negative">$(27.1)</td>
       </tr>
       <tr class="border-b border-slate-700 bg-slate-800/50">
         <td class="px-4 py-2 font-bold">Cash from Financing</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(28.0)</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(26.6)</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(27.1)</td>
-        <td class="px-4 py-2 text-right font-bold font-mono text-red-400">$(30.8)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(28.0)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(26.6)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(27.1)</td>
+        <td class="px-4 py-2 text-right font-bold font-mono tabular-nums negative">$(30.8)</td>
       </tr>
 
       <tr class="bg-purple-500/10">
