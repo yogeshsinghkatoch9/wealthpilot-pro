@@ -1,0 +1,54 @@
+<%
+/**
+ * AllocationBar - Horizontal stacked bar (replaces pie charts)
+ * Usage: <%- include('../partials/finance/allocation-bar', {
+ *   allocations: [
+ *     { name: 'US Stocks', percent: 55, color: '#1e3a5f' },
+ *     { name: 'International', percent: 20, color: '#3b82f6' }
+ *   ],
+ *   title: 'Asset Allocation'
+ * }) %>
+ */
+const barAllocations = typeof allocations !== 'undefined' && allocations ? allocations : [];
+const barTitle = typeof title !== 'undefined' ? title : 'Asset Allocation';
+const barHeight = typeof height !== 'undefined' ? height : 32;
+const showLabels = typeof labels !== 'undefined' ? labels : true;
+const barClassName = typeof className !== 'undefined' ? className : '';
+
+const defaultColors = ['#1e3a5f', '#3b82f6', '#6b7280', '#9ca3af', '#d1d5db', '#374151', '#4b5563'];
+%>
+<div class="tufte-allocation-bar <%= barClassName %>">
+  <h3 class="allocation-title"><%= barTitle %></h3>
+
+  <div class="allocation-bar-container" style="height: <%= barHeight %>px;">
+    <% barAllocations.forEach((alloc, i) => {
+      const pct = alloc.percent || alloc.percentage || alloc.value || 0;
+      const bgColor = alloc.color || defaultColors[i % defaultColors.length];
+    %>
+    <div
+      class="allocation-segment"
+      style="width: <%= pct %>%; background-color: <%= bgColor %>;"
+      title="<%= alloc.name || alloc.label %>: <%= pct %>%"
+    >
+      <% if (pct >= 10) { %>
+      <span class="segment-label"><%= pct.toFixed(0) %>%</span>
+      <% } %>
+    </div>
+    <% }) %>
+  </div>
+
+  <% if (showLabels) { %>
+  <div class="allocation-legend">
+    <% barAllocations.forEach((alloc, i) => {
+      const pct = alloc.percent || alloc.percentage || alloc.value || 0;
+      const bgColor = alloc.color || defaultColors[i % defaultColors.length];
+    %>
+    <div class="legend-item">
+      <span class="legend-color" style="background-color: <%= bgColor %>;"></span>
+      <span class="legend-name"><%= alloc.name || alloc.label %></span>
+      <span class="legend-value tabular-nums"><%= pct.toFixed(1) %>%</span>
+    </div>
+    <% }) %>
+  </div>
+  <% } %>
+</div>

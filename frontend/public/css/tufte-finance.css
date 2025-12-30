@@ -1,0 +1,627 @@
+/**
+ * Tufte-Inspired Finance Component Styles
+ * Clean, data-dense, professional visualization
+ * Based on Edward Tufte's principles + Wealthfront/Personal Capital aesthetics
+ */
+
+/* ============================================
+   GLOBAL TUFTE OVERRIDES
+   ============================================ */
+
+/* Tabular numbers for financial data alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Muted semantic colors for gains/losses */
+.positive { color: #166534 !important; }
+.negative { color: #991b1b !important; }
+[data-theme="dark"] .positive { color: #4ade80 !important; }
+[data-theme="dark"] .negative { color: #f87171 !important; }
+
+.bg-positive { background-color: #f0fdf4 !important; }
+.bg-negative { background-color: #fef2f2 !important; }
+[data-theme="dark"] .bg-positive { background-color: rgba(74, 222, 128, 0.1) !important; }
+[data-theme="dark"] .bg-negative { background-color: rgba(248, 113, 113, 0.1) !important; }
+
+/* ============================================
+   STAT CARD COMPONENT
+   ============================================ */
+
+.tufte-stat-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease;
+}
+
+[data-theme="dark"] .tufte-stat-card {
+  background: #0f1419;
+  border-color: #30363d;
+}
+
+.tufte-stat-card:hover {
+  border-color: #d1d5db;
+}
+
+[data-theme="dark"] .tufte-stat-card:hover {
+  border-color: #484f58;
+}
+
+.tufte-stat-card .stat-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+[data-theme="dark"] .tufte-stat-card .stat-label {
+  color: #9ca3af;
+}
+
+.tufte-stat-card .stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tufte-stat-card .stat-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #111827;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  line-height: 1.2;
+}
+
+[data-theme="dark"] .tufte-stat-card .stat-value {
+  color: #f9fafb;
+}
+
+.tufte-stat-card .stat-change {
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+.tufte-stat-card .stat-change-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.tufte-stat-card .stat-sparkline {
+  margin-top: 12px;
+}
+
+.tufte-stat-card .stat-benchmark {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+}
+
+[data-theme="dark"] .tufte-stat-card .stat-benchmark {
+  border-top-color: #30363d;
+}
+
+.tufte-stat-card .benchmark-label {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .tufte-stat-card .benchmark-label {
+  color: #9ca3af;
+}
+
+.tufte-stat-card .benchmark-value {
+  color: #374151;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .tufte-stat-card .benchmark-value {
+  color: #d1d5db;
+}
+
+.tufte-stat-card .benchmark-diff {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.tufte-stat-card .benchmark-diff.positive {
+  background: #dcfce7;
+}
+
+.tufte-stat-card .benchmark-diff.negative {
+  background: #fee2e2;
+}
+
+[data-theme="dark"] .tufte-stat-card .benchmark-diff.positive {
+  background: rgba(74, 222, 128, 0.2);
+}
+
+[data-theme="dark"] .tufte-stat-card .benchmark-diff.negative {
+  background: rgba(248, 113, 113, 0.2);
+}
+
+/* ============================================
+   HOLDINGS TABLE COMPONENT
+   ============================================ */
+
+.tufte-holdings-table {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .tufte-holdings-table {
+  background: #0f1419;
+  border-color: #30363d;
+}
+
+.tufte-holdings-table .table-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+[data-theme="dark"] .tufte-holdings-table .table-header {
+  background: #151c25;
+  border-bottom-color: #30363d;
+}
+
+.tufte-holdings-table .table-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+[data-theme="dark"] .tufte-holdings-table .table-title {
+  color: #f9fafb;
+}
+
+.tufte-holdings-table .table-count {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .tufte-holdings-table .table-count {
+  color: #9ca3af;
+}
+
+.tufte-holdings-table .table-container {
+  overflow-x: auto;
+}
+
+.tufte-holdings-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tufte-holdings-table thead tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .tufte-holdings-table thead tr {
+  border-bottom-color: #30363d;
+}
+
+.tufte-holdings-table th {
+  padding: 10px 16px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+[data-theme="dark"] .tufte-holdings-table th {
+  color: #9ca3af;
+}
+
+.tufte-holdings-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s ease;
+}
+
+[data-theme="dark"] .tufte-holdings-table tbody tr {
+  border-bottom-color: #21262d;
+}
+
+.tufte-holdings-table .holding-row {
+  cursor: pointer;
+}
+
+.tufte-holdings-table .holding-row:hover {
+  background: #f9fafb;
+}
+
+[data-theme="dark"] .tufte-holdings-table .holding-row:hover {
+  background: #151c25;
+}
+
+.tufte-holdings-table td {
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+[data-theme="dark"] .tufte-holdings-table td {
+  color: #d1d5db;
+}
+
+.tufte-holdings-table .symbol-cell .symbol {
+  font-weight: 600;
+  color: #111827;
+  display: block;
+}
+
+[data-theme="dark"] .tufte-holdings-table .symbol-cell .symbol {
+  color: #f9fafb;
+}
+
+.tufte-holdings-table .symbol-cell .company-name {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: block;
+  margin-top: 2px;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .tufte-holdings-table .symbol-cell .company-name {
+  color: #9ca3af;
+}
+
+.tufte-holdings-table .sparkline-cell {
+  padding: 8px 12px;
+}
+
+.tufte-holdings-table .sparkline-cell .no-data {
+  color: #d1d5db;
+  font-size: 0.75rem;
+}
+
+[data-theme="dark"] .tufte-holdings-table .sparkline-cell .no-data {
+  color: #4b5563;
+}
+
+.tufte-holdings-table .return-cell {
+  font-weight: 500;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+.tufte-holdings-table .totals-row {
+  background: #f9fafb;
+  border-top: 2px solid #e5e7eb;
+}
+
+[data-theme="dark"] .tufte-holdings-table .totals-row {
+  background: #151c25;
+  border-top-color: #30363d;
+}
+
+.tufte-holdings-table .totals-row td {
+  color: #111827;
+}
+
+[data-theme="dark"] .tufte-holdings-table .totals-row td {
+  color: #f9fafb;
+}
+
+/* ============================================
+   ALLOCATION BAR COMPONENT
+   ============================================ */
+
+.tufte-allocation-bar {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .tufte-allocation-bar {
+  background: #0f1419;
+  border-color: #30363d;
+}
+
+.tufte-allocation-bar .allocation-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+[data-theme="dark"] .tufte-allocation-bar .allocation-title {
+  color: #f9fafb;
+}
+
+.tufte-allocation-bar .allocation-bar-container {
+  display: flex;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+[data-theme="dark"] .tufte-allocation-bar .allocation-bar-container {
+  background: #21262d;
+}
+
+.tufte-allocation-bar .allocation-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+  min-width: 2px;
+}
+
+.tufte-allocation-bar .allocation-segment:hover {
+  opacity: 0.85;
+}
+
+.tufte-allocation-bar .segment-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.tufte-allocation-bar .allocation-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 16px;
+}
+
+.tufte-allocation-bar .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tufte-allocation-bar .legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.tufte-allocation-bar .legend-name {
+  font-size: 0.8125rem;
+  color: #374151;
+}
+
+[data-theme="dark"] .tufte-allocation-bar .legend-name {
+  color: #d1d5db;
+}
+
+.tufte-allocation-bar .legend-value {
+  font-size: 0.8125rem;
+  color: #6b7280;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+[data-theme="dark"] .tufte-allocation-bar .legend-value {
+  color: #9ca3af;
+}
+
+/* ============================================
+   BENCHMARK COMPARISON COMPONENT
+   ============================================ */
+
+.tufte-benchmark-comparison {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 20px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  font-size: 0.875rem;
+}
+
+[data-theme="dark"] .tufte-benchmark-comparison {
+  background: #0f1419;
+  border-color: #30363d;
+}
+
+.tufte-benchmark-comparison .benchmark-period {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .tufte-benchmark-comparison .benchmark-period {
+  color: #9ca3af;
+}
+
+.tufte-benchmark-comparison .portfolio-return {
+  font-weight: 600;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+.tufte-benchmark-comparison .vs-text {
+  color: #9ca3af;
+}
+
+.tufte-benchmark-comparison .benchmark-return {
+  color: #374151;
+}
+
+[data-theme="dark"] .tufte-benchmark-comparison .benchmark-return {
+  color: #d1d5db;
+}
+
+.tufte-benchmark-comparison .performance-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tufte-benchmark-comparison .performance-badge.outperforming {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tufte-benchmark-comparison .performance-badge.underperforming {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .tufte-benchmark-comparison .performance-badge.outperforming {
+  background: rgba(74, 222, 128, 0.2);
+  color: #4ade80;
+}
+
+[data-theme="dark"] .tufte-benchmark-comparison .performance-badge.underperforming {
+  background: rgba(248, 113, 113, 0.2);
+  color: #f87171;
+}
+
+/* ============================================
+   SPARKLINE SVG STYLES
+   ============================================ */
+
+.sparkline-svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ============================================
+   GLOBAL SHADOW OVERRIDES
+   ============================================ */
+
+/* Reduce heavy shadows globally */
+.shadow-2xl,
+.shadow-xl,
+.shadow-lg {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Remove glow effects */
+.shadow-glow-blue,
+.shadow-glow-purple,
+.shadow-glow-emerald,
+.glow {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ============================================
+   GRADIENT BACKGROUND OVERRIDES
+   ============================================ */
+
+/* Convert gradient cards to solid backgrounds */
+.glass-card,
+.stat-card:not(.tufte-stat-card) {
+  background: #0f1419 !important;
+  border: 1px solid #30363d !important;
+}
+
+[data-theme="light"] .glass-card,
+[data-theme="light"] .stat-card:not(.tufte-stat-card) {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* ============================================
+   COLOR MUTING OVERRIDES
+   ============================================ */
+
+/* Mute bright greens */
+.text-green-500,
+.text-green-400,
+.text-green-600,
+.text-emerald-500,
+.text-emerald-400,
+.text-emerald-600 {
+  color: #166534 !important;
+}
+
+[data-theme="dark"] .text-green-500,
+[data-theme="dark"] .text-green-400,
+[data-theme="dark"] .text-green-600,
+[data-theme="dark"] .text-emerald-500,
+[data-theme="dark"] .text-emerald-400,
+[data-theme="dark"] .text-emerald-600 {
+  color: #4ade80 !important;
+}
+
+/* Mute bright reds */
+.text-red-500,
+.text-red-400,
+.text-red-600 {
+  color: #991b1b !important;
+}
+
+[data-theme="dark"] .text-red-500,
+[data-theme="dark"] .text-red-400,
+[data-theme="dark"] .text-red-600 {
+  color: #f87171 !important;
+}
+
+/* ============================================
+   ROUNDED CORNER STANDARDIZATION
+   ============================================ */
+
+.rounded-2xl,
+.rounded-3xl {
+  border-radius: 8px !important;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .tufte-stat-card {
+    padding: 16px;
+  }
+
+  .tufte-stat-card .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .tufte-holdings-table th,
+  .tufte-holdings-table td {
+    padding: 10px 12px;
+    font-size: 0.8125rem;
+  }
+
+  .tufte-allocation-bar .allocation-legend {
+    gap: 8px 16px;
+  }
+
+  .tufte-benchmark-comparison {
+    padding: 10px 16px;
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tufte-stat-card .stat-value-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tufte-holdings-table .sparkline-cell {
+    display: none;
+  }
+}
