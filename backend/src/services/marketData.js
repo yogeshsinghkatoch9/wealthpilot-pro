@@ -17,14 +17,62 @@ const API_CALL_DELAY = 12000; // 12 seconds between calls
 async function rateLimitedFetch(url) {
   const now = Date.now();
   const timeSinceLastCall = now - lastApiCall;
-  
+
   if (timeSinceLastCall < API_CALL_DELAY) {
     await new Promise(resolve => setTimeout(resolve, API_CALL_DELAY - timeSinceLastCall));
   }
-  
+
   lastApiCall = Date.now();
   const response = await fetch(url);
   return response.json();
+}
+
+/**
+ * Fetch quote from Yahoo Finance (no API key required)
+ */
+async function fetchFromYahooFinance(symbol) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Yahoo Finance returned ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = data?.chart?.result?.[0];
+
+    if (!result) {
+      return null;
+    }
+
+    const meta = result.meta;
+    const quote = result.indicators?.quote?.[0];
+    const prevClose = meta.chartPreviousClose || meta.previousClose;
+    const currentPrice = meta.regularMarketPrice;
+
+    return {
+      symbol: meta.symbol,
+      name: meta.shortName || meta.longName || symbol,
+      price: currentPrice,
+      previousClose: prevClose,
+      open: quote?.open?.[quote.open.length - 1] || currentPrice,
+      high: quote?.high?.[quote.high.length - 1] || currentPrice,
+      low: quote?.low?.[quote.low.length - 1] || currentPrice,
+      volume: quote?.volume?.[quote.volume.length - 1] || 0,
+      change: currentPrice - prevClose,
+      changePercent: prevClose > 0 ? ((currentPrice - prevClose) / prevClose) * 100 : 0,
+      marketCap: meta.marketCap || null,
+      exchange: meta.exchangeName || meta.exchange
+    };
+  } catch (err) {
+    logger.error(`Yahoo Finance error for ${symbol}:`, err.message);
+    return null;
+  }
 }
 
 /**
@@ -130,11 +178,19 @@ class MarketDataService {
   }
 
   /**
-   * Fetch quote from Alpha Vantage API
+   * Fetch quote from API - tries Yahoo Finance first (free), then Alpha Vantage
    */
   static async fetchQuoteFromAPI(symbol) {
+    // Try Yahoo Finance first (free, no API key required)
+    const yahooQuote = await fetchFromYahooFinance(symbol);
+    if (yahooQuote) {
+      logger.info(`Got quote for ${symbol} from Yahoo Finance: $${yahooQuote.price}`);
+      return yahooQuote;
+    }
+
+    // Fall back to Alpha Vantage if configured
     if (!ALPHA_VANTAGE_KEY) {
-      logger.warn('No Alpha Vantage API key configured');
+      logger.warn(`No quote available for ${symbol} - Yahoo failed and no Alpha Vantage key`);
       return null;
     }
 
