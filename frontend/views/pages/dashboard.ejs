@@ -33,10 +33,9 @@
     </div>
 
     <!-- Benchmark Comparison Bar -->
-    <% const benchmarkReturn = 18.2; // S&P 500 YTD approximation %>
     <%- include('../partials/finance/benchmark-comparison', {
       portfolioReturn: safeTotals.ytdReturn || 0,
-      benchmarkReturn: benchmarkReturn,
+      benchmarkReturn: 18.2,
       benchmarkName: 'S&P 500',
       period: 'YTD'
     }) %>
