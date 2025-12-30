@@ -19,50 +19,50 @@ const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 </div>
 
 <!-- Company Header -->
-<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-amber-900/20">
+<div class="bloomberg-card p-5">
   <div class="flex items-center gap-4">
-    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-xl">AAPL</div>
+    <div class="w-14 h-14 rounded bg-slate-700 flex items-center justify-center text-white font-bold text-xl">AAPL</div>
     <div class="flex-1">
       <h2 class="text-xl font-bold text-white">Apple Inc.</h2>
       <p class="text-slate-400">Credit Rating: AA+ (S&P) / Aa1 (Moody's)</p>
     </div>
     <div class="text-center px-4 border-l border-slate-700">
       <p class="text-sm text-slate-400">Total Debt</p>
-      <p class="text-xl font-bold font-mono text-white">$111.1B</p>
+      <p class="text-xl font-bold font-mono tabular-nums text-white">$111.1B</p>
     </div>
     <div class="text-center px-4 border-l border-slate-700">
       <p class="text-sm text-slate-400">Debt Health</p>
-      <p class="text-xl font-bold text-emerald-400">Excellent</p>
+      <p class="text-xl font-bold positive">Excellent</p>
     </div>
   </div>
 </div>
 
 <!-- Debt Metrics -->
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-400 text-sm">Debt/Equity</p>
-    <p class="text-2xl font-bold font-mono text-emerald-400">1.81</p>
-    <p class="text-xs text-emerald-400">Below sector avg 2.4</p>
+    <p class="text-2xl font-bold font-mono tabular-nums text-white">1.81</p>
+    <p class="text-xs text-slate-400">Below sector avg 2.4</p>
   </div>
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-400 text-sm">Debt/EBITDA</p>
-    <p class="text-2xl font-bold font-mono text-emerald-400">0.86</p>
-    <p class="text-xs text-emerald-400">Very low leverage</p>
+    <p class="text-2xl font-bold font-mono tabular-nums text-white">0.86</p>
+    <p class="text-xs text-slate-400">Very low leverage</p>
   </div>
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-400 text-sm">Interest Coverage</p>
-    <p class="text-2xl font-bold font-mono text-emerald-400">29.8x</p>
-    <p class="text-xs text-emerald-400">Excellent coverage</p>
+    <p class="text-2xl font-bold font-mono tabular-nums positive">29.8x</p>
+    <p class="text-xs text-slate-400">Excellent coverage</p>
   </div>
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-400 text-sm">Net Debt</p>
-    <p class="text-2xl font-bold font-mono text-emerald-400">$81.2B</p>
+    <p class="text-2xl font-bold font-mono tabular-nums text-white">$81.2B</p>
     <p class="text-xs text-slate-400">Cash: $29.9B</p>
   </div>
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-400 text-sm">Avg Interest Rate</p>
-    <p class="text-2xl font-bold font-mono text-emerald-400">3.2%</p>
-    <p class="text-xs text-emerald-400">Low cost debt</p>
+    <p class="text-2xl font-bold font-mono tabular-nums text-white">3.2%</p>
+    <p class="text-xs text-slate-400">Low cost debt</p>
   </div>
 </div>
 

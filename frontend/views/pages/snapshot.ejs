@@ -11,35 +11,41 @@
 
 <!-- Quick Stats -->
 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-<div class="card p-4 text-center">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Portfolio Value</p>
-<p class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$276,847</p>
+<style>
+  .positive { color: #10b981; }
+  .negative { color: #ef4444; }
+  .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+</style>
+
+<div class="tufte-stat-card text-center">
+  <div class="stat-label">Portfolio Value</div>
+  <div class="stat-value tabular-nums">$276,847</div>
 </div>
-<div class="card p-4 text-center">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Today's Change</p>
-<p class="text-xl font-bold text-emerald-400">+$2,148</p>
+<div class="tufte-stat-card text-center">
+  <div class="stat-label">Today's Change</div>
+  <div class="stat-value tabular-nums positive">+$2,148</div>
 </div>
-<div class="card p-4 text-center">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Today's %</p>
-<p class="text-xl font-bold text-emerald-400">+0.78%</p>
+<div class="tufte-stat-card text-center">
+  <div class="stat-label">Today's %</div>
+  <div class="stat-value tabular-nums positive">+0.78%</div>
 </div>
-<div class="card p-4 text-center">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">S&P 500</p>
-<p class="text-xl font-bold text-emerald-400">+0.42%</p>
+<div class="tufte-stat-card text-center">
+  <div class="stat-label">S&P 500</div>
+  <div class="stat-value tabular-nums positive">+0.42%</div>
 </div>
-<div class="card p-4 text-center">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">vs Benchmark</p>
-<p class="text-xl font-bold text-emerald-400">+0.36%</p>
+<div class="tufte-stat-card text-center">
+  <div class="stat-label">vs Benchmark</div>
+  <div class="stat-value tabular-nums positive">+0.36%</div>
 </div>
-<div class="card p-4 text-center">
-<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">YTD Return</p>
-<p class="text-xl font-bold text-emerald-400">+24.8%</p>
+<div class="tufte-stat-card text-center">
+  <div class="stat-label">YTD Return</div>
+  <div class="stat-value tabular-nums positive">+24.8%</div>
 </div>
 </div>
 
 <!-- Today's Movers -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-<div class="card p-5">
+<div class="tufte-stat-card p-5">
 <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4 flex items-center gap-2">🚀 Top Gainers</h3>
 <div class="space-y-2">
 <div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
@@ -47,21 +53,21 @@
 <div class="w-10 h-10 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div>
 <div><p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">NVIDIA</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">50 shares</p></div>
 </div>
-<div class="text-right"><p class="text-lg font-bold text-emerald-400">+3.24%</p><p class="text-xs text-emerald-400">+$786</p></div>
+<div class="text-right"><p class="text-lg font-bold tabular-nums positive">+3.24%</p><p class="text-xs tabular-nums positive">+$786</p></div>
 </div>
 <div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">AMD</div>
 <div><p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">AMD</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">75 shares</p></div>
 </div>
-<div class="text-right"><p class="text-lg font-bold text-emerald-400">+2.18%</p><p class="text-xs text-emerald-400">+$245</p></div>
+<div class="text-right"><p class="text-lg font-bold tabular-nums positive">+2.18%</p><p class="text-xs tabular-nums positive">+$245</p></div>
 </div>
 <div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div>
 <div><p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Microsoft</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">100 shares</p></div>
 </div>
-<div class="text-right"><p class="text-lg font-bold text-emerald-400">+1.42%</p><p class="text-xs text-emerald-400">+$589</p></div>
+<div class="text-right"><p class="text-lg font-bold tabular-nums positive">+1.42%</p><p class="text-xs tabular-nums positive">+$589</p></div>
 </div>
 </div>
 </div>
@@ -73,21 +79,21 @@
 <div class="w-10 h-10 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">TSLA</div>
 <div><p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Tesla</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">25 shares</p></div>
 </div>
-<div class="text-right"><p class="text-lg font-bold text-red-400">-1.85%</p><p class="text-xs text-red-400">-$165</p></div>
+<div class="text-right"><p class="text-lg font-bold tabular-nums negative">-1.85%</p><p class="text-xs tabular-nums negative">-$165</p></div>
 </div>
 <div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">DIS</div>
 <div><p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Disney</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">40 shares</p></div>
 </div>
-<div class="text-right"><p class="text-lg font-bold text-red-400">-0.92%</p><p class="text-xs text-red-400">-$42</p></div>
+<div class="text-right"><p class="text-lg font-bold tabular-nums negative">-0.92%</p><p class="text-xs tabular-nums negative">-$42</p></div>
 </div>
 <div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-amber-50' : 'bg-amber-500/10' %>">
 <div class="flex items-center gap-3">
 <div class="w-10 h-10 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">T</div>
 <div><p class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">AT&T</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">150 shares</p></div>
 </div>
-<div class="text-right"><p class="text-lg font-bold text-red-400">-0.45%</p><p class="text-xs text-red-400">-$15</p></div>
+<div class="text-right"><p class="text-lg font-bold tabular-nums negative">-0.45%</p><p class="text-xs tabular-nums negative">-$15</p></div>
 </div>
 </div>
 </div>
@@ -139,13 +145,13 @@
 <div class="card p-5">
 <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">This Week's Performance</h3>
 <div class="grid grid-cols-5 gap-4">
-<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Mon</p><p class="font-bold text-emerald-400">+0.82%</p></div>
-<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Tue</p><p class="font-bold text-red-400">-0.34%</p></div>
-<div class="text-center p-3 rounded-lg border-2 border-sky-500 <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>"><p class="text-xs text-sky-400 font-medium">Wed</p><p class="font-bold text-emerald-400">+0.78%</p></div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Mon</p><p class="font-bold tabular-nums positive">+0.82%</p></div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Tue</p><p class="font-bold tabular-nums negative">-0.34%</p></div>
+<div class="text-center p-3 rounded-lg border-2 border-sky-500 <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>"><p class="text-xs text-sky-400 font-medium">Wed</p><p class="font-bold tabular-nums positive">+0.78%</p></div>
 <div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Thu</p><p class="font-bold <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>">—</p></div>
 <div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Fri</p><p class="font-bold <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>">—</p></div>
 </div>
-<p class="text-center mt-4 text-sm"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Week to Date:</span> <span class="font-bold text-emerald-400">+1.26%</span> <span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">($3,489)</span></p>
+<p class="text-center mt-4 text-sm"><span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Week to Date:</span> <span class="font-bold tabular-nums positive">+1.26%</span> <span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">($3,489)</span></p>
 </div>
 </div></div></main>
 <%- include('../partials/footer') %>

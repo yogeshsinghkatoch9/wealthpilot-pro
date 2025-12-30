@@ -26,29 +26,29 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
 
 <!-- KPI Bar -->
 <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Face Value</p>
-    <p class="text-2xl font-bold text-white font-mono"><%= safeFmt.money(totalFaceValue) %></p>
-    <p class="text-xs text-slate-400 mt-1 font-mono"><%= safeBonds.length %> bonds</p>
+    <p class="text-2xl font-bold text-white tabular-nums"><%= safeFmt.money(totalFaceValue) %></p>
+    <p class="text-xs text-slate-400 mt-1 tabular-nums"><%= safeBonds.length %> bonds</p>
   </div>
 
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Purchase Price</p>
-    <p class="text-2xl font-bold text-white font-mono"><%= safeFmt.money(totalPurchasePrice) %></p>
+    <p class="text-2xl font-bold text-white tabular-nums"><%= safeFmt.money(totalPurchasePrice) %></p>
     <% const priceDiff = totalFaceValue - totalPurchasePrice; %>
-    <p class="text-xs <%= priceDiff >= 0 ? 'text-emerald-400' : 'text-red-400' %> mt-1 font-mono">
+    <p class="text-xs <%= priceDiff >= 0 ? 'positive' : 'negative' %> mt-1 tabular-nums">
       <%= priceDiff >= 0 ? '+' : '' %><%= safeFmt.money(priceDiff) %> at maturity
     </p>
   </div>
 
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Annual Income</p>
-    <p class="text-2xl font-bold text-emerald-400 font-mono"><%= safeFmt.money(totalAnnualIncome) %></p>
+    <p class="text-2xl font-bold positive tabular-nums"><%= safeFmt.money(totalAnnualIncome) %></p>
     <% const avgYield = totalPurchasePrice > 0 ? (totalAnnualIncome / totalPurchasePrice * 100) : 0; %>
-    <p class="text-xs text-slate-400 mt-1 font-mono">Avg Yield: <%= avgYield.toFixed(2) %>%</p>
+    <p class="text-xs text-slate-400 mt-1 tabular-nums">Avg Yield: <%= avgYield.toFixed(2) %>%</p>
   </div>
 
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Avg Duration</p>
     <%
     const now = new Date();
@@ -58,13 +58,13 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
         return sum + Math.max(0, (maturity - now) / (1000 * 60 * 60 * 24 * 365));
       }, 0) / safeBonds.length : 0;
     %>
-    <p class="text-2xl font-bold text-sky-400 font-mono"><%= avgDuration.toFixed(1) %> <span class="text-sm">YRS</span></p>
+    <p class="text-2xl font-bold text-sky-400 tabular-nums"><%= avgDuration.toFixed(1) %> <span class="text-sm">YRS</span></p>
     <p class="text-xs text-slate-400 mt-1">to maturity</p>
   </div>
 
-  <div class="bloomberg-card p-4">
+  <div class="tufte-stat-card">
     <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Portfolio Yield</p>
-    <p class="text-2xl font-bold text-emerald-400 font-mono"><%= avgYield.toFixed(2) %><span class="text-sm">%</span></p>
+    <p class="text-2xl font-bold positive tabular-nums"><%= avgYield.toFixed(2) %><span class="text-sm">%</span></p>
     <p class="text-xs text-slate-400 mt-1">weighted average</p>
   </div>
 </div>
@@ -77,9 +77,6 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
 
   <% if (safeBonds.length === 0) { %>
   <div class="p-12 text-center">
-    <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-    </svg>
     <h4 class="text-lg font-semibold text-white mb-2">NO BONDS</h4>
     <p class="text-slate-400 mb-4">Add bonds to track your fixed income portfolio</p>
     <button onclick="openAddModal()" class="bloomberg-btn bloomberg-btn-primary">ADD BOND</button>
@@ -129,32 +126,30 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
           </span>
         </td>
 
-        <td class="px-4 py-4 text-right text-white font-medium font-mono">
+        <td class="px-4 py-4 text-right text-white font-medium tabular-nums">
           <%= safeFmt.money(safeB.face_value || 0) %>
         </td>
 
-        <td class="px-4 py-4 text-right text-slate-300 font-mono">
+        <td class="px-4 py-4 text-right text-slate-300 tabular-nums">
           <%= (safeB.coupon_rate || 0).toFixed(2) %>%
         </td>
 
-        <td class="px-4 py-4 text-right text-emerald-400 font-mono">
+        <td class="px-4 py-4 text-right positive tabular-nums">
           <%= safeFmt.money(annualIncome) %>
         </td>
 
-        <td class="px-4 py-4 text-right text-emerald-400 font-mono">
+        <td class="px-4 py-4 text-right positive tabular-nums">
           <%= ytm.toFixed(2) %>%
         </td>
 
         <td class="px-4 py-4">
-          <p class="text-white font-mono text-sm"><%= maturityDate.toLocaleDateString() %></p>
-          <p class="text-xs text-slate-500 font-mono"><%= yearsToMaturity.toFixed(1) %> years</p>
+          <p class="text-white tabular-nums text-sm"><%= maturityDate.toLocaleDateString() %></p>
+          <p class="text-xs text-slate-500 tabular-nums"><%= yearsToMaturity.toFixed(1) %> years</p>
         </td>
 
         <td class="px-4 py-4 text-center">
-          <button onclick="deleteBond('<%= safeB.id %>')" class="text-red-400 hover:text-red-300 transition-colors">
-            <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
+          <button onclick="deleteBond('<%= safeB.id %>')" class="negative hover:text-red-300 transition-colors">
+            Delete
           </button>
         </td>
       </tr>

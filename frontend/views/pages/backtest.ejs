@@ -7,14 +7,13 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 px-6 py-4 -mx-6 -mt-6 mb-6">
+<div class="bg-slate-900 border-b border-amber-400 px-6 py-4 -mx-6 -mt-6 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-bold text-amber-400 tracking-wide">STRATEGY BACKTESTER</h1>
       <p class="text-slate-400 text-sm mt-1">Test your investment strategies on historical data</p>
     </div>
     <button onclick="runBacktest()" class="bloomberg-btn bloomberg-btn-primary" id="backtestBtn">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       RUN BACKTEST
     </button>
   </div>
@@ -24,27 +23,27 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
 <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6 p-4 bg-slate-900/50 border border-amber-400/30 rounded">
   <div class="text-center border-r border-slate-700 last:border-r-0">
     <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">FINAL VALUE</div>
-    <div id="kpiFinalValue" class="text-lg font-mono font-bold text-emerald-400">$312,847</div>
+    <div id="kpiFinalValue" class="text-lg font-mono font-bold positive tabular-nums">$312,847</div>
   </div>
   <div class="text-center border-r border-slate-700 last:border-r-0">
     <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">TOTAL RETURN</div>
-    <div id="kpiTotalReturn" class="text-lg font-mono font-bold text-emerald-400">+212.8%</div>
+    <div id="kpiTotalReturn" class="text-lg font-mono font-bold positive tabular-nums">+212.8%</div>
   </div>
   <div class="text-center border-r border-slate-700 last:border-r-0">
     <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">CAGR</div>
-    <div id="kpiCagr" class="text-lg font-mono font-bold text-slate-300">12.1%</div>
+    <div id="kpiCagr" class="text-lg font-mono font-bold text-slate-300 tabular-nums">12.1%</div>
   </div>
   <div class="text-center border-r border-slate-700 last:border-r-0">
     <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">SHARPE RATIO</div>
-    <div id="kpiSharpe" class="text-lg font-mono font-bold text-slate-300">0.87</div>
+    <div id="kpiSharpe" class="text-lg font-mono font-bold text-slate-300 tabular-nums">0.87</div>
   </div>
   <div class="text-center border-r border-slate-700 last:border-r-0">
     <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">MAX DRAWDOWN</div>
-    <div id="kpiDrawdown" class="text-lg font-mono font-bold text-red-400">-23.4%</div>
+    <div id="kpiDrawdown" class="text-lg font-mono font-bold negative tabular-nums">-23.4%</div>
   </div>
   <div class="text-center">
     <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">WIN RATE</div>
-    <div id="kpiWinRate" class="text-lg font-mono font-bold text-emerald-400">68%</div>
+    <div id="kpiWinRate" class="text-lg font-mono font-bold positive tabular-nums">68%</div>
   </div>
 </div>
 
@@ -139,21 +138,21 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
 
 <!-- Key Metrics -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-<div class="bloomberg-card text-center">
+<div class="tufte-stat-card text-center">
   <p class="text-slate-500 text-xs uppercase tracking-wider">Final Value</p>
-  <p id="finalValue" class="text-2xl font-bold font-mono text-emerald-400">$312,847</p>
+  <p id="finalValue" class="text-2xl font-bold font-mono positive tabular-nums">$312,847</p>
 </div>
-<div class="bloomberg-card text-center">
+<div class="tufte-stat-card text-center">
   <p class="text-slate-500 text-xs uppercase tracking-wider">Total Return</p>
-  <p id="totalReturn" class="text-2xl font-bold font-mono text-emerald-400">+212.8%</p>
+  <p id="totalReturn" class="text-2xl font-bold font-mono positive tabular-nums">+212.8%</p>
 </div>
-<div class="bloomberg-card text-center">
+<div class="tufte-stat-card text-center">
   <p class="text-slate-500 text-xs uppercase tracking-wider">CAGR</p>
-  <p id="cagr" class="text-2xl font-bold font-mono text-slate-300">12.1%</p>
+  <p id="cagr" class="text-2xl font-bold font-mono text-slate-300 tabular-nums">12.1%</p>
 </div>
-<div class="bloomberg-card text-center">
+<div class="tufte-stat-card text-center">
   <p class="text-slate-500 text-xs uppercase tracking-wider">Sharpe Ratio</p>
-  <p id="sharpe" class="text-2xl font-bold font-mono text-slate-300">0.87</p>
+  <p id="sharpe" class="text-2xl font-bold font-mono text-slate-300 tabular-nums">0.87</p>
 </div>
 </div>
 
@@ -163,22 +162,22 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 <div>
   <p class="text-slate-500 text-xs uppercase tracking-wider">Max Drawdown</p>
-  <p class="text-xl font-bold font-mono text-red-400">-23.4%</p>
+  <p class="text-xl font-bold font-mono negative tabular-nums">-23.4%</p>
   <p class="text-xs text-slate-500">Mar 2020</p>
 </div>
 <div>
   <p class="text-slate-500 text-xs uppercase tracking-wider">Volatility (σ)</p>
-  <p class="text-xl font-bold font-mono text-slate-300">14.2%</p>
+  <p class="text-xl font-bold font-mono text-slate-300 tabular-nums">14.2%</p>
   <p class="text-xs text-slate-500">Annualized</p>
 </div>
 <div>
   <p class="text-slate-500 text-xs uppercase tracking-wider">Sortino Ratio</p>
-  <p class="text-xl font-bold font-mono text-slate-300">1.24</p>
+  <p class="text-xl font-bold font-mono text-slate-300 tabular-nums">1.24</p>
   <p class="text-xs text-slate-500">Downside risk</p>
 </div>
 <div>
   <p class="text-slate-500 text-xs uppercase tracking-wider">Win Rate</p>
-  <p class="text-xl font-bold font-mono text-emerald-400">68%</p>
+  <p class="text-xl font-bold font-mono positive tabular-nums">68%</p>
   <p class="text-xs text-slate-500">Positive months</p>
 </div>
 </div>
@@ -201,24 +200,24 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
 <tbody>
 <tr class="border-b border-slate-700/50 bg-amber-500/10">
   <td class="py-3 font-semibold text-amber-400">Your Strategy</td>
-  <td class="py-3 text-right font-mono text-emerald-400">+212.8%</td>
-  <td class="py-3 text-right font-mono text-slate-300">12.1%</td>
-  <td class="py-3 text-right font-mono text-red-400">-23.4%</td>
-  <td class="py-3 text-right font-mono text-slate-300">0.87</td>
+  <td class="py-3 text-right font-mono positive tabular-nums">+212.8%</td>
+  <td class="py-3 text-right font-mono text-slate-300 tabular-nums">12.1%</td>
+  <td class="py-3 text-right font-mono negative tabular-nums">-23.4%</td>
+  <td class="py-3 text-right font-mono text-slate-300 tabular-nums">0.87</td>
 </tr>
 <tr class="border-b border-slate-700/50">
   <td class="py-3 text-slate-400">S&P 500 (SPY)</td>
-  <td class="py-3 text-right font-mono text-emerald-400">+195.2%</td>
-  <td class="py-3 text-right font-mono text-slate-400">11.4%</td>
-  <td class="py-3 text-right font-mono text-red-400">-33.9%</td>
-  <td class="py-3 text-right font-mono text-slate-400">0.72</td>
+  <td class="py-3 text-right font-mono positive tabular-nums">+195.2%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">11.4%</td>
+  <td class="py-3 text-right font-mono negative tabular-nums">-33.9%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">0.72</td>
 </tr>
 <tr class="border-b border-slate-700/50">
   <td class="py-3 text-slate-400">60/40 Portfolio</td>
-  <td class="py-3 text-right font-mono text-emerald-400">+142.5%</td>
-  <td class="py-3 text-right font-mono text-slate-400">9.3%</td>
-  <td class="py-3 text-right font-mono text-red-400">-21.8%</td>
-  <td class="py-3 text-right font-mono text-slate-400">0.81</td>
+  <td class="py-3 text-right font-mono positive tabular-nums">+142.5%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">9.3%</td>
+  <td class="py-3 text-right font-mono negative tabular-nums">-21.8%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">0.81</td>
 </tr>
 </tbody>
 </table>

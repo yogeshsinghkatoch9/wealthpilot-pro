@@ -127,7 +127,7 @@ const onTrackGoals = safeGoals.filter(g => {
             <div class="mb-4 space-y-3">
               <div class="flex justify-between items-baseline">
                 <span class="text-slate-400 text-sm font-mono">CURRENT</span>
-                <span class="text-white text-lg font-mono font-bold"><%= safeFmt.money(currentAmount) %></span>
+                <span class="text-white text-lg font-mono font-bold tabular-nums"><%= safeFmt.money(currentAmount) %></span>
               </div>
 
               <div class="relative">
@@ -135,8 +135,8 @@ const onTrackGoals = safeGoals.filter(g => {
                   <div class="h-full transition-all duration-500 <%= progress >= 100 ? 'bg-emerald-400' : 'bg-amber-400' %>" style="width: <%= Math.min(100, progress) %>%"></div>
                 </div>
                 <div class="flex justify-between items-center mt-2">
-                  <span class="text-slate-500 text-xs font-mono">TARGET: <%= safeFmt.money(targetAmount) %></span>
-                  <span class="<%= statusColor %> text-sm font-mono font-bold"><%= progress.toFixed(1) %>%</span>
+                  <span class="text-slate-500 text-xs font-mono tabular-nums">TARGET: <%= safeFmt.money(targetAmount) %></span>
+                  <span class="<%= statusColor %> text-sm font-mono font-bold tabular-nums"><%= progress.toFixed(1) %>%</span>
                 </div>
               </div>
             </div>
@@ -151,7 +151,7 @@ const onTrackGoals = safeGoals.filter(g => {
               </div>
               <div>
                 <p class="text-slate-500 text-xs font-mono uppercase tracking-wide mb-1">Days Left</p>
-                <p class="<%= daysRemaining !== null && daysRemaining !== undefined ? (daysRemaining < 30 ? 'text-red-400' : 'text-white') : 'text-slate-500' %> text-sm font-mono font-bold">
+                <p class="<%= daysRemaining !== null && daysRemaining !== undefined ? (daysRemaining < 30 ? 'negative' : 'text-white') : 'text-slate-500' %> text-sm font-mono font-bold tabular-nums">
                   <%= daysRemaining !== null && daysRemaining !== undefined ? daysRemaining : '-' %>
                 </p>
               </div>

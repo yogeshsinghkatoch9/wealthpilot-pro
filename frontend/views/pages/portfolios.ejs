@@ -302,94 +302,60 @@
             </div>
           <% } %>
 
-          <!-- Portfolio Statistics - Enhanced -->
+          <!-- Portfolio Statistics - Tufte Style -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <!-- Total Value Card -->
-            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-amber-500/30 transition-all duration-300">
-              <div class="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full -mr-10 -mt-10"></div>
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Total Value</p>
-                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
+            <div class="tufte-stat-card">
+              <div class="stat-label">Total Value</div>
+              <div class="stat-value-row">
+                <span class="stat-value tabular-nums">
+                  <%= safeFmt.money(safeSelected.total_value) %>
+                </span>
               </div>
-              <p class="font-mono font-bold text-white text-2xl mb-1">
-                <%= safeFmt.money(safeSelected.total_value) %>
-              </p>
               <% const dayChangeVal = safeSelected.day_change || 0; %>
-              <div class="flex items-center gap-1 text-xs <%= dayChangeVal >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-                <svg class="w-3 h-3 <%= dayChangeVal >= 0 ? '' : 'rotate-180' %>" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-                <span><%= safeFmt.money(Math.abs(dayChangeVal)) %> today</span>
+              <div class="stat-subtext <%= dayChangeVal >= 0 ? 'positive' : 'negative' %> tabular-nums">
+                <%= dayChangeVal >= 0 ? '+' : '' %><%= safeFmt.money(Math.abs(dayChangeVal)) %> today
               </div>
             </div>
 
             <!-- Cost Basis Card -->
-            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-blue-500/30 transition-all duration-300">
-              <div class="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -mr-10 -mt-10"></div>
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Cost Basis</p>
-                <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </div>
+            <div class="tufte-stat-card">
+              <div class="stat-label">Cost Basis</div>
+              <div class="stat-value-row">
+                <span class="stat-value tabular-nums">
+                  <%= safeFmt.money(safeSelected.total_cost) %>
+                </span>
               </div>
-              <p class="font-mono font-bold text-slate-300 text-2xl mb-1">
-                <%= safeFmt.money(safeSelected.total_cost) %>
-              </p>
-              <div class="flex items-center gap-2 text-xs text-slate-500">
-                <span><%= safeHoldings.length %> positions</span>
-                <span class="w-1 h-1 rounded-full bg-slate-600"></span>
-                <span>Avg: <%= safeFmt.money(safeSelected.total_cost / (safeHoldings.length || 1)) %></span>
+              <div class="stat-subtext tabular-nums">
+                <%= safeHoldings.length %> positions • Avg: <%= safeFmt.money(safeSelected.total_cost / (safeHoldings.length || 1)) %>
               </div>
             </div>
 
             <!-- Gain/Loss Card -->
-            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-emerald-500/30 transition-all duration-300">
+            <div class="tufte-stat-card">
               <% const totalGainPct = safeSelected.total_cost > 0 ? (safeSelected.total_gain / safeSelected.total_cost) * 100 : 0; %>
-              <div class="absolute top-0 right-0 w-20 h-20 <%= safeSelected.total_gain >= 0 ? 'bg-emerald-500/5' : 'bg-red-500/5' %> rounded-full -mr-10 -mt-10"></div>
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Total Gain/Loss</p>
-                <div class="w-8 h-8 rounded-lg <%= safeSelected.total_gain >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' %> flex items-center justify-center">
-                  <svg class="w-4 h-4 <%= safeSelected.total_gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= safeSelected.total_gain >= 0 ? 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' : 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6' %>" />
-                  </svg>
-                </div>
-              </div>
-              <p class="font-mono font-bold text-2xl mb-1 <%= safeSelected.total_gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-                <%= safeSelected.total_gain >= 0 ? '+' : '' %><%= safeFmt.money(safeSelected.total_gain) %>
-              </p>
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-xs font-semibold <%= safeSelected.total_gain >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400' %>">
-                  <%= totalGainPct >= 0 ? '+' : '' %><%= totalGainPct.toFixed(2) %>%
+              <div class="stat-label">Total Gain/Loss</div>
+              <div class="stat-value-row">
+                <span class="stat-value tabular-nums <%= safeSelected.total_gain >= 0 ? 'positive' : 'negative' %>">
+                  <%= safeSelected.total_gain >= 0 ? '+' : '' %><%= safeFmt.money(safeSelected.total_gain) %>
                 </span>
-                <span class="text-xs text-slate-500">all time</span>
+              </div>
+              <div class="stat-subtext <%= safeSelected.total_gain >= 0 ? 'positive' : 'negative' %> tabular-nums">
+                <%= totalGainPct >= 0 ? '+' : '' %><%= totalGainPct.toFixed(2) %>% all time
               </div>
             </div>
 
             <!-- Dividend Income Card -->
-            <div class="relative overflow-hidden p-5 bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 rounded-xl group hover:border-purple-500/30 transition-all duration-300">
-              <div class="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full -mr-10 -mt-10"></div>
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-slate-400 text-xs uppercase font-semibold tracking-wider">Div. Income</p>
-                <div class="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
+            <div class="tufte-stat-card">
+              <div class="stat-label">Div. Income</div>
+              <div class="stat-value-row">
+                <span class="stat-value tabular-nums">
+                  <%= safeFmt.money(safeSelected.total_income || 0) %>
+                </span>
               </div>
-              <p class="font-mono font-bold text-purple-400 text-2xl mb-1">
-                <%= safeFmt.money(safeSelected.total_income || 0) %>
-              </p>
               <% const yieldPct = safeSelected.total_value > 0 ? ((safeSelected.total_income || 0) / safeSelected.total_value * 100) : 0; %>
-              <div class="flex items-center gap-2 text-xs text-slate-500">
-                <span class="text-purple-400"><%= yieldPct.toFixed(2) %>% yield</span>
-                <span class="w-1 h-1 rounded-full bg-slate-600"></span>
-                <span>annual est.</span>
+              <div class="stat-subtext tabular-nums">
+                <%= yieldPct.toFixed(2) %>% yield • annual est.
               </div>
             </div>
           </div>
@@ -398,7 +364,7 @@
           <div class="flex items-center gap-6 mb-6 p-3 bg-slate-800/30 rounded-lg border border-slate-700/30">
             <div class="flex items-center gap-2">
               <span class="text-slate-500 text-xs uppercase">Day Change:</span>
-              <span class="font-mono text-sm font-semibold <%= dayChangeVal >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <span class="font-mono text-sm font-semibold tabular-nums <%= dayChangeVal >= 0 ? 'positive' : 'negative' %>">
                 <%= dayChangeVal >= 0 ? '+' : '' %><%= safeFmt.money(dayChangeVal) %> (<%= ((dayChangeVal / (safeSelected.total_value - dayChangeVal)) * 100).toFixed(2) %>%)
               </span>
             </div>

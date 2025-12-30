@@ -51,11 +51,11 @@
       border-radius: 8px;
       padding: 20px;
       transition: all 0.3s;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
 
     .section-card:hover {
       border-color: #f59e0b;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
     }
 
     .section-header {
@@ -109,12 +109,17 @@
       font-weight: 500;
     }
 
-    .stat-value.positive {
+    .positive {
       color: #3fb950;
     }
 
-    .stat-value.negative {
+    .negative {
       color: #f85149;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum';
     }
 
     .loading {
@@ -192,15 +197,15 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Advancing</span>
-            <span class="stat-value positive"><%= breadth?.indicators?.advanceDecline?.advancing || '-' %></span>
+            <span class="stat-value tabular-nums positive"><%= breadth?.indicators?.advanceDecline?.advancing || '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Declining</span>
-            <span class="stat-value negative"><%= breadth?.indicators?.advanceDecline?.declining || '-' %></span>
+            <span class="stat-value tabular-nums negative"><%= breadth?.indicators?.advanceDecline?.declining || '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Market Health</span>
-            <span class="stat-value"><%= breadth?.healthScore ? breadth.healthScore + '/100' : '-' %></span>
+            <span class="stat-value tabular-nums"><%= breadth?.healthScore ? breadth.healthScore + '/100' : '-' %></span>
           </div>
         </div>
       </div>
@@ -214,15 +219,15 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Top Gainer</span>
-            <span class="stat-value positive"><%= topMovers?.gainers?.[0]?.symbol || '-' %></span>
+            <span class="stat-value tabular-nums positive"><%= topMovers?.gainers?.[0]?.symbol || '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Top Loser</span>
-            <span class="stat-value negative"><%= topMovers?.losers?.[0]?.symbol || '-' %></span>
+            <span class="stat-value tabular-nums negative"><%= topMovers?.losers?.[0]?.symbol || '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Most Active</span>
-            <span class="stat-value"><%= topMovers?.active?.[0]?.symbol || '-' %></span>
+            <span class="stat-value tabular-nums"><%= topMovers?.active?.[0]?.symbol || '-' %></span>
           </div>
         </div>
       </div>
@@ -236,15 +241,15 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Overall Score</span>
-            <span class="stat-value"><%= sentiment?.overall?.score ? sentiment.overall.score.toFixed(1) + '/100' : '-' %></span>
+            <span class="stat-value tabular-nums"><%= sentiment?.overall?.score ? sentiment.overall.score.toFixed(1) + '/100' : '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Sentiment</span>
-            <span class="stat-value"><%= sentiment?.overall?.sentiment || 'NEUTRAL' %></span>
+            <span class="stat-value tabular-nums"><%= sentiment?.overall?.sentiment || 'NEUTRAL' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">News Articles</span>
-            <span class="stat-value"><%= sentiment?.news?.articles?.length || 0 %></span>
+            <span class="stat-value tabular-nums"><%= sentiment?.news?.articles?.length || 0 %></span>
           </div>
         </div>
       </div>
@@ -262,15 +267,15 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Best Performer</span>
-            <span class="stat-value positive"><%= sectors?.bestPerformer?.name || '-' %></span>
+            <span class="stat-value tabular-nums positive"><%= sectors?.bestPerformer?.name || '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Worst Performer</span>
-            <span class="stat-value negative"><%= sectors?.worstPerformer?.name || '-' %></span>
+            <span class="stat-value tabular-nums negative"><%= sectors?.worstPerformer?.name || '-' %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Sectors Tracked</span>
-            <span class="stat-value">11</span>
+            <span class="stat-value tabular-nums">11</span>
           </div>
         </div>
       </div>
@@ -284,11 +289,11 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Rotation Signal</span>
-            <span class="stat-value" id="rotation-signal">-</span>
+            <span class="stat-value tabular-nums" id="rotation-signal">-</span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -306,7 +311,7 @@
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -324,7 +329,7 @@
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -342,11 +347,11 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Upcoming Events</span>
-            <span class="stat-value"><%= economic?.upcoming || 0 %></span>
+            <span class="stat-value tabular-nums"><%=economic?.upcoming || 0 %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -360,11 +365,11 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Upcoming Earnings</span>
-            <span class="stat-value"><%= earnings?.upcoming || 0 %></span>
+            <span class="stat-value tabular-nums"><%=earnings?.upcoming || 0 %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -378,11 +383,11 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Upcoming Dividends</span>
-            <span class="stat-value"><%= dividend?.upcoming || 0 %></span>
+            <span class="stat-value tabular-nums"><%=dividend?.upcoming || 0 %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -396,11 +401,11 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Upcoming IPOs</span>
-            <span class="stat-value"><%= ipo?.thisWeek || 0 %></span>
+            <span class="stat-value tabular-nums"><%=ipo?.thisWeek || 0 %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>
@@ -414,11 +419,11 @@
         <div class="section-content">
           <div class="stat-row">
             <span class="stat-label">Active SPACs</span>
-            <span class="stat-value"><%= spac?.active || 0 %></span>
+            <span class="stat-value tabular-nums"><%=spac?.active || 0 %></span>
           </div>
           <div class="stat-row">
             <span class="stat-label">Status</span>
-            <span class="stat-value positive">Operational</span>
+            <span class="stat-value tabular-nums positive">Operational</span>
           </div>
         </div>
       </div>

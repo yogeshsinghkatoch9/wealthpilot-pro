@@ -13,11 +13,9 @@ const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 </div>
 <div class="flex gap-2">
 <button onclick="showOptionsCalc()" class="bloomberg-btn-secondary">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
 Calculator
 </button>
 <button onclick="showAddOptionModal()" class="bloomberg-btn-primary">
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
 Add Position
 </button>
 </div>
@@ -26,29 +24,29 @@ Add Position
 
 <!-- Portfolio Greeks -->
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-<div class="bloomberg-card p-4 text-center">
+<div class="tufte-stat-card p-4 text-center">
 <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Delta (Δ)</p>
-<p class="text-xl font-bold font-mono text-emerald-400">+45.2</p>
+<p class="text-xl font-bold tabular-nums text-emerald-400">+45.2</p>
 <p class="text-xs text-slate-400">Bullish exposure</p>
 </div>
-<div class="bloomberg-card p-4 text-center">
+<div class="tufte-stat-card p-4 text-center">
 <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Gamma (Γ)</p>
-<p class="text-xl font-bold font-mono text-purple-400">+2.8</p>
+<p class="text-xl font-bold tabular-nums text-purple-400">+2.8</p>
 <p class="text-xs text-slate-400">Delta sensitivity</p>
 </div>
-<div class="bloomberg-card p-4 text-center">
+<div class="tufte-stat-card p-4 text-center">
 <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Theta (Θ)</p>
-<p class="text-xl font-bold font-mono text-red-400">-$42/day</p>
+<p class="text-xl font-bold tabular-nums negative">-$42/day</p>
 <p class="text-xs text-slate-400">Time decay</p>
 </div>
-<div class="bloomberg-card p-4 text-center">
+<div class="tufte-stat-card p-4 text-center">
 <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Vega (ν)</p>
-<p class="text-xl font-bold font-mono text-sky-400">+$85</p>
+<p class="text-xl font-bold tabular-nums text-sky-400">+$85</p>
 <p class="text-xs text-slate-400">Vol sensitivity</p>
 </div>
-<div class="bloomberg-card p-4 text-center">
+<div class="tufte-stat-card p-4 text-center">
 <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Total P&L</p>
-<p class="text-xl font-bold font-mono text-emerald-400">+$1,245</p>
+<p class="text-xl font-bold tabular-nums positive">+$1,245</p>
 <p class="text-xs text-slate-400">All positions</p>
 </div>
 </div>
@@ -82,8 +80,8 @@ Add Position
   <td class="py-3 text-right text-white font-medium font-mono">+5</td>
   <td class="py-3 text-right text-slate-300 font-mono">$3.25</td>
   <td class="py-3 text-right text-white font-medium font-mono">$4.80</td>
-  <td class="py-3 text-right text-emerald-400 font-medium font-mono">+$775</td>
-  <td class="py-3 text-right text-emerald-400 font-mono">+0.52</td>
+  <td class="py-3 text-right font-medium tabular-nums positive">+$775</td>
+  <td class="py-3 text-right tabular-nums positive">+0.52</td>
   <td class="py-3 text-right text-slate-300 font-mono">32%</td>
   <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
 </tr>
@@ -95,8 +93,8 @@ Add Position
   <td class="py-3 text-right text-white font-medium font-mono">-2</td>
   <td class="py-3 text-right text-slate-300 font-mono">$8.50</td>
   <td class="py-3 text-right text-white font-medium font-mono">$5.20</td>
-  <td class="py-3 text-right text-emerald-400 font-medium font-mono">+$660</td>
-  <td class="py-3 text-right text-red-400 font-mono">-0.28</td>
+  <td class="py-3 text-right font-medium tabular-nums positive">+$660</td>
+  <td class="py-3 text-right tabular-nums negative">-0.28</td>
   <td class="py-3 text-right text-slate-300 font-mono">45%</td>
   <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
 </tr>
@@ -108,8 +106,8 @@ Add Position
   <td class="py-3 text-right text-white font-medium font-mono">+10</td>
   <td class="py-3 text-right text-slate-300 font-mono">$2.10</td>
   <td class="py-3 text-right text-white font-medium font-mono">$1.85</td>
-  <td class="py-3 text-right text-red-400 font-medium font-mono">-$250</td>
-  <td class="py-3 text-right text-emerald-400 font-mono">+0.38</td>
+  <td class="py-3 text-right font-medium tabular-nums negative">-$250</td>
+  <td class="py-3 text-right tabular-nums positive">+0.38</td>
   <td class="py-3 text-right text-slate-300 font-mono">18%</td>
   <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
 </tr>
@@ -121,8 +119,8 @@ Add Position
   <td class="py-3 text-right text-white font-medium font-mono">+3</td>
   <td class="py-3 text-right text-slate-300 font-mono">$4.50</td>
   <td class="py-3 text-right text-white font-medium font-mono">$4.70</td>
-  <td class="py-3 text-right text-emerald-400 font-medium font-mono">+$60</td>
-  <td class="py-3 text-right text-emerald-400 font-mono">+0.15</td>
+  <td class="py-3 text-right font-medium tabular-nums positive">+$60</td>
+  <td class="py-3 text-right tabular-nums positive">+0.15</td>
   <td class="py-3 text-right text-slate-300 font-mono">52%</td>
   <td class="py-3 text-right"><button class="bloomberg-btn-secondary btn-sm">Close</button></td>
 </tr>
@@ -149,8 +147,8 @@ Add Position
 ]; expirations.forEach(exp => { %>
 <div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
   <div class="flex items-center gap-3">
-    <div class="w-10 h-10 rounded-lg flex items-center justify-center <%= exp.risk === 'high' ? 'bg-red-500/20 text-red-400' : exp.risk === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400' %>">
-      <span class="font-bold text-sm"><%= exp.days %>d</span>
+    <div class="w-10 h-10 rounded flex items-center justify-center <%= exp.risk === 'high' ? 'bg-red-500/20 text-red-400' : exp.risk === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400' %>">
+      <span class="font-bold text-sm tabular-nums"><%= exp.days %>d</span>
     </div>
     <div>
       <p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= exp.date %></p>

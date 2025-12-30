@@ -52,42 +52,48 @@
       </div>
     </div>
 
-    <!-- KPI Stats Grid - Glassmorphism -->
+    <!-- KPI Stats Grid - Tufte Style -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Market Value</div>
-        <div class="stat-card-value" id="totalMarketValue"><%= fmt.money(safeTotals.marketValue || safeTotals.value || 0) %></div>
-      </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-slate-500 to-gray-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Cost Basis</div>
-        <div class="stat-card-value" id="totalCostBasis"><%= fmt.money(safeTotals.costTotal || safeTotals.cost || 0) %></div>
-      </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Total P&L</div>
-        <div class="stat-card-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>" id="totalGain">
-          <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain || 0) %>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Market Value</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums" id="totalMarketValue"><%= fmt.money(safeTotals.marketValue || safeTotals.value || 0) %></span>
         </div>
       </div>
-      <div class="stat-card group">
+      <div class="tufte-stat-card">
+        <div class="stat-label">Cost Basis</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums" id="totalCostBasis"><%= fmt.money(safeTotals.costTotal || safeTotals.cost || 0) %></span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total P&L</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>" id="totalGain">
+            <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain || 0) %>
+          </span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
         <% const totalReturn = (safeTotals.costTotal > 0) ? ((safeTotals.gain / safeTotals.costTotal) * 100) : 0; %>
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r <%= totalReturn >= 0 ? 'from-emerald-500 to-green-500' : 'from-red-500 to-rose-500' %> opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Return</div>
-        <div class="stat-card-value <%= totalReturn >= 0 ? 'positive' : 'negative' %>" id="totalReturn">
-          <%= totalReturn >= 0 ? '+' : '' %><%= totalReturn.toFixed(2) %>%
+        <div class="stat-label">Return</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= totalReturn >= 0 ? 'positive' : 'negative' %>" id="totalReturn">
+            <%= totalReturn >= 0 ? '+' : '' %><%= totalReturn.toFixed(2) %>%
+          </span>
         </div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Holdings</div>
-        <div class="stat-card-value" id="holdingsCount"><%= safeHoldings.length %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Holdings</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums" id="holdingsCount"><%= safeHoldings.length %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Portfolios</div>
-        <div class="stat-card-value"><%= safePortfolios.length %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Portfolios</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safePortfolios.length %></span>
+        </div>
       </div>
     </div>
 
@@ -191,24 +197,24 @@
                 <td class="px-4 py-3">
                   <span class="px-2 py-1 text-xs rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20"><%= h.portfolioName || 'Main' %></span>
                 </td>
-                <td class="px-4 py-3 text-right text-slate-300 font-mono"><%= fmt.number(h.shares) %></td>
-                <td class="px-4 py-3 text-right text-slate-400 font-mono"><%= fmt.money(h.avgCostBasis || h.avg_cost_basis || 0) %></td>
-                <td class="px-4 py-3 text-right text-white font-semibold font-mono price">$<%= (h.currentPrice || h.price || 0).toFixed(2) %></td>
+                <td class="px-4 py-3 text-right text-slate-300 font-mono tabular-nums"><%= fmt.number(h.shares) %></td>
+                <td class="px-4 py-3 text-right text-slate-400 font-mono tabular-nums"><%= fmt.money(h.avgCostBasis || h.avg_cost_basis || 0) %></td>
+                <td class="px-4 py-3 text-right text-white font-semibold font-mono tabular-nums price">$<%= (h.currentPrice || h.price || 0).toFixed(2) %></td>
                 <td class="px-4 py-3 text-right">
-                  <span class="change inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium <%= (h.changePct || h.change_percent || 0) >= 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10' %>">
+                  <span class="change inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-medium tabular-nums <%= (h.changePct || h.change_percent || 0) >= 0 ? 'positive bg-emerald-500/10' : 'negative bg-red-500/10' %>">
                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="<%= (h.changePct || h.change_percent || 0) >= 0 ? 'M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z' : 'M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l2.293-2.293a1 1 0 011.414 0z' %>" clip-rule="evenodd"/>
                     </svg>
                     <%= (h.changePct || h.change_percent || 0) >= 0 ? '+' : '' %><%= (h.changePct || h.change_percent || 0).toFixed(2) %>%
                   </span>
                 </td>
-                <td class="px-4 py-3 text-right text-white font-semibold font-mono"><%= fmt.money(h.marketValue || 0) %></td>
-                <td class="px-4 py-3 text-right font-semibold font-mono <%= (h.gain || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <td class="px-4 py-3 text-right text-white font-semibold font-mono tabular-nums"><%= fmt.money(h.marketValue || 0) %></td>
+                <td class="px-4 py-3 text-right font-semibold font-mono tabular-nums <%= (h.gain || 0) >= 0 ? 'positive' : 'negative' %>">
                   <%= (h.gain || 0) >= 0 ? '+' : '' %><%= fmt.money(h.gain || 0) %>
                 </td>
                 <td class="px-4 py-3 text-right">
                   <div class="flex items-center justify-end gap-2">
-                    <span class="font-bold font-mono <%= (h.gainPct || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                    <span class="font-bold font-mono tabular-nums <%= (h.gainPct || 0) >= 0 ? 'positive' : 'negative' %>">
                       <%= (h.gainPct || 0) >= 0 ? '+' : '' %><%= (h.gainPct || 0).toFixed(2) %>%
                     </span>
                     <div class="w-14 h-2 bg-slate-700/50 rounded-full overflow-hidden">
@@ -241,12 +247,12 @@
             <tfoot class="bg-gradient-to-r from-slate-800/80 to-slate-900/80 border-t border-white/10">
               <tr>
                 <td colspan="7" class="text-right font-semibold text-slate-300 py-4 px-4 uppercase text-sm tracking-wider">Portfolio Totals</td>
-                <td class="text-right font-bold text-white text-lg py-4 px-4 font-mono" id="footerMarketValue"><%= fmt.money(safeTotals.marketValue || 0) %></td>
-                <td class="text-right font-bold <%= (safeTotals.gain || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> text-lg py-4 px-4 font-mono" id="footerGain">
+                <td class="text-right font-bold text-white text-lg py-4 px-4 font-mono tabular-nums" id="footerMarketValue"><%= fmt.money(safeTotals.marketValue || 0) %></td>
+                <td class="text-right font-bold text-lg py-4 px-4 font-mono tabular-nums <%= (safeTotals.gain || 0) >= 0 ? 'positive' : 'negative' %>" id="footerGain">
                   <%= (safeTotals.gain || 0) >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain || 0) %>
                 </td>
                 <td class="text-right py-4 px-4" id="footerReturn">
-                  <span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-lg font-bold font-mono <%= totalReturn >= 0 ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-red-400 bg-red-500/10 border border-red-500/20' %>">
+                  <span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-lg font-bold font-mono tabular-nums <%= totalReturn >= 0 ? 'positive bg-emerald-500/10 border border-emerald-500/20' : 'negative bg-red-500/10 border border-red-500/20' %>">
                     <%= totalReturn >= 0 ? '+' : '' %><%= totalReturn.toFixed(2) %>%
                   </span>
                 </td>

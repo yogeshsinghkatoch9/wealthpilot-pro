@@ -27,24 +27,24 @@ const nextDividend = safeSettings.reduce((sum, s) => sum + (s.next_dividend || 0
 const estAnnual = safeSettings.reduce((sum, s) => sum + (s.annual_dividend || 0), 0);
 %>
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-<div class="bloomberg-card p-4">
+<div class="tufte-stat-card">
 <p class="text-slate-400 text-sm">DRIP Enabled</p>
-<p class="text-2xl font-bold font-mono text-emerald-400"><%= enabledCount %> / <%= totalCount %></p>
+<p class="text-2xl font-bold font-mono positive tabular-nums"><%= enabledCount %> / <%= totalCount %></p>
 <p class="text-sm text-slate-400">holdings</p>
 </div>
-<div class="bloomberg-card p-4">
+<div class="tufte-stat-card">
 <p class="text-slate-400 text-sm">YTD Reinvested</p>
-<p class="text-2xl font-bold font-mono text-emerald-400"><%= safeFmt.money(ytdReinvested) %></p>
-<p class="text-sm text-emerald-400 font-mono">+<%= ytdShares.toFixed(0) %> shares</p>
+<p class="text-2xl font-bold font-mono positive tabular-nums"><%= safeFmt.money(ytdReinvested) %></p>
+<p class="text-sm positive font-mono tabular-nums">+<%= ytdShares.toFixed(0) %> shares</p>
 </div>
-<div class="bloomberg-card p-4">
+<div class="tufte-stat-card">
 <p class="text-slate-400 text-sm">Next Dividend</p>
-<p class="text-2xl font-bold font-mono text-white"><%= safeFmt.money(nextDividend) %></p>
+<p class="text-2xl font-bold font-mono text-white tabular-nums"><%= safeFmt.money(nextDividend) %></p>
 <p class="text-sm text-slate-400">Upcoming</p>
 </div>
-<div class="bloomberg-card p-4">
+<div class="tufte-stat-card">
 <p class="text-slate-400 text-sm">Est. Annual</p>
-<p class="text-2xl font-bold font-mono text-amber-400"><%= safeFmt.money(estAnnual) %></p>
+<p class="text-2xl font-bold font-mono text-amber-400 tabular-nums"><%= safeFmt.money(estAnnual) %></p>
 <p class="text-sm text-slate-400">compound growth</p>
 </div>
 </div>
@@ -118,14 +118,14 @@ const estAnnual = safeSettings.reduce((sum, s) => sum + (s.annual_dividend || 0)
 <tr class="border-b border-slate-700/50">
 <td class="px-4 py-4">
 <div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white text-xs font-bold"><%= s.symbol || 'N/A' %></div>
-<div><p class="font-medium text-white"><%= s.name || s.symbol %></p><p class="text-xs text-slate-400 font-mono"><%= s.shares || 0 %> shares</p></div>
+<div class="w-10 h-10 rounded bg-<%= color %>-600 flex items-center justify-center text-white text-xs font-bold"><%= s.symbol || 'N/A' %></div>
+<div><p class="font-medium text-white"><%= s.name || s.symbol %></p><p class="text-xs text-slate-400 font-mono tabular-nums"><%= s.shares || 0 %> shares</p></div>
 </div>
 </td>
-<td class="px-4 py-4 font-mono <%= (s.dividend_yield || 0) > 2 ? 'text-emerald-400 font-bold' : 'text-white' %>"><%= (s.dividend_yield || 0).toFixed(2) %>%</td>
+<td class="px-4 py-4 font-mono <%= (s.dividend_yield || 0) > 2 ? 'positive font-bold' : 'text-white' %> tabular-nums"><%= (s.dividend_yield || 0).toFixed(2) %>%</td>
 <td class="px-4 py-4 text-slate-400"><%= s.next_dividend_date ? new Date(s.next_dividend_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-' %></td>
-<td class="px-4 py-4 font-medium font-mono text-white"><%= safeFmt.money(s.next_dividend || 0) %></td>
-<td class="px-4 py-4 font-mono text-emerald-400"><%= safeFmt.money(s.ytd_reinvested || 0) %></td>
+<td class="px-4 py-4 font-medium font-mono text-white tabular-nums"><%= safeFmt.money(s.next_dividend || 0) %></td>
+<td class="px-4 py-4 font-mono positive tabular-nums"><%= safeFmt.money(s.ytd_reinvested || 0) %></td>
 <td class="px-4 py-4">
 <label class="relative inline-flex items-center cursor-pointer">
 <input type="checkbox" class="sr-only peer drip-toggle" data-id="<%= s.id %>" <%= s.drip_enabled ? 'checked' : '' %> onchange="toggleDRIP('<%= s.id %>')">
@@ -140,7 +140,7 @@ const estAnnual = safeSettings.reduce((sum, s) => sum + (s.annual_dividend || 0)
 </div>
 
 <!-- DRIP History -->
-<div class="card p-5">
+<div class="tufte-stat-card">
 <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Recent DRIP Activity</h3>
 <%
 const history = settings.flatMap(s => (s.history || []).map(h => ({ ...h, symbol: s.symbol, name: s.name })));
@@ -158,8 +158,8 @@ if (history.length === 0) { %>
 <div><p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.symbol %> - <%= h.name %></p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= new Date(h.date).toLocaleDateString() %></p></div>
 </div>
 <div class="text-right">
-<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= fmt.money(h.amount || 0) %> → <%= (h.shares || 0).toFixed(2) %> shares</p>
-<p class="text-xs text-emerald-400">@ <%= fmt.money(h.price || 0) %>/share</p>
+<p class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums"><%= fmt.money(h.amount || 0) %> → <%= (h.shares || 0).toFixed(2) %> shares</p>
+<p class="text-xs positive tabular-nums">@ <%= fmt.money(h.price || 0) %>/share</p>
 </div>
 </div>
 <% }) %>

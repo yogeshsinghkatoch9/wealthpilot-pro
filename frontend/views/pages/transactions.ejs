@@ -45,32 +45,37 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
       </div>
     </div>
 
-    <!-- KPI Stats Grid - Glassmorphism -->
+    <!-- KPI Stats Grid - Tufte Style -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Total Transactions</div>
-        <div class="stat-card-value text-amber-400"><%= safeStats.totalTransactions || safeTransactions.length %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Transactions</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeStats.totalTransactions || safeTransactions.length %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">This Month</div>
-        <div class="stat-card-value text-sky-400"><%= safeStats.thisMonthCount || 0 %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeStats.thisMonthCount || 0 %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-green-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Total Buys</div>
-        <div class="stat-card-value text-emerald-400"><%= safeFmt.compact(safeStats.buyTotal || 0) %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Buys</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeFmt.compact(safeStats.buyTotal || 0) %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Total Sells</div>
-        <div class="stat-card-value text-red-400"><%= safeFmt.compact(safeStats.sellTotal || 0) %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Sells</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeFmt.compact(safeStats.sellTotal || 0) %></span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <div class="stat-card-label">Dividends</div>
-        <div class="stat-card-value text-purple-400"><%= safeFmt.compact(safeStats.dividendTotal || 0) %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Dividends</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeFmt.compact(safeStats.dividendTotal || 0) %></span>
+        </div>
       </div>
     </div>
 
@@ -196,14 +201,14 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
                   <span class="text-white font-semibold"><%= (tx.symbol || '-').toUpperCase() %></span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-right font-mono text-slate-300">
+              <td class="px-4 py-3 text-right font-mono text-slate-300 tabular-nums">
                 <%= tx.shares ? parseFloat(tx.shares).toFixed(3) : '-' %>
               </td>
-              <td class="px-4 py-3 text-right font-mono text-slate-300">
+              <td class="px-4 py-3 text-right font-mono text-slate-300 tabular-nums">
                 <%= tx.price ? safeFmt.money(parseFloat(tx.price)) : '-' %>
               </td>
-              <td class="px-4 py-3 text-right font-mono font-semibold">
-                <span class="<%= tx.type === 'sell' || tx.type === 'dividend' ? 'text-emerald-400' : 'text-red-400' %>">
+              <td class="px-4 py-3 text-right font-mono font-semibold tabular-nums">
+                <span class="<%= tx.type === 'sell' || tx.type === 'dividend' ? 'positive' : 'negative' %>">
                   <%= tx.type === 'buy' ? '-' : '+' %><%= safeFmt.money(total) %>
                 </span>
               </td>

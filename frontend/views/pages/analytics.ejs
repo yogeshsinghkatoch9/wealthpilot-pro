@@ -49,37 +49,49 @@
       </div>
     </div>
 
-    <!-- KPI Stats Grid - Glassmorphism -->
+    <!-- KPI Stats Grid - Tufte Style -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div class="stat-card group">
-        <div class="stat-card-label">Portfolio Value</div>
-        <div class="stat-card-value"><%= fmt.money(safePerformance.totalValue || 0) %></div>
-      </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Total P&L</div>
-        <div class="stat-card-value <%= safePerformance.totalGain >= 0 ? 'positive' : 'negative' %>">
-          <%= safePerformance.totalGain >= 0 ? '+' : '' %><%= fmt.money(safePerformance.totalGain || 0) %>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Portfolio Value</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= fmt.money(safePerformance.totalValue || 0) %></span>
         </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Day Change</div>
-        <div class="stat-card-value <%= safePerformance.dayChange >= 0 ? 'positive' : 'negative' %>">
-          <%= safePerformance.dayChange >= 0 ? '+' : '' %><%= fmt.money(safePerformance.dayChange || 0) %>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total P&L</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safePerformance.totalGain >= 0 ? 'positive' : 'negative' %>">
+            <%= safePerformance.totalGain >= 0 ? '+' : '' %><%= fmt.money(safePerformance.totalGain || 0) %>
+          </span>
         </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">YTD Return</div>
-        <div class="stat-card-value <%= safePerformance.ytdReturn >= 0 ? 'positive' : 'negative' %>">
-          <%= safePerformance.ytdReturn >= 0 ? '+' : '' %><%= (safePerformance.ytdReturn || 0).toFixed(2) %>%
+      <div class="tufte-stat-card">
+        <div class="stat-label">Day Change</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safePerformance.dayChange >= 0 ? 'positive' : 'negative' %>">
+            <%= safePerformance.dayChange >= 0 ? '+' : '' %><%= fmt.money(safePerformance.dayChange || 0) %>
+          </span>
         </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Sharpe Ratio</div>
-        <div class="stat-card-value"><%= (safePerformance.sharpeRatio || 0).toFixed(2) %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">YTD Return</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safePerformance.ytdReturn >= 0 ? 'positive' : 'negative' %>">
+            <%= safePerformance.ytdReturn >= 0 ? '+' : '' %><%= (safePerformance.ytdReturn || 0).toFixed(2) %>%
+          </span>
+        </div>
       </div>
-      <div class="stat-card group">
-        <div class="stat-card-label">Volatility</div>
-        <div class="stat-card-value"><%= (safePerformance.volatility || 0).toFixed(1) %>%</div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Sharpe Ratio</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= (safePerformance.sharpeRatio || 0).toFixed(2) %></span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Volatility</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= (safePerformance.volatility || 0).toFixed(1) %>%</span>
+        </div>
       </div>
     </div>
 
@@ -113,19 +125,19 @@
         <div class="space-y-3">
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Sharpe Ratio</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.sharpeRatio || 0).toFixed(2) %></span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.sharpeRatio || 0).toFixed(2) %></span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Sortino Ratio</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.sortinoRatio || 0).toFixed(2) %></span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.sortinoRatio || 0).toFixed(2) %></span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Calmar Ratio</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.calmarRatio || 0).toFixed(2) %></span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.calmarRatio || 0).toFixed(2) %></span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Treynor Ratio</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.treynorRatio || 0).toFixed(2) %></span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.treynorRatio || 0).toFixed(2) %></span>
           </div>
         </div>
       </div>
@@ -138,21 +150,21 @@
         <div class="space-y-3">
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Beta</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.beta || 1.0).toFixed(2) %></span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.beta || 1.0).toFixed(2) %></span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Alpha</span>
-            <span class="mono <%= (safeMetrics.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
+            <span class="mono font-semibold tabular-nums <%= (safeMetrics.alpha || 0) >= 0 ? 'positive' : 'negative' %>">
               <%= (safeMetrics.alpha || 0) >= 0 ? '+' : '' %><%= (safeMetrics.alpha || 0).toFixed(2) %>%
             </span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">R-Squared</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.rSquared || 0).toFixed(2) %></span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.rSquared || 0).toFixed(2) %></span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Tracking Error</span>
-            <span class="mono text-white font-semibold"><%= (safeMetrics.trackingError || 0).toFixed(2) %>%</span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.trackingError || 0).toFixed(2) %>%</span>
           </div>
         </div>
       </div>
@@ -165,19 +177,19 @@
         <div class="space-y-3">
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Annualized Vol</span>
-            <span class="mono text-white font-semibold"><%= (safePerformance.volatility || 0).toFixed(2) %>%</span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safePerformance.volatility || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Downside Vol</span>
-            <span class="mono text-white font-semibold"><%= ((safePerformance.volatility || 0) * 0.7).toFixed(2) %>%</span>
+            <span class="mono text-white font-semibold tabular-nums"><%= ((safePerformance.volatility || 0) * 0.7).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Max Drawdown</span>
-            <span class="mono text-red-400 font-semibold">-<%= (safePerformance.maxDrawdown || 0).toFixed(2) %>%</span>
+            <span class="mono font-semibold tabular-nums negative">-<%= (safePerformance.maxDrawdown || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">VaR (95%)</span>
-            <span class="mono text-red-400 font-semibold">-<%= ((safePerformance.volatility || 0) * 1.65).toFixed(2) %>%</span>
+            <span class="mono font-semibold tabular-nums negative">-<%= ((safePerformance.volatility || 0) * 1.65).toFixed(2) %>%</span>
           </div>
         </div>
       </div>
@@ -284,22 +296,22 @@
                   <span class="text-slate-500 text-xs truncate max-w-[120px]"><%= h.name || '' %></span>
                 </div>
               </td>
-              <td class="text-right mono text-white"><%= fmt.money(mktVal) %></td>
-              <td class="text-right mono text-slate-400"><%= weight.toFixed(2) %>%</td>
-              <td class="text-right mono text-slate-400"><%= fmt.money(cost) %></td>
-              <td class="text-right mono <%= pl >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <td class="text-right mono text-white tabular-nums"><%= fmt.money(mktVal) %></td>
+              <td class="text-right mono text-slate-400 tabular-nums"><%= weight.toFixed(2) %>%</td>
+              <td class="text-right mono text-slate-400 tabular-nums"><%= fmt.money(cost) %></td>
+              <td class="text-right mono tabular-nums <%= pl >= 0 ? 'positive' : 'negative' %>">
                 <%= pl >= 0 ? '+' : '' %><%= fmt.money(pl) %>
               </td>
-              <td class="text-right mono <%= plPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <td class="text-right mono tabular-nums <%= plPct >= 0 ? 'positive' : 'negative' %>">
                 <%= plPct >= 0 ? '+' : '' %><%= plPct.toFixed(2) %>%
               </td>
-              <td class="text-right mono <%= contribution >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
+              <td class="text-right mono tabular-nums <%= contribution >= 0 ? 'positive' : 'negative' %> font-semibold">
                 <%= contribution >= 0 ? '+' : '' %><%= contribution.toFixed(2) %>%
               </td>
-              <td class="text-right mono <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <td class="text-right mono tabular-nums <%= dayChange >= 0 ? 'positive' : 'negative' %>">
                 <%= dayChange >= 0 ? '+' : '' %><%= dayChange.toFixed(2) %>%
               </td>
-              <td class="text-right mono text-slate-400"><%= vol.toFixed(1) %>%</td>
+              <td class="text-right mono text-slate-400 tabular-nums"><%= vol.toFixed(1) %>%</td>
             </tr>
             <% })} else { %>
             <tr>
@@ -364,7 +376,7 @@
                   const corr = i === j ? 1.0 : (Math.random() * 1.4 - 0.2);
                   const colorClass = corr > 0.7 ? 'text-emerald-400' : corr > 0.3 ? 'text-blue-400' : corr > -0.3 ? 'text-slate-400' : 'text-red-400';
                 %>
-                <td class="text-center mono <%= colorClass %>"><%= corr.toFixed(2) %></td>
+                <td class="text-center mono tabular-nums <%= colorClass %>"><%= corr.toFixed(2) %></td>
                 <% }) %>
               </tr>
               <% }) %>

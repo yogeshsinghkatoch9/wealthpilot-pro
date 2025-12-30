@@ -36,40 +36,40 @@ const sampleSize = safeBenchmarkData.sample_size || 0;
     <!-- KPI Bar for Benchmark Comparison Metrics -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <!-- Your Return -->
-      <div class="bloomberg-card">
+      <div class="tufte-stat-card">
         <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Your Return</p>
-        <p class="text-2xl font-bold font-mono <%= returnVsAvg >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <p class="text-2xl font-bold font-mono <%= returnVsAvg >= 0 ? 'positive' : 'negative' %> tabular-nums">
           <%= userReturn.toFixed(2) %>%
         </p>
         <p class="text-slate-500 text-sm mt-1">
-          <span class="font-mono"><%= returnPercentile %></span>th percentile
+          <span class="font-mono tabular-nums"><%= returnPercentile %></span>th percentile
         </p>
       </div>
 
       <!-- Your Yield -->
-      <div class="bloomberg-card">
+      <div class="tufte-stat-card">
         <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Your Yield</p>
-        <p class="text-2xl font-bold font-mono <%= yieldVsAvg >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <p class="text-2xl font-bold font-mono <%= yieldVsAvg >= 0 ? 'positive' : 'negative' %> tabular-nums">
           <%= userYield.toFixed(2) %>%
         </p>
         <p class="text-slate-500 text-sm mt-1">
-          <span class="font-mono"><%= yieldPercentile %></span>th percentile
+          <span class="font-mono tabular-nums"><%= yieldPercentile %></span>th percentile
         </p>
       </div>
 
       <!-- Avg Return -->
-      <div class="bloomberg-card">
+      <div class="tufte-stat-card">
         <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Avg Return</p>
-        <p class="text-2xl font-bold font-mono text-white">
+        <p class="text-2xl font-bold font-mono text-white tabular-nums">
           <%= avgReturn.toFixed(2) %>%
         </p>
         <p class="text-slate-500 text-sm mt-1 uppercase"><%= bucket %></p>
       </div>
 
       <!-- Sample Size -->
-      <div class="bloomberg-card">
+      <div class="tufte-stat-card">
         <p class="text-slate-400 text-xs uppercase mb-2 tracking-wider">Sample Size</p>
-        <p class="text-2xl font-bold font-mono text-white">
+        <p class="text-2xl font-bold font-mono text-white tabular-nums">
           <%= sampleSize.toLocaleString() %>
         </p>
         <p class="text-slate-500 text-sm mt-1 uppercase">investors</p>
@@ -134,7 +134,7 @@ const sampleSize = safeBenchmarkData.sample_size || 0;
                 <% } %>
               </td>
               <td class="py-3 px-4 text-right">
-                <span class="font-mono font-semibold text-white">
+                <span class="font-mono font-semibold text-white tabular-nums">
                   <%= e.value %><%= safeMetric === 'sharpe' ? '' : '%' %>
                 </span>
               </td>
