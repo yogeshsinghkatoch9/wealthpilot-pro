@@ -2575,13 +2575,14 @@ app.get('/api/analytics/risk-metrics', authenticate, async (req, res) => {
     const userId = req.user.id;
     const portfolioId = req.query.portfolioId; // Optional: filter by specific portfolio
 
-    // Get portfolios - either specific one or all
-    let portfolios = Database.getPortfoliosByUserId(userId);
+    // Get portfolios - either specific one or all (await for PostgreSQL async adapter)
+    let portfolios = await Database.getPortfoliosByUserId(userId);
+    portfolios = portfolios || [];
     if (portfolioId) {
       portfolios = portfolios.filter(p => p.id === portfolioId);
     }
 
-    if (portfolios.length === 0) {
+    if (!portfolios || portfolios.length === 0) {
       return res.json(null); // No portfolios found
     }
 
@@ -2590,7 +2591,7 @@ app.get('/api/analytics/risk-metrics', authenticate, async (req, res) => {
     let totalCost = 0;
 
     for (const portfolio of portfolios) {
-      const holdings = Database.getHoldingsByPortfolio(portfolio.id);
+      const holdings = await Database.getHoldingsByPortfolio(portfolio.id) || [];
       for (const h of holdings) {
         const quote = await marketData.fetchQuote(h.symbol);
         const price = quote?.c || h.avg_cost_basis || 0;
