@@ -5,9 +5,8 @@ ENV PORT=4000
 
 WORKDIR /app
 
-# Install runtime dependencies + LaTeX for PDF report generation
-RUN apk add --no-cache curl tini openssl \
-    texlive texlive-xetex texmf-dist-latexextra texmf-dist-pictures
+# Install runtime dependencies
+RUN apk add --no-cache curl tini openssl
 
 # Copy package files
 COPY package*.json ./
