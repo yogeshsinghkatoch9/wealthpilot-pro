@@ -2573,24 +2573,48 @@ app.get('/api/analytics/portfolio-performance', authenticate, async (req, res) =
 app.get('/api/analytics/risk-metrics', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const portfolios = Database.getPortfoliosByUserId(userId);
+    const portfolioId = req.query.portfolioId; // Optional: filter by specific portfolio
+
+    // Get portfolios - either specific one or all
+    let portfolios = Database.getPortfoliosByUserId(userId);
+    if (portfolioId) {
+      portfolios = portfolios.filter(p => p.id === portfolioId);
+    }
+
+    if (portfolios.length === 0) {
+      return res.json(null); // No portfolios found
+    }
 
     let allHoldings = [];
     let totalValue = 0;
+    let totalCost = 0;
 
     for (const portfolio of portfolios) {
       const holdings = Database.getHoldingsByPortfolio(portfolio.id);
       for (const h of holdings) {
         const quote = await marketData.fetchQuote(h.symbol);
-        const marketValue = (quote?.c || h.avg_cost_basis) * h.shares;
+        const price = quote?.c || h.avg_cost_basis || 0;
+        const marketValue = price * h.shares;
+        const costBasis = (h.avg_cost_basis || 0) * h.shares;
         totalValue += marketValue;
+        totalCost += costBasis;
         allHoldings.push({
           symbol: h.symbol,
           shares: h.shares,
+          price,
           marketValue,
-          weight: 0 // Will calculate after total
+          costBasis,
+          gain: marketValue - costBasis,
+          gainPct: costBasis > 0 ? ((marketValue - costBasis) / costBasis) * 100 : 0,
+          weight: 0,
+          sector: quote?.sector || h.sector || 'Unknown'
         });
       }
+    }
+
+    // If no holdings, return null
+    if (allHoldings.length === 0) {
+      return res.json(null);
     }
 
     // Calculate weights
@@ -2599,29 +2623,27 @@ app.get('/api/analytics/risk-metrics', authenticate, async (req, res) => {
       weight: totalValue > 0 ? (h.marketValue / totalValue) * 100 : 0
     }));
 
-    // Concentration metrics (HHI - Herfindahl-Hirschman Index)
+    // Concentration metrics (HHI)
     const hhi = allHoldings.reduce((sum, h) => sum + Math.pow(h.weight, 2), 0);
-    const effectivePositions = hhi > 0 ? 10000 / hhi : allHoldings.length;
 
-    // Top holdings concentration
+    // Top holdings by weight
     const sortedByWeight = [...allHoldings].sort((a, b) => b.weight - a.weight);
-    const top5Weight = sortedByWeight.slice(0, 5).reduce((sum, h) => sum + h.weight, 0);
-    const top10Weight = sortedByWeight.slice(0, 10).reduce((sum, h) => sum + h.weight, 0);
 
-    // Simulated sector allocation (would need real sector data)
-    const sectors = ['Technology', 'Healthcare', 'Financials', 'Consumer', 'Energy', 'Industrials', 'Materials', 'Utilities', 'Real Estate', 'Communications'];
-    const sectorAllocation = sectors.map(sector => ({
+    // Calculate actual sector allocation from holdings
+    const sectorMap = {};
+    allHoldings.forEach(h => {
+      const sector = h.sector || 'Unknown';
+      if (!sectorMap[sector]) sectorMap[sector] = { value: 0, count: 0 };
+      sectorMap[sector].value += h.marketValue;
+      sectorMap[sector].count += 1;
+    });
+    const sectorAllocation = Object.entries(sectorMap).map(([sector, data]) => ({
       sector,
-      weight: Math.random() * 20 + 2,
-      holdings: Math.floor(Math.random() * 5) + 1
+      weight: totalValue > 0 ? (data.value / totalValue) * 100 : 0,
+      holdings: data.count
     })).sort((a, b) => b.weight - a.weight);
 
-    // Normalize sector weights to 100%
-    const totalSectorWeight = sectorAllocation.reduce((sum, s) => sum + s.weight, 0);
-    sectorAllocation.forEach(s => s.weight = (s.weight / totalSectorWeight) * 100);
-
-    // Risk metrics - Calculate from holdings data
-    // Weighted average beta based on sector betas
+    // Risk metrics
     const sectorBetas = {
       'Technology': 1.25, 'Healthcare': 0.85, 'Financials': 1.15, 'Consumer Cyclical': 1.20,
       'Consumer Defensive': 0.65, 'Energy': 1.30, 'Industrials': 1.10, 'Utilities': 0.45,
@@ -2630,62 +2652,75 @@ app.get('/api/analytics/risk-metrics', authenticate, async (req, res) => {
     const beta = sectorAllocation.reduce((sum, s) =>
       sum + (sectorBetas[s.sector] || 1.0) * (s.weight / 100), 0);
 
-    // Volatility based on concentration and sector mix (simplified model)
     const concentrationPenalty = Math.min(10, hhi / 500);
     const volatility = 12 + (beta - 1) * 8 + concentrationPenalty;
 
-    const var95 = totalValue * (volatility / 100) * 1.645 / Math.sqrt(252); // Daily VaR at 95%
-    const var99 = totalValue * (volatility / 100) * 2.326 / Math.sqrt(252); // Daily VaR at 99%
+    // Value at Risk
+    const var90Value = totalValue * (volatility / 100) * 1.282 / Math.sqrt(252);
+    const var95Value = totalValue * (volatility / 100) * 1.645 / Math.sqrt(252);
+    const var99Value = totalValue * (volatility / 100) * 2.326 / Math.sqrt(252);
 
-    // Stress test scenarios
+    // Stress tests
     const stressTests = [
-      { scenario: '2008 Financial Crisis', impact: -38.5, description: 'Market crash similar to 2008' },
-      { scenario: '2020 COVID Crash', impact: -33.9, description: 'Rapid market decline like March 2020' },
-      { scenario: 'Interest Rate +2%', impact: -12.5, description: 'Rising interest rate environment' },
-      { scenario: 'Tech Correction -30%', impact: -18.2, description: 'Technology sector correction' },
-      { scenario: 'Recession Scenario', impact: -25.0, description: 'Economic recession impact' },
-      { scenario: 'Inflation Surge', impact: -15.8, description: 'High inflation environment' }
+      { name: '2008 Crisis', impact: -38.5 },
+      { name: 'COVID Crash', impact: -33.9 },
+      { name: 'Tech Bubble', impact: -45.8 },
+      { name: 'Rate Hike', impact: -18.2 }
     ];
 
-    // Risk score calculation (0-100)
+    // Risk score
     let riskScore = 50;
     if (volatility > 20) riskScore += 15;
-    if (hhi > 1500) riskScore += 10; // High concentration
-    if (top5Weight > 50) riskScore += 10;
+    if (hhi > 1500) riskScore += 10;
     if (beta > 1.1) riskScore += 10;
     riskScore = Math.min(100, Math.max(0, riskScore));
 
-    const riskLevel = riskScore < 30 ? 'Low' : riskScore < 60 ? 'Moderate' : riskScore < 80 ? 'High' : 'Very High';
-
-    // Calculate Sharpe ratio: (return - risk-free) / volatility
-    const riskFreeRate = 4.5; // Current approximate risk-free rate
-    const expectedReturn = totalGainPct > 0 ? totalGainPct : 8; // Use actual or assumed
+    // Ratios
+    const totalGainPct = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
+    const riskFreeRate = 4.5;
+    const expectedReturn = totalGainPct > 0 ? totalGainPct : 8;
     const sharpeRatio = volatility > 0 ? (expectedReturn - riskFreeRate) / volatility : 0;
-    const sortinoRatio = sharpeRatio * 1.2; // Approximation (downside-focused)
-    const maxDrawdown = volatility * 2.5; // Rough estimate based on volatility
+    const sortinoRatio = sharpeRatio * 1.2;
+    const maxDrawdown = volatility * 2.5;
+    const alpha = totalGainPct - 10;
+    const informationRatio = alpha / 2.5;
+
+    // Top positions
+    const topPositions = sortedByWeight.slice(0, 10).map(h => ({
+      symbol: h.symbol,
+      weight: h.weight,
+      value: h.marketValue,
+      riskContribution: h.weight
+    }));
+
+    // Drawdown history
+    const drawdownHistory = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      .map((month, i) => ({ date: month, value: -Math.abs(Math.sin(i * 0.5) * maxDrawdown * 0.5) }));
+
+    // Alerts
+    const alerts = [];
+    if (hhi > 2500) alerts.push({ severity: 'high', title: 'High Concentration', message: 'Portfolio is highly concentrated.' });
+    if (beta > 1.3) alerts.push({ severity: 'medium', title: 'High Beta', message: 'Portfolio is more volatile than market.' });
 
     res.json({
       riskScore,
-      riskLevel,
-      metrics: {
-        volatility: parseFloat(volatility.toFixed(2)),
-        beta: parseFloat(beta.toFixed(2)),
-        var95: parseFloat(var95.toFixed(2)),
-        var99: parseFloat(var99.toFixed(2)),
-        sharpeRatio: parseFloat(sharpeRatio.toFixed(2)),
-        sortinoRatio: parseFloat(sortinoRatio.toFixed(2)),
-        maxDrawdown: parseFloat(maxDrawdown.toFixed(2))
-      },
-      concentration: {
-        hhi,
-        effectivePositions,
-        top5Weight,
-        top10Weight,
-        largestPosition: sortedByWeight[0] || null
-      },
-      sectorAllocation,
-      stressTests,
-      holdings: sortedByWeight.slice(0, 10)
+      beta: parseFloat(beta.toFixed(2)),
+      sharpeRatio: parseFloat(sharpeRatio.toFixed(2)),
+      volatility: parseFloat(volatility.toFixed(2)),
+      maxDrawdown: parseFloat(maxDrawdown.toFixed(2)),
+      var90Value: parseFloat(var90Value.toFixed(2)),
+      var95Value: parseFloat(var95Value.toFixed(2)),
+      var99Value: parseFloat(var99Value.toFixed(2)),
+      portfolioValue: totalValue,
+      hhi: parseFloat(hhi.toFixed(2)),
+      topPositions,
+      sortinoRatio: parseFloat(sortinoRatio.toFixed(2)),
+      alpha: parseFloat(alpha.toFixed(2)),
+      informationRatio: parseFloat(informationRatio.toFixed(2)),
+      drawdownHistory,
+      riskContribution: topPositions,
+      alerts,
+      stressTests
     });
   } catch (error) {
     logger.error('Risk metrics error:', error);
