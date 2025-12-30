@@ -401,6 +401,11 @@ class PostgresAdapter {
     ).then(r => r.rows);
   }
 
+  // Alias for compatibility with SQLite adapter
+  getHoldingsByPortfolio(portfolioId) {
+    return this.getHoldingsByPortfolioId(portfolioId);
+  }
+
   createHolding(portfolioId, symbol, name, shares, avgCostBasis, sector, assetType) {
     const id = uuidv4();
     const now = new Date();
