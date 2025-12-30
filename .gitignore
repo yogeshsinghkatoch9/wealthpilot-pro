@@ -2,18 +2,12 @@
 # WealthPilot Pro - Git Ignore Configuration
 # ===========================================
 
-# Environment files (NEVER commit these!)
+# Environment files
 .env
 .env.*
-!.env.example
-!.env.production.template
-backend/.env
-backend/.env.*
-!backend/.env.example
-!backend/.env.production.template
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
+*.env
+backend/.env*
+frontend/.env*
 
 # Dependencies
 node_modules/
@@ -23,14 +17,18 @@ node_modules/
 dist/
 build/
 *.js.map
-!frontend/dist/
+*.d.ts.map
+!frontend/dist/*.js
+!frontend/dist/*.d.ts
 
 # Database files
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
-data/*.db
+*.sqlite
+data/
+backend/data/
 
 # Logs
 logs/
@@ -44,8 +42,6 @@ npm-debug.log*
 *.swo
 .DS_Store
 */.DS_Store
-.ipynb_checkpoints/
-*/.ipynb_checkpoints/
 
 # Test coverage
 coverage/
@@ -54,46 +50,83 @@ coverage/
 tmp/
 temp/
 *.tmp
-
-# Screenshots and test artifacts
-screenshots/
-test-results.json
+cookies.txt
 
 # Backup files
 *.bak
+*.bak2
 *.backup
 *.original.*
 *.working
 *.orig
+*.old
+*.visualizations
 
-# Test files (keep in tests/ but not manual tests)
+# Test files
 test-*.js
 test-*.sh
 test-*.html
-backend/tests/manual/
-**/debug-*.html
+tests/
+backend/tests/
+frontend/__tests__/
+**/test-data/
+jest.config.js
+jest.config.prod.js
 
-# Generated reports
-backend/reports/*.pdf
+# Generated files
 *.pdf
+*.tex
+*.xlsx
+backend/reports/
+backend/exports/
 
-# Duplicate public folder (use frontend/public/ only)
+# Documentation (keep code only)
+*.md
+*.txt
+docs/
+postman/
+
+# Claude config
+.claude/
+
+# Duplicate folders
 /public/
+/scripts/
 
-# Source maps in dist
-frontend/dist/*.map
+# Shell scripts
+*.sh
 
-# Python (if any)
-__pycache__/
+# Python files
+*.py
 *.pyc
-.env.local
-.vercel
-.env.production
-.env.local
-.env
+__pycache__/
+requirements.txt
 
-# Credentials (NEVER commit!)
-backend/config/*.json
-*.credentials.json
-*-credentials.json
+# Seed/demo files
+seed-*.js
+**/seed*.js
+**/demo*.js
+**/create-demo*.js
+
+# Docker dev files
+docker-compose.dev.yml
+docker-entrypoint.sh
+
+# Example/template files
+*.example
+*.template
+*.sample
+
+# Nginx
+nginx/
+
+# Migration locks
+*.toml
+
+# Credentials
 backend/config/
+*.credentials.json
+
+# Misc
+.vercel
+.eslintignore
