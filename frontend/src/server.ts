@@ -1191,11 +1191,23 @@ app.get('/dividends', requireAuth, async (req, res) => {
 
 app.get('/risk', requireAuth, async (req, res) => {
   const token = res.locals.token;
-  const riskData = await apiFetch('/analytics/risk-metrics', token);
+  const selectedPortfolioId = req.query.portfolioId as string || '';
+
+  // Fetch portfolios and risk data in parallel
+  const [portfoliosData, riskData] = await Promise.all([
+    apiFetch('/portfolios', token),
+    selectedPortfolioId
+      ? apiFetch(`/analytics/risk-metrics?portfolioId=${selectedPortfolioId}`, token)
+      : apiFetch('/analytics/risk-metrics', token)
+  ]);
+
+  const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
 
   res.render('pages/risk', {
     pageTitle: 'Risk Analysis',
     data: riskData.error ? null : riskData,
+    portfolios,
+    selectedPortfolioId: selectedPortfolioId || (portfolios.length > 0 ? portfolios[0].id : ''),
     fmt: {
       money: (v: number) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       compact: (v: number) => '$' + (v >= 1000000 ? (v / 1000000).toFixed(2) + 'M' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : (v || 0).toFixed(2)),
