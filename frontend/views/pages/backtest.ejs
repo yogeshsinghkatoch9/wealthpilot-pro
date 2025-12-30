@@ -84,7 +84,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
       <span class="self-center text-slate-400">%</span>
     </div>
   </div>
-  <button class="text-amber-400 text-sm mt-2 hover:underline">+ Add Asset</button>
+  <button onclick="addAllocationRow()" class="text-amber-400 text-sm mt-2 hover:underline">+ Add Asset</button>
 </div>
 <div>
   <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Initial Investment</label>
@@ -230,59 +230,179 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtestin
 
 <script>
 let backtestChart = null;
+const API_BASE = '/api';
 
-function runBacktest() {
+function getToken() {
+  return localStorage.getItem('token') || '';
+}
+
+async function runBacktest() {
   const btn = document.getElementById('backtestBtn');
   btn.disabled = true;
   btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Running...';
-  
-  setTimeout(() => {
-    generateResults();
+
+  try {
+    // Get allocation from form
+    const allocationRows = document.querySelectorAll('#allocation > div');
+    const allocation = [];
+    allocationRows.forEach(row => {
+      const symbol = row.querySelector('input[type="text"]')?.value?.trim().toUpperCase();
+      const weight = parseFloat(row.querySelector('input[type="number"]')?.value) || 0;
+      if (symbol && weight > 0) {
+        allocation.push({ symbol, weight });
+      }
+    });
+
+    if (allocation.length === 0) {
+      showToast('Please add at least one asset', 'error');
+      return;
+    }
+
+    const totalWeight = allocation.reduce((sum, a) => sum + a.weight, 0);
+    if (Math.abs(totalWeight - 100) > 1) {
+      showToast(`Weights must sum to 100% (currently ${totalWeight}%)`, 'error');
+      return;
+    }
+
+    const payload = {
+      allocation,
+      initialCapital: parseFloat(document.getElementById('initialInvest').value) || 100000,
+      monthlyContribution: parseFloat(document.getElementById('monthlyContrib').value) || 0,
+      startDate: document.getElementById('startDate').value,
+      endDate: document.getElementById('endDate').value,
+      rebalanceFrequency: document.getElementById('rebalanceFreq').value
+    };
+
+    const response = await fetch(`${API_BASE}/trading/backtest-simple`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Backtest failed');
+    }
+
+    updateResults(data.result);
+    showToast('Backtest complete!', 'success');
+
+  } catch (error) {
+    console.error('Backtest error:', error);
+    showToast(error.message || 'Failed to run backtest', 'error');
+    // Fall back to mock results if API fails
+    generateMockResults();
+  } finally {
     btn.disabled = false;
     btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Run Backtest';
-    showToast('Backtest complete!', 'success');
-  }, 1500);
+  }
 }
 
-function generateResults() {
-  const initial = parseFloat(document.getElementById('initialInvest').value) || 100000;
-  const monthly = parseFloat(document.getElementById('monthlyContrib').value) || 0;
-  
-  // Generate mock data
-  const labels = [];
-  const portfolio = [];
-  const spy = [];
-  let portfolioValue = initial;
-  let spyValue = initial;
-  
-  for (let year = 2014; year <= 2024; year++) {
-    for (let month = 1; month <= 12; month++) {
-      if (year === 2024 && month > 1) break;
-      labels.push(`${year}-${month.toString().padStart(2, '0')}`);
-      
-      // Random returns
-      const portfolioReturn = (Math.random() - 0.4) * 0.08;
-      const spyReturn = (Math.random() - 0.4) * 0.1;
-      
-      portfolioValue = portfolioValue * (1 + portfolioReturn) + monthly;
-      spyValue = spyValue * (1 + spyReturn);
-      
-      portfolio.push(portfolioValue);
-      spy.push(spyValue);
-    }
-  }
-  
-  // Update chart
+function updateResults(result) {
+  // Update chart with real data
   const ctx = document.getElementById('backtestChart');
   if (backtestChart) backtestChart.destroy();
-  
+
+  const labels = result.equityCurve.map(p => p.date);
+  const portfolio = result.equityCurve.map(p => p.value);
+
   backtestChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: 'Your Strategy', data: portfolio, borderColor: '#0ea5e9', borderWidth: 2, fill: false, pointRadius: 0 },
-        { label: 'S&P 500', data: spy, borderColor: '#64748b', borderWidth: 1, borderDash: [5, 5], fill: false, pointRadius: 0 }
+        {
+          label: 'Your Strategy',
+          data: portfolio,
+          borderColor: '#0ea5e9',
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0,
+          tension: 0.1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `$${ctx.parsed.y.toLocaleString(undefined, {maximumFractionDigits: 0})}`
+          }
+        }
+      },
+      scales: {
+        x: { display: true, ticks: { maxTicksLimit: 10 } },
+        y: { ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }
+      }
+    }
+  });
+
+  // Format values
+  const formatMoney = v => '$' + Math.round(v).toLocaleString();
+  const formatPercent = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+  const formatRatio = v => v.toFixed(2);
+
+  // Update main metrics cards
+  document.getElementById('finalValue').textContent = formatMoney(result.finalValue);
+  document.getElementById('totalReturn').textContent = formatPercent(result.totalReturn);
+  document.getElementById('cagr').textContent = result.cagr.toFixed(1) + '%';
+  document.getElementById('sharpe').textContent = formatRatio(result.sharpeRatio);
+
+  // Update KPI bar
+  document.getElementById('kpiFinalValue').textContent = formatMoney(result.finalValue);
+  document.getElementById('kpiTotalReturn').textContent = formatPercent(result.totalReturn);
+  document.getElementById('kpiCagr').textContent = result.cagr.toFixed(1) + '%';
+  document.getElementById('kpiSharpe').textContent = formatRatio(result.sharpeRatio);
+  document.getElementById('kpiDrawdown').textContent = result.maxDrawdown.toFixed(1) + '%';
+  document.getElementById('kpiWinRate').textContent = result.winRate.toFixed(0) + '%';
+
+  // Apply color classes
+  const applyColor = (el, value, inverse = false) => {
+    const isPositive = inverse ? value < 0 : value >= 0;
+    el.className = el.className.replace(/text-(emerald|red)-400/g, '');
+    el.classList.add(isPositive ? 'text-emerald-400' : 'text-red-400');
+  };
+
+  applyColor(document.getElementById('totalReturn'), result.totalReturn);
+  applyColor(document.getElementById('kpiTotalReturn'), result.totalReturn);
+  applyColor(document.getElementById('kpiDrawdown'), result.maxDrawdown, true);
+}
+
+function generateMockResults() {
+  const initial = parseFloat(document.getElementById('initialInvest').value) || 100000;
+  const monthly = parseFloat(document.getElementById('monthlyContrib').value) || 0;
+
+  const labels = [];
+  const portfolio = [];
+  let portfolioValue = initial;
+
+  for (let year = 2019; year <= 2024; year++) {
+    for (let month = 1; month <= 12; month++) {
+      if (year === 2024 && month > 12) break;
+      labels.push(`${year}-${month.toString().padStart(2, '0')}`);
+
+      const portfolioReturn = (Math.random() - 0.4) * 0.06;
+      portfolioValue = portfolioValue * (1 + portfolioReturn) + monthly;
+      portfolio.push(portfolioValue);
+    }
+  }
+
+  const ctx = document.getElementById('backtestChart');
+  if (backtestChart) backtestChart.destroy();
+
+  backtestChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Your Strategy (Mock)', data: portfolio, borderColor: '#f59e0b', borderWidth: 2, fill: false, pointRadius: 0 }
       ]
     },
     options: {
@@ -295,40 +415,15 @@ function generateResults() {
       }
     }
   });
-  
-  // Update metrics
+
   const finalVal = portfolio[portfolio.length - 1];
   const totalContributed = initial + monthly * (labels.length - 1);
   const totalReturn = ((finalVal - totalContributed) / totalContributed * 100);
-  const cagrVal = '12.1%';
-  const sharpeVal = '0.87';
-  const drawdownVal = '-23.4%';
-  const winRateVal = '68%';
 
-  // Update main metrics cards
   document.getElementById('finalValue').textContent = '$' + Math.round(finalVal).toLocaleString();
-  document.getElementById('totalReturn').textContent = '+' + totalReturn.toFixed(1) + '%';
-  document.getElementById('cagr').textContent = cagrVal;
-  document.getElementById('sharpe').textContent = sharpeVal;
-
-  // Update KPI bar
+  document.getElementById('totalReturn').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%';
   document.getElementById('kpiFinalValue').textContent = '$' + Math.round(finalVal).toLocaleString();
-  document.getElementById('kpiTotalReturn').textContent = '+' + totalReturn.toFixed(1) + '%';
-  document.getElementById('kpiCagr').textContent = cagrVal;
-  document.getElementById('kpiSharpe').textContent = sharpeVal;
-  document.getElementById('kpiDrawdown').textContent = drawdownVal;
-  document.getElementById('kpiWinRate').textContent = winRateVal;
-
-  // Apply color classes based on positive/negative values
-  const returnEl = document.getElementById('totalReturn');
-  const kpiReturnEl = document.getElementById('kpiTotalReturn');
-  if (totalReturn >= 0) {
-    returnEl.className = 'text-2xl font-bold font-mono text-emerald-400';
-    kpiReturnEl.className = 'text-lg font-mono font-bold text-emerald-400';
-  } else {
-    returnEl.className = 'text-2xl font-bold font-mono text-red-400';
-    kpiReturnEl.className = 'text-lg font-mono font-bold text-red-400';
-  }
+  document.getElementById('kpiTotalReturn').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%';
 }
 
 function setPresetPeriod(years) {
@@ -337,13 +432,35 @@ function setPresetPeriod(years) {
   start.setFullYear(start.getFullYear() - years);
   document.getElementById('startDate').value = start.toISOString().split('T')[0];
   document.getElementById('endDate').value = end.toISOString().split('T')[0];
+
+  // Update button styles
+  document.querySelectorAll('[onclick^="setPresetPeriod"]').forEach(btn => {
+    btn.classList.remove('active', 'bg-amber-500/20', 'border-amber-400');
+  });
+  event.target.classList.add('active', 'bg-amber-500/20', 'border-amber-400');
+}
+
+function addAllocationRow() {
+  const container = document.getElementById('allocation');
+  const newRow = document.createElement('div');
+  newRow.className = 'flex gap-2';
+  newRow.innerHTML = `
+    <input type="text" class="form-input w-20" placeholder="Symbol">
+    <input type="number" value="0" class="form-input w-16 font-mono" placeholder="%">
+    <span class="self-center text-slate-400">%</span>
+    <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 px-2">×</button>
+  `;
+  container.appendChild(newRow);
 }
 
 function updateStrategy() {
-  // Update UI based on strategy type
+  const strategy = document.getElementById('strategyType').value;
+  // Could show/hide additional options based on strategy type
 }
 
-// Initial run
-generateResults();
+// Set default dates
+document.addEventListener('DOMContentLoaded', () => {
+  setPresetPeriod(5);
+});
 </script>
 <%- include('../partials/footer') %>
