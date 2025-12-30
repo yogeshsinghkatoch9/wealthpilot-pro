@@ -40,7 +40,7 @@
   // Initialize WebSocket connection
   const socket = io();
 
-    <% if (user) { %>
+    <% if (typeof user !== 'undefined' && user) { %>
     socket.emit('authenticate', '<%= user.id %>');
     <% } %>
 
