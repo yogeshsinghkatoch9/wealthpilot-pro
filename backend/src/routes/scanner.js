@@ -105,6 +105,12 @@ function generateMockScannerData(filters = {}, preset = null) {
 
   let results = [...mockStocks];
 
+  // Pre-compute volumeRatio for all stocks
+  results = results.map(stock => ({
+    ...stock,
+    volumeRatio: stock.avgVolume > 0 ? stock.volume / stock.avgVolume : 0
+  }));
+
   // Apply filters
   if (filters.minChange !== undefined) {
     results = results.filter(s => s.changePercent >= filters.minChange);
@@ -121,6 +127,9 @@ function generateMockScannerData(filters = {}, preset = null) {
   if (filters.minDividendYield !== undefined) {
     results = results.filter(s => s.dividendYield >= filters.minDividendYield);
   }
+  if (filters.maxDividendYield !== undefined) {
+    results = results.filter(s => s.dividendYield <= filters.maxDividendYield);
+  }
   if (filters.sector && filters.sector !== 'All') {
     results = results.filter(s => s.sector === filters.sector);
   }
@@ -136,11 +145,29 @@ function generateMockScannerData(filters = {}, preset = null) {
   if (filters.maxMarketCap !== undefined) {
     results = results.filter(s => s.marketCap <= filters.maxMarketCap);
   }
+  if (filters.minVolume !== undefined) {
+    results = results.filter(s => s.volume >= filters.minVolume);
+  }
+  if (filters.maxVolume !== undefined) {
+    results = results.filter(s => s.volume <= filters.maxVolume);
+  }
+  if (filters.minPe !== undefined) {
+    results = results.filter(s => s.pe >= filters.minPe);
+  }
+  if (filters.maxPe !== undefined) {
+    results = results.filter(s => s.pe <= filters.maxPe);
+  }
+  if (filters.minVolumeRatio !== undefined) {
+    results = results.filter(s => s.volumeRatio >= filters.minVolumeRatio);
+  }
+  if (filters.maxVolumeRatio !== undefined) {
+    results = results.filter(s => s.volumeRatio <= filters.maxVolumeRatio);
+  }
 
-  // Calculate additional fields
+  // Calculate additional fields (volumeRatio already computed above)
   results = results.map(stock => ({
     ...stock,
-    volumeRatio: (stock.volume / stock.avgVolume).toFixed(2),
+    volumeRatioDisplay: stock.volumeRatio.toFixed(2) + 'x',
     week52High: stock.price * (1 + Math.random() * 0.1),
     week52Low: stock.price * (1 - Math.random() * 0.3),
     signal: determineSignal(stock)
@@ -203,9 +230,15 @@ router.get('/scan', async (req, res) => {
       minRsi,
       maxRsi,
       minDividendYield,
+      maxDividendYield,
       minMarketCap,
       maxMarketCap,
       minVolume,
+      maxVolume,
+      minVolumeRatio,
+      maxVolumeRatio,
+      minPe,
+      maxPe,
       sortBy,
       sortOrder,
       limit
@@ -227,8 +260,15 @@ router.get('/scan', async (req, res) => {
     if (minRsi) filters.minRsi = parseFloat(minRsi);
     if (maxRsi) filters.maxRsi = parseFloat(maxRsi);
     if (minDividendYield) filters.minDividendYield = parseFloat(minDividendYield);
+    if (maxDividendYield) filters.maxDividendYield = parseFloat(maxDividendYield);
     if (minMarketCap) filters.minMarketCap = parseFloat(minMarketCap);
     if (maxMarketCap) filters.maxMarketCap = parseFloat(maxMarketCap);
+    if (minVolume) filters.minVolume = parseFloat(minVolume);
+    if (maxVolume) filters.maxVolume = parseFloat(maxVolume);
+    if (minVolumeRatio) filters.minVolumeRatio = parseFloat(minVolumeRatio);
+    if (maxVolumeRatio) filters.maxVolumeRatio = parseFloat(maxVolumeRatio);
+    if (minPe) filters.minPe = parseFloat(minPe);
+    if (maxPe) filters.maxPe = parseFloat(maxPe);
     if (sortBy) filters.sortBy = sortBy;
     if (sortOrder) filters.sortOrder = sortOrder;
 
@@ -248,6 +288,9 @@ router.get('/scan', async (req, res) => {
         priceRange: { min: filters.minPrice, max: filters.maxPrice },
         changeRange: { min: filters.minChange, max: filters.maxChange },
         rsiRange: { min: filters.minRsi, max: filters.maxRsi },
+        volumeRange: { min: filters.minVolume, max: filters.maxVolume },
+        volumeRatioRange: { min: filters.minVolumeRatio, max: filters.maxVolumeRatio },
+        peRange: { min: filters.minPe, max: filters.maxPe },
         sortBy: filters.sortBy || 'changePercent',
         sortOrder: filters.sortOrder || 'desc'
       },
