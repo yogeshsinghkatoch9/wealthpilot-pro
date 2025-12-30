@@ -52,7 +52,7 @@
       <div class="space-y-4">
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">MARKET CAP</label>
-          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select name="marketCap" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
             <option>Any</option>
             <option>Mega ($200B+)</option>
             <option>Large ($10B-$200B)</option>
@@ -64,36 +64,36 @@
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">SECTOR</label>
-          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select name="sector" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
             <option>All Sectors</option>
             <option>Technology</option>
             <option>Healthcare</option>
-            <option>Financial</option>
-            <option>Consumer</option>
+            <option>Financial Services</option>
+            <option>Consumer Cyclical</option>
             <option>Energy</option>
-            <option>Industrial</option>
+            <option>Communication Services</option>
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">PRICE RANGE</label>
           <div class="flex gap-2">
-            <input type="number" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
-            <input type="number" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="minPrice" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="maxPrice" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">DAILY CHANGE %</label>
           <div class="flex gap-2">
-            <input type="number" placeholder="Min" value="5" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
-            <input type="number" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="minChange" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="maxChange" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">VOLUME</label>
-          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select name="volumeFilter" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
             <option>Above Average</option>
             <option>2x Average</option>
             <option>5x Average</option>
@@ -104,8 +104,8 @@
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">RSI (14)</label>
           <div class="flex gap-2">
-            <input type="number" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
-            <input type="number" placeholder="Max" value="30" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="minRsi" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="maxRsi" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
           </div>
         </div>
 
@@ -357,15 +357,137 @@
 </div>
 
 <script>
-function runScanner() {
+let currentPreset = 'gainers';
+let currentFilters = {};
+
+async function runScanner() {
   showToast('Scanning markets...', 'info');
-  setTimeout(() => {
-    document.getElementById('resultCount').textContent = Math.floor(Math.random() * 50 + 30);
-    showToast('Scan complete!', 'success');
-  }, 1000);
+
+  try {
+    // Build query params
+    const params = new URLSearchParams();
+    if (currentPreset) params.append('preset', currentPreset);
+
+    // Get filter values
+    const marketCap = document.querySelector('select[name="marketCap"]')?.value;
+    const sector = document.querySelector('select[name="sector"]')?.value;
+    const minPrice = document.querySelector('input[name="minPrice"]')?.value;
+    const maxPrice = document.querySelector('input[name="maxPrice"]')?.value;
+    const minChange = document.querySelector('input[name="minChange"]')?.value;
+    const maxChange = document.querySelector('input[name="maxChange"]')?.value;
+    const minRsi = document.querySelector('input[name="minRsi"]')?.value;
+    const maxRsi = document.querySelector('input[name="maxRsi"]')?.value;
+
+    if (sector && sector !== 'All Sectors') params.append('sector', sector);
+    if (minPrice) params.append('minPrice', minPrice);
+    if (maxPrice) params.append('maxPrice', maxPrice);
+    if (minChange) params.append('minChange', minChange);
+    if (maxChange) params.append('maxChange', maxChange);
+    if (minRsi) params.append('minRsi', minRsi);
+    if (maxRsi) params.append('maxRsi', maxRsi);
+
+    // Map market cap to values
+    const marketCapMap = {
+      'Mega ($200B+)': { min: 200000000000 },
+      'Large ($10B-$200B)': { min: 10000000000, max: 200000000000 },
+      'Mid ($2B-$10B)': { min: 2000000000, max: 10000000000 },
+      'Small ($300M-$2B)': { min: 300000000, max: 2000000000 },
+      'Micro (<$300M)': { max: 300000000 }
+    };
+    if (marketCap && marketCapMap[marketCap]) {
+      if (marketCapMap[marketCap].min) params.append('minMarketCap', marketCapMap[marketCap].min);
+      if (marketCapMap[marketCap].max) params.append('maxMarketCap', marketCapMap[marketCap].max);
+    }
+
+    const response = await fetch(`/api/scanner/scan?${params.toString()}`);
+    const data = await response.json();
+
+    if (data.success) {
+      renderResults(data.results);
+      document.getElementById('resultCount').textContent = data.count;
+      showToast('Scan complete!', 'success');
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Scanner error:', error);
+    showToast('Scan failed: ' + error.message, 'error');
+  }
+}
+
+function renderResults(stocks) {
+  const tbody = document.getElementById('scanResults');
+  if (!stocks || stocks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-slate-400 py-8">No stocks match your criteria</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = stocks.map(stock => `
+    <tr>
+      <td>
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded bg-gradient-to-br from-${getColorForSymbol(stock.symbol)}-500 to-${getColorForSymbol(stock.symbol)}-600 flex items-center justify-center text-white text-xs font-bold">
+            ${stock.symbol.substring(0, 4)}
+          </div>
+          <div>
+            <p class="font-bold text-white">${stock.symbol}</p>
+            <p class="text-xs text-slate-500">${stock.name || ''}</p>
+          </div>
+        </div>
+      </td>
+      <td class="font-mono text-white">$${stock.price?.toFixed(2) || '-'}</td>
+      <td class="font-mono ${stock.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">
+        ${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent?.toFixed(1) || '0'}%
+      </td>
+      <td class="font-mono text-slate-400">${formatVolume(stock.volume)}</td>
+      <td class="font-mono text-slate-400">${formatMarketCap(stock.marketCap)}</td>
+      <td>
+        <span class="px-2 py-0.5 ${getRsiClass(stock.rsi)} rounded text-xs font-mono font-bold">
+          ${stock.rsi?.toFixed(0) || '-'}
+        </span>
+      </td>
+      <td>
+        <span class="px-2 py-1 bg-${stock.signal?.color || 'slate'}-500/20 text-${stock.signal?.color || 'slate'}-400 rounded text-xs font-bold">
+          ${stock.signal?.type || 'NEUTRAL'}
+        </span>
+      </td>
+      <td>
+        <button onclick="addToWatchlist('${stock.symbol}')" class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getColorForSymbol(symbol) {
+  const colors = ['purple', 'sky', 'emerald', 'rose', 'amber', 'indigo'];
+  const hash = symbol.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+}
+
+function getRsiClass(rsi) {
+  if (rsi < 30) return 'bg-emerald-500/20 text-emerald-400';
+  if (rsi > 70) return 'bg-red-500/20 text-red-400';
+  return 'bg-amber-500/20 text-amber-400';
+}
+
+function formatVolume(vol) {
+  if (!vol) return '-';
+  if (vol >= 1e9) return (vol / 1e9).toFixed(1) + 'B';
+  if (vol >= 1e6) return (vol / 1e6).toFixed(1) + 'M';
+  if (vol >= 1e3) return (vol / 1e3).toFixed(1) + 'K';
+  return vol.toString();
+}
+
+function formatMarketCap(cap) {
+  if (!cap) return '-';
+  if (cap >= 1e12) return '$' + (cap / 1e12).toFixed(1) + 'T';
+  if (cap >= 1e9) return '$' + (cap / 1e9).toFixed(0) + 'B';
+  if (cap >= 1e6) return '$' + (cap / 1e6).toFixed(0) + 'M';
+  return '$' + cap.toString();
 }
 
 function loadPreset(preset) {
+  currentPreset = preset;
   // Reset all preset buttons
   document.querySelectorAll('.preset-btn').forEach(btn => {
     btn.className = 'preset-btn bloomberg-btn bloomberg-btn-sm';
@@ -376,12 +498,56 @@ function loadPreset(preset) {
   runScanner();
 }
 
-function saveScanner() {
-  showToast('Scanner saved!', 'success');
+async function saveScanner() {
+  const name = prompt('Enter a name for this scanner:');
+  if (!name) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/scanner/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, filters: currentFilters })
+    });
+    const data = await response.json();
+    if (data.success) {
+      showToast('Scanner saved!', 'success');
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    showToast('Failed to save scanner', 'error');
+  }
 }
 
 function exportResults() {
   showToast('Exporting to CSV...', 'info');
+
+  const rows = Array.from(document.querySelectorAll('#scanResults tr')).map(row => {
+    const cells = row.querySelectorAll('td');
+    return [
+      cells[0]?.querySelector('.font-bold')?.textContent || '',
+      cells[1]?.textContent?.trim() || '',
+      cells[2]?.textContent?.trim() || '',
+      cells[3]?.textContent?.trim() || '',
+      cells[4]?.textContent?.trim() || '',
+      cells[5]?.textContent?.trim() || ''
+    ].join(',');
+  });
+
+  const csv = 'Symbol,Price,Change%,Volume,MarketCap,RSI\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `scanner-results-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast('Export complete!', 'success');
 }
 
 function addCondition() {
@@ -389,9 +555,32 @@ function addCondition() {
 }
 
 function loadSaved(name) {
+  currentPreset = name;
   showToast(`Loading ${name} scanner...`, 'info');
   runScanner();
 }
+
+async function addToWatchlist(symbol) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/watchlist/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ symbol })
+    });
+    showToast(`${symbol} added to watchlist!`, 'success');
+  } catch (error) {
+    showToast('Failed to add to watchlist', 'error');
+  }
+}
+
+// Load scanner on page load
+document.addEventListener('DOMContentLoaded', () => {
+  runScanner();
+});
 </script>
 
 <%- include('../partials/footer') %>
