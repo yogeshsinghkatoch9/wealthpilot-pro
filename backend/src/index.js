@@ -21,6 +21,20 @@ const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 const calendarRoutes = require('./routes/calendar');
 
+// Tax harvesting routes with error handling
+let taxHarvestingRoutes;
+try {
+  taxHarvestingRoutes = require('./routes/taxHarvesting');
+  console.log('[INDEX] Tax harvesting routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load tax harvesting routes:', error.message);
+  const expressRouter = require('express').Router;
+  taxHarvestingRoutes = expressRouter();
+  taxHarvestingRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Tax harvesting routes failed to load' });
+  });
+}
+
 // Sector rotation routes with error handling
 let sectorRotationRoutes;
 try {
@@ -225,6 +239,7 @@ app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
 app.use('/api/etf-analyzer', etfAnalyzerRoutes); // ETF analyzer
 app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
 app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
+app.use('/api/tax', taxHarvestingRoutes); // Tax-loss harvesting
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -2439,6 +2439,64 @@ app.get('/tax', requireAuth, async (req, res) => {
   });
 });
 
+// Tax Dashboard - Enhanced with ETF alternatives
+app.get('/tax-dashboard', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfolioId = req.query.portfolio as string;
+
+  // Get portfolios list
+  const portfolios = await apiFetch('/portfolios', token);
+  const portfolioList = portfolios.error ? [] : portfolios;
+
+  // Use first portfolio if none selected
+  const selectedPid = portfolioId || (portfolioList[0]?.id || '');
+
+  // Get tax dashboard data
+  let taxDashboard = null;
+  if (selectedPid) {
+    const dashboardData = await apiFetch(`/tax/dashboard/${selectedPid}`, token);
+    taxDashboard = dashboardData.error ? null : dashboardData.data;
+  }
+
+  res.render('pages/tax-dashboard', {
+    pageTitle: 'Tax Dashboard',
+    taxDashboard,
+    portfolios: portfolioList,
+    selectedPid,
+    fmt
+  });
+});
+
+// Tax Opportunities - Full list with ETF alternatives
+app.get('/tax-opportunities', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfolioId = req.query.portfolio as string;
+  const minThreshold = parseInt(req.query.minThreshold as string) || 5;
+
+  // Get portfolios list
+  const portfolios = await apiFetch('/portfolios', token);
+  const portfolioList = portfolios.error ? [] : portfolios;
+
+  // Use first portfolio if none selected
+  const selectedPid = portfolioId || (portfolioList[0]?.id || '');
+
+  // Get opportunities data
+  let opportunitiesData = null;
+  if (selectedPid) {
+    const oppData = await apiFetch(`/tax/opportunities/${selectedPid}?minThreshold=${minThreshold}`, token);
+    opportunitiesData = oppData.error ? null : oppData.data;
+  }
+
+  res.render('pages/tax-opportunities', {
+    pageTitle: 'Tax Opportunities',
+    opportunitiesData,
+    portfolios: portfolioList,
+    selectedPid,
+    minThreshold,
+    fmt
+  });
+});
+
 app.get('/export', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const portfolios = await apiFetch('/portfolios', token);
