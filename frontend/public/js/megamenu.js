@@ -337,6 +337,12 @@ class MegaMenu {
             <li><a href="/real-estate" class="megamenu-link">Real Estate</a></li>
             <li><a href="/bonds" class="megamenu-link">Bonds</a></li>
           </ul>
+          <h3 class="megamenu-column-title" style="margin-top: 1rem;">Tax</h3>
+          <ul class="megamenu-links">
+            <li><a href="/tax-dashboard" class="megamenu-link">Tax Dashboard</a></li>
+            <li><a href="/tax-opportunities" class="megamenu-link">Harvest Opportunities</a></li>
+            <li><a href="/tax-lots" class="megamenu-link">Tax Lots</a></li>
+          </ul>
         </div>
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Alerts & Monitoring</h3>

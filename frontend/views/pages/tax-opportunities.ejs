@@ -1,0 +1,568 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const oppData = typeof opportunitiesData !== 'undefined' ? opportunitiesData : {};
+const opportunities = oppData.opportunities || [];
+const summary = oppData.summary || {};
+const preferences = oppData.userPreferences || {};
+const carryforward = oppData.carryforward || { totalBalance: 0 };
+
+// Helper functions
+function formatMoney(val) {
+  return '$' + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatPercent(val) {
+  return (val || 0).toFixed(2) + '%';
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Tax Opportunities' }) %>
+
+<style>
+  .opp-card {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+
+  .opp-card:hover {
+    border-color: rgba(148, 163, 184, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .opp-card.high-priority {
+    border-left: 4px solid #10b981;
+  }
+
+  .opp-card.medium-priority {
+    border-left: 4px solid #f59e0b;
+  }
+
+  .opp-card.low-priority {
+    border-left: 4px solid #3b82f6;
+  }
+
+  .opp-card.wash-sale-risk {
+    border-left: 4px solid #ef4444;
+  }
+
+  .symbol-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: #ef4444;
+  }
+
+  .etf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #60a5fa;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .etf-chip:hover {
+    background: rgba(59, 130, 246, 0.25);
+    transform: scale(1.02);
+  }
+
+  .etf-chip.recommended {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #34d399;
+  }
+
+  .etf-chip.sector {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+  }
+
+  .harvest-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .harvest-action-btn:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+    transform: scale(1.02);
+  }
+
+  .harvest-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .filter-pill {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-pill.active {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+  }
+
+  .filter-pill:not(.active) {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+  }
+
+  .filter-pill:hover:not(.active) {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+
+  .stat-bar {
+    height: 8px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+</style>
+
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <a href="/tax-dashboard<%= selectedPid ? '?portfolio=' + selectedPid : '' %>" class="text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </a>
+        <h1 class="text-2xl font-bold text-white">Tax Opportunities</h1>
+      </div>
+      <p class="text-slate-400 text-sm mt-1">All harvesting opportunities with ETF alternatives</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <form method="GET" class="flex items-center gap-2">
+        <select name="portfolio" onchange="this.form.submit()"
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+          <% if (typeof portfolios !== 'undefined' && portfolios) { %>
+          <% portfolios.forEach(p => { %>
+          <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
+          <% }); %>
+          <% } else { %>
+          <option value="">Select Portfolio</option>
+          <% } %>
+        </select>
+        <select name="minThreshold" onchange="this.form.submit()"
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+          <option value="3" <%= minThreshold == 3 ? 'selected' : '' %>>3%+ Loss</option>
+          <option value="5" <%= minThreshold == 5 || !minThreshold ? 'selected' : '' %>>5%+ Loss</option>
+          <option value="10" <%= minThreshold == 10 ? 'selected' : '' %>>10%+ Loss</option>
+          <option value="15" <%= minThreshold == 15 ? 'selected' : '' %>>15%+ Loss</option>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div class="text-2xl font-bold text-white font-mono"><%= summary.totalOpportunities || opportunities.length %></div>
+      <div class="text-xs text-slate-400 mt-1">Total Opportunities</div>
+    </div>
+    <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div class="text-2xl font-bold text-red-400 font-mono"><%= formatMoney(summary.totalPotentialLoss || 0) %></div>
+      <div class="text-xs text-slate-400 mt-1">Total Losses</div>
+    </div>
+    <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div class="text-2xl font-bold text-emerald-400 font-mono"><%= formatMoney(summary.totalTaxSavings || 0) %></div>
+      <div class="text-xs text-slate-400 mt-1">Potential Savings</div>
+    </div>
+    <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div class="text-2xl font-bold text-emerald-400 font-mono"><%= summary.washSafeCount || 0 %></div>
+      <div class="text-xs text-slate-400 mt-1">Wash-Sale Safe</div>
+    </div>
+    <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div class="text-2xl font-bold text-purple-400 font-mono"><%= summary.userTaxBracket || 32 %>%</div>
+      <div class="text-xs text-slate-400 mt-1">Tax Bracket</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-wrap items-center gap-3">
+    <span class="text-xs text-slate-500 uppercase font-semibold">Filter:</span>
+    <button class="filter-pill active" onclick="filterOpportunities('all')">All</button>
+    <button class="filter-pill" onclick="filterOpportunities('safe')">Wash-Sale Safe</button>
+    <button class="filter-pill" onclick="filterOpportunities('high')">High Priority</button>
+    <button class="filter-pill" onclick="filterOpportunities('long-term')">Long-Term</button>
+    <button class="filter-pill" onclick="filterOpportunities('short-term')">Short-Term</button>
+  </div>
+
+  <!-- Opportunities List -->
+  <div class="space-y-4" id="opportunitiesList">
+    <% if (opportunities.length > 0) { %>
+    <% opportunities.forEach((opp, idx) => {
+      const priorityClass = opp.taxSavings > 1000 ? 'high-priority' : opp.taxSavings > 500 ? 'medium-priority' : 'low-priority';
+      const cardClass = opp.inWashSaleWindow ? 'wash-sale-risk' : priorityClass;
+    %>
+    <div class="opp-card <%= cardClass %>" data-holding-period="<%= opp.holdingPeriod || 'short-term' %>" data-wash-safe="<%= !opp.inWashSaleWindow %>" data-priority="<%= opp.taxSavings > 1000 ? 'high' : 'medium' %>">
+      <div class="p-5">
+        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+          <!-- Left: Symbol & Info -->
+          <div class="flex items-start gap-4">
+            <div class="symbol-icon"><%= opp.symbol ? opp.symbol.slice(0, 4) : '????' %></div>
+            <div>
+              <div class="flex items-center gap-3 mb-1">
+                <span class="text-xl font-bold text-white font-mono"><%= opp.symbol %></span>
+                <span class="text-xs px-2 py-1 rounded <%= (opp.holdingPeriod || 'short-term') === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400' %>">
+                  <%= opp.holdingPeriod || 'short-term' %>
+                </span>
+                <% if (opp.inWashSaleWindow) { %>
+                <span class="text-xs px-2 py-1 rounded bg-red-500/15 text-red-400 flex items-center gap-1">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                  Wash Sale Risk
+                </span>
+                <% } %>
+              </div>
+              <p class="text-slate-400 text-sm"><%= opp.sector || 'Unknown Sector' %></p>
+
+              <!-- Position Details -->
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4 text-sm">
+                <div>
+                  <span class="text-slate-500">Shares</span>
+                  <p class="text-white font-mono"><%= (opp.shares || 0).toFixed(2) %></p>
+                </div>
+                <div>
+                  <span class="text-slate-500">Cost Basis</span>
+                  <p class="text-white font-mono"><%= formatMoney(opp.costBasis || 0) %></p>
+                </div>
+                <div>
+                  <span class="text-slate-500">Current Price</span>
+                  <p class="text-white font-mono"><%= formatMoney(opp.currentPrice || 0) %></p>
+                </div>
+                <div>
+                  <span class="text-slate-500">Loss %</span>
+                  <p class="text-red-400 font-mono">-<%= opp.lossPercent || '0.00' %>%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Loss & Savings -->
+          <div class="flex flex-col items-end">
+            <div class="text-right mb-4">
+              <p class="text-3xl font-bold text-red-400 font-mono">-<%= formatMoney(opp.unrealizedLoss || 0) %></p>
+              <p class="text-emerald-400 text-sm mt-1">Save <span class="font-bold font-mono"><%= formatMoney(opp.taxSavings || 0) %></span></p>
+              <p class="text-xs text-slate-500">at <%= formatPercent(opp.effectiveTaxRate * 100 || 32) %> rate</p>
+            </div>
+
+            <button class="harvest-action-btn" onclick="previewHarvest('<%= opp.symbol %>', '<%= opp.etfAlternatives?.recommended || 'VTI' %>')" <%= opp.inWashSaleWindow ? 'disabled' : '' %>>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Harvest Loss
+            </button>
+          </div>
+        </div>
+
+        <!-- ETF Alternatives Section -->
+        <div class="mt-5 pt-5 border-t border-slate-700/50">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-slate-500 uppercase font-semibold">ETF Alternatives (Wash-Sale Safe)</span>
+            <% if (opp.etfAlternatives?.washSaleSafe) { %>
+            <span class="text-xs text-emerald-400 flex items-center gap-1">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Safe to Replace
+            </span>
+            <% } %>
+          </div>
+
+          <div class="flex flex-wrap gap-3">
+            <% if (opp.etfAlternatives) { %>
+              <% if (opp.etfAlternatives.recommended) { %>
+              <div class="etf-chip recommended" onclick="selectReplacement('<%= opp.symbol %>', '<%= opp.etfAlternatives.recommended %>')">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <%= opp.etfAlternatives.recommended %>
+                <span class="text-xs opacity-75">Recommended</span>
+              </div>
+              <% } %>
+
+              <% if (opp.etfAlternatives.sectorETF && opp.etfAlternatives.sectorETF !== opp.etfAlternatives.recommended) { %>
+              <div class="etf-chip sector" onclick="selectReplacement('<%= opp.symbol %>', '<%= opp.etfAlternatives.sectorETF %>')">
+                <%= opp.etfAlternatives.sectorETF %>
+                <span class="text-xs opacity-75">Sector</span>
+              </div>
+              <% } %>
+
+              <% if (opp.etfAlternatives.thematicETFs && opp.etfAlternatives.thematicETFs.length > 0) { %>
+              <% opp.etfAlternatives.thematicETFs.slice(0, 3).forEach(etf => { %>
+              <div class="etf-chip" onclick="selectReplacement('<%= opp.symbol %>', '<%= etf %>')">
+                <%= etf %>
+              </div>
+              <% }); %>
+              <% } %>
+            <% } else { %>
+            <div class="etf-chip recommended" onclick="selectReplacement('<%= opp.symbol %>', 'VTI')">
+              VTI
+              <span class="text-xs opacity-75">Total Market</span>
+            </div>
+            <div class="etf-chip" onclick="selectReplacement('<%= opp.symbol %>', 'VOO')">
+              VOO
+            </div>
+            <div class="etf-chip" onclick="selectReplacement('<%= opp.symbol %>', 'SPY')">
+              SPY
+            </div>
+            <% } %>
+          </div>
+
+          <% if (opp.bestReplacement) { %>
+          <div class="mt-3 p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <p class="text-sm text-slate-300">
+              <span class="text-emerald-400 font-semibold">Best Choice:</span>
+              Replace with <span class="font-mono font-bold text-emerald-400"><%= opp.bestReplacement.recommendation %></span>
+              (<%= opp.bestReplacement.type === 'sector_etf' ? 'Sector ETF' : 'Thematic ETF' %>)
+              - <%= opp.bestReplacement.reason %>
+            </p>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% }); %>
+    <% } else { %>
+    <!-- Empty State -->
+    <div class="opp-card p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+        <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">No Opportunities Found</h3>
+      <p class="text-slate-400 max-w-md mx-auto">
+        No positions meet your current criteria. Try adjusting the loss threshold or selecting a different portfolio.
+      </p>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Harvest Preview Modal (same as dashboard) -->
+<div id="harvestModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50" onclick="if(event.target === this) closeHarvestModal()">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-lg mx-4">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold text-white">Preview Harvest</h3>
+      <button onclick="closeHarvestModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="harvestPreviewContent">
+      <div class="flex items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const portfolioId = '<%= selectedPid || "" %>';
+
+function filterOpportunities(filter) {
+  const pills = document.querySelectorAll('.filter-pill');
+  pills.forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const cards = document.querySelectorAll('.opp-card');
+  cards.forEach(card => {
+    const holdingPeriod = card.dataset.holdingPeriod;
+    const washSafe = card.dataset.washSafe === 'true';
+    const priority = card.dataset.priority;
+
+    let show = true;
+    switch(filter) {
+      case 'safe':
+        show = washSafe;
+        break;
+      case 'high':
+        show = priority === 'high';
+        break;
+      case 'long-term':
+        show = holdingPeriod === 'long-term';
+        break;
+      case 'short-term':
+        show = holdingPeriod === 'short-term';
+        break;
+      default:
+        show = true;
+    }
+    card.style.display = show ? 'block' : 'none';
+  });
+}
+
+function selectReplacement(symbol, etf) {
+  previewHarvest(symbol, etf);
+}
+
+async function previewHarvest(symbol, replacement) {
+  document.getElementById('harvestModal').classList.remove('hidden');
+  document.getElementById('harvestModal').classList.add('flex');
+  document.getElementById('harvestPreviewContent').innerHTML = `
+    <div class="flex items-center justify-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/tax/harvest/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ portfolioId, symbol, replacementSymbol: replacement })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const data = result.data;
+      document.getElementById('harvestPreviewContent').innerHTML = `
+        <div class="space-y-4">
+          <div class="p-4 bg-black/30 rounded-lg">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-lg font-bold text-white font-mono">${symbol}</span>
+              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div><span class="text-slate-400">Shares:</span> <span class="text-white font-mono">${data.holding?.shares?.toFixed(2) || '0'}</span></div>
+              <div><span class="text-slate-400">Cost Basis:</span> <span class="text-white font-mono">$${(data.holding?.totalCostBasis || 0).toFixed(2)}</span></div>
+              <div><span class="text-slate-400">Current Value:</span> <span class="text-white font-mono">$${(data.holding?.currentValue || 0).toFixed(2)}</span></div>
+              <div><span class="text-slate-400">Tax Rate:</span> <span class="text-white font-mono">${(data.harvest?.effectiveTaxRate || 0).toFixed(1)}%</span></div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+            <span class="text-red-400 font-semibold">Realized Loss</span>
+            <span class="text-2xl font-bold text-red-400 font-mono">-$${Math.abs(data.harvest?.realizedLoss || 0).toFixed(2)}</span>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <span class="text-emerald-400 font-semibold">Tax Savings</span>
+            <span class="text-2xl font-bold text-emerald-400 font-mono">$${(data.harvest?.taxSavings || 0).toFixed(2)}</span>
+          </div>
+
+          ${data.replacement ? `
+          <div class="p-4 bg-sky-500/10 rounded-lg border border-sky-500/20">
+            <p class="text-sm text-slate-400 mb-2">Replacement Security</p>
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-sky-400 text-lg">${data.replacement.symbol}</span>
+              <div class="text-right text-sm">
+                <p class="text-white font-mono">${data.replacement.shares?.toFixed(2)} shares</p>
+                <p class="text-slate-400">@ $${data.replacement.price?.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          ${data.warnings?.length ? `
+          <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <p class="text-amber-400 text-sm">${data.warnings.join(', ')}</p>
+          </div>
+          ` : ''}
+
+          <div class="flex gap-3 mt-6">
+            <button onclick="closeHarvestModal()" class="flex-1 px-4 py-2 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600">Cancel</button>
+            <button onclick="executeHarvest('${symbol}', '${replacement}')" class="flex-1 px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400" ${!data.canExecute ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>
+              Execute Harvest
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      document.getElementById('harvestPreviewContent').innerHTML = `
+        <div class="text-center py-8">
+          <p class="text-red-400">${result.error || 'Failed to load preview'}</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    document.getElementById('harvestPreviewContent').innerHTML = `
+      <div class="text-center py-8">
+        <p class="text-red-400">Error loading preview</p>
+      </div>
+    `;
+  }
+}
+
+async function executeHarvest(symbol, replacement) {
+  if (!confirm(`Are you sure you want to harvest ${symbol} and replace with ${replacement}?`)) return;
+
+  try {
+    const res = await fetch('/api/tax/harvest/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ portfolioId, symbol, replacementSymbol: replacement })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      if (typeof showToast === 'function') showToast(`Successfully harvested ${symbol}!`, 'success');
+      closeHarvestModal();
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      if (typeof showToast === 'function') showToast(result.error || 'Harvest failed', 'error');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast('Error executing harvest', 'error');
+  }
+}
+
+function closeHarvestModal() {
+  document.getElementById('harvestModal').classList.add('hidden');
+  document.getElementById('harvestModal').classList.remove('flex');
+}
+</script>
+
+<%- include('../partials/footer') %>
