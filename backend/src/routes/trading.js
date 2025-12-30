@@ -208,6 +208,244 @@ router.get('/signals/:strategyId', authenticate, async (req, res) => {
 // ==================== BACKTESTING ====================
 
 /**
+ * POST /api/trading/backtest-simple
+ * Run a simple portfolio backtest without requiring a pre-created strategy
+ * This is a simplified endpoint for the frontend backtest page
+ */
+router.post('/backtest-simple', authenticate, async (req, res) => {
+  try {
+    const {
+      allocation,      // Array of { symbol, weight } objects
+      initialCapital,  // Starting investment amount
+      monthlyContribution, // Optional monthly DCA amount
+      startDate,       // YYYY-MM-DD
+      endDate,         // YYYY-MM-DD
+      rebalanceFrequency // 'never', 'monthly', 'quarterly', 'annually'
+    } = req.body;
+
+    if (!allocation || !Array.isArray(allocation) || allocation.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required field: allocation (array of {symbol, weight})'
+      });
+    }
+
+    // Validate weights sum to 100
+    const totalWeight = allocation.reduce((sum, a) => sum + (a.weight || 0), 0);
+    if (Math.abs(totalWeight - 100) > 1) {
+      return res.status(400).json({
+        success: false,
+        error: `Allocation weights must sum to 100%, got ${totalWeight}%`
+      });
+    }
+
+    const capital = initialCapital || 100000;
+    const monthly = monthlyContribution || 0;
+    const start = startDate ? new Date(startDate) : new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const end = endDate ? new Date(endDate) : new Date();
+
+    // Fetch historical data for all symbols
+    const historicalDataBySymbol = {};
+    for (const asset of allocation) {
+      const data = await fetchHistoricalData(asset.symbol, '10y', startDate, endDate);
+      if (data.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient data for ${asset.symbol}`
+        });
+      }
+      historicalDataBySymbol[asset.symbol] = data;
+    }
+
+    // Get common date range
+    const allDates = new Set();
+    Object.values(historicalDataBySymbol).forEach(data => {
+      data.forEach(bar => allDates.add(bar.date));
+    });
+    const sortedDates = Array.from(allDates).sort();
+
+    // Filter dates within range
+    const filteredDates = sortedDates.filter(d => {
+      const date = new Date(d);
+      return date >= start && date <= end;
+    });
+
+    // Run simulation
+    let portfolioValue = capital;
+    let totalContributed = capital;
+    const equityCurve = [];
+    const holdings = {};
+
+    // Initialize holdings
+    allocation.forEach(asset => {
+      holdings[asset.symbol] = {
+        weight: asset.weight / 100,
+        shares: 0,
+        value: 0
+      };
+    });
+
+    // Get initial prices and buy
+    const firstDate = filteredDates[0];
+    allocation.forEach(asset => {
+      const data = historicalDataBySymbol[asset.symbol];
+      const firstBar = data.find(d => d.date === firstDate);
+      if (firstBar) {
+        const targetValue = capital * (asset.weight / 100);
+        holdings[asset.symbol].shares = targetValue / firstBar.close;
+        holdings[asset.symbol].value = targetValue;
+      }
+    });
+
+    let lastRebalanceMonth = -1;
+    let monthlyContribDay = 1;
+
+    // Track metrics
+    let peakValue = capital;
+    let maxDrawdown = 0;
+    const monthlyReturns = [];
+    let lastMonthValue = capital;
+
+    for (let i = 0; i < filteredDates.length; i++) {
+      const date = filteredDates[i];
+      const dateObj = new Date(date);
+      const month = dateObj.getMonth();
+      const isNewMonth = month !== lastRebalanceMonth;
+
+      // Monthly contribution
+      if (isNewMonth && monthly > 0 && i > 0) {
+        allocation.forEach(asset => {
+          const data = historicalDataBySymbol[asset.symbol];
+          const bar = data.find(d => d.date === date);
+          if (bar) {
+            const contribution = monthly * (asset.weight / 100);
+            holdings[asset.symbol].shares += contribution / bar.close;
+          }
+        });
+        totalContributed += monthly;
+      }
+
+      // Rebalance if needed
+      if (isNewMonth && rebalanceFrequency !== 'never') {
+        const shouldRebalance =
+          rebalanceFrequency === 'monthly' ||
+          (rebalanceFrequency === 'quarterly' && month % 3 === 0) ||
+          (rebalanceFrequency === 'annually' && month === 0);
+
+        if (shouldRebalance && i > 0) {
+          // Calculate current portfolio value
+          let currentValue = 0;
+          allocation.forEach(asset => {
+            const data = historicalDataBySymbol[asset.symbol];
+            const bar = data.find(d => d.date === date);
+            if (bar) {
+              currentValue += holdings[asset.symbol].shares * bar.close;
+            }
+          });
+
+          // Rebalance
+          allocation.forEach(asset => {
+            const data = historicalDataBySymbol[asset.symbol];
+            const bar = data.find(d => d.date === date);
+            if (bar) {
+              const targetValue = currentValue * (asset.weight / 100);
+              holdings[asset.symbol].shares = targetValue / bar.close;
+            }
+          });
+        }
+      }
+
+      lastRebalanceMonth = month;
+
+      // Calculate portfolio value
+      portfolioValue = 0;
+      allocation.forEach(asset => {
+        const data = historicalDataBySymbol[asset.symbol];
+        const bar = data.find(d => d.date === date);
+        if (bar) {
+          const value = holdings[asset.symbol].shares * bar.close;
+          holdings[asset.symbol].value = value;
+          portfolioValue += value;
+        }
+      });
+
+      // Track drawdown
+      if (portfolioValue > peakValue) {
+        peakValue = portfolioValue;
+      }
+      const drawdown = ((portfolioValue - peakValue) / peakValue) * 100;
+      if (drawdown < maxDrawdown) {
+        maxDrawdown = drawdown;
+      }
+
+      // Track monthly returns
+      if (isNewMonth && i > 0) {
+        const monthReturn = ((portfolioValue - lastMonthValue) / lastMonthValue) * 100;
+        monthlyReturns.push(monthReturn);
+        lastMonthValue = portfolioValue;
+      }
+
+      equityCurve.push({
+        date,
+        value: portfolioValue,
+        drawdown
+      });
+    }
+
+    // Calculate metrics
+    const totalReturn = ((portfolioValue - totalContributed) / totalContributed) * 100;
+    const years = (end - start) / (365 * 24 * 60 * 60 * 1000);
+    const cagr = years > 0 ? (Math.pow(portfolioValue / capital, 1 / years) - 1) * 100 : 0;
+
+    // Sharpe ratio (simplified, assuming 0% risk-free rate)
+    const avgMonthlyReturn = monthlyReturns.length > 0
+      ? monthlyReturns.reduce((a, b) => a + b, 0) / monthlyReturns.length
+      : 0;
+    const variance = monthlyReturns.length > 0
+      ? monthlyReturns.reduce((sum, r) => sum + Math.pow(r - avgMonthlyReturn, 2), 0) / monthlyReturns.length
+      : 0;
+    const volatility = Math.sqrt(variance) * Math.sqrt(12); // Annualized
+    const sharpeRatio = volatility > 0 ? (cagr / volatility) : 0;
+
+    // Win rate (positive months)
+    const positiveMonths = monthlyReturns.filter(r => r > 0).length;
+    const winRate = monthlyReturns.length > 0 ? (positiveMonths / monthlyReturns.length) * 100 : 0;
+
+    // Sortino ratio
+    const downsideReturns = monthlyReturns.filter(r => r < 0);
+    const downsideVariance = downsideReturns.length > 0
+      ? downsideReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / downsideReturns.length
+      : 0;
+    const downsideDeviation = Math.sqrt(downsideVariance) * Math.sqrt(12);
+    const sortinoRatio = downsideDeviation > 0 ? (cagr / downsideDeviation) : 0;
+
+    res.json({
+      success: true,
+      result: {
+        initialCapital: capital,
+        finalValue: portfolioValue,
+        totalContributed,
+        totalReturn,
+        cagr,
+        maxDrawdown,
+        sharpeRatio,
+        sortinoRatio,
+        volatility,
+        winRate,
+        startDate: filteredDates[0],
+        endDate: filteredDates[filteredDates.length - 1],
+        totalMonths: monthlyReturns.length,
+        equityCurve: equityCurve.filter((_, i) => i % Math.max(1, Math.floor(equityCurve.length / 120)) === 0), // Sample for chart
+        allocation
+      }
+    });
+  } catch (error) {
+    logger.error('Error running simple backtest:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/trading/backtest
  * Run backtest for a strategy
  */

@@ -18,18 +18,30 @@ class UnifiedAIService {
   initializeClients() {
     // Initialize Claude
     if (process.env.ANTHROPIC_API_KEY) {
-      this.anthropic = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY
-      });
-      console.log('[UnifiedAI] Claude client initialized');
+      try {
+        this.anthropic = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY
+        });
+        console.log('[UnifiedAI] Claude client initialized');
+      } catch (error) {
+        console.error('[UnifiedAI] Failed to initialize Claude:', error.message);
+      }
+    } else {
+      console.log('[UnifiedAI] No ANTHROPIC_API_KEY found, Claude disabled');
     }
 
     // Initialize OpenAI
     if (process.env.OPENAI_API_KEY) {
-      this.openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-      });
-      console.log('[UnifiedAI] OpenAI client initialized');
+      try {
+        this.openai = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY
+        });
+        console.log('[UnifiedAI] OpenAI client initialized');
+      } catch (error) {
+        console.error('[UnifiedAI] Failed to initialize OpenAI:', error.message);
+      }
+    } else {
+      console.log('[UnifiedAI] No OPENAI_API_KEY found, OpenAI disabled');
     }
   }
 
