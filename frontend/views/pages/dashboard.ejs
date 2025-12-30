@@ -13,108 +13,113 @@
 <main class="p-4 lg:p-6 min-h-screen">
   <div class="max-w-full mx-auto space-y-6">
 
-    <!-- Hero Section with Glassmorphism -->
-    <div class="relative overflow-hidden glass-card p-6">
-      <!-- Background Gradient Orbs -->
-      <div class="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"></div>
-      <div class="absolute -bottom-20 -left-20 w-48 h-48 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-3xl"></div>
-
-      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+    <!-- Clean Header Section -->
+    <div class="tufte-stat-card">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-2xl lg:text-3xl font-bold text-white">Portfolio Overview</h1>
-            <span class="badge badge-live">LIVE</span>
-          </div>
-          <p class="text-slate-400 text-sm">Welcome back! Here's your portfolio performance.</p>
+          <h1 class="text-2xl font-semibold text-white mb-1">Portfolio Overview</h1>
+          <p class="text-slate-400 text-sm">Last updated: <span id="lastUpdate"><%= new Date().toLocaleTimeString() %></span></p>
         </div>
 
         <div class="flex items-center gap-3">
-          <button onclick="refreshPrices()" class="btn-glass flex items-center gap-2" id="refreshBtn">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Refresh
+          <button onclick="refreshPrices()" class="px-4 py-2 text-sm font-medium text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-800 transition-colors" id="refreshBtn">
+            Refresh Prices
           </button>
-          <a href="/portfolio-manager" class="btn-gradient flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-            </svg>
+          <a href="/portfolio-manager" class="px-4 py-2 text-sm font-medium text-white bg-slate-700 border border-slate-600 rounded-lg hover:bg-slate-600 transition-colors">
             Manage Portfolio
           </a>
         </div>
       </div>
     </div>
 
-    <!-- KPI Stats Grid - Glassmorphism Cards -->
+    <!-- Benchmark Comparison Bar -->
+    <% const benchmarkReturn = 18.2; // S&P 500 YTD approximation %>
+    <%- include('../partials/finance/benchmark-comparison', {
+      portfolioReturn: safeTotals.ytdReturn || 0,
+      benchmarkReturn: benchmarkReturn,
+      benchmarkName: 'S&P 500',
+      period: 'YTD'
+    }) %>
+
+    <!-- KPI Stats Grid - Clean Tufte-Style Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       <!-- Total Value -->
-      <div class="stat-card group">
-        <div class="stat-card-icon">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Value</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= fmt.money(safeTotals.value) %></span>
         </div>
-        <div class="stat-card-label">Total Value</div>
-        <div class="stat-card-value"><%= fmt.money(safeTotals.value) %></div>
       </div>
 
       <!-- Day P&L -->
-      <div class="stat-card">
-        <div class="stat-card-label">Day P&L</div>
-        <div class="stat-card-value <%= safeTotals.dayChange >= 0 ? 'positive' : 'negative' %>">
-          <%= safeTotals.dayChange >= 0 ? '+' : '' %><%= fmt.money(safeTotals.dayChange || 0) %>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Day P&L</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safeTotals.dayChange >= 0 ? 'positive' : 'negative' %>">
+            <%= safeTotals.dayChange >= 0 ? '+' : '' %><%= fmt.money(safeTotals.dayChange || 0) %>
+          </span>
         </div>
-        <div class="text-xs mt-1 <%= safeTotals.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
-          <% const dayPct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0; %>
+        <% const dayPct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0; %>
+        <div class="text-xs mt-1 tabular-nums <%= dayPct >= 0 ? 'positive' : 'negative' %>">
           <%= dayPct >= 0 ? '+' : '' %><%= dayPct.toFixed(2) %>%
         </div>
       </div>
 
       <!-- Total P&L -->
-      <div class="stat-card">
-        <div class="stat-card-label">Total P&L</div>
-        <div class="stat-card-value <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>">
-          <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total P&L</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safeTotals.gain >= 0 ? 'positive' : 'negative' %>">
+            <%= safeTotals.gain >= 0 ? '+' : '' %><%= fmt.money(safeTotals.gain) %>
+          </span>
         </div>
-        <div class="text-xs mt-1 <%= gainPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <div class="text-xs mt-1 tabular-nums <%= gainPct >= 0 ? 'positive' : 'negative' %>">
           <%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%
         </div>
       </div>
 
       <!-- YTD Return -->
-      <div class="stat-card">
-        <div class="stat-card-label">YTD Return</div>
-        <div class="stat-card-value <%= safeTotals.ytdReturn >= 0 ? 'positive' : 'negative' %>">
-          <%= safeTotals.ytdReturn >= 0 ? '+' : '' %><%= (safeTotals.ytdReturn || 0).toFixed(2) %>%
+      <div class="tufte-stat-card">
+        <div class="stat-label">YTD Return</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums <%= safeTotals.ytdReturn >= 0 ? 'positive' : 'negative' %>">
+            <%= safeTotals.ytdReturn >= 0 ? '+' : '' %><%= (safeTotals.ytdReturn || 0).toFixed(2) %>%
+          </span>
         </div>
       </div>
 
       <!-- Dividend Yield -->
-      <div class="stat-card">
-        <div class="stat-card-label">Div Yield</div>
-        <div class="stat-card-value">
-          <%= safeTotals.value > 0 ? ((safeTotals.income / safeTotals.value) * 100).toFixed(2) : '0.00' %>%
+      <div class="tufte-stat-card">
+        <div class="stat-label">Div Yield</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums">
+            <%= safeTotals.value > 0 ? ((safeTotals.income / safeTotals.value) * 100).toFixed(2) : '0.00' %>%
+          </span>
         </div>
-        <div class="text-xs mt-1 text-blue-400">
+        <div class="text-xs mt-1 text-slate-400 tabular-nums">
           <%= fmt.money(safeTotals.income || 0) %>/yr
         </div>
       </div>
 
       <!-- Holdings Count -->
-      <div class="stat-card">
-        <div class="stat-card-label">Holdings</div>
-        <div class="stat-card-value"><%= safeTotals.holdingsCount || safeHoldings.length %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Holdings</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeTotals.holdingsCount || safeHoldings.length %></span>
+        </div>
         <div class="text-xs mt-1 text-slate-400">
           <%= safeSectors.length %> sectors
         </div>
       </div>
 
       <!-- Cash -->
-      <div class="stat-card">
-        <div class="stat-card-label">Cash</div>
-        <div class="stat-card-value"><%= fmt.money(safeTotals.cash || 0) %></div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Cash</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= fmt.money(safeTotals.cash || 0) %></span>
+        </div>
         <% const cashPct = safeTotals.value > 0 ? (safeTotals.cash / safeTotals.value) * 100 : 0; %>
-        <div class="text-xs mt-1 text-slate-400"><%= cashPct.toFixed(1) %>% of portfolio</div>
+        <div class="text-xs mt-1 text-slate-400 tabular-nums"><%= cashPct.toFixed(1) %>% of portfolio</div>
       </div>
     </div>
 
@@ -443,23 +448,44 @@
 
     <!-- Bottom Section: Charts -->
     <div class="grid grid-cols-12 gap-4">
-      <!-- Sector Allocation -->
-      <div class="col-span-12 md:col-span-6 lg:col-span-4 bloomberg-card">
-        <div class="bloomberg-card-header">
-          <span class="bloomberg-card-title">Sector Allocation</span>
-        </div>
-        <div class="bloomberg-card-body">
-          <canvas id="sectorChart" height="200"></canvas>
-        </div>
+      <!-- Sector Allocation - Horizontal Bar -->
+      <div class="col-span-12 md:col-span-6 lg:col-span-4">
+        <%
+          // Prepare sector allocation data for horizontal bar
+          const sectorColors = ['#1e3a5f', '#3b82f6', '#6b7280', '#9ca3af', '#374151', '#4b5563', '#f59e0b', '#dc2626'];
+          const totalSectorValue = safeSectors.reduce((sum, s) => sum + (s.value || s.weight || 0), 0);
+          const sectorAllocations = safeSectors.map((s, i) => ({
+            name: s.name || s.sector || 'Unknown',
+            percent: totalSectorValue > 0 ? ((s.value || s.weight || 0) / totalSectorValue * 100) : 0,
+            color: sectorColors[i % sectorColors.length]
+          })).filter(s => s.percent > 0);
+        %>
+        <%- include('../partials/finance/allocation-bar', {
+          allocations: sectorAllocations,
+          title: 'Sector Allocation',
+          height: 40,
+          labels: true
+        }) %>
       </div>
 
-      <!-- Top Holdings -->
-      <div class="col-span-12 md:col-span-6 lg:col-span-4 bloomberg-card">
-        <div class="bloomberg-card-header">
-          <span class="bloomberg-card-title">Top Holdings</span>
-        </div>
-        <div class="bloomberg-card-body">
-          <canvas id="holdingsChart" height="200"></canvas>
+      <!-- Top Holdings - Bar Chart -->
+      <div class="col-span-12 md:col-span-6 lg:col-span-4 tufte-stat-card">
+        <h3 class="text-sm font-semibold text-white mb-4">Top Holdings by Value</h3>
+        <div class="space-y-2">
+          <% const topHoldings = safeHoldings.slice(0, 6).map(h => {
+            const value = (h.shares || 0) * (h.currentPrice || h.price || 0);
+            return { symbol: h.symbol, value: value };
+          }).sort((a, b) => b.value - a.value);
+          const maxHoldingValue = topHoldings.length > 0 ? Math.max(...topHoldings.map(h => h.value)) : 1;
+          topHoldings.forEach(h => { %>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-medium text-slate-400 w-12"><%= h.symbol %></span>
+            <div class="flex-1 h-4 bg-slate-800 rounded overflow-hidden">
+              <div class="h-full bg-slate-500" style="width: <%= (h.value / maxHoldingValue * 100).toFixed(1) %>%"></div>
+            </div>
+            <span class="text-xs tabular-nums text-slate-300 w-20 text-right">$<%= h.value.toLocaleString(undefined, {maximumFractionDigits: 0}) %></span>
+          </div>
+          <% }) %>
         </div>
       </div>
 
@@ -501,63 +527,11 @@
 </main>
 
 <script>
-// Chart.js Configuration for Bloomberg Theme
-Chart.defaults.color = '#8b949e';
-Chart.defaults.borderColor = '#30363d';
+// Chart.js Configuration - Clean Tufte Style
+Chart.defaults.color = '#9ca3af';
+Chart.defaults.borderColor = '#374151';
 Chart.defaults.font.family = "'JetBrains Mono', 'Inter', sans-serif";
-
-// Sector Allocation Chart
-const sectorData = <%= JSON.stringify(safeSectors) %>;
-if (sectorData.length > 0 && document.getElementById('sectorChart')) {
-  new Chart(document.getElementById('sectorChart'), {
-    type: 'doughnut',
-    data: {
-      labels: sectorData.map(s => s.name || s.sector),
-      datasets: [{
-        data: sectorData.map(s => s.value || s.weight),
-        backgroundColor: ['#58a6ff', '#3fb950', '#f85149', '#a371f7', '#ff7b72', '#79c0ff', '#7ee787', '#ffa657'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'right',
-          labels: { boxWidth: 12, padding: 8, font: { size: 10 } }
-        }
-      },
-      cutout: '65%'
-    }
-  });
-}
-
-// Top Holdings Chart
-const holdingsData = <%= JSON.stringify(safeHoldings.slice(0, 8).map(h => ({ symbol: h.symbol, value: (h.shares || 0) * (h.currentPrice || h.price || 0) }))) %>;
-if (holdingsData.length > 0 && document.getElementById('holdingsChart')) {
-  new Chart(document.getElementById('holdingsChart'), {
-    type: 'bar',
-    data: {
-      labels: holdingsData.map(h => h.symbol),
-      datasets: [{
-        data: holdingsData.map(h => h.value),
-        backgroundColor: '#ff6600',
-        borderRadius: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: 'y',
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } },
-        y: { grid: { display: false } }
-      }
-    }
-  });
-}
+Chart.defaults.font.size = 11;
 
 // Refresh prices function
 function refreshPrices() {
@@ -602,28 +576,29 @@ function initializePerformanceChart() {
   const ctx = document.getElementById('performanceChart');
   if (!ctx) return;
 
+  // Clean, Tufte-style performance chart - minimal decoration, data-focused
   performanceChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels: [],
       datasets: [{
-        label: 'Portfolio Value',
+        label: 'Portfolio',
         data: [],
-        borderColor: '#f59e0b',
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        borderColor: '#1f2937', // Dark gray - subdued
+        backgroundColor: 'transparent',
         borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 5
-      }, {
-        label: 'Benchmark (SPY)',
-        data: [],
-        borderColor: '#64748b',
-        borderWidth: 1,
-        borderDash: [5, 5],
         fill: false,
-        tension: 0.4,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4
+      }, {
+        label: 'S&P 500',
+        data: [],
+        borderColor: '#9ca3af', // Light gray for benchmark
+        borderWidth: 1,
+        borderDash: [4, 4],
+        fill: false,
+        tension: 0.3,
         pointRadius: 0
       }]
     },
@@ -638,31 +613,40 @@ function initializePerformanceChart() {
         legend: {
           display: true,
           position: 'top',
-          labels: { color: '#8b949e', font: { size: 11 }, boxWidth: 12 }
+          align: 'end',
+          labels: {
+            color: '#9ca3af',
+            font: { size: 11 },
+            boxWidth: 20,
+            boxHeight: 2,
+            padding: 16,
+            usePointStyle: false
+          }
         },
         tooltip: {
-          backgroundColor: '#161b22',
-          titleColor: '#f59e0b',
-          bodyColor: '#fff',
-          borderColor: '#30363d',
+          backgroundColor: '#1f2937',
+          titleColor: '#f9fafb',
+          bodyColor: '#d1d5db',
+          borderColor: '#374151',
           borderWidth: 1,
-          padding: 12,
+          padding: 10,
+          displayColors: false,
           callbacks: {
             label: function(context) {
-              return context.dataset.label + ': ' + '$' + context.parsed.y.toLocaleString();
+              return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
             }
           }
         }
       },
       scales: {
         x: {
-          grid: { color: '#30363d', drawBorder: false },
-          ticks: { color: '#8b949e', font: { size: 10 } }
+          grid: { color: '#1f293710', drawBorder: false },
+          ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 6 }
         },
         y: {
-          grid: { color: '#30363d', drawBorder: false },
+          grid: { color: '#37415120', drawBorder: false },
           ticks: {
-            color: '#8b949e',
+            color: '#9ca3af',
             font: { size: 10 },
             callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0) + 'K' : v.toFixed(0))
           }
