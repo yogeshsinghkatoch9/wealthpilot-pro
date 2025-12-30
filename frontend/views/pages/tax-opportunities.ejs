@@ -1,7 +1,7 @@
 <%
 // Safe defaults
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
-const oppData = typeof opportunitiesData !== 'undefined' ? opportunitiesData : {};
+const oppData = (opportunitiesData && typeof opportunitiesData === 'object') ? opportunitiesData : {};
 const opportunities = oppData.opportunities || [];
 const summary = oppData.summary || {};
 const preferences = oppData.userPreferences || {};
