@@ -215,19 +215,39 @@ router.get('/performance-history', async (req, res) => {
       'ALL': 365 * 5
     }[timeframe] || 30;
 
-    // Calculate current portfolio value
+    // Get all unique symbols and fetch current quotes
+    const allSymbols = [...new Set(portfolios.flatMap(p => p.holdings.map(h => h.symbol)))];
+    const quotes = allSymbols.length > 0 ? await MarketDataService.getQuotes(allSymbols) : {};
+
+    // Calculate current market value and cost basis
     let currentValue = 0;
+    let totalCost = 0;
+    let totalCash = 0;
+
     for (const portfolio of portfolios) {
+      totalCash += Number(portfolio.cashBalance) || 0;
       for (const h of portfolio.holdings) {
-        currentValue += Number(h.shares) * Number(h.avgCostBasis);
+        const shares = Number(h.shares);
+        const cost = Number(h.avgCostBasis);
+        const quote = quotes[h.symbol] || {};
+        const price = Number(quote.price) || cost;
+
+        currentValue += shares * price;
+        totalCost += shares * cost;
       }
-      currentValue += Number(portfolio.cashBalance) || 0;
     }
+
+    currentValue += totalCash;
+    totalCost += totalCash;
 
     // If no holdings, return empty with default structure
     if (currentValue === 0) {
-      currentValue = 100000; // Default starting value for empty portfolio
+      currentValue = 100000;
+      totalCost = 100000;
     }
+
+    // Calculate actual return percentage
+    const totalReturn = totalCost > 0 ? ((currentValue - totalCost) / totalCost) : 0;
 
     // Generate date labels and values
     const labels = [];
@@ -236,7 +256,6 @@ router.get('/performance-history', async (req, res) => {
     const now = new Date();
 
     // Determine data point interval based on timeframe
-    const interval = days <= 7 ? 1 : Math.max(1, Math.floor(days / 30));
     const dataPoints = Math.min(days + 1, 60); // Max 60 data points
 
     for (let i = 0; i < dataPoints; i++) {
@@ -257,22 +276,32 @@ router.get('/performance-history', async (req, res) => {
       }
       labels.push(label);
 
-      // Calculate portfolio value with realistic growth pattern
-      // Use seed for consistent results across same timeframe
+      // Calculate portfolio value progression from cost to current value
       const progress = i / (dataPoints - 1);
-      const baseGrowth = 1 + (0.12 * (days / 365) * progress); // ~12% annual growth
-      const volatility = 0.02 * Math.sin(i * 0.5) * Math.cos(i * 0.3);
-      const portfolioValue = currentValue * baseGrowth * (1 + volatility);
+      // Add realistic volatility that trends toward the actual return
+      const volatility = 0.02 * Math.sin(i * 0.5 + Math.random() * 0.1) * Math.cos(i * 0.3);
+      // Interpolate from cost basis to current value with volatility
+      const portfolioValue = totalCost + (currentValue - totalCost) * progress + (totalCost * volatility);
       portfolio.push(Math.round(portfolioValue * 100) / 100);
 
-      // S&P 500 benchmark (slightly different pattern)
-      const benchmarkGrowth = 1 + (0.10 * (days / 365) * progress); // ~10% annual growth
+      // S&P 500 benchmark - use ~10% annual return as reference
+      const benchmarkReturn = 0.10 * (days / 365);
+      const benchmarkProgress = benchmarkReturn * progress;
       const benchmarkVolatility = 0.015 * Math.sin(i * 0.4) * Math.cos(i * 0.2);
-      const benchmarkValue = currentValue * benchmarkGrowth * (1 + benchmarkVolatility);
+      const benchmarkValue = totalCost * (1 + benchmarkProgress + benchmarkVolatility);
       benchmark.push(Math.round(benchmarkValue * 100) / 100);
     }
 
-    res.json({ labels, portfolio, benchmark });
+    res.json({
+      labels,
+      portfolio,
+      benchmark,
+      stats: {
+        currentValue: Math.round(currentValue * 100) / 100,
+        totalCost: Math.round(totalCost * 100) / 100,
+        totalReturn: Math.round(totalReturn * 10000) / 100
+      }
+    });
   } catch (err) {
     logger.error('Get performance history error:', err);
     res.status(500).json({ error: 'Failed to get performance history' });

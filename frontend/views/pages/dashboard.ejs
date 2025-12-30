@@ -5,10 +5,113 @@
   const safeWatchlist = typeof watchlist !== 'undefined' && watchlist ? watchlist : [];
   const safeAlerts = typeof alerts !== 'undefined' && alerts ? alerts : [];
   const safeTransactions = typeof transactions !== 'undefined' && transactions ? transactions : [];
-  const safeSectors = typeof sectors !== 'undefined' && sectors ? sectors : [];
   const safeRisk = typeof risk !== 'undefined' && risk ? risk : { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
   const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0, dayChange: 0, ytdReturn: 0, income: 0, cash: 0, holdingsCount: 0 };
   const gainPct = safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0;
+
+  // Stock-to-Sector lookup table for major stocks
+  const sectorLookup = {
+    // Technology
+    AAPL: 'Technology', MSFT: 'Technology', GOOGL: 'Technology', GOOG: 'Technology',
+    META: 'Technology', NVDA: 'Technology', AMD: 'Technology', INTC: 'Technology',
+    CRM: 'Technology', ADBE: 'Technology', ORCL: 'Technology', IBM: 'Technology',
+    CSCO: 'Technology', AVGO: 'Technology', TXN: 'Technology', QCOM: 'Technology',
+    MU: 'Technology', AMAT: 'Technology', LRCX: 'Technology', NOW: 'Technology',
+    SNOW: 'Technology', PLTR: 'Technology', UBER: 'Technology', LYFT: 'Technology',
+    // Communication Services
+    NFLX: 'Communication', DIS: 'Communication', CMCSA: 'Communication', T: 'Communication',
+    VZ: 'Communication', TMUS: 'Communication', WBD: 'Communication', PARA: 'Communication',
+    // Consumer Discretionary
+    AMZN: 'Consumer Discretionary', TSLA: 'Consumer Discretionary', HD: 'Consumer Discretionary',
+    NKE: 'Consumer Discretionary', MCD: 'Consumer Discretionary', SBUX: 'Consumer Discretionary',
+    LOW: 'Consumer Discretionary', TJX: 'Consumer Discretionary', BKNG: 'Consumer Discretionary',
+    MAR: 'Consumer Discretionary', GM: 'Consumer Discretionary', F: 'Consumer Discretionary',
+    // Consumer Staples
+    PG: 'Consumer Staples', KO: 'Consumer Staples', PEP: 'Consumer Staples', WMT: 'Consumer Staples',
+    COST: 'Consumer Staples', PM: 'Consumer Staples', MO: 'Consumer Staples', CL: 'Consumer Staples',
+    KMB: 'Consumer Staples', GIS: 'Consumer Staples', K: 'Consumer Staples', HSY: 'Consumer Staples',
+    // Healthcare
+    JNJ: 'Healthcare', UNH: 'Healthcare', PFE: 'Healthcare', MRK: 'Healthcare',
+    ABBV: 'Healthcare', LLY: 'Healthcare', TMO: 'Healthcare', ABT: 'Healthcare',
+    BMY: 'Healthcare', AMGN: 'Healthcare', GILD: 'Healthcare', CVS: 'Healthcare',
+    CI: 'Healthcare', HUM: 'Healthcare', MRNA: 'Healthcare', REGN: 'Healthcare',
+    // Financials
+    JPM: 'Financials', BAC: 'Financials', WFC: 'Financials', GS: 'Financials',
+    MS: 'Financials', C: 'Financials', BLK: 'Financials', SCHW: 'Financials',
+    AXP: 'Financials', USB: 'Financials', PNC: 'Financials', TFC: 'Financials',
+    V: 'Financials', MA: 'Financials', PYPL: 'Financials', COF: 'Financials',
+    BRK: 'Financials', 'BRK.A': 'Financials', 'BRK.B': 'Financials',
+    // Energy
+    XOM: 'Energy', CVX: 'Energy', COP: 'Energy', SLB: 'Energy',
+    EOG: 'Energy', OXY: 'Energy', PSX: 'Energy', VLO: 'Energy',
+    MPC: 'Energy', HAL: 'Energy', KMI: 'Energy', WMB: 'Energy',
+    // Industrials
+    BA: 'Industrials', CAT: 'Industrials', HON: 'Industrials', UNP: 'Industrials',
+    UPS: 'Industrials', LMT: 'Industrials', RTX: 'Industrials', GE: 'Industrials',
+    MMM: 'Industrials', DE: 'Industrials', FDX: 'Industrials', DAL: 'Industrials',
+    // Materials
+    LIN: 'Materials', APD: 'Materials', ECL: 'Materials', SHW: 'Materials',
+    NEM: 'Materials', FCX: 'Materials', NUE: 'Materials', DOW: 'Materials',
+    // Utilities
+    NEE: 'Utilities', DUK: 'Utilities', SO: 'Utilities', D: 'Utilities',
+    AEP: 'Utilities', SRE: 'Utilities', XEL: 'Utilities', EXC: 'Utilities',
+    // Real Estate
+    PLD: 'Real Estate', AMT: 'Real Estate', CCI: 'Real Estate', EQIX: 'Real Estate',
+    SPG: 'Real Estate', O: 'Real Estate', WELL: 'Real Estate', DLR: 'Real Estate',
+    // ETFs by sector
+    SPY: 'Broad Market', QQQ: 'Technology', IWM: 'Broad Market', VTI: 'Broad Market',
+    VOO: 'Broad Market', XLK: 'Technology', XLF: 'Financials', XLE: 'Energy',
+    XLV: 'Healthcare', XLY: 'Consumer Discretionary', XLP: 'Consumer Staples',
+    XLI: 'Industrials', XLB: 'Materials', XLU: 'Utilities', XLRE: 'Real Estate',
+    VGT: 'Technology', VHT: 'Healthcare', VFH: 'Financials', VDE: 'Energy'
+  };
+
+  // Calculate SECTORS from holdings with smart lookup
+  const sectorMap = {};
+  safeHoldings.forEach(h => {
+    const value = (h.shares || 0) * (h.currentPrice || h.price || 0);
+    const symbol = (h.symbol || '').toUpperCase();
+    // Use lookup table first, then backend sector, then industry
+    let sector = sectorLookup[symbol] || null;
+    if (!sector && h.sector && h.sector !== 'Unknown') sector = h.sector;
+    if (!sector && h.industry && h.industry !== 'Unknown') sector = h.industry;
+    if (!sector) sector = 'Other';
+    if (!sectorMap[sector]) sectorMap[sector] = 0;
+    sectorMap[sector] += value;
+  });
+  const safeSectors = Object.entries(sectorMap)
+    .map(([name, value]) => ({ name, value }))
+    .filter(s => s.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  // Calculate ASSET ALLOCATION from holdings
+  const assetAllocation = { stock: 0, etf: 0, crypto: 0, cash: safeTotals.cash || 0 };
+  const cryptoSymbols = ['BTC', 'ETH', 'SOL', 'ADA', 'XRP', 'DOGE', 'DOT', 'MATIC', 'AVAX', 'LINK', 'UNI', 'SHIB', 'LTC', 'BCH'];
+  const etfKeywords = ['ETF', 'FUND', 'INDEX', 'TRUST', 'SPY', 'QQQ', 'VTI', 'VOO', 'IVV', 'VEA', 'VWO', 'BND', 'AGG'];
+
+  safeHoldings.forEach(h => {
+    const value = (h.shares || 0) * (h.currentPrice || h.price || 0);
+    const symbol = (h.symbol || '').toUpperCase();
+    const assetType = (h.asset_type || h.type || '').toLowerCase();
+    const name = (h.name || '').toUpperCase();
+
+    // Determine asset type
+    if (assetType === 'crypto' || cryptoSymbols.includes(symbol)) {
+      assetAllocation.crypto += value;
+    } else if (assetType === 'etf' || assetType === 'mutual_fund' || etfKeywords.some(k => name.includes(k) || symbol.includes(k))) {
+      assetAllocation.etf += value;
+    } else {
+      assetAllocation.stock += value;
+    }
+  });
+
+  const totalAssetValue = assetAllocation.stock + assetAllocation.etf + assetAllocation.crypto + assetAllocation.cash;
+  const assetPct = {
+    stock: totalAssetValue > 0 ? (assetAllocation.stock / totalAssetValue * 100) : 0,
+    etf: totalAssetValue > 0 ? (assetAllocation.etf / totalAssetValue * 100) : 0,
+    crypto: totalAssetValue > 0 ? (assetAllocation.crypto / totalAssetValue * 100) : 0,
+    cash: totalAssetValue > 0 ? (assetAllocation.cash / totalAssetValue * 100) : 0
+  };
 %>
 <main class="p-4 lg:p-6 min-h-screen">
   <div class="max-w-full mx-auto space-y-6">
@@ -207,41 +310,41 @@
             <div class="bg-bloomberg-elevated rounded p-4" id="stocks-allocation">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs text-slate-500 uppercase">Stocks</span>
-                <span class="text-sm font-mono text-blue-400">0%</span>
+                <span class="text-sm font-mono text-blue-400"><%= assetPct.stock.toFixed(1) %>%</span>
               </div>
-              <div class="text-lg font-bold text-white">$0.00</div>
+              <div class="text-lg font-bold text-white">$<%= assetAllocation.stock.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
               <div class="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div class="h-full bg-blue-400" style="width: 0%"></div>
+                <div class="h-full bg-blue-400" style="width: <%= assetPct.stock %>%"></div>
               </div>
             </div>
             <div class="bg-bloomberg-elevated rounded p-4" id="etf-allocation">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs text-slate-500 uppercase">ETFs</span>
-                <span class="text-sm font-mono text-green-400">0%</span>
+                <span class="text-sm font-mono text-green-400"><%= assetPct.etf.toFixed(1) %>%</span>
               </div>
-              <div class="text-lg font-bold text-white">$0.00</div>
+              <div class="text-lg font-bold text-white">$<%= assetAllocation.etf.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
               <div class="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div class="h-full bg-green-400" style="width: 0%"></div>
+                <div class="h-full bg-green-400" style="width: <%= assetPct.etf %>%"></div>
               </div>
             </div>
             <div class="bg-bloomberg-elevated rounded p-4" id="crypto-allocation">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs text-slate-500 uppercase">Crypto</span>
-                <span class="text-sm font-mono text-amber-400">0%</span>
+                <span class="text-sm font-mono text-amber-400"><%= assetPct.crypto.toFixed(1) %>%</span>
               </div>
-              <div class="text-lg font-bold text-white">$0.00</div>
+              <div class="text-lg font-bold text-white">$<%= assetAllocation.crypto.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
               <div class="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div class="h-full bg-amber-400" style="width: 0%"></div>
+                <div class="h-full bg-amber-400" style="width: <%= assetPct.crypto %>%"></div>
               </div>
             </div>
             <div class="bg-bloomberg-elevated rounded p-4" id="cash-allocation">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-xs text-slate-500 uppercase">Cash</span>
-                <span class="text-sm font-mono text-slate-400">0%</span>
+                <span class="text-sm font-mono text-slate-400"><%= assetPct.cash.toFixed(1) %>%</span>
               </div>
-              <div class="text-lg font-bold text-white">$<%= (safeTotals.cash || 0).toFixed(2) %></div>
+              <div class="text-lg font-bold text-white">$<%= assetAllocation.cash.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></div>
               <div class="mt-2 h-1 bg-slate-700 rounded-full overflow-hidden">
-                <div class="h-full bg-slate-400" style="width: 0%"></div>
+                <div class="h-full bg-slate-400" style="width: <%= assetPct.cash %>%"></div>
               </div>
             </div>
           </div>
