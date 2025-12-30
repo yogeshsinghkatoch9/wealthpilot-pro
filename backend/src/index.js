@@ -119,6 +119,20 @@ try {
   });
 }
 
+// Scanner routes with error handling
+let scannerRoutes;
+try {
+  scannerRoutes = require('./routes/scanner');
+  console.log('[INDEX] Scanner routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load scanner routes:', error.message);
+  const expressRouter = require('express').Router;
+  scannerRoutes = expressRouter();
+  scannerRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Scanner routes failed to load' });
+  });
+}
+
 // Market breadth routes with error handling
 let marketBreadthRoutes;
 try {
@@ -253,6 +267,7 @@ app.use('/api/sector-heatmap', sectorHeatmapRoutes); // Sector heatmap
 app.use('/api/etf-analyzer', etfAnalyzerRoutes); // ETF analyzer
 app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
 app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
+app.use('/api/scanner', scannerRoutes); // Stock scanner
 app.use('/api/tax', taxHarvestingRoutes); // Tax-loss harvesting
 app.use('/api', featuresRoutes); // Paper trading, goals, journal, crypto, social, etc.
 
