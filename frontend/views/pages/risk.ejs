@@ -3,6 +3,8 @@
 const safeData = data || {};
 const safeTheme = theme || 'dark';
 const safeFmt = fmt || { compact: (n) => n?.toLocaleString() || '0' };
+const safePortfolios = portfolios || [];
+const safeSelectedPortfolioId = selectedPortfolioId || '';
 const riskScore = safeData.riskScore || 50;
 const beta = safeData.beta || 1.0;
 const sharpeRatio = safeData.sharpeRatio || 0;
@@ -31,18 +33,32 @@ const stressTests = safeData.stressTests || [
 
 <!-- Bloomberg Header Bar -->
 <div class="bloomberg-header-bar">
-  <div class="flex items-center justify-between">
+  <div class="flex items-center justify-between flex-wrap gap-3">
     <div class="flex items-center gap-3">
       <div class="w-1 h-8 bg-bloomberg-orange"></div>
       <h1 class="text-xl font-bold text-white tracking-tight">RISK DASHBOARD</h1>
-      <span class="text-xs text-slate-400 font-mono">ADVANCED METRICS & STRESS TESTING</span>
+      <span class="text-xs text-slate-400 font-mono hidden sm:inline">ADVANCED METRICS & STRESS TESTING</span>
     </div>
-    <button onclick="refreshRisk()" class="bloomberg-btn bloomberg-btn-sm">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-      </svg>
-      <span>REFRESH</span>
-    </button>
+    <div class="flex items-center gap-3">
+      <!-- Portfolio Selector -->
+      <% if (safePortfolios.length > 0) { %>
+      <select id="portfolioSelector" onchange="selectPortfolio(this.value)"
+              class="bg-slate-800 border border-slate-700 text-white text-sm rounded px-3 py-2 font-mono focus:ring-bloomberg-orange focus:border-bloomberg-orange">
+        <option value="">All Portfolios</option>
+        <% safePortfolios.forEach(p => { %>
+        <option value="<%= p.id %>" <%= safeSelectedPortfolioId === p.id ? 'selected' : '' %>>
+          <%= p.name %> (<%= p._count?.holdings || p.holdingsCount || 0 %> holdings)
+        </option>
+        <% }) %>
+      </select>
+      <% } %>
+      <button onclick="refreshRisk()" class="bloomberg-btn bloomberg-btn-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span class="hidden sm:inline">REFRESH</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -395,18 +411,64 @@ const stressTests = safeData.stressTests || [
     </div>
 
     <% } else { %>
-    <!-- No Data State -->
-    <div class="bloomberg-card p-12 text-center">
-      <div class="w-16 h-16 mx-auto mb-4 rounded-sm bg-slate-900 flex items-center justify-center">
-        <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
+    <!-- No Data State - Show Portfolio Selector -->
+    <div class="bloomberg-card p-8">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-sm bg-slate-900 flex items-center justify-center">
+          <svg class="w-8 h-8 text-bloomberg-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2 font-mono uppercase">SELECT PORTFOLIO FOR RISK ANALYSIS</h3>
+        <p class="text-slate-400 font-mono text-sm">Choose a portfolio below to calculate risk metrics</p>
       </div>
-      <h3 class="text-lg font-bold text-white mb-2 font-mono uppercase">NO RISK DATA</h3>
-      <p class="text-slate-400 mb-4 font-mono text-sm">Add holdings to your portfolio to see risk analysis</p>
-      <a href="/portfolios" class="bloomberg-btn">
-        <span>ADD HOLDINGS</span>
-      </a>
+
+      <% if (safePortfolios.length > 0) { %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+        <% safePortfolios.forEach(p => { %>
+        <div onclick="selectPortfolio('<%= p.id %>')"
+             class="p-4 rounded-sm bg-slate-900 border border-slate-800 hover:border-bloomberg-orange cursor-pointer transition-all hover:bg-slate-800/50 group">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-white font-mono"><%= p.name %></h4>
+            <span class="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded font-mono group-hover:bg-bloomberg-orange/20 group-hover:text-bloomberg-orange">
+              <%= p._count?.holdings || p.holdingsCount || 0 %> HOLDINGS
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500 font-mono">Total Value</span>
+            <span class="text-emerald-400 font-mono font-bold">
+              $<%= (p.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+            </span>
+          </div>
+          <% if (p.holdings && p.holdings.length > 0) { %>
+          <div class="mt-3 pt-3 border-t border-slate-800">
+            <p class="text-xs text-slate-500 font-mono mb-2">TOP HOLDINGS:</p>
+            <div class="flex flex-wrap gap-1">
+              <% p.holdings.slice(0, 5).forEach(h => { %>
+              <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono"><%= h.symbol %></span>
+              <% }) %>
+              <% if (p.holdings.length > 5) { %>
+              <span class="text-xs text-slate-500 font-mono">+<%= p.holdings.length - 5 %> more</span>
+              <% } %>
+            </div>
+          </div>
+          <% } %>
+          <div class="mt-4">
+            <button class="w-full py-2 px-4 bg-bloomberg-orange/10 text-bloomberg-orange border border-bloomberg-orange/30 rounded-sm font-mono text-sm hover:bg-bloomberg-orange hover:text-white transition-colors">
+              ANALYZE RISK
+            </button>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+      <% } else { %>
+      <div class="text-center py-8">
+        <p class="text-slate-400 mb-4 font-mono text-sm">No portfolios found. Create a portfolio with holdings first.</p>
+        <a href="/portfolio" class="bloomberg-btn">
+          <span>CREATE PORTFOLIO</span>
+        </a>
+      </div>
+      <% } %>
     </div>
     <% } %>
 
@@ -418,6 +480,15 @@ const stressTests = safeData.stressTests || [
 function refreshRisk() {
   showToast('Refreshing risk analysis...', 'info');
   setTimeout(() => location.reload(), 500);
+}
+
+function selectPortfolio(portfolioId) {
+  if (portfolioId) {
+    showToast('Loading risk analysis...', 'info');
+    window.location.href = '/risk?portfolioId=' + portfolioId;
+  } else {
+    window.location.href = '/risk';
+  }
 }
 
 <% if (data) { %>
