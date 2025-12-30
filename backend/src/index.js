@@ -21,6 +21,20 @@ const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 const calendarRoutes = require('./routes/calendar');
 
+// Features routes (paper trading, goals, journal, etc.) with error handling
+let featuresRoutes;
+try {
+  featuresRoutes = require('./routes/features');
+  console.log('[INDEX] Features routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load features routes:', error.message);
+  const expressRouter = require('express').Router;
+  featuresRoutes = expressRouter();
+  featuresRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Features routes failed to load' });
+  });
+}
+
 // Tax harvesting routes with error handling
 let taxHarvestingRoutes;
 try {
@@ -240,6 +254,7 @@ app.use('/api/etf-analyzer', etfAnalyzerRoutes); // ETF analyzer
 app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
 app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
 app.use('/api/tax', taxHarvestingRoutes); // Tax-loss harvesting
+app.use('/api', featuresRoutes); // Paper trading, goals, journal, crypto, social, etc.
 
 // Error handling middleware
 app.use((err, req, res, next) => {
