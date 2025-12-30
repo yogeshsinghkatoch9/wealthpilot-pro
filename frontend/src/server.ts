@@ -606,6 +606,54 @@ app.get('/market-dashboard', requireAuth, async (req, res) => {
   });
 });
 
+// Alias for market-overview (redirect to market-dashboard)
+app.get('/market-overview', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+
+  const [
+    breadthData,
+    sentimentData,
+    topMoversData,
+    sectorData,
+    earningsData,
+    dividendData,
+    ipoData,
+    spacData,
+    economicData
+  ] = await Promise.all([
+    apiFetch('/market-breadth', token).catch(() => ({ data: null })),
+    apiFetch('/sentiment', token).catch(() => ({ data: null })),
+    apiFetch('/market/movers', token).catch(() => ({ data: null })),
+    apiFetch('/sector-analysis', token).catch(() => ({ data: null })),
+    apiFetch('/earnings-calendar', token).catch(() => ({ upcoming: 0 })),
+    apiFetch('/dividend-calendar', token).catch(() => ({ upcoming: 0 })),
+    apiFetch('/ipo-calendar', token).catch(() => ({ thisWeek: 0 })),
+    apiFetch('/spac-tracker', token).catch(() => ({ active: 0 })),
+    apiFetch('/economic-calendar', token).catch(() => ({ upcoming: 0 }))
+  ]);
+
+  const fmt = {
+    money: (v: number) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    compact: (v: number) => '$' + (v >= 1000000 ? (v / 1000000).toFixed(2) + 'M' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : (v || 0).toFixed(2)),
+    pct: (v: number) => { const safeV = v || 0; return (safeV >= 0 ? '+' : '') + safeV.toFixed(2) + '%'; },
+    number: (v: number) => (v || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
+  };
+
+  res.render('pages/market-overview', {
+    pageTitle: 'Market Overview',
+    breadth: breadthData.data,
+    sentiment: sentimentData.data,
+    topMovers: topMoversData,
+    sectors: sectorData.data,
+    earnings: earningsData,
+    dividend: dividendData,
+    ipo: ipoData,
+    spac: spacData,
+    economic: economicData,
+    fmt
+  });
+});
+
 // Auth diagnostic endpoint
 app.get('/api/auth-check', (req, res) => {
   res.json({
