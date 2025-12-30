@@ -9,10 +9,10 @@ const router = express.Router();
 const Database = require('../db/database');
 const { v4: uuidv4 } = require('uuid');
 const liveDataService = require('../services/liveDataService');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 
 // Apply authentication to all routes
-router.use(authenticateToken);
+router.use(authenticate);
 
 // ==================== ALERTS ====================
 
