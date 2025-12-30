@@ -10,6 +10,25 @@ try {
 }
 
 /**
+ * Validate stock symbol to prevent SSRF attacks
+ * Only allows alphanumeric characters, dots, hyphens, and carets (for preferred stock)
+ * Max length 10 characters
+ */
+function validateSymbol(symbol) {
+  if (!symbol || typeof symbol !== 'string') {
+    return null;
+  }
+  // Remove whitespace and convert to uppercase
+  const cleaned = symbol.trim().toUpperCase();
+  // Validate: only A-Z, 0-9, ., -, ^ allowed, max 10 chars
+  if (!/^[A-Z0-9.\-^]{1,10}$/.test(cleaned)) {
+    logger.warn(`Invalid symbol rejected: ${symbol}`);
+    return null;
+  }
+  return cleaned;
+}
+
+/**
  * Unified Market Data Service
  * Integrates 5 data providers with intelligent fallback:
  * 1. Finnhub (Primary - 60 req/min)
@@ -56,6 +75,14 @@ class UnifiedMarketDataService {
    * Fetch real-time quote with fallback across all providers
    */
   async fetchQuote(symbol) {
+    // Validate symbol to prevent SSRF
+    const validSymbol = validateSymbol(symbol);
+    if (!validSymbol) {
+      logger.warn(`[Quote] Invalid symbol rejected: ${symbol}`);
+      return null;
+    }
+    symbol = validSymbol;
+
     const cacheKey = `quote_${symbol}`;
     return this.getCached(cacheKey, this.cacheTTL.quote, async () => {
       logger.info(`[Quote] Fetching ${symbol} with multi-provider fallback`);
@@ -305,6 +332,14 @@ class UnifiedMarketDataService {
    * Fetch historical data with fallback
    */
   async fetchHistoricalData(symbol, days = 30) {
+    // Validate symbol to prevent SSRF
+    const validSymbol = validateSymbol(symbol);
+    if (!validSymbol) {
+      logger.warn(`[History] Invalid symbol rejected: ${symbol}`);
+      return [];
+    }
+    symbol = validSymbol;
+
     const cacheKey = `history_${symbol}_${days}`;
     return this.getCached(cacheKey, this.cacheTTL.history, async () => {
       logger.info(`[History] Fetching ${symbol} (${days} days) with fallback`);
@@ -549,6 +584,14 @@ class UnifiedMarketDataService {
    * Fetch company profile/info
    */
   async fetchCompanyProfile(symbol) {
+    // Validate symbol to prevent SSRF
+    const validSymbol = validateSymbol(symbol);
+    if (!validSymbol) {
+      logger.warn(`[Profile] Invalid symbol rejected: ${symbol}`);
+      return null;
+    }
+    symbol = validSymbol;
+
     const cacheKey = `profile_${symbol}`;
     return this.getCached(cacheKey, this.cacheTTL.profile, async () => {
       logger.info(`[Profile] Fetching ${symbol} with fallback`);

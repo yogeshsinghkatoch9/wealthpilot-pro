@@ -5,6 +5,16 @@ const cacheService = require('./cacheService');
 // Use shared database adapter (supports both SQLite and PostgreSQL)
 const db = require('../db/database');
 
+/**
+ * Validate stock symbol to prevent SSRF attacks
+ */
+function validateSymbol(symbol) {
+  if (!symbol || typeof symbol !== 'string') return null;
+  const cleaned = symbol.trim().toUpperCase();
+  if (!/^[A-Z0-9.\-^]{1,10}$/.test(cleaned)) return null;
+  return cleaned;
+}
+
 class MarketDataService {
   constructor(apiKey) {
     this.alphaVantageKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY || 'demo';
@@ -24,6 +34,13 @@ class MarketDataService {
   }
 
   async fetchFromYahooFinance(symbol) {
+    // Validate symbol to prevent SSRF
+    const validSymbol = validateSymbol(symbol);
+    if (!validSymbol) {
+      throw new Error('Invalid symbol');
+    }
+    symbol = validSymbol;
+
     try {
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
       const response = await axios.get(url, {
