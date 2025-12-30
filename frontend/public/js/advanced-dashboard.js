@@ -23,6 +23,17 @@ class AdvancedDashboard {
     this.loadCurrentTab();
   }
 
+  /**
+   * Safely set text content of an element by ID
+   * @param {string} elementId - The DOM element ID
+   * @param {string|null} value - The value to set, or null to skip
+   */
+  safeSetText(elementId, value) {
+    if (value == null) return;
+    const el = document.getElementById(elementId);
+    if (el) el.textContent = value;
+  }
+
   setupEventListeners() {
     // Tab switching
     document.querySelectorAll('.dashboard-tab').forEach(tab => {
@@ -71,7 +82,10 @@ class AdvancedDashboard {
     document.querySelectorAll('.tab-content').forEach(content => {
       content.classList.add('hidden');
     });
-    document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+    const tabContent = document.getElementById(`tab-${tabName}`);
+    if (tabContent) {
+      tabContent.classList.remove('hidden');
+    }
 
     this.currentTab = tabName;
     this.loadCurrentTab();
@@ -129,12 +143,9 @@ class AdvancedDashboard {
     if (drawdown) {
       this.advancedCharts.createDrawdownChart('chart-drawdown', drawdown);
       this.advancedCharts.addExportButton('chart-drawdown', 'export-drawdown');
-      
+
       // Update max drawdown display
-      const maxDDElement = document.getElementById('max-drawdown');
-      if (maxDDElement && drawdown.maxDrawdown) {
-        maxDDElement.textContent = `${drawdown.maxDrawdown.toFixed(2)}%`;
-      }
+      this.safeSetText('max-drawdown', drawdown.maxDrawdown != null ? `${drawdown.maxDrawdown.toFixed(2)}%` : null);
     }
 
     if (rolling) {
@@ -163,11 +174,11 @@ class AdvancedDashboard {
     if (varScenarios) {
       this.advancedCharts.createVaRHistogram('chart-var', varScenarios);
       this.advancedCharts.addExportButton('chart-var', 'export-var');
-      
+
       // Update VaR metrics
-      if (varScenarios.var95) document.getElementById('var-95').textContent = `${varScenarios.var95.toFixed(2)}%`;
-      if (varScenarios.var99) document.getElementById('var-99').textContent = `${varScenarios.var99.toFixed(2)}%`;
-      if (varScenarios.cvar95) document.getElementById('cvar').textContent = `${varScenarios.cvar95.toFixed(2)}%`;
+      this.safeSetText('var-95', varScenarios.var95 != null ? `${varScenarios.var95.toFixed(2)}%` : null);
+      this.safeSetText('var-99', varScenarios.var99 != null ? `${varScenarios.var99.toFixed(2)}%` : null);
+      this.safeSetText('cvar', varScenarios.cvar95 != null ? `${varScenarios.cvar95.toFixed(2)}%` : null);
     }
 
     if (correlation) {
@@ -183,13 +194,13 @@ class AdvancedDashboard {
     if (concentration) {
       this.advancedCharts.createTreemap('chart-concentration-treemap', concentration);
       this.advancedCharts.addExportButton('chart-concentration-treemap', 'export-concentration');
-      
+
       // Setup toggle
       this.setupConcentrationToggle(concentration);
-      
+
       // Update HHI
-      if (concentration.hhi) document.getElementById('hhi-index').textContent = concentration.hhi.toFixed(2);
-      if (concentration.top10Weight) document.getElementById('top10-weight').textContent = `${concentration.top10Weight.toFixed(1)}%`;
+      this.safeSetText('hhi-index', concentration.hhi != null ? concentration.hhi.toFixed(2) : null);
+      this.safeSetText('top10-weight', concentration.top10Weight != null ? `${concentration.top10Weight.toFixed(1)}%` : null);
     }
 
     this.updateRiskMetrics(riskDecomp, varScenarios, concentration);
@@ -216,12 +227,12 @@ class AdvancedDashboard {
     if (peerBench) {
       this.advancedCharts.createQuadrantScatter('chart-peer-benchmarking', peerBench);
       this.advancedCharts.addExportButton('chart-peer-benchmarking', 'export-peer-benchmarking');
-      
+
       // Update peer metrics
-      if (peerBench.percentile) document.getElementById('peer-percentile').textContent = `${peerBench.percentile}th`;
-      if (peerBench.rank) document.getElementById('peer-rank').textContent = `${peerBench.rank} of ${peerBench.total}`;
-      if (peerBench.avgReturn) document.getElementById('peer-avg-return').textContent = `${peerBench.avgReturn.toFixed(2)}%`;
-      if (peerBench.avgRisk) document.getElementById('peer-avg-risk').textContent = `${peerBench.avgRisk.toFixed(2)}%`;
+      this.safeSetText('peer-percentile', peerBench.percentile != null ? `${peerBench.percentile}th` : null);
+      this.safeSetText('peer-rank', peerBench.rank != null && peerBench.total != null ? `${peerBench.rank} of ${peerBench.total}` : null);
+      this.safeSetText('peer-avg-return', peerBench.avgReturn != null ? `${peerBench.avgReturn.toFixed(2)}%` : null);
+      this.safeSetText('peer-avg-risk', peerBench.avgRisk != null ? `${peerBench.avgRisk.toFixed(2)}%` : null);
     }
 
     if (alphaDecay) {
@@ -249,34 +260,28 @@ class AdvancedDashboard {
     if (turnover) {
       this.advancedCharts.createCalendarHeatmap('chart-turnover', turnover);
       this.advancedCharts.addExportButton('chart-turnover', 'export-turnover');
-      
-      if (turnover.annualTurnover) {
-        document.getElementById('annual-turnover').textContent = `${turnover.annualTurnover.toFixed(1)}%`;
-      }
+
+      this.safeSetText('annual-turnover', turnover.annualTurnover != null ? `${turnover.annualTurnover.toFixed(1)}%` : null);
     }
 
     if (liquidity) {
       this.advancedCharts.createBubbleChart('chart-liquidity', liquidity);
       this.advancedCharts.addExportButton('chart-liquidity', 'export-liquidity');
-      
-      if (liquidity.avgDaysToLiquidate) {
-        document.getElementById('avg-dtl').textContent = `${liquidity.avgDaysToLiquidate.toFixed(1)} days`;
-      }
-      if (liquidity.score) {
-        document.getElementById('liquidity-score').textContent = liquidity.score;
-      }
+
+      this.safeSetText('avg-dtl', liquidity.avgDaysToLiquidate != null ? `${liquidity.avgDaysToLiquidate.toFixed(1)} days` : null);
+      this.safeSetText('liquidity-score', liquidity.score != null ? liquidity.score : null);
     }
 
     if (tca) {
       this.advancedCharts.createBoxPlot('chart-tca-boxplot', tca);
       this.advancedCharts.addExportButton('chart-tca-boxplot', 'export-tca');
       this.setupTCAToggle(tca);
-      
+
       // Update TCA metrics
-      if (tca.avgCost) document.getElementById('avg-tca').textContent = `${tca.avgCost.toFixed(2)} bps`;
-      if (tca.implicit) document.getElementById('implicit-cost').textContent = `${tca.implicit.toFixed(2)} bps`;
-      if (tca.explicit) document.getElementById('explicit-cost').textContent = `${tca.explicit.toFixed(2)} bps`;
-      if (tca.slippage) document.getElementById('slippage-cost').textContent = `${tca.slippage.toFixed(2)} bps`;
+      this.safeSetText('avg-tca', tca.avgCost != null ? `${tca.avgCost.toFixed(2)} bps` : null);
+      this.safeSetText('implicit-cost', tca.implicit != null ? `${tca.implicit.toFixed(2)} bps` : null);
+      this.safeSetText('explicit-cost', tca.explicit != null ? `${tca.explicit.toFixed(2)} bps` : null);
+      this.safeSetText('slippage-cost', tca.slippage != null ? `${tca.slippage.toFixed(2)} bps` : null);
     }
 
     this.updateConstructionMetrics(frontier, turnover, tca);
@@ -292,24 +297,24 @@ class AdvancedDashboard {
     if (alternatives) {
       this.advancedCharts.createWaterfallChart('chart-alternatives', alternatives);
       this.advancedCharts.addExportButton('chart-alternatives', 'export-alternatives');
-      
+
       // Update alternatives metrics
-      if (alternatives.startingNAV) document.getElementById('alt-start').textContent = `$${alternatives.startingNAV.toLocaleString()}`;
-      if (alternatives.income) document.getElementById('alt-income').textContent = `$${alternatives.income.toLocaleString()}`;
-      if (alternatives.appreciation) document.getElementById('alt-appreciation').textContent = `$${alternatives.appreciation.toLocaleString()}`;
-      if (alternatives.fees) document.getElementById('alt-fees').textContent = `-$${Math.abs(alternatives.fees).toLocaleString()}`;
-      if (alternatives.endingNAV) document.getElementById('alt-end').textContent = `$${alternatives.endingNAV.toLocaleString()}`;
+      this.safeSetText('alt-start', alternatives.startingNAV != null ? `$${alternatives.startingNAV.toLocaleString()}` : null);
+      this.safeSetText('alt-income', alternatives.income != null ? `$${alternatives.income.toLocaleString()}` : null);
+      this.safeSetText('alt-appreciation', alternatives.appreciation != null ? `$${alternatives.appreciation.toLocaleString()}` : null);
+      this.safeSetText('alt-fees', alternatives.fees != null ? `-$${Math.abs(alternatives.fees).toLocaleString()}` : null);
+      this.safeSetText('alt-end', alternatives.endingNAV != null ? `$${alternatives.endingNAV.toLocaleString()}` : null);
     }
 
     if (esg) {
       this.advancedCharts.createESGRadar('chart-esg-radar', esg);
       this.advancedCharts.addExportButton('chart-esg-radar', 'export-esg');
       this.setupESGToggle(esg);
-      
+
       // Update ESG metrics
-      if (esg.score) document.getElementById('esg-score').textContent = esg.score.toFixed(1);
-      if (esg.carbonIntensity) document.getElementById('carbon-intensity').textContent = `${esg.carbonIntensity.toFixed(1)} tCO2e`;
-      if (esg.vsBenchmark) document.getElementById('esg-vs-benchmark').textContent = `${esg.vsBenchmark > 0 ? '+' : ''}${esg.vsBenchmark.toFixed(1)}`;
+      this.safeSetText('esg-score', esg.score != null ? esg.score.toFixed(1) : null);
+      this.safeSetText('carbon-intensity', esg.carbonIntensity != null ? `${esg.carbonIntensity.toFixed(1)} tCO2e` : null);
+      this.safeSetText('esg-vs-benchmark', esg.vsBenchmark != null ? `${esg.vsBenchmark > 0 ? '+' : ''}${esg.vsBenchmark.toFixed(1)}` : null);
     }
 
     if (clientReporting) {
@@ -471,90 +476,56 @@ class AdvancedDashboard {
   }
 
   updatePerformanceMetrics(attribution, excessReturn, rolling) {
-    if (attribution && attribution.totalReturn) {
-      document.getElementById('metric-total-return').textContent = `${attribution.totalReturn.toFixed(2)}%`;
-    }
-    if (rolling && rolling.sharpe) {
-      document.getElementById('metric-sharpe').textContent = rolling.sharpe.toFixed(2);
-    }
-    if (excessReturn && excessReturn.alpha) {
-      document.getElementById('metric-alpha').textContent = `${excessReturn.alpha.toFixed(2)}%`;
-    }
-    if (excessReturn && excessReturn.beta) {
-      document.getElementById('metric-beta').textContent = excessReturn.beta.toFixed(2);
-    }
+    this.safeSetText('metric-total-return', attribution?.totalReturn != null ? `${attribution.totalReturn.toFixed(2)}%` : null);
+    this.safeSetText('metric-sharpe', rolling?.sharpe != null ? rolling.sharpe.toFixed(2) : null);
+    this.safeSetText('metric-alpha', excessReturn?.alpha != null ? `${excessReturn.alpha.toFixed(2)}%` : null);
+    this.safeSetText('metric-beta', excessReturn?.beta != null ? excessReturn.beta.toFixed(2) : null);
   }
 
   updateRiskMetrics(riskDecomp, varScenarios, concentration) {
-    if (riskDecomp && riskDecomp.volatility) {
-      document.getElementById('metric-volatility').textContent = `${riskDecomp.volatility.toFixed(2)}%`;
-    }
-    if (riskDecomp && riskDecomp.downsideDeviation) {
-      document.getElementById('metric-downside').textContent = `${riskDecomp.downsideDeviation.toFixed(2)}%`;
-    }
-    if (varScenarios && varScenarios.maxDrawdown) {
-      document.getElementById('metric-max-dd').textContent = `${varScenarios.maxDrawdown.toFixed(2)}%`;
-    }
-    if (riskDecomp && riskDecomp.sortino) {
-      document.getElementById('metric-sortino').textContent = riskDecomp.sortino.toFixed(2);
-    }
+    this.safeSetText('metric-volatility', riskDecomp?.volatility != null ? `${riskDecomp.volatility.toFixed(2)}%` : null);
+    this.safeSetText('metric-downside', riskDecomp?.downsideDeviation != null ? `${riskDecomp.downsideDeviation.toFixed(2)}%` : null);
+    this.safeSetText('metric-max-dd', varScenarios?.maxDrawdown != null ? `${varScenarios.maxDrawdown.toFixed(2)}%` : null);
+    this.safeSetText('metric-sortino', riskDecomp?.sortino != null ? riskDecomp.sortino.toFixed(2) : null);
   }
 
   updateAttributionMetrics(regional) {
     if (!regional) return;
-    
-    if (regional.allocationEffect) {
-      document.getElementById('metric-allocation').textContent = `${regional.allocationEffect.toFixed(2)}%`;
-    }
-    if (regional.selectionEffect) {
-      document.getElementById('metric-selection').textContent = `${regional.selectionEffect.toFixed(2)}%`;
-    }
-    if (regional.interaction) {
-      document.getElementById('metric-interaction').textContent = `${regional.interaction.toFixed(2)}%`;
-    }
-    if (regional.totalAttribution) {
-      document.getElementById('metric-total-attribution').textContent = `${regional.totalAttribution.toFixed(2)}%`;
-    }
+
+    this.safeSetText('metric-allocation', regional.allocationEffect != null ? `${regional.allocationEffect.toFixed(2)}%` : null);
+    this.safeSetText('metric-selection', regional.selectionEffect != null ? `${regional.selectionEffect.toFixed(2)}%` : null);
+    this.safeSetText('metric-interaction', regional.interaction != null ? `${regional.interaction.toFixed(2)}%` : null);
+    this.safeSetText('metric-total-attribution', regional.totalAttribution != null ? `${regional.totalAttribution.toFixed(2)}%` : null);
   }
 
   updateConstructionMetrics(frontier, turnover, tca) {
-    if (frontier && frontier.efficiency) {
-      document.getElementById('metric-efficiency').textContent = `${frontier.efficiency.toFixed(1)}%`;
-    }
-    if (turnover && turnover.annualTurnover) {
-      document.getElementById('metric-turnover-rate').textContent = `${turnover.annualTurnover.toFixed(1)}%`;
-    }
-    if (turnover && turnover.avgHoldingPeriod) {
-      document.getElementById('metric-holding-period').textContent = `${turnover.avgHoldingPeriod} days`;
-    }
-    if (tca && tca.totalCost) {
-      document.getElementById('metric-total-tca').textContent = `${tca.totalCost.toFixed(2)} bps`;
-    }
+    this.safeSetText('metric-efficiency', frontier?.efficiency != null ? `${frontier.efficiency.toFixed(1)}%` : null);
+    this.safeSetText('metric-turnover-rate', turnover?.annualTurnover != null ? `${turnover.annualTurnover.toFixed(1)}%` : null);
+    this.safeSetText('metric-holding-period', turnover?.avgHoldingPeriod != null ? `${turnover.avgHoldingPeriod} days` : null);
+    this.safeSetText('metric-total-tca', tca?.totalCost != null ? `${tca.totalCost.toFixed(2)} bps` : null);
   }
 
   updateSpecializedMetrics(alternatives, esg, clientReporting) {
-    if (alternatives && alternatives.percentOfPortfolio) {
-      document.getElementById('metric-alternatives-pct').textContent = `${alternatives.percentOfPortfolio.toFixed(1)}%`;
-    }
-    if (esg && esg.score) {
-      document.getElementById('metric-overall-esg').textContent = esg.score.toFixed(1);
-    }
-    if (clientReporting && clientReporting.goalProgress && clientReporting.goalProgress.current) {
-      document.getElementById('metric-goal-progress').textContent = `${clientReporting.goalProgress.current}%`;
-    }
-    if (clientReporting && clientReporting.onTrack !== undefined) {
-      document.getElementById('metric-on-track').textContent = clientReporting.onTrack ? 'Yes' : 'No';
-    }
+    this.safeSetText('metric-alternatives-pct', alternatives?.percentOfPortfolio != null ? `${alternatives.percentOfPortfolio.toFixed(1)}%` : null);
+    this.safeSetText('metric-overall-esg', esg?.score != null ? esg.score.toFixed(1) : null);
+    this.safeSetText('metric-goal-progress', clientReporting?.goalProgress?.current != null ? `${clientReporting.goalProgress.current}%` : null);
+    this.safeSetText('metric-on-track', clientReporting?.onTrack !== undefined ? (clientReporting.onTrack ? 'Yes' : 'No') : null);
   }
 
   showLoading() {
-    document.getElementById('loading-overlay').classList.remove('hidden');
-    document.getElementById('loading-overlay').classList.add('flex');
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+    }
   }
 
   hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
-    document.getElementById('loading-overlay').classList.remove('flex');
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('flex');
+    }
   }
 
   showError(message) {
