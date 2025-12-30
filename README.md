@@ -1,6 +1,11 @@
 # WealthPilot Pro
 
-A comprehensive wealth management platform with real-time market data, portfolio analytics, and advanced trading tools.
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+
+A comprehensive, open-source wealth management platform with real-time market data, portfolio analytics, and advanced trading tools.
 
 ## Features
 
@@ -44,51 +49,14 @@ A comprehensive wealth management platform with real-time market data, portfolio
 
 ## Tech Stack
 
-### Backend
-- Node.js + Express.js
-- PostgreSQL (production) / SQLite (development)
-- Redis for caching
-- WebSocket for real-time data
-- Prisma ORM
-
-### Frontend
-- Node.js + Express.js
-- EJS templating
-- TailwindCSS
-- Lightweight Charts
-- Socket.io
-
-### APIs Integrated
-- Alpha Vantage
-- Polygon.io
-- Finnhub
-- Twelve Data
-- Yahoo Finance
-
-## Project Structure
-
-```
-wealthpilot-pro/
-├── backend/
-│   ├── src/
-│   │   ├── routes/          # API endpoints
-│   │   ├── services/        # Business logic
-│   │   ├── middleware/      # Auth, rate limiting
-│   │   └── db/              # Database setup
-│   ├── prisma/              # Database schema
-│   └── package.json
-├── frontend/
-│   ├── src/                 # Server & utilities
-│   ├── views/
-│   │   ├── pages/           # 178 page templates
-│   │   └── partials/        # Reusable components
-│   ├── public/
-│   │   ├── css/             # Stylesheets
-│   │   └── js/              # Client-side scripts
-│   └── package.json
-├── docker-compose.yml
-└── .github/workflows/       # CI/CD
-```
+| Layer | Technologies |
+|-------|--------------|
+| Backend | Node.js, Express.js, Prisma ORM |
+| Database | PostgreSQL (prod), SQLite (dev) |
+| Cache | Redis |
+| Frontend | EJS, TailwindCSS, Lightweight Charts |
+| Real-time | WebSocket, Socket.io |
+| APIs | Alpha Vantage, Polygon, Finnhub, Twelve Data |
 
 ## Quick Start
 
@@ -128,10 +96,35 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/wealthpilot
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=your-secret-key
 
-# API Keys
+# API Keys (get free keys from these providers)
 ALPHA_VANTAGE_API_KEY=
 POLYGON_API_KEY=
 FINNHUB_API_KEY=
+```
+
+## Project Structure
+
+```
+wealthpilot-pro/
+├── backend/
+│   ├── src/
+│   │   ├── routes/          # API endpoints
+│   │   ├── services/        # Business logic
+│   │   ├── middleware/      # Auth, rate limiting
+│   │   └── db/              # Database setup
+│   ├── prisma/              # Database schema
+│   └── package.json
+├── frontend/
+│   ├── src/                 # Server & utilities
+│   ├── views/
+│   │   ├── pages/           # 178 page templates
+│   │   └── partials/        # Reusable components
+│   ├── public/
+│   │   ├── css/             # Stylesheets
+│   │   └── js/              # Client-side scripts
+│   └── package.json
+├── docker-compose.yml
+└── .github/workflows/       # CI/CD
 ```
 
 ## Deployment
@@ -164,6 +157,31 @@ See full API documentation at `/api/docs` (Swagger UI).
 - **URL**: http://18.220.78.166:3000
 - **Demo Account**: demo@wealthpilot.pro / DemoPass123!
 
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a PR.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Security
+
+Please read our [Security Policy](SECURITY.md) for reporting vulnerabilities.
+
 ## License
 
-Proprietary - All rights reserved.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Yogesh Singh Katoch**
+
+## Acknowledgments
+
+- [Alpha Vantage](https://www.alphavantage.co/) for market data
+- [TradingView](https://www.tradingview.com/) for Lightweight Charts
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- All open source contributors
