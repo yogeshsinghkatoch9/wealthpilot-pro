@@ -220,36 +220,50 @@ class UnifiedMarketDataService {
   }
 
   /**
-   * Yahoo Finance Quote (no API key required)
+   * Yahoo Finance Quote (no API key required) - uses direct HTTP API
    */
   async fetchQuoteYahoo(symbol) {
-    if (!yahooFinance) {
-      return null;
-    }
-
     try {
-      const quote = await yahooFinance.quote(symbol);
-      if (!quote || !quote.regularMarketPrice) {
+      // Direct Yahoo Finance Chart API - no package required
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 5000
+      });
+
+      const result = response.data?.chart?.result?.[0];
+      if (!result) {
+        return null;
+      }
+
+      const meta = result.meta;
+      const quote = result.indicators?.quote?.[0];
+      const prevClose = meta.chartPreviousClose || meta.previousClose;
+      const currentPrice = meta.regularMarketPrice;
+
+      if (!currentPrice || currentPrice === 0) {
         return null;
       }
 
       return {
-        symbol: quote.symbol,
-        price: quote.regularMarketPrice,
-        previousClose: quote.regularMarketPreviousClose,
-        change: quote.regularMarketChange,
-        changePercent: quote.regularMarketChangePercent,
-        high: quote.regularMarketDayHigh,
-        low: quote.regularMarketDayLow,
-        open: quote.regularMarketOpen,
-        volume: quote.regularMarketVolume,
-        marketCap: quote.marketCap,
-        name: quote.shortName || quote.longName,
+        symbol: meta.symbol,
+        name: meta.shortName || meta.longName || symbol,
+        price: currentPrice,
+        previousClose: prevClose,
+        change: currentPrice - prevClose,
+        changePercent: prevClose > 0 ? ((currentPrice - prevClose) / prevClose) * 100 : 0,
+        high: quote?.high?.[quote.high.length - 1] || currentPrice,
+        low: quote?.low?.[quote.low.length - 1] || currentPrice,
+        open: quote?.open?.[quote.open.length - 1] || currentPrice,
+        volume: quote?.volume?.[quote.volume.length - 1] || 0,
+        marketCap: meta.marketCap || null,
         timestamp: new Date().toISOString(),
         provider: 'Yahoo Finance'
       };
     } catch (err) {
-      logger.warn(`[Quote] Yahoo Finance error for ${symbol}:`, err.message);
+      logger.warn(`[Quote] Yahoo Finance HTTP error for ${symbol}:`, err.message);
       return null;
     }
   }
@@ -416,38 +430,50 @@ class UnifiedMarketDataService {
   }
 
   /**
-   * Yahoo Finance Historical Data (no API key required)
+   * Yahoo Finance Historical Data (no API key required) - uses direct HTTP API
    */
   async fetchHistoricalYahoo(symbol, days) {
-    if (!yahooFinance) {
-      return null;
-    }
-
     try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
+      // Convert days to period format
+      let range = '1mo';
+      if (days <= 5) range = '5d';
+      else if (days <= 30) range = '1mo';
+      else if (days <= 90) range = '3mo';
+      else if (days <= 180) range = '6mo';
+      else if (days <= 365) range = '1y';
+      else if (days <= 730) range = '2y';
+      else range = '5y';
 
-      const result = await yahooFinance.chart(symbol, {
-        period1: startDate,
-        period2: endDate,
-        interval: '1d'
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${range}`;
+      const response = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 10000
       });
 
-      if (!result || !result.quotes || result.quotes.length === 0) {
+      const result = response.data?.chart?.result?.[0];
+      if (!result || !result.timestamp) {
         return null;
       }
 
-      return result.quotes.map(item => ({
-        date: new Date(item.date).toISOString().split('T')[0],
-        open: item.open,
-        high: item.high,
-        low: item.low,
-        close: item.close,
-        volume: item.volume
-      }));
+      const timestamps = result.timestamp;
+      const quote = result.indicators?.quote?.[0];
+
+      if (!quote) {
+        return null;
+      }
+
+      return timestamps.map((ts, i) => ({
+        date: new Date(ts * 1000).toISOString().split('T')[0],
+        open: quote.open?.[i] || 0,
+        high: quote.high?.[i] || 0,
+        low: quote.low?.[i] || 0,
+        close: quote.close?.[i] || 0,
+        volume: quote.volume?.[i] || 0
+      })).filter(item => item.close > 0);
     } catch (err) {
-      logger.warn(`[History] Yahoo Finance error for ${symbol}:`, err.message);
+      logger.warn(`[History] Yahoo Finance HTTP error for ${symbol}:`, err.message);
       return null;
     }
   }
