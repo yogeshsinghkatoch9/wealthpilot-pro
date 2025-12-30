@@ -139,6 +139,13 @@ jobs:
 
             echo "Starting deployment..."
 
+            # Clean up Docker to free disk space
+            echo "Cleaning up Docker..."
+            docker system prune -af --volumes 2>/dev/null || true
+            docker builder prune -af 2>/dev/null || true
+            echo "Docker cleanup complete. Disk usage:"
+            df -h / | tail -1
+
             # Start postgres and redis first (quick to start)
             docker-compose -f docker-compose.aws.yml up -d postgres redis
 
