@@ -116,40 +116,43 @@
               <div class="bg-amber-500 transition-all" style="width: <%= safeAllocation.other %>%" title="Other"></div>
             </div>
 
-            <!-- Equity Slider -->
-            <div class="space-y-1">
-              <div class="flex justify-between items-center">
-                <label class="text-sm text-slate-300 flex items-center gap-2">
-                  <span class="w-3 h-3 rounded bg-blue-500"></span>Equity
-                </label>
-                <span class="text-sm font-mono text-white" id="equityPct"><%= safeAllocation.equity.toFixed(1) %>%</span>
+            <!-- Equity Input -->
+            <div class="flex items-center justify-between gap-3">
+              <label class="text-sm text-slate-300 flex items-center gap-2 flex-1">
+                <span class="w-3 h-3 rounded bg-blue-500"></span>Equity
+              </label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="equitySlider" min="0" max="100" step="0.1" value="<%= safeAllocation.equity %>"
+                       class="w-20 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-right font-mono text-white text-sm focus:outline-none focus:border-blue-500"
+                       oninput="updateAllocation()">
+                <span class="text-slate-400 text-sm">%</span>
               </div>
-              <input type="range" id="equitySlider" min="0" max="100" value="<%= safeAllocation.equity %>"
-                     class="w-full accent-blue-500" onchange="updateAllocation()">
             </div>
 
-            <!-- Fixed Income Slider -->
-            <div class="space-y-1">
-              <div class="flex justify-between items-center">
-                <label class="text-sm text-slate-300 flex items-center gap-2">
-                  <span class="w-3 h-3 rounded bg-emerald-500"></span>Fixed Income
-                </label>
-                <span class="text-sm font-mono text-white" id="fixedIncomePct"><%= safeAllocation.fixedIncome.toFixed(1) %>%</span>
+            <!-- Fixed Income Input -->
+            <div class="flex items-center justify-between gap-3">
+              <label class="text-sm text-slate-300 flex items-center gap-2 flex-1">
+                <span class="w-3 h-3 rounded bg-emerald-500"></span>Fixed Income
+              </label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="fixedIncomeSlider" min="0" max="100" step="0.1" value="<%= safeAllocation.fixedIncome %>"
+                       class="w-20 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-right font-mono text-white text-sm focus:outline-none focus:border-emerald-500"
+                       oninput="updateAllocation()">
+                <span class="text-slate-400 text-sm">%</span>
               </div>
-              <input type="range" id="fixedIncomeSlider" min="0" max="100" value="<%= safeAllocation.fixedIncome %>"
-                     class="w-full accent-emerald-500" onchange="updateAllocation()">
             </div>
 
-            <!-- Other Slider -->
-            <div class="space-y-1">
-              <div class="flex justify-between items-center">
-                <label class="text-sm text-slate-300 flex items-center gap-2">
-                  <span class="w-3 h-3 rounded bg-amber-500"></span>Other
-                </label>
-                <span class="text-sm font-mono text-white" id="otherPct"><%= safeAllocation.other.toFixed(1) %>%</span>
+            <!-- Other Input -->
+            <div class="flex items-center justify-between gap-3">
+              <label class="text-sm text-slate-300 flex items-center gap-2 flex-1">
+                <span class="w-3 h-3 rounded bg-amber-500"></span>Other
+              </label>
+              <div class="flex items-center gap-1">
+                <input type="number" id="otherSlider" min="0" max="100" step="0.1" value="<%= safeAllocation.other %>"
+                       class="w-20 px-2 py-1.5 bg-slate-800 border border-slate-600 rounded text-right font-mono text-white text-sm focus:outline-none focus:border-amber-500"
+                       oninput="updateAllocation()">
+                <span class="text-slate-400 text-sm">%</span>
               </div>
-              <input type="range" id="otherSlider" min="0" max="100" value="<%= safeAllocation.other %>"
-                     class="w-full accent-amber-500" onchange="updateAllocation()">
             </div>
 
             <!-- Validation Message -->
@@ -1648,10 +1651,10 @@ function updateAllocation() {
   const other = parseFloat(document.getElementById('otherSlider').value) || 0;
   const total = equity + fixedIncome + other;
 
-  document.getElementById('equityPct').textContent = equity.toFixed(1) + '%';
-  document.getElementById('fixedIncomePct').textContent = fixedIncome.toFixed(1) + '%';
-  document.getElementById('otherPct').textContent = other.toFixed(1) + '%';
-  document.getElementById('allocationTotal').textContent = 'Total: ' + total.toFixed(0) + '%';
+  // Update total display with color indicator
+  const totalEl = document.getElementById('allocationTotal');
+  totalEl.textContent = 'Total: ' + total.toFixed(1) + '%';
+  totalEl.className = Math.abs(total - 100) > 0.1 ? 'text-xs text-red-400 font-semibold' : 'text-xs text-emerald-400 font-semibold';
 
   // Update allocation bar
   document.getElementById('allocationBar').innerHTML = `
