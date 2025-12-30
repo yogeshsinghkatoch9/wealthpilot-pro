@@ -1652,6 +1652,11 @@ app.get('/market-movers', requireAuth, async (req, res) => {
   }
 });
 
+// Top Movers - Redirect to market-movers
+app.get('/top-movers', requireAuth, (req, res) => {
+  res.redirect('/market-movers');
+});
+
 // Charts - Live Stock Chart
 app.get('/charts', requireAuth, async (req, res) => {
   const token = res.locals.token;
@@ -2857,6 +2862,11 @@ app.get('/api-access', requireAuth, async (req, res) => {
     apiKeys: apiKeys.error ? [] : apiKeys,
     fmt
   });
+});
+
+// AI Assistant - Redirect alias
+app.get('/ai-assistant', requireAuth, (req, res) => {
+  res.redirect('/assistant');
 });
 
 app.get('/assistant', requireAuth, async (req, res) => {
