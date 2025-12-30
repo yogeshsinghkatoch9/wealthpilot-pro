@@ -357,11 +357,11 @@ router.post('/drip', (req, res) => {
 
 // ==================== PAPER TRADING ====================
 
-router.get('/paper-trading/portfolio', (req, res) => {
+router.get('/paper-trading/portfolio', async (req, res) => {
   try {
-    const portfolio = Database.getPaperPortfolio(req.user.id);
-    const openTrades = Database.getPaperTrades(req.user.id, 'open');
-    const closedTrades = Database.getPaperTrades(req.user.id, 'closed');
+    const portfolio = await Database.getPaperPortfolio(req.user.id);
+    const openTrades = await Database.getPaperTrades(req.user.id, 'open');
+    const closedTrades = await Database.getPaperTrades(req.user.id, 'closed');
 
     const totalPL = closedTrades.reduce((sum, t) => sum + (t.profit_loss || 0), 0);
     const wins = closedTrades.filter(t => t.profit_loss > 0).length;
@@ -383,24 +383,24 @@ router.get('/paper-trading/portfolio', (req, res) => {
   }
 });
 
-router.get('/paper-trading/trades', (req, res) => {
+router.get('/paper-trading/trades', async (req, res) => {
   try {
-    const trades = Database.getPaperTrades(req.user.id, req.query.status);
+    const trades = await Database.getPaperTrades(req.user.id, req.query.status);
     res.json(trades);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.post('/paper-trading/trade', (req, res) => {
+router.post('/paper-trading/trade', async (req, res) => {
   try {
     const { symbol, tradeType, quantity, entryPrice, notes } = req.body;
-    const trade = Database.createPaperTrade(req.user.id, symbol, tradeType, quantity, entryPrice, notes);
+    const trade = await Database.createPaperTrade(req.user.id, symbol, tradeType, quantity, entryPrice, notes);
 
     // Update paper portfolio balance
     const cost = quantity * entryPrice;
     if (tradeType === 'buy') {
-      Database.updatePaperPortfolioBalance(req.user.id, -cost);
+      await Database.updatePaperPortfolioBalance(req.user.id, -cost);
     }
 
     res.status(201).json(trade);
@@ -409,16 +409,16 @@ router.post('/paper-trading/trade', (req, res) => {
   }
 });
 
-router.post('/paper-trading/close/:id', (req, res) => {
+router.post('/paper-trading/close/:id', async (req, res) => {
   try {
     const { exitPrice } = req.body;
-    const trade = Database.closePaperTrade(req.params.id, exitPrice);
+    const trade = await Database.closePaperTrade(req.params.id, exitPrice);
 
     // Update paper portfolio balance
     if (trade) {
       const proceeds = trade.quantity * exitPrice;
       if (trade.trade_type === 'buy') {
-        Database.updatePaperPortfolioBalance(req.user.id, proceeds);
+        await Database.updatePaperPortfolioBalance(req.user.id, proceeds);
       }
     }
 
@@ -428,12 +428,9 @@ router.post('/paper-trading/close/:id', (req, res) => {
   }
 });
 
-router.post('/paper-trading/reset', (req, res) => {
+router.post('/paper-trading/reset', async (req, res) => {
   try {
-    // Reset paper portfolio to initial state
-    const portfolio = Database.getPaperPortfolio(req.user.id);
-    Database.run('UPDATE paper_portfolio SET cash_balance = 100000, total_value = 100000 WHERE user_id = ?', [req.user.id]);
-    Database.run('DELETE FROM paper_trades WHERE user_id = ?', [req.user.id]);
+    await Database.resetPaperPortfolio(req.user.id);
     res.json({ success: true, message: 'Paper trading account reset to $100,000' });
   } catch (err) {
     res.status(500).json({ error: err.message });

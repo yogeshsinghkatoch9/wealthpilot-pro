@@ -209,6 +209,31 @@ class PostgresAdapter {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS paper_portfolio (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        cash_balance DECIMAL(15,2) DEFAULT 100000,
+        total_value DECIMAL(15,2) DEFAULT 100000,
+        total_profit_loss DECIMAL(15,2) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS paper_trades (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        symbol VARCHAR(20) NOT NULL,
+        trade_type VARCHAR(20) NOT NULL,
+        quantity DECIMAL(15,6) NOT NULL,
+        entry_price DECIMAL(15,4) NOT NULL,
+        exit_price DECIMAL(15,4),
+        profit_loss DECIMAL(15,2),
+        notes TEXT,
+        status VARCHAR(20) DEFAULT 'open',
+        entry_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        exit_date TIMESTAMP
+      );
+
       CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
       CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
       CREATE INDEX IF NOT EXISTS idx_portfolios_user ON portfolios(user_id);
@@ -217,6 +242,9 @@ class PostgresAdapter {
       CREATE INDEX IF NOT EXISTS idx_transactions_portfolio ON transactions(portfolio_id);
       CREATE INDEX IF NOT EXISTS idx_alerts_user ON alerts(user_id);
       CREATE INDEX IF NOT EXISTS idx_alerts_symbol ON alerts(symbol);
+      CREATE INDEX IF NOT EXISTS idx_paper_portfolio_user ON paper_portfolio(user_id);
+      CREATE INDEX IF NOT EXISTS idx_paper_trades_user ON paper_trades(user_id);
+      CREATE INDEX IF NOT EXISTS idx_paper_trades_status ON paper_trades(status);
     `;
 
     try {
@@ -540,6 +568,77 @@ class PostgresAdapter {
        RETURNING *`,
       [id, userId, portfolioId, symbol.toUpperCase(), type, shares, price, amount, fees]
     ).then(r => r.rows[0]);
+  }
+
+  // ==================== PAPER TRADING ====================
+  async getPaperPortfolio(userId) {
+    const result = await this.pool.query('SELECT * FROM paper_portfolio WHERE user_id = $1', [userId]);
+    if (result.rows.length === 0) {
+      const id = uuidv4();
+      const insertResult = await this.pool.query(
+        'INSERT INTO paper_portfolio (id, user_id, cash_balance, total_value, total_profit_loss) VALUES ($1, $2, 100000, 100000, 0) RETURNING *',
+        [id, userId]
+      );
+      return insertResult.rows[0];
+    }
+    return result.rows[0];
+  }
+
+  async getPaperTrades(userId, status = null) {
+    if (status) {
+      const result = await this.pool.query(
+        'SELECT * FROM paper_trades WHERE user_id = $1 AND status = $2 ORDER BY entry_date DESC',
+        [userId, status]
+      );
+      return result.rows;
+    }
+    const result = await this.pool.query(
+      'SELECT * FROM paper_trades WHERE user_id = $1 ORDER BY entry_date DESC',
+      [userId]
+    );
+    return result.rows;
+  }
+
+  async createPaperTrade(userId, symbol, tradeType, quantity, entryPrice, notes = null) {
+    const id = uuidv4();
+    const result = await this.pool.query(
+      `INSERT INTO paper_trades (id, user_id, symbol, trade_type, quantity, entry_price, notes, status, entry_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', NOW())
+       RETURNING *`,
+      [id, userId, symbol.toUpperCase(), tradeType, quantity, entryPrice, notes]
+    );
+    return result.rows[0];
+  }
+
+  async closePaperTrade(id, exitPrice) {
+    const tradeResult = await this.pool.query('SELECT * FROM paper_trades WHERE id = $1', [id]);
+    if (tradeResult.rows.length === 0) return null;
+
+    const trade = tradeResult.rows[0];
+    const profitLoss = trade.trade_type === 'buy'
+      ? (exitPrice - trade.entry_price) * trade.quantity
+      : (trade.entry_price - exitPrice) * trade.quantity;
+
+    const updateResult = await this.pool.query(
+      `UPDATE paper_trades SET exit_price = $1, profit_loss = $2, status = 'closed', exit_date = NOW()
+       WHERE id = $3 RETURNING *`,
+      [exitPrice, profitLoss, id]
+    );
+    return updateResult.rows[0];
+  }
+
+  async updatePaperPortfolioBalance(userId, amount) {
+    await this.pool.query(
+      'UPDATE paper_portfolio SET cash_balance = cash_balance + $1 WHERE user_id = $2',
+      [amount, userId]
+    );
+    return this.getPaperPortfolio(userId);
+  }
+
+  async resetPaperPortfolio(userId) {
+    await this.pool.query('DELETE FROM paper_trades WHERE user_id = $1', [userId]);
+    await this.pool.query('DELETE FROM paper_portfolio WHERE user_id = $1', [userId]);
+    return this.getPaperPortfolio(userId);
   }
 }
 
