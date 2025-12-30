@@ -28,9 +28,24 @@ async function rateLimitedFetch(url) {
 }
 
 /**
+ * Validate stock symbol to prevent SSRF attacks
+ */
+function validateSymbol(symbol) {
+  if (!symbol || typeof symbol !== 'string') return null;
+  const cleaned = symbol.trim().toUpperCase();
+  if (!/^[A-Z0-9.\-^]{1,10}$/.test(cleaned)) return null;
+  return cleaned;
+}
+
+/**
  * Fetch quote from Yahoo Finance (no API key required)
  */
 async function fetchFromYahooFinance(symbol) {
+  // Validate symbol to prevent SSRF
+  const validSymbol = validateSymbol(symbol);
+  if (!validSymbol) return null;
+  symbol = validSymbol;
+
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
     const response = await fetch(url, {
