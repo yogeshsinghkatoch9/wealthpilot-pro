@@ -1,7 +1,7 @@
 <%
 /**
  * StatCard - Clean metric card with optional sparkline and benchmark
- * Usage: <%- include('../partials/finance/stat-card', {
+ * Usage: include('../partials/finance/stat-card', {
  *   label: 'Total Value',
  *   value: '$847,293',
  *   change: 12.4,
@@ -9,7 +9,7 @@
  *   sparklineData: [1,2,3,4],
  *   benchmark: 18.2,
  *   benchmarkLabel: 'S&P 500'
- * }) %>
+ * })
  */
 const cardLabel = typeof label !== 'undefined' ? label : '';
 const cardValue = typeof value !== 'undefined' ? value : '';

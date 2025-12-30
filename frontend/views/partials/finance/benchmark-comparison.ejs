@@ -1,12 +1,12 @@
 <%
 /**
  * BenchmarkComparison - Shows performance vs market benchmark
- * Usage: <%- include('../partials/finance/benchmark-comparison', {
+ * Usage: include('../partials/finance/benchmark-comparison', {
  *   portfolioReturn: 12.4,
  *   benchmarkReturn: 18.2,
  *   benchmarkName: 'S&P 500',
  *   period: 'YTD'
- * }) %>
+ * })
  */
 const portReturn = typeof portfolioReturn !== 'undefined' ? portfolioReturn : 0;
 const benchReturn = typeof benchmarkReturn !== 'undefined' ? benchmarkReturn : 0;
