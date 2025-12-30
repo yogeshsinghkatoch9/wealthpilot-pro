@@ -62,9 +62,9 @@ class FastSectorHeatmapService {
       return cachedData;
     }
 
-    // Last resort: return mock data
-    logger.warn('All data sources failed, returning mock data');
-    return this.getMockData();
+    // NO FALLBACK TO MOCK DATA - return empty array if all APIs fail
+    logger.error('All sector heatmap data sources failed');
+    return [];
   }
 
   /**
@@ -173,24 +173,8 @@ class FastSectorHeatmapService {
     return sectors;
   }
 
-  /**
-   * Mock data for when all sources fail
-   */
-  static getMockData() {
-    return Object.entries(SECTOR_ETFS).map(([sectorName, symbol]) => ({
-      name: sectorName,
-      symbol: symbol,
-      price: 100 + Math.random() * 50,
-      changePercent: (Math.random() - 0.5) * 4,
-      dayChange: (Math.random() - 0.5) * 4,
-      weekChange: (Math.random() - 0.5) * 8,
-      monthChange: (Math.random() - 0.5) * 12,
-      ytdChange: (Math.random() - 0.5) * 20,
-      volume: Math.floor(Math.random() * 10000000),
-      marketCap: 0,
-      source: 'Mock Data'
-    })).sort((a, b) => b.dayChange - a.dayChange);
-  }
+  // REMOVED: getMockData() - All data must come from real APIs
+  // This ensures only real data is displayed to users
 
   /**
    * Clear cache (force refresh)

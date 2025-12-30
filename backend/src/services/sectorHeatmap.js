@@ -77,9 +77,9 @@ class SectorHeatmapService {
       return cachedData;
     }
 
-    // Last resort: return mock data
-    logger.warn('All data sources failed, returning mock data');
-    return this.getMockData();
+    // NO FALLBACK TO MOCK DATA - return empty array if all sources fail
+    logger.error('All sector data sources failed - no data available');
+    return [];
   }
 
   /**
@@ -294,37 +294,9 @@ class SectorHeatmapService {
 
       logger.info(`Alpha Vantage fetch complete: ${sectors.length} sectors retrieved`);
 
-      // If we got less than expected, fill in with realistic mock data for missing sectors
+      // NO MOCK/ESTIMATED DATA - only return what we actually fetched
       if (sectors.length < Object.keys(SECTOR_ETFS).length) {
-        logger.warn(`Only ${sectors.length}/${Object.keys(SECTOR_ETFS).length} sectors retrieved. Filling missing sectors with realistic data.`);
-
-        const fetchedSymbols = new Set(sectors.map(s => s.symbol));
-
-        Object.entries(SECTOR_ETFS).forEach(([name, symbol]) => {
-          if (!fetchedSymbols.has(symbol)) {
-            // Add realistic estimated data for missing sector
-            // Base changes on typical sector performance patterns
-            const dayChange = (Math.random() - 0.5) * 2.5; // -1.25% to +1.25%
-            const weekChange = dayChange * (1 + (Math.random() - 0.5) * 0.5); // Correlated but with variation
-            const monthChange = weekChange * (1.2 + (Math.random() - 0.5) * 0.3); // Trending
-            const ytdChange = monthChange * (2.5 + (Math.random() - 0.5) * 1); // YTD accumulation
-
-            sectors.push({
-              name: name,
-              symbol: symbol,
-              price: 100 + Math.random() * 50,
-              changePercent: dayChange,
-              dayChange: dayChange,
-              weekChange: weekChange,
-              monthChange: monthChange,
-              ytdChange: ytdChange,
-              volume: Math.floor(Math.random() * 12000000) + 3000000,
-              marketCap: 0,
-              source: 'Estimated (API limit)'
-            });
-            logger.info(`Added estimated data for ${symbol} (Day: ${dayChange.toFixed(2)}%, Week: ${weekChange.toFixed(2)}%, Month: ${monthChange.toFixed(2)}%, YTD: ${ytdChange.toFixed(2)}%)`);
-          }
-        });
+        logger.warn(`Only ${sectors.length}/${Object.keys(SECTOR_ETFS).length} sectors retrieved from API`);
       }
 
       return sectors;
@@ -448,24 +420,8 @@ class SectorHeatmapService {
     return 0;
   }
 
-  /**
-   * Get mock data as fallback
-   */
-  static getMockData() {
-    return Object.entries(SECTOR_ETFS).map(([name, symbol]) => ({
-      name: name,
-      symbol: symbol,
-      price: 100 + Math.random() * 50,
-      changePercent: (Math.random() - 0.5) * 10,
-      dayChange: (Math.random() - 0.5) * 10,
-      weekChange: (Math.random() - 0.5) * 15,
-      monthChange: (Math.random() - 0.5) * 20,
-      ytdChange: (Math.random() - 0.5) * 30,
-      volume: Math.floor(Math.random() * 10000000),
-      marketCap: Math.floor(Math.random() * 100000000000),
-      source: 'Mock Data'
-    }));
-  }
+  // REMOVED: getMockData() - All data must come from real APIs
+  // This ensures only real data is displayed to users
 
   /**
    * Clear cache (for testing or manual refresh)

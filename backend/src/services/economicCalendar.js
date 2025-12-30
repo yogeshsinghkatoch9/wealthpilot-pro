@@ -324,135 +324,8 @@ class EconomicCalendarService {
     }
   }
 
-  /**
-   * Generate mock economic events for demonstration
-   */
-  static getMockEconomicEvents(from, to) {
-    const mockEvents = [
-      {
-        id: uuidv4(),
-        event_id: 'mock_nfp_1',
-        event_name: 'Non-Farm Payrolls',
-        country: 'United States',
-        country_code: 'US',
-        date: new Date().toISOString(),
-        impact: 'High',
-        actual: '195K',
-        estimate: '180K',
-        previous: '150K',
-        currency: 'USD',
-        unit: 'Jobs',
-        change_percent: 30.0,
-        source: 'Demo Data',
-        category: 'Employment',
-        is_all_day: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: uuidv4(),
-        event_id: 'mock_cpi_1',
-        event_name: 'Consumer Price Index (CPI)',
-        country: 'United States',
-        country_code: 'US',
-        date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        impact: 'High',
-        actual: '3.2%',
-        estimate: '3.1%',
-        previous: '3.0%',
-        currency: 'USD',
-        unit: 'Percent',
-        change_percent: 6.7,
-        source: 'Demo Data',
-        category: 'Inflation',
-        is_all_day: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: uuidv4(),
-        event_id: 'mock_gdp_1',
-        event_name: 'GDP Growth Rate',
-        country: 'United States',
-        country_code: 'US',
-        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        impact: 'High',
-        actual: null,
-        estimate: '2.5%',
-        previous: '2.4%',
-        currency: 'USD',
-        unit: 'Percent',
-        change_percent: null,
-        source: 'Demo Data',
-        category: 'GDP',
-        is_all_day: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: uuidv4(),
-        event_id: 'mock_retail_1',
-        event_name: 'Retail Sales',
-        country: 'United States',
-        country_code: 'US',
-        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        impact: 'Medium',
-        actual: null,
-        estimate: '0.4%',
-        previous: '0.3%',
-        currency: 'USD',
-        unit: 'Percent',
-        change_percent: null,
-        source: 'Demo Data',
-        category: 'Consumer',
-        is_all_day: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: uuidv4(),
-        event_id: 'mock_pmi_1',
-        event_name: 'Manufacturing PMI',
-        country: 'United States',
-        country_code: 'US',
-        date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-        impact: 'Medium',
-        actual: null,
-        estimate: '52.5',
-        previous: '52.0',
-        currency: 'USD',
-        unit: 'Index',
-        change_percent: null,
-        source: 'Demo Data',
-        category: 'Manufacturing',
-        is_all_day: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: uuidv4(),
-        event_id: 'mock_fomc_1',
-        event_name: 'FOMC Statement',
-        country: 'United States',
-        country_code: 'US',
-        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-        impact: 'High',
-        actual: null,
-        estimate: null,
-        previous: null,
-        currency: 'USD',
-        unit: null,
-        change_percent: null,
-        source: 'Demo Data',
-        category: 'Interest Rates',
-        is_all_day: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    ];
-
-    return mockEvents;
-  }
+  // REMOVED: getMockEconomicEvents() - All data must come from real APIs
+  // This ensures only real data is displayed to users
 
   /**
    * Get economic calendar events
@@ -493,10 +366,9 @@ class EconomicCalendarService {
         }
       }
 
-      // FALLBACK: Only use mock data if everything failed
+      // NO FALLBACK TO MOCK DATA - return empty array if all APIs fail
       if (allEvents.length === 0) {
-        logger.warn('All sources failed, using fallback demo data');
-        allEvents = this.getMockEconomicEvents(from, to);
+        logger.warn('All economic calendar sources failed - no events available');
       } else {
         logger.info(`✅ Successfully loaded ${allEvents.length} LIVE economic events`);
       }

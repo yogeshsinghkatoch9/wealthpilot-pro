@@ -186,24 +186,16 @@ class EarningsCalendarService {
       // Fetch upcoming earnings from API
       const earnings = await this.dataFetcher.getUpcomingEarnings(days);
 
+      // NO FALLBACK TO MOCK DATA - return empty if API fails
       if (earnings.length === 0) {
-        logger.debug('No earnings data fetched from API, using mock data');
-
-        // Fallback to mock data if API fails or returns no results
-        const mockSymbols = userSymbols.length > 0 ? userSymbols : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA'];
-        const mockEarnings = this.dataFetcher.generateMockEarnings(mockSymbols, days);
-
-        if (mockEarnings.length > 0) {
-          const result = this.upsertEarnings(mockEarnings);
-          return {
-            success: true,
-            ...result,
-            total: mockEarnings.length,
-            mock: true
-          };
-        }
-
-        return { success: false, message: 'No data available' };
+        logger.warn('No earnings data fetched from API - no mock fallback');
+        return {
+          success: true,
+          inserted: 0,
+          updated: 0,
+          total: 0,
+          message: 'No earnings data available from API'
+        };
       }
 
       // Enrich with company names
@@ -215,31 +207,16 @@ class EarningsCalendarService {
       return {
         success: true,
         ...result,
-        total: earnings.length,
-        mock: false
+        total: earnings.length
       };
     } catch (error) {
       logger.error('Error refreshing earnings data:', error);
 
-      // Fallback to mock data on error
-      logger.debug('Falling back to mock earnings data');
-      const mockSymbols = userSymbols.length > 0 ? userSymbols : ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA'];
-      const mockEarnings = this.dataFetcher.generateMockEarnings(mockSymbols, days);
-
-      if (mockEarnings.length > 0) {
-        const result = this.upsertEarnings(mockEarnings);
-        return {
-          success: true,
-          ...result,
-          total: mockEarnings.length,
-          mock: true,
-          error: error.message
-        };
-      }
-
+      // NO FALLBACK TO MOCK DATA - return error
       return {
         success: false,
-        error: error.message
+        error: error.message,
+        message: 'Failed to fetch earnings data from API'
       };
     }
   }

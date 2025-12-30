@@ -20,13 +20,14 @@ class DividendForecastingService {
           include: { holdings: true }
         });
       } catch (err) {
-        logger.debug('Using mock portfolio data for dividends:', err.message);
-        // Return mock dividend forecast
-        return this.getMockDividendForecast();
+        logger.error('Database error fetching portfolio for dividends:', err.message);
+        // NO MOCK DATA - return empty forecast
+        return this.getEmptyForecast('Database connection error');
       }
 
       if (!portfolio || !portfolio.holdings || portfolio.holdings.length === 0) {
-        return this.getMockDividendForecast();
+        // NO MOCK DATA - return empty forecast
+        return this.getEmptyForecast('No holdings in portfolio');
       }
 
       // Get dividend history for all holdings (with error handling)
@@ -75,38 +76,38 @@ class DividendForecastingService {
       };
     } catch (error) {
       logger.error('Dividend forecasting error:', error);
-      // Return mock data instead of throwing
-      return this.getMockDividendForecast();
+      // NO MOCK DATA - return empty forecast with error
+      return this.getEmptyForecast(error.message);
     }
   }
 
-  getMockDividendForecast() {
-    const mockForecasts = [
-      { symbol: 'AAPL', shares: 100, currentPrice: 175, annualDividend: 0.96, projectedAnnualIncome: 96, nextQuarterIncome: 24, currentYield: 0.55, dividendGrowthRate: 7.2 },
-      { symbol: 'MSFT', shares: 50, currentPrice: 380, annualDividend: 2.72, projectedAnnualIncome: 136, nextQuarterIncome: 34, currentYield: 0.72, dividendGrowthRate: 10.5 },
-      { symbol: 'JNJ', shares: 75, currentPrice: 160, annualDividend: 4.52, projectedAnnualIncome: 339, nextQuarterIncome: 84.75, currentYield: 2.83, dividendGrowthRate: 5.8 }
-    ];
-
-    const totalAnnualIncome = mockForecasts.reduce((sum, f) => sum + f.projectedAnnualIncome, 0);
-    const totalQuarterlyIncome = mockForecasts.reduce((sum, f) => sum + f.nextQuarterIncome, 0);
-
+  /**
+   * Return empty forecast structure when data unavailable
+   * NO MOCK DATA - only real data should be displayed
+   */
+  getEmptyForecast(reason = 'No data available') {
     return {
-      forecasts: mockForecasts,
-      calendar: this.generateDividendCalendar(mockForecasts),
+      forecasts: [],
+      calendar: this.generateDividendCalendar([]),
       metrics: {
-        portfolioYield: 1.2,
-        averageYield: 1.37,
-        yieldOnCost: 1.5,
-        dividendCagr: 7.8
+        portfolioYield: 0,
+        averageYield: 0,
+        yieldOnCost: 0,
+        dividendCagr: 0,
+        dividendPayingStocks: 0,
+        totalStocks: 0
       },
       summary: {
-        totalAnnualIncome,
-        totalQuarterlyIncome,
-        avgMonthlyIncome: totalAnnualIncome / 12,
-        portfolioYield: 1.2
-      }
+        totalAnnualIncome: 0,
+        totalQuarterlyIncome: 0,
+        avgMonthlyIncome: 0,
+        portfolioYield: 0
+      },
+      message: reason
     };
   }
+
+  // REMOVED: getMockDividendForecast() - All data must come from real APIs
 
   /**
    * Get dividend growth stocks in portfolio

@@ -220,7 +220,9 @@ class AnalysisService {
     });
 
     if (!candles || candles.s !== 'ok') {
-      return this.getMockTechnicals(symbol);
+      // NO MOCK DATA - return empty technicals structure
+      logger.warn(`No candle data available for ${symbol}`);
+      return this.getEmptyTechnicals(symbol);
     }
 
     const prices = candles.c || [];
@@ -369,23 +371,36 @@ class AnalysisService {
     return 'Hold';
   }
 
-  getMockTechnicals(symbol) {
+  /**
+   * Return empty technicals structure when API data unavailable
+   * NO MOCK DATA - only real data should be displayed
+   */
+  getEmptyTechnicals(symbol) {
     return {
       symbol: symbol.toUpperCase(),
-      currentPrice: 150,
-      rsi: { value: 55, signal: 'Neutral' },
-      macd: { macd: 2.5, signal: 1.8, histogram: 0.7, trend: 'Bullish' },
-      movingAverages: { sma20: { value: 148, signal: 'Buy' }, sma50: { value: 145, signal: 'Buy' }, sma200: { value: 140, signal: 'Buy' }, ema12: { value: 149, signal: 'Buy' }, ema26: { value: 147, signal: 'Buy' } },
-      bollingerBands: { upper: 160, middle: 148, lower: 136, bandwidth: 16 },
-      stochastic: { k: 62, d: 58, signal: 'Neutral' },
-      atr: 3.5,
-      volume: { current: 50000000, average: 45000000, ratio: 1.11 },
-      trend: 'Uptrend',
-      overallSignal: 'Buy',
+      currentPrice: 0,
+      rsi: { value: null, signal: 'No Data' },
+      macd: { macd: null, signal: null, histogram: null, trend: 'No Data' },
+      movingAverages: {
+        sma20: { value: null, signal: 'No Data' },
+        sma50: { value: null, signal: 'No Data' },
+        sma200: { value: null, signal: 'No Data' },
+        ema12: { value: null, signal: 'No Data' },
+        ema26: { value: null, signal: 'No Data' }
+      },
+      bollingerBands: { upper: null, middle: null, lower: null, bandwidth: null },
+      stochastic: { k: null, d: null, signal: 'No Data' },
+      atr: null,
+      volume: { current: 0, average: 0, ratio: 0 },
+      trend: 'No Data',
+      overallSignal: 'No Data',
       priceHistory: [],
-      dates: []
+      dates: [],
+      message: 'Technical data unavailable - API returned no data'
     };
   }
+
+  // REMOVED: getMockTechnicals() - All data must come from real APIs
 
   // ==================== DIVIDENDS ====================
   async getDividends(symbol) {
