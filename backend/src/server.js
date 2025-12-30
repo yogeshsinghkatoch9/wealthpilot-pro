@@ -86,6 +86,7 @@ const insightsRoutes = require('./routes/insights');
 const notificationsRoutes = require('./routes/notifications');
 const aiReportsRoutes = require('./routes/aiReports');
 const aiChatRoutes = require('./routes/aiChat');
+const scannerRoutes = require('./routes/scanner');
 const { requestMonitoringMiddleware } = require('./services/monitoringService');
 
 // Security middleware
@@ -477,6 +478,10 @@ app.post('/api/refresh-prices', authenticate, async (req, res) => {
 // ==================== MARKET ROUTES ====================
 // Market routes with optional authentication
 app.use('/api/market', marketRoutes);
+
+// ==================== SCANNER ROUTES ====================
+// Stock scanner routes (public - no auth required)
+app.use('/api/scanner', scannerRoutes);
 
 // ==================== TRANSACTIONS ROUTES ====================
 // Transactions routes (protected)
