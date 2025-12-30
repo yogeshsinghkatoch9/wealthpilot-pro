@@ -62,6 +62,26 @@ test-results.json
 # Backup files
 *.bak
 *.backup
+*.original.*
+*.working
+*.orig
+
+# Test files (keep in tests/ but not manual tests)
+test-*.js
+test-*.sh
+test-*.html
+backend/tests/manual/
+**/debug-*.html
+
+# Generated reports
+backend/reports/*.pdf
+*.pdf
+
+# Duplicate public folder (use frontend/public/ only)
+/public/
+
+# Source maps in dist
+frontend/dist/*.map
 
 # Python (if any)
 __pycache__/
