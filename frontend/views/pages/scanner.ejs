@@ -16,40 +16,48 @@
   </div>
 </div>
 
-<!-- Scanner Presets -->
-<div class="flex flex-wrap gap-2 mb-6">
-  <button onclick="loadPreset('gainers')" class="preset-btn bloomberg-btn bloomberg-btn-sm bg-emerald-500 text-black font-bold">
-    TOP GAINERS
-  </button>
-  <button onclick="loadPreset('losers')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    TOP LOSERS
-  </button>
-  <button onclick="loadPreset('volume')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    HIGH VOLUME
-  </button>
-  <button onclick="loadPreset('breakout')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    BREAKOUTS
-  </button>
-  <button onclick="loadPreset('oversold')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    OVERSOLD RSI
-  </button>
-  <button onclick="loadPreset('overbought')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    OVERBOUGHT RSI
-  </button>
-  <button onclick="loadPreset('earnings')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    EARNINGS SOON
-  </button>
-  <button onclick="loadPreset('dividend')" class="preset-btn bloomberg-btn bloomberg-btn-sm">
-    HIGH DIVIDEND
-  </button>
+<!-- Scanner Presets - Horizontally scrollable on mobile -->
+<div class="overflow-x-auto -mx-4 px-4 mb-6 md:mx-0 md:px-0">
+  <div class="flex gap-2 pb-2 min-w-max md:flex-wrap md:min-w-0">
+    <button onclick="loadPreset('gainers')" class="preset-btn bloomberg-btn bloomberg-btn-sm bg-emerald-500 text-black font-bold whitespace-nowrap">
+      TOP GAINERS
+    </button>
+    <button onclick="loadPreset('losers')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      TOP LOSERS
+    </button>
+    <button onclick="loadPreset('volume')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      HIGH VOLUME
+    </button>
+    <button onclick="loadPreset('breakout')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      BREAKOUTS
+    </button>
+    <button onclick="loadPreset('oversold')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      OVERSOLD RSI
+    </button>
+    <button onclick="loadPreset('overbought')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      OVERBOUGHT RSI
+    </button>
+    <button onclick="loadPreset('earnings')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      EARNINGS SOON
+    </button>
+    <button onclick="loadPreset('dividend')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      HIGH DIVIDEND
+    </button>
+  </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-  <!-- Filter Builder -->
+  <!-- Filter Builder - Collapsible on mobile -->
   <div class="bloomberg-card">
     <div class="p-5">
-      <h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wide">FILTERS</h3>
-      <div class="space-y-4">
+      <button onclick="toggleFilters()" class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-amber-400 mb-4 tracking-wide">
+        <span>FILTERS</span>
+        <svg id="filterChevron" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <h3 class="hidden lg:block text-sm font-bold text-amber-400 mb-4 tracking-wide">FILTERS</h3>
+      <div id="filterContent" class="hidden lg:block space-y-4">
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">MARKET CAP</label>
           <select name="marketCap" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
@@ -129,19 +137,20 @@
 
   <!-- Results -->
   <div class="lg:col-span-3 space-y-4">
-    <div class="flex items-center justify-between">
+    <!-- Results Header - Stacks on mobile -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <p class="text-sm text-slate-400">
         <span class="font-bold text-emerald-400 font-mono" id="resultCount">47</span> STOCKS MATCH YOUR CRITERIA
       </p>
-      <div class="flex gap-2">
-        <select class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+      <div class="flex flex-wrap gap-2">
+        <select class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-400 flex-1 sm:flex-none min-w-[140px]">
           <option>SORT: CHANGE %</option>
           <option>SORT: VOLUME</option>
           <option>SORT: MARKET CAP</option>
           <option>SORT: PRICE</option>
         </select>
-        <button onclick="saveScanner()" class="bloomberg-btn bloomberg-btn-sm">SAVE</button>
-        <button onclick="exportResults()" class="bloomberg-btn bloomberg-btn-sm">EXPORT CSV</button>
+        <button onclick="saveScanner()" class="bloomberg-btn bloomberg-btn-sm flex-1 sm:flex-none">SAVE</button>
+        <button onclick="exportResults()" class="bloomberg-btn bloomberg-btn-sm flex-1 sm:flex-none">EXPORT</button>
       </div>
     </div>
 
@@ -359,6 +368,22 @@
 <script>
 let currentPreset = 'gainers';
 let currentFilters = {};
+let filtersOpen = false;
+
+// Mobile filter toggle
+function toggleFilters() {
+  filtersOpen = !filtersOpen;
+  const filterContent = document.getElementById('filterContent');
+  const chevron = document.getElementById('filterChevron');
+
+  if (filtersOpen) {
+    filterContent.classList.remove('hidden');
+    chevron.classList.add('rotate-180');
+  } else {
+    filterContent.classList.add('hidden');
+    chevron.classList.remove('rotate-180');
+  }
+}
 
 async function runScanner() {
   showToast('Scanning markets...', 'info');
