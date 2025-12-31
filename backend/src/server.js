@@ -4781,6 +4781,11 @@ async function main() {
     const alertService = require('./services/alertService');
     alertService.start();
 
+    // Initialize email notification scheduler
+    const emailNotifications = require('./services/emailNotifications');
+    emailNotifications.initialize();
+    logger.debug('✓ Email notification scheduler initialized');
+
     // Connect services to market data
     marketData.setWebSocketService(wsService);
 
