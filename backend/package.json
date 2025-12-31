@@ -5,7 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "NODE_ENV=development node src/server.js",
-    "start": "npx prisma generate && (npx prisma db push --accept-data-loss || echo 'DB push skipped') && NODE_ENV=production node src/server.js",
+    "start": "npx prisma generate && (npx prisma migrate deploy || echo 'Migrations skipped') && NODE_ENV=production node src/server.js",
     "seed": "node seed-simple.js",
     "test": "NODE_ENV=test jest --runInBand --forceExit",
     "test:watch": "NODE_ENV=test jest --watch --runInBand",
@@ -20,12 +20,12 @@
     "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
-    "build": "prisma generate && prisma db push --accept-data-loss",
+    "build": "prisma generate && prisma db push",
     "health": "curl -f http://localhost:4000/api/health || exit 1"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@prisma/client": "^5.7.0",
+    "@prisma/client": "^5.22.0",
     "@sendgrid/mail": "^8.1.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
@@ -75,7 +75,7 @@
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
-    "prisma": "^5.7.0",
+    "prisma": "^5.22.0",
     "supertest": "^6.3.3"
   },
   "engines": {

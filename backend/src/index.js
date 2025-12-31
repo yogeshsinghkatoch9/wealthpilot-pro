@@ -20,6 +20,32 @@ const marketRoutes = require('./routes/market');
 const analyticsRoutes = require('./routes/analytics');
 const dividendRoutes = require('./routes/dividends');
 const calendarRoutes = require('./routes/calendar');
+const technicalRoutes = require('./routes/technicals');
+const fundamentalsRoutes = require('./routes/fundamentals');
+const researchRoutes = require('./routes/research');
+const tradingRoutes = require('./routes/trading');
+const reportsRoutes = require('./routes/reports');
+const settingsRoutes = require('./routes/settings');
+const insightsRoutes = require('./routes/insights');
+const dashboardRoutes = require('./routes/dashboard');
+const simpleDashboardRoutes = require('./routes/simpleDashboard');
+const exportsRoutes = require('./routes/exports');
+const sharingRoutes = require('./routes/sharing');
+const clientsRoutes = require('./routes/clients');
+const monitoringRoutes = require('./routes/monitoring');
+const notificationsRoutes = require('./routes/notifications');
+const optionsRoutes = require('./routes/options');
+const riskAnalysisRoutes = require('./routes/riskAnalysis');
+const advancedAnalyticsRoutes = require('./routes/advancedAnalytics');
+const marginsRoutes = require('./routes/margins');
+const dividendAnalysisRoutes = require('./routes/dividendAnalysis');
+const sectorsRoutes = require('./routes/sectors');
+const sectorAnalysisRoutes = require('./routes/sectorAnalysis');
+const portfolioToolsRoutes = require('./routes/portfolioTools');
+const helpRoutes = require('./routes/help');
+const twoFactorRoutes = require('./routes/twoFactor');
+const extendedRoutes = require('./routes/extended');
+const stockSearchRoutes = require('./routes/stockSearch');
 
 // Features routes (paper trading, goals, journal, etc.) with error handling
 let featuresRoutes;
@@ -32,6 +58,89 @@ try {
   featuresRoutes = expressRouter();
   featuresRoutes.all('*', (req, res) => {
     res.status(500).json({ success: false, error: 'Features routes failed to load' });
+  });
+}
+
+// AI routes with error handling
+let aiChatRoutes;
+try {
+  aiChatRoutes = require('./routes/aiChat');
+  console.log('[INDEX] AI Chat routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load AI Chat routes:', error.message);
+  const expressRouter = require('express').Router;
+  aiChatRoutes = expressRouter();
+  aiChatRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'AI Chat routes failed to load' });
+  });
+}
+
+let aiReportsRoutes;
+try {
+  aiReportsRoutes = require('./routes/aiReports');
+  console.log('[INDEX] AI Reports routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load AI Reports routes:', error.message);
+  const expressRouter = require('express').Router;
+  aiReportsRoutes = expressRouter();
+  aiReportsRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'AI Reports routes failed to load' });
+  });
+}
+
+// Earnings calendar routes with error handling
+let earningsCalendarRoutes;
+try {
+  earningsCalendarRoutes = require('./routes/earningsCalendar');
+  console.log('[INDEX] Earnings calendar routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load earnings calendar routes:', error.message);
+  const expressRouter = require('express').Router;
+  earningsCalendarRoutes = expressRouter();
+  earningsCalendarRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Earnings calendar routes failed to load' });
+  });
+}
+
+// Dividend calendar routes with error handling
+let dividendCalendarRoutes;
+try {
+  dividendCalendarRoutes = require('./routes/dividendCalendar');
+  console.log('[INDEX] Dividend calendar routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load dividend calendar routes:', error.message);
+  const expressRouter = require('express').Router;
+  dividendCalendarRoutes = expressRouter();
+  dividendCalendarRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Dividend calendar routes failed to load' });
+  });
+}
+
+// IPO calendar routes with error handling
+let ipoCalendarRoutes;
+try {
+  ipoCalendarRoutes = require('./routes/ipoCalendar');
+  console.log('[INDEX] IPO calendar routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load IPO calendar routes:', error.message);
+  const expressRouter = require('express').Router;
+  ipoCalendarRoutes = expressRouter();
+  ipoCalendarRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'IPO calendar routes failed to load' });
+  });
+}
+
+// SPAC tracker routes with error handling
+let spacTrackerRoutes;
+try {
+  spacTrackerRoutes = require('./routes/spacTracker');
+  console.log('[INDEX] SPAC tracker routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load SPAC tracker routes:', error.message);
+  const expressRouter = require('express').Router;
+  spacTrackerRoutes = expressRouter();
+  spacTrackerRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'SPAC tracker routes failed to load' });
   });
 }
 
@@ -192,8 +301,14 @@ app.use(cors({
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
+    } else if (process.env.NODE_ENV !== 'production') {
+      // In development, allow but warn
+      logger.warn(`CORS: Allowing unrecognized origin in development: ${origin}`);
+      callback(null, true);
     } else {
-      callback(null, true); // Be permissive for now
+      // In production, reject unknown origins
+      logger.warn(`CORS: Blocking request from unauthorized origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
@@ -269,6 +384,71 @@ app.use('/api/economic-calendar', economicCalendarRoutes); // Economic calendar
 app.use('/api/sentiment', sentimentRoutes); // Sentiment analysis
 app.use('/api/scanner', scannerRoutes); // Stock scanner
 app.use('/api/tax', taxHarvestingRoutes); // Tax-loss harvesting
+
+// AI Routes
+app.use('/api/ai/chat', aiChatRoutes); // AI chat with streaming
+app.use('/api/ai-reports', aiReportsRoutes); // AI report generation
+
+// Direct AI status endpoint at /api/ai/status for compatibility
+app.get('/api/ai/status', (req, res) => {
+  try {
+    const unifiedAI = require('./services/unifiedAIService');
+    const status = unifiedAI.getStatus();
+    res.json({
+      success: true,
+      status,
+      primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'claude'
+    });
+  } catch (error) {
+    console.error('[AI Status] Error:', error.message);
+    res.json({
+      success: true,
+      status: {
+        available: !!process.env.ANTHROPIC_API_KEY || !!process.env.OPENAI_API_KEY,
+        providers: [
+          process.env.ANTHROPIC_API_KEY ? 'claude' : null,
+          process.env.OPENAI_API_KEY ? 'openai' : null
+        ].filter(Boolean)
+      },
+      primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'claude'
+    });
+  }
+});
+
+// Calendar-specific routes
+app.use('/api/earnings-calendar', earningsCalendarRoutes); // Earnings calendar
+app.use('/api/dividend-calendar', dividendCalendarRoutes); // Dividend calendar
+app.use('/api/ipo-calendar', ipoCalendarRoutes); // IPO calendar
+app.use('/api/spac-tracker', spacTrackerRoutes); // SPAC tracker
+
+// Additional routes
+app.use('/api/technicals', technicalRoutes); // Technical analysis
+app.use('/api/fundamentals', fundamentalsRoutes); // Fundamental analysis
+app.use('/api/research', researchRoutes); // Research routes
+app.use('/api/trading', tradingRoutes); // Trading routes
+app.use('/api/reports', reportsRoutes); // Report routes
+app.use('/api/settings', settingsRoutes); // Settings routes
+app.use('/api/insights', insightsRoutes); // Insights routes
+app.use('/api/dashboard', dashboardRoutes); // Dashboard routes
+app.use('/api/simple-dashboard', simpleDashboardRoutes); // Simple dashboard
+app.use('/api/exports', exportsRoutes); // Export routes
+app.use('/api/sharing', sharingRoutes); // Sharing routes
+app.use('/api/clients', clientsRoutes); // Client routes (for advisors)
+app.use('/api/monitoring', monitoringRoutes); // Monitoring routes
+app.use('/api/notifications', notificationsRoutes); // Notification routes
+app.use('/api/options', optionsRoutes); // Options analysis
+app.use('/api/risk', riskAnalysisRoutes); // Risk analysis
+app.use('/api/advanced-analytics', advancedAnalyticsRoutes); // Advanced analytics
+app.use('/api/margins', marginsRoutes); // Margin analysis
+app.use('/api/dividend-analysis', dividendAnalysisRoutes); // Dividend analysis
+app.use('/api/sectors', sectorsRoutes); // Sector routes
+app.use('/api/sector-analysis', sectorAnalysisRoutes); // Sector analysis
+app.use('/api/portfolio-tools', portfolioToolsRoutes); // Portfolio tools
+app.use('/api/help', helpRoutes); // Help routes
+app.use('/api/auth/2fa', twoFactorRoutes); // Two-factor authentication
+app.use('/api/extended', extendedRoutes); // Extended API routes
+app.use('/api/stock-search', stockSearchRoutes); // Stock search
+
 app.use('/api', featuresRoutes); // Paper trading, goals, journal, crypto, social, etc.
 
 // Error handling middleware

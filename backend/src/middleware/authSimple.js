@@ -3,8 +3,11 @@ const jwt = require('jsonwebtoken');
 const db = require('../db/sqliteCompat');
 const logger = require('../utils/logger');
 
-// Use consistent JWT_SECRET with fallback (must match server.js)
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+// JWT_SECRET - MUST be set (no insecure fallback)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 /**
  * Simple authentication middleware using direct SQL

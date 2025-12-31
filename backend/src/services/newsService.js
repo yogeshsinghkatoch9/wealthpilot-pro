@@ -9,7 +9,10 @@ const axios = require('axios');
 const logger = require('../utils/logger');
 class NewsService {
   constructor() {
-    this.apiKey = process.env.MARKETAUX_API_KEY || 'gt30z3tlxjMvXTDL3s5CE8EdH2FTSKxQk88PhzNz';
+    this.apiKey = process.env.MARKETAUX_API_KEY;
+    if (!this.apiKey) {
+      logger.warn('MARKETAUX_API_KEY not set - news service will use fallback data');
+    }
     this.baseUrl = 'https://api.marketaux.com/v1';
     this.cache = new Map();
     this.cacheDuration = 5 * 60 * 1000; // 5 minute cache

@@ -39,61 +39,43 @@ class PostgresAdapter {
   /**
    * SQLite compatibility: prepare method returns statement-like object
    * This allows code written for SQLite to work with PostgreSQL
-   * Note: These are SYNCHRONOUS compatibility shims - they return default values
-   * to allow the server to start. For actual data, use async methods.
+   * NOTE: Returns async-wrapped methods that execute actual PostgreSQL queries
    */
   prepare(sql) {
     const pool = this.pool;
-    const sqlLower = sql.toLowerCase().trim();
+    const self = this;
 
     // Convert SQLite ? placeholders to PostgreSQL $1, $2, etc.
     let paramIndex = 0;
     const pgSql = sql.replace(/\?/g, () => `$${++paramIndex}`);
 
-    // Detect query type for smarter defaults
-    const isCountQuery = sqlLower.includes('count(') || sqlLower.includes('count (');
-    const isSumQuery = sqlLower.includes('sum(') || sqlLower.includes('sum (');
-    const isSelectQuery = sqlLower.startsWith('select');
-    const isInsertQuery = sqlLower.startsWith('insert');
-    const isUpdateQuery = sqlLower.startsWith('update');
-    const isDeleteQuery = sqlLower.startsWith('delete');
-    const isAlterQuery = sqlLower.startsWith('alter');
-
     return {
-      all: (...params) => {
-        // Return empty array for SELECT queries
-        if (isSelectQuery) {
-          logger.debug('SQLite compat: prepare().all() - returning empty array');
+      all: async (...params) => {
+        try {
+          const result = await pool.query(pgSql, params);
+          return result.rows;
+        } catch (err) {
+          logger.error('PostgreSQL prepare().all() error:', err.message);
           return [];
         }
-        return [];
       },
-      get: (...params) => {
-        // Return sensible defaults for aggregate queries
-        if (isCountQuery) {
-          logger.debug('SQLite compat: prepare().get() COUNT - returning {count: 0}');
-          return { count: 0 };
-        }
-        if (isSumQuery) {
-          logger.debug('SQLite compat: prepare().get() SUM - returning {sum: 0}');
-          return { sum: 0, total: 0 };
-        }
-        if (isSelectQuery) {
-          logger.debug('SQLite compat: prepare().get() SELECT - returning null');
+      get: async (...params) => {
+        try {
+          const result = await pool.query(pgSql, params);
+          return result.rows[0] || null;
+        } catch (err) {
+          logger.error('PostgreSQL prepare().get() error:', err.message);
           return null;
         }
-        return null;
       },
-      run: (...params) => {
-        // Log write operations that won't persist
-        if (isInsertQuery || isUpdateQuery || isDeleteQuery) {
-          logger.debug(`SQLite compat: prepare().run() ${isInsertQuery ? 'INSERT' : isUpdateQuery ? 'UPDATE' : 'DELETE'} - no-op in sync mode`);
+      run: async (...params) => {
+        try {
+          const result = await pool.query(pgSql, params);
+          return { changes: result.rowCount || 0, lastInsertRowid: 0 };
+        } catch (err) {
+          logger.error('PostgreSQL prepare().run() error:', err.message);
+          return { changes: 0, lastInsertRowid: 0 };
         }
-        if (isAlterQuery) {
-          // ALTER queries during migrations - silently succeed
-          logger.debug('SQLite compat: prepare().run() ALTER - no-op (handled by PostgreSQL migrations)');
-        }
-        return { changes: 0, lastInsertRowid: 0 };
       }
     };
   }
@@ -283,7 +265,7 @@ class PostgresAdapter {
 
   async createUser(email, password, firstName, lastName) {
     const id = uuidv4();
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     const now = new Date();
 
     const result = await this.pool.query(

@@ -17,7 +17,10 @@ function validateSymbol(symbol) {
 
 class MarketDataService {
   constructor(apiKey) {
-    this.alphaVantageKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY || 'demo';
+    this.alphaVantageKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY;
+    if (!this.alphaVantageKey) {
+      logger.warn('ALPHA_VANTAGE_API_KEY not set - some market data features may be limited');
+    }
     this.lastFetchTime = {};
     this.minFetchInterval = 15000;
     this.wsService = null; // WebSocket service for broadcasting
@@ -94,6 +97,57 @@ class MarketDataService {
     const promises = uniqueSymbols.map(symbol => this.fetchQuote(symbol));
     const results = await Promise.allSettled(promises);
     return results.filter(r => r.status === 'fulfilled' && r.value !== null).map(r => r.value);
+  }
+
+  /**
+   * Get historical price data from Yahoo Finance
+   * @param {string} symbol - Stock symbol
+   * @param {string} range - Time range (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max)
+   * @returns {Promise<Array>} Historical price data with date, open, high, low, close, volume
+   */
+  async getHistoricalData(symbol, range = '6mo') {
+    const validSymbol = validateSymbol(symbol);
+    if (!validSymbol) {
+      throw new Error('Invalid symbol');
+    }
+
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${validSymbol}`;
+      const response = await axios.get(url, {
+        params: { interval: '1d', range },
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        timeout: 10000
+      });
+
+      const result = response.data.chart.result[0];
+      if (!result || !result.timestamp) {
+        throw new Error('No data available');
+      }
+
+      const timestamps = result.timestamp;
+      const quotes = result.indicators.quote[0];
+
+      // Build array of price data
+      const data = [];
+      for (let i = 0; i < timestamps.length; i++) {
+        if (quotes.close[i] != null) {
+          data.push({
+            date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+            open: quotes.open[i] || quotes.close[i],
+            high: quotes.high[i] || quotes.close[i],
+            low: quotes.low[i] || quotes.close[i],
+            close: quotes.close[i],
+            volume: quotes.volume[i] || 0
+          });
+        }
+      }
+
+      logger.info(`Fetched ${data.length} days of historical data for ${validSymbol}`);
+      return data;
+    } catch (error) {
+      logger.error(`Failed to fetch historical data for ${symbol}:`, error.message);
+      throw error;
+    }
   }
 
   async updateStockQuotes(quotes) {

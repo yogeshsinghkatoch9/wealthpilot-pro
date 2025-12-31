@@ -1005,17 +1005,11 @@ class DatabaseAdapter {
     return this.get('SELECT * FROM users WHERE id = ?', [id]);
   }
 
-  createUser(email, password, firstName, lastName) {
+  async createUser(email, password, firstName, lastName) {
     const id = uuidv4();
-    // Assuming password is already hashed if strictly following server.js 
-    // BUT server.js passes 'password' to createUser (line 96).
-    // server.js calls: const user = await Database.createUser(email, password, firstName, lastName);
-    // THEN line 135: bcrypt.compare(password, user.password_hash)
-    // So this function MUST hash the password.
-
+    // Hash password with secure settings (12 rounds, async to avoid blocking)
     const bcrypt = require('bcryptjs');
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt);
+    const hash = await bcrypt.hash(password, 12);
 
     const stmt = this.db.prepare(`
       INSERT INTO users(id, email, password_hash, first_name, last_name)

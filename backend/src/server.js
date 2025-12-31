@@ -147,21 +147,31 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL 
   .split(',')
   .map(origin => origin.trim());
 
+// Add EC2 public IP to allowed origins
+allowedOrigins.push('http://18.220.78.166:3000');
+allowedOrigins.push('http://18.220.78.166');
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*') || origin.includes('18.220.78.166')) {
+      callback(null, true);
+    } else if (process.env.NODE_ENV !== 'production') {
+      // In development, allow but warn
+      logger.warn(`CORS: Allowing unrecognized origin in development: ${origin}`);
       callback(null, true);
     } else {
-      logger.warn(`CORS blocked request from origin: ${origin}`);
+      // In production, reject unknown origins
+      logger.warn(`CORS: Blocking request from unauthorized origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 // Body parsers
@@ -433,7 +443,7 @@ app.post('/api/cache/clear', authenticate, cacheClearHandler);
 app.post('/api/refresh-prices', authenticate, async (req, res) => {
   try {
     // Get all user's portfolios
-    const portfolios = Database.getPortfoliosByUserId(req.user.id);
+    const portfolios = await Database.getPortfoliosByUserId(req.user.id);
     if (!portfolios || portfolios.length === 0) {
       return res.json({ message: 'No portfolios to refresh', updated: 0 });
     }
@@ -443,7 +453,7 @@ app.post('/api/refresh-prices', authenticate, async (req, res) => {
     const allHoldings = [];
 
     for (const portfolio of portfolios) {
-      const holdings = Database.getHoldingsByPortfolio(portfolio.id);
+      const holdings = await Database.getHoldingsByPortfolio(portfolio.id);
       if (holdings && holdings.length > 0) {
         holdings.forEach(h => {
           symbolsSet.add(h.symbol);
@@ -565,6 +575,32 @@ app.use('/api/ai/chat', authenticate, aiChatRoutes);
 // AI-powered portfolio report generation (PDF with charts)
 app.use('/api/ai-reports', authenticate, aiReportsRoutes);
 
+// Direct AI status endpoint at /api/ai/status for dashboard compatibility
+app.get('/api/ai/status', (req, res) => {
+  try {
+    const unifiedAI = require('./services/unifiedAIService');
+    const status = unifiedAI.getStatus();
+    res.json({
+      success: true,
+      status,
+      primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'claude'
+    });
+  } catch (error) {
+    console.error('[AI Status] Error:', error.message);
+    res.json({
+      success: true,
+      status: {
+        available: !!process.env.ANTHROPIC_API_KEY || !!process.env.OPENAI_API_KEY,
+        providers: [
+          process.env.ANTHROPIC_API_KEY ? 'claude' : null,
+          process.env.OPENAI_API_KEY ? 'openai' : null
+        ].filter(Boolean)
+      },
+      primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'claude'
+    });
+  }
+});
+
 // ==================== SENTIMENT ANALYSIS ROUTES ====================
 // Sentiment analysis routes (protected) - Social media, news, analyst sentiment
 app.use('/api/sentiment', sentimentRoutes);
@@ -638,9 +674,9 @@ app.use('/api/notifications', authenticate, notificationsRoutes);
 app.use('/api', authenticate, featuresRoutes);
 
 // GET /api/users/me - Get current user profile
-app.get('/api/users/me', authenticate, (req, res) => {
+app.get('/api/users/me', authenticate, async (req, res) => {
   try {
-    const user = Database.getUserById(req.user.id);
+    const user = await Database.getUserById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -652,17 +688,17 @@ app.get('/api/users/me', authenticate, (req, res) => {
   }
 });
 
-app.post('/api/auth/logout', authenticate, (req, res) => {
+app.post('/api/auth/logout', authenticate, async (req, res) => {
   try {
-    Database.deleteSession(req.session.id);
+    await Database.deleteSession(req.session.id);
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Logout failed' });
   }
 });
 
-app.get('/api/auth/me', authenticate, (req, res) => {
-  const user = Database.getUserById(req.user.id);
+app.get('/api/auth/me', authenticate, async (req, res) => {
+  const user = await Database.getUserById(req.user.id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -756,12 +792,12 @@ app.post('/api/ai/analyze-portfolio', authenticate, async (req, res) => {
   try {
     const { portfolioId } = req.body;
 
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
 
-    const holdings = Database.getHoldingsByPortfolio(portfolioId);
+    const holdings = await Database.getHoldingsByPortfolio(portfolioId);
 
     // Enrich with market data
     const enrichedHoldings = await Promise.all(
@@ -815,12 +851,12 @@ app.post('/api/ai/recommendations', authenticate, async (req, res) => {
   try {
     const { portfolioId, userProfile } = req.body;
 
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
 
-    const holdings = Database.getHoldingsByPortfolio(portfolioId);
+    const holdings = await Database.getHoldingsByPortfolio(portfolioId);
 
     const enrichedHoldings = await Promise.all(
       holdings.map(async h => {
@@ -857,13 +893,13 @@ app.post('/api/ai/generate-report', authenticate, async (req, res) => {
   try {
     const { portfolioId, timeframe } = req.body;
 
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
 
-    const holdings = Database.getHoldingsByPortfolio(portfolioId);
-    const transactions = Database.getTransactionsByUser(req.user.id, 50);
+    const holdings = await Database.getHoldingsByPortfolio(portfolioId);
+    const transactions = await Database.getTransactionsByUser(req.user.id, 50);
 
     // Enrich data
     const enrichedHoldings = await Promise.all(
@@ -960,12 +996,12 @@ app.post('/api/ai/ask', authenticate, async (req, res) => {
 // ==================== PORTFOLIO ROUTES ====================
 app.get('/api/portfolios', authenticate, async (req, res) => {
   try {
-    const portfolios = Database.getPortfoliosByUser(req.user.id);
+    const portfolios = await Database.getPortfoliosByUser(req.user.id) || [];
 
     // Enrich with holdings and market data
     const enrichedPortfolios = await Promise.all(
       portfolios.map(async (portfolio) => {
-        const holdings = Database.getHoldingsByPortfolio(portfolio.id);
+        const holdings = await Database.getHoldingsByPortfolio(portfolio.id) || [];
         const symbols = holdings.map(h => h.symbol);
         const quotesArray = await marketData.fetchQuotes(symbols);
         const quotes = {};
@@ -1048,13 +1084,13 @@ app.get('/api/portfolios', authenticate, async (req, res) => {
 
 app.get('/api/portfolios/:id', authenticate, async (req, res) => {
   try {
-    const portfolio = Database.getPortfolioById(req.params.id);
+    const portfolio = await Database.getPortfolioById(req.params.id);
 
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
 
-    const holdings = Database.getHoldingsByPortfolio(portfolio.id);
+    const holdings = await Database.getHoldingsByPortfolio(portfolio.id) || [];
     const symbols = holdings.map(h => h.symbol);
     const quotesArray = await marketData.fetchQuotes(symbols);
     const quotes = {};
@@ -1144,7 +1180,7 @@ app.post('/api/portfolios', authenticate, async (req, res) => {
     }
 
     // Check for duplicate name
-    const portfolios = Database.getPortfoliosByUser(req.user.id);
+    const portfolios = await Database.getPortfoliosByUser(req.user.id) || [];
     const existing = portfolios.find(p => p.name.toLowerCase() === name.trim().toLowerCase());
 
     if (existing) {
@@ -1157,7 +1193,7 @@ app.post('/api/portfolios', authenticate, async (req, res) => {
       ? `${description}${portfolio_type ? ` (${portfolio_type})` : ''}`
       : portfolio_type || '';
 
-    const portfolio = Database.createPortfolio(
+    const portfolio = await Database.createPortfolio(
       req.user.id,
       name.trim(),
       portfolioDescription,
@@ -1197,7 +1233,7 @@ app.put('/api/portfolios/:id', authenticate, async (req, res) => {
     const { name, description, client_name, notes, portfolio_type } = req.body;
 
     // Check if portfolio exists and user owns it
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
 
     if (!portfolio) {
       return res.status(404).json({ error: 'Portfolio not found' });
@@ -1219,7 +1255,7 @@ app.put('/api/portfolios/:id', authenticate, async (req, res) => {
     if (notes !== undefined) updates.notes = notes;
     if (portfolio_type !== undefined) updates.portfolio_type = portfolio_type;
 
-    const updatedPortfolio = Database.updatePortfolio(portfolioId, updates);
+    const updatedPortfolio = await Database.updatePortfolio(portfolioId, updates);
     logger.debug(`Portfolio updated: ${updatedPortfolio.name} by user ${req.user.email}`);
 
     res.json(updatedPortfolio);
@@ -1235,7 +1271,7 @@ app.delete('/api/portfolios/:id', authenticate, async (req, res) => {
     const portfolioId = req.params.id;
 
     // Check if portfolio exists and user owns it
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
 
     if (!portfolio) {
       return res.status(404).json({ error: 'Portfolio not found' });
@@ -1249,7 +1285,7 @@ app.delete('/api/portfolios/:id', authenticate, async (req, res) => {
     // The frontend will fall back to the first available portfolio.
 
     // Delete the portfolio (cascades to holdings due to foreign key)
-    Database.run('DELETE FROM portfolios WHERE id = ?', [portfolioId]);
+    await Database.deletePortfolio(portfolioId);
 
     logger.debug(`Portfolio deleted: ${portfolio.name} for user ${req.user.email}`);
     res.json({ message: 'Portfolio deleted successfully' });
@@ -1268,10 +1304,10 @@ app.delete('/api/holdings/:id', authenticate, async (req, res) => {
     logger.debug(`[DELETE HOLDING] User ${req.user.email} attempting to delete holding ${holdingId}`);
 
     // Check if holding exists and user owns it (via portfolio ownership)
-    const holding = Database.get(
-      `SELECT h.*, p.user_id 
-       FROM holdings h 
-       JOIN portfolios p ON h.portfolio_id = p.id 
+    const holding = await Database.get(
+      `SELECT h.*, p.user_id
+       FROM holdings h
+       JOIN portfolios p ON h.portfolio_id = p.id
        WHERE h.id = ? AND p.user_id = ?`,
       [holdingId, userId]
     );
@@ -1284,7 +1320,7 @@ app.delete('/api/holdings/:id', authenticate, async (req, res) => {
     }
 
     // Delete the holding
-    Database.run('DELETE FROM holdings WHERE id = ?', [holdingId]);
+    await Database.deleteHolding(holdingId);
     logger.debug(`[DELETE HOLDING] Successfully deleted ${holding.symbol}`);
 
     res.json({ message: 'Holding deleted successfully' });
@@ -1623,11 +1659,11 @@ app.get('/api/market/movers', async (req, res) => {
 // GET /api/holdings/all - Get all holdings with real-time prices
 app.get('/api/holdings/all', authenticate, async (req, res) => {
   try {
-    const portfolios = Database.getPortfoliosByUser(req.user.id);
+    const portfolios = await Database.getPortfoliosByUser(req.user.id) || [];
     const allHoldings = [];
 
     for (const portfolio of portfolios) {
-      const holdings = Database.getHoldingsByPortfolio(portfolio.id);
+      const holdings = await Database.getHoldingsByPortfolio(portfolio.id) || [];
       holdings.forEach(h => {
         allHoldings.push({
           ...h,
@@ -1694,11 +1730,11 @@ app.get('/api/holdings/all', authenticate, async (req, res) => {
 // GET /api/transactions/all - Get all transactions with stats
 app.get('/api/transactions/all', authenticate, async (req, res) => {
   try {
-    const portfolios = Database.getPortfoliosByUser(req.user.id);
+    const portfolios = await Database.getPortfoliosByUser(req.user.id) || [];
     const allTransactions = [];
 
     for (const portfolio of portfolios) {
-      const transactions = Database.getTransactionsByPortfolio(portfolio.id);
+      const transactions = await Database.getTransactionsByPortfolio(portfolio.id) || [];
       transactions.forEach(t => {
         allTransactions.push({
           ...t,
@@ -1743,7 +1779,7 @@ app.get('/api/transactions/all', authenticate, async (req, res) => {
 // GET /api/watchlist/enhanced - Get watchlist with detailed data
 app.get('/api/watchlist/enhanced', authenticate, async (req, res) => {
   try {
-    const watchlist = Database.getWatchlistByUser(req.user.id);
+    const watchlist = await Database.getWatchlistByUser(req.user.id) || [];
 
     if (watchlist.length === 0) {
       return res.json([]);
@@ -1802,12 +1838,12 @@ app.get('/api/portfolios/:id/holdings', authenticate, async (req, res) => {
     const portfolioId = req.params.id;
 
     // Verify portfolio ownership
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
 
-    const holdings = Database.getHoldingsByPortfolio(portfolioId);
+    const holdings = await Database.getHoldingsByPortfolio(portfolioId) || [];
 
     // Enrich with market data
     const symbols = holdings.map(h => h.symbol);
@@ -1865,7 +1901,7 @@ app.post('/api/portfolios/:id/holdings', authenticate, async (req, res) => {
     }
 
     // Verify portfolio ownership
-    const portfolio = Database.getPortfolioById(portfolioId);
+    const portfolio = await Database.getPortfolioById(portfolioId);
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(404).json({ error: 'Portfolio not found' });
     }
@@ -1885,7 +1921,7 @@ app.post('/api/portfolios/:id/holdings', authenticate, async (req, res) => {
     const holdingAssetType = asset_type || (quote.type ? quote.type : 'Equity'); // fallback to Equity
 
     // Check if holding already exists
-    const existingHolding = Database.getHoldingBySymbol(portfolioId, symbolUpper);
+    const existingHolding = await Database.getHoldingBySymbol(portfolioId, symbolUpper);
 
     let holding;
     if (existingHolding) {
@@ -1896,7 +1932,7 @@ app.post('/api/portfolios/:id/holdings', authenticate, async (req, res) => {
         (Number(quantity) * Number(cost_basis))
       ) / newShares;
 
-      holding = Database.updateHolding(
+      holding = await Database.updateHolding(
         existingHolding.id,
         newShares,
         newAvgCost,
@@ -1906,7 +1942,7 @@ app.post('/api/portfolios/:id/holdings', authenticate, async (req, res) => {
       );
     } else {
       // Create new holding
-      holding = Database.createHolding(
+      holding = await Database.createHolding(
         portfolioId,
         symbolUpper,
         holdingName,
@@ -1949,19 +1985,19 @@ app.post('/api/portfolios/:id/holdings', authenticate, async (req, res) => {
 
 app.delete('/api/holdings/:id', authenticate, async (req, res) => {
   try {
-    const holding = Database.get('SELECT * FROM holdings WHERE id = ?', [req.params.id]);
+    const holding = await Database.get('SELECT * FROM holdings WHERE id = ?', [req.params.id]);
 
     if (!holding) {
       return res.status(404).json({ error: 'Holding not found' });
     }
 
     // Verify ownership through portfolio
-    const portfolio = Database.getPortfolioById(holding.portfolio_id);
+    const portfolio = await Database.getPortfolioById(holding.portfolio_id);
     if (!portfolio || portfolio.user_id !== req.user.id) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    Database.deleteHolding(req.params.id);
+    await Database.deleteHolding(req.params.id);
     res.json({ message: 'Holding deleted successfully' });
   } catch (err) {
     logger.error('Delete holding error:', err);
@@ -1973,7 +2009,7 @@ app.delete('/api/holdings/:id', authenticate, async (req, res) => {
 
 app.get('/api/watchlists', authenticate, async (req, res) => {
   try {
-    const watchlists = Database.getWatchlistsByUserId(req.user.id);
+    const watchlists = await Database.getWatchlistsByUserId(req.user.id) || [];
 
     // Enrich with market data
     const enriched = await Promise.all(watchlists.map(async (wl) => {
@@ -2010,7 +2046,7 @@ app.post('/api/watchlists', authenticate, async (req, res) => {
     const { name, description } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
-    const watchlist = Database.createWatchlist(req.user.id, name, description);
+    const watchlist = await Database.createWatchlist(req.user.id, name, description);
     res.status(201).json(watchlist);
   } catch (err) {
     logger.error('Create watchlist error:', err);
@@ -2035,7 +2071,7 @@ app.post('/api/watchlists/:id/items', authenticate, async (req, res) => {
     // If getting quote failed completely (no mock), maybe warn? 
     // But getQuote catches errors and returns mock.
 
-    const item = Database.createWatchlistItem(req.params.id, symbol, targetPrice, notes);
+    const item = await Database.createWatchlistItem(req.params.id, symbol, targetPrice, notes);
     res.status(201).json({ ...item, quote });
   } catch (err) {
     logger.error('Add watchlist item error:', err);
@@ -2045,7 +2081,7 @@ app.post('/api/watchlists/:id/items', authenticate, async (req, res) => {
 
 app.delete('/api/watchlists/:id/items/:symbol', authenticate, async (req, res) => {
   try {
-    Database.deleteWatchlistItem(req.params.id, req.params.symbol);
+    await Database.deleteWatchlistItem(req.params.id, req.params.symbol);
     res.json({ message: 'Item removed' });
   } catch (err) {
     logger.error('Delete watchlist item error:', err);
@@ -2055,7 +2091,7 @@ app.delete('/api/watchlists/:id/items/:symbol', authenticate, async (req, res) =
 
 app.delete('/api/watchlists/:id', authenticate, async (req, res) => {
   try {
-    Database.deleteWatchlist(req.params.id);
+    await Database.deleteWatchlist(req.params.id);
     res.json({ message: 'Watchlist deleted' });
   } catch (err) {
     logger.error('Delete watchlist error:', err);
@@ -2071,22 +2107,22 @@ app.post('/api/watchlist', authenticate, async (req, res) => {
     if (!symbol) return res.status(400).json({ error: 'Symbol is required' });
 
     // Get user's first watchlist or create default
-    const watchlists = Database.getWatchlistsByUserId(req.user.id);
+    const watchlists = await Database.getWatchlistsByUserId(req.user.id) || [];
     let watchlistId;
 
     if (watchlists.length === 0) {
-      const newWl = Database.createWatchlist(req.user.id, 'My Watchlist', 'Default watchlist');
+      const newWl = await Database.createWatchlist(req.user.id, 'My Watchlist', 'Default watchlist');
       watchlistId = newWl.id;
     } else {
       watchlistId = watchlists[0].id;
     }
 
-    // Try to get quote 
+    // Try to get quote
     try {
       await marketData.getQuote(symbol);
     } catch (e) { /* ignore */ }
 
-    const item = Database.createWatchlistItem(watchlistId, symbol, target_price);
+    const item = await Database.createWatchlistItem(watchlistId, symbol, target_price);
     res.status(201).json(item);
   } catch (err) {
     logger.error('Add watchlist item (simplified) error:', err);
@@ -2096,7 +2132,7 @@ app.post('/api/watchlist', authenticate, async (req, res) => {
 
 app.delete('/api/watchlist/:id', authenticate, async (req, res) => {
   try {
-    Database.deleteWatchlistItemById(req.params.id);
+    await Database.deleteWatchlistItemById(req.params.id);
     res.json({ message: 'Item removed' });
   } catch (err) {
     logger.error('Delete watchlist item (simplified) error:', err);

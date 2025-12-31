@@ -20,9 +20,12 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// Auth middleware - use consistent JWT_SECRET with fallback (must match server.js)
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+// Auth middleware - JWT_SECRET MUST be set (no insecure fallback)
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 const authenticate = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
