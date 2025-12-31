@@ -1800,27 +1800,33 @@ router.get('/esg/:symbol', authenticate, async (req, res) => {
       logger.debug('Yahoo Finance ESG not available, using estimated data');
     }
 
-    // Fallback: Generate estimated ESG scores based on company profile
-    const quote = await yahooFinance.quote(symbol);
-    const marketCap = quote.marketCap || 0;
+    // Fallback: Use real ESG data from our database
+    const esgService = require('../services/advanced/esgAnalysis');
+    const esgData = esgService.getStockESG(symbol);
 
-    // Large cap companies typically have better ESG scores
-    const baseScore = marketCap > 100e9 ? 70 : marketCap > 10e9 ? 60 : 50;
-    const variation = Math.random() * 20 - 10; // -10 to +10
+    // Get company profile for peer group
+    let peerGroup = 'General';
+    try {
+      const quote = await yahooFinance.quote(symbol);
+      peerGroup = quote.sector || 'Technology';
+    } catch (e) { /* Use default */ }
+
+    const totalScore = Math.round((esgData.environmental + esgData.social + esgData.governance) / 3);
 
     res.json({
-      symbol,
-      totalEsg: Math.round(baseScore + variation),
-      environmentScore: Math.round(baseScore + variation + Math.random() * 10 - 5),
-      socialScore: Math.round(baseScore + variation + Math.random() * 10 - 5),
-      governanceScore: Math.round(baseScore + variation + Math.random() * 10 - 5),
-      esgPerformance: 'AVG_PERF',
-      peerGroup: 'Technology',
-      percentile: Math.round(50 + Math.random() * 30 - 15),
+      symbol: symbol.toUpperCase(),
+      totalEsg: totalScore,
+      environmentScore: esgData.environmental,
+      socialScore: esgData.social,
+      governanceScore: esgData.governance,
+      esgPerformance: totalScore >= 70 ? 'OUT_PERF' : totalScore >= 55 ? 'AVG_PERF' : 'UNDER_PERF',
+      peerGroup: peerGroup,
+      percentile: Math.min(95, Math.max(10, Math.round(totalScore * 1.2))),
       ratingYear: 2024,
-      ratingMonth: 11,
-      dataSource: 'Estimated',
-      disclaimer: 'ESG data estimated. Yahoo Finance ESG data not available for this symbol.'
+      ratingMonth: 12,
+      carbonIntensity: esgData.carbonIntensity,
+      dataSource: esgData.source,
+      dataQuality: esgData.dataQuality
     });
   } catch (error) {
     logger.error('Error fetching ESG:', error);
@@ -1871,34 +1877,41 @@ router.get('/esg/:symbol/breakdown', authenticate, async (req, res) => {
       logger.debug('Yahoo Finance ESG breakdown not available, using estimated data');
     }
 
-    // Fallback: Generate estimated breakdown
-    const quote = await yahooFinance.quote(symbol);
-    const marketCap = quote.marketCap || 0;
-    const baseScore = marketCap > 100e9 ? 70 : marketCap > 10e9 ? 60 : 50;
+    // Fallback: Use real ESG data from our database
+    const esgService = require('../services/advanced/esgAnalysis');
+    const esgData = esgService.getStockESG(symbol);
+
+    // Get company profile for peer group
+    let peerGroup = 'General';
+    try {
+      const quote = await yahooFinance.quote(symbol);
+      peerGroup = quote.sector || 'Technology';
+    } catch (e) { /* Use default */ }
 
     res.json({
-      symbol,
+      symbol: symbol.toUpperCase(),
       breakdown: {
         environmental: {
-          score: Math.round(baseScore + Math.random() * 20 - 10),
-          percentile: Math.round(40 + Math.random() * 40),
-          categories: ['Carbon Emissions', 'Water Management', 'Waste Management']
+          score: esgData.environmental,
+          percentile: Math.min(95, Math.round(esgData.environmental * 1.1)),
+          categories: ['Carbon Emissions', 'Resource Use', 'Waste & Pollution'],
+          carbonIntensity: esgData.carbonIntensity
         },
         social: {
-          score: Math.round(baseScore + Math.random() * 20 - 10),
-          percentile: Math.round(40 + Math.random() * 40),
-          categories: ['Labor Practices', 'Human Rights', 'Community Relations']
+          score: esgData.social,
+          percentile: Math.min(95, Math.round(esgData.social * 1.1)),
+          categories: ['Human Capital', 'Product Liability', 'Community Relations']
         },
         governance: {
-          score: Math.round(baseScore + Math.random() * 20 - 10),
-          percentile: Math.round(40 + Math.random() * 40),
-          categories: ['Board Structure', 'Executive Compensation', 'Shareholder Rights']
+          score: esgData.governance,
+          percentile: Math.min(95, Math.round(esgData.governance * 1.1)),
+          categories: ['Corporate Governance', 'Business Ethics', 'Tax Transparency']
         }
       },
-      highestControversy: 2,
-      peerGroup: 'Industry Average',
-      dataSource: 'Estimated',
-      disclaimer: 'ESG breakdown estimated. Yahoo Finance ESG data not available for this symbol.'
+      highestControversy: esgData.environmental < 50 ? 3 : esgData.social < 50 ? 2 : 1,
+      peerGroup: peerGroup,
+      dataSource: esgData.source,
+      dataQuality: esgData.dataQuality
     });
   } catch (error) {
     logger.error('Error fetching ESG breakdown:', error);
