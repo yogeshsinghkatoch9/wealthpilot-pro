@@ -1,6 +1,8 @@
 class AlertsManager {
   constructor() {
     this.alerts = [];
+    this.holdings = [];
+    this.portfolioId = null;
     this.ws = null;
     this.currentTab = 'active';
     this.searchTerm = '';
@@ -10,9 +12,46 @@ class AlertsManager {
 
   init() {
     this.setupEventListeners();
-    this.loadAlerts();
+    this.loadPortfolioHoldings().then(() => {
+      this.loadAlerts();
+    });
     this.connectWebSocket();
     this.startPricePolling();
+  }
+
+  async loadPortfolioHoldings() {
+    try {
+      // First get user's portfolios
+      const portfoliosRes = await this.authFetch('/api/portfolios');
+      if (!portfoliosRes.ok) throw new Error('Failed to load portfolios');
+
+      const portfoliosData = await portfoliosRes.json();
+      const portfolios = portfoliosData.portfolios || portfoliosData.data || portfoliosData || [];
+
+      if (portfolios.length > 0) {
+        this.portfolioId = portfolios[0].id;
+
+        // Get holdings for the first portfolio
+        const holdingsRes = await this.authFetch(`/api/holdings?portfolioId=${this.portfolioId}`);
+        if (holdingsRes.ok) {
+          this.holdings = await holdingsRes.json();
+          console.log('Loaded portfolio holdings:', this.holdings.length);
+        }
+      }
+    } catch (error) {
+      console.log('Could not load portfolio, using demo holdings');
+      // Demo holdings if API fails
+      this.holdings = [
+        { symbol: 'AAPL', shares: 50, avgCostBasis: 150, currentPrice: 178.25 },
+        { symbol: 'NVDA', shares: 25, avgCostBasis: 120, currentPrice: 138.50 },
+        { symbol: 'MSFT', shares: 30, avgCostBasis: 380, currentPrice: 425.30 },
+        { symbol: 'GOOGL', shares: 20, avgCostBasis: 140, currentPrice: 176.80 },
+        { symbol: 'TSLA', shares: 15, avgCostBasis: 220, currentPrice: 248.75 },
+        { symbol: 'AMZN', shares: 25, avgCostBasis: 145, currentPrice: 187.50 },
+        { symbol: 'META', shares: 20, avgCostBasis: 350, currentPrice: 585.20 },
+        { symbol: 'JPM', shares: 40, avgCostBasis: 155, currentPrice: 198.40 }
+      ];
+    }
   }
 
   /**
@@ -157,63 +196,119 @@ class AlertsManager {
   }
 
   loadDemoAlerts() {
-    // Demo alerts for demonstration purposes
-    this.alerts = [
-      {
-        id: 'demo-1',
-        symbol: 'NVDA',
+    // Generate alerts based on portfolio holdings
+    this.alerts = [];
+
+    // Create alerts for each holding in portfolio
+    this.holdings.forEach((holding, index) => {
+      const currentPrice = holding.currentPrice || holding.avgCostBasis * 1.1;
+      const costBasis = holding.avgCostBasis || currentPrice * 0.9;
+
+      // Create a "take profit" alert (10% above current)
+      if (index < 4) {
+        this.alerts.push({
+          id: `demo-active-${index}`,
+          symbol: holding.symbol,
+          condition: 'above',
+          target_price: Math.round(currentPrice * 1.10 * 100) / 100,
+          current_price: currentPrice,
+          triggered: false,
+          created_at: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(),
+          message: `Take profit at 10% gain`
+        });
+      }
+
+      // Create a "stop loss" alert (5% below cost basis)
+      if (index >= 2 && index < 5) {
+        this.alerts.push({
+          id: `demo-stoploss-${index}`,
+          symbol: holding.symbol,
+          condition: 'below',
+          target_price: Math.round(costBasis * 0.95 * 100) / 100,
+          current_price: currentPrice,
+          triggered: false,
+          created_at: new Date(Date.now() - (index + 2) * 24 * 60 * 60 * 1000).toISOString(),
+          message: `Stop loss - protect against 5% decline`
+        });
+      }
+    });
+
+    // Add some triggered alerts
+    if (this.holdings.length >= 2) {
+      const h1 = this.holdings[0];
+      const h2 = this.holdings[1];
+
+      this.alerts.push({
+        id: 'demo-triggered-1',
+        symbol: h1.symbol,
         condition: 'above',
-        target_price: 140.00,
-        current_price: 138.50,
-        triggered: false,
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        message: 'Buy signal - breakout above resistance'
-      },
-      {
-        id: 'demo-2',
-        symbol: 'AAPL',
-        condition: 'below',
-        target_price: 175.00,
-        current_price: 178.25,
-        triggered: false,
-        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        message: 'Support level alert'
-      },
-      {
-        id: 'demo-3',
-        symbol: 'TSLA',
-        condition: 'above',
-        target_price: 250.00,
-        current_price: 248.75,
-        triggered: false,
-        created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        message: 'Consider taking profits'
-      },
-      {
-        id: 'demo-4',
-        symbol: 'MSFT',
-        condition: 'below',
-        target_price: 400.00,
-        current_price: 425.30,
+        target_price: Math.round((h1.currentPrice || 100) * 0.98 * 100) / 100,
+        current_price: h1.currentPrice || 100,
         triggered: true,
-        triggered_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        message: 'Buy the dip opportunity'
-      },
-      {
-        id: 'demo-5',
-        symbol: 'GOOGL',
+        triggered_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        message: `Price target hit! Consider taking profits`
+      });
+
+      this.alerts.push({
+        id: 'demo-triggered-2',
+        symbol: h2.symbol,
         condition: 'above',
-        target_price: 175.00,
-        current_price: 176.80,
+        target_price: Math.round((h2.currentPrice || 100) * 0.95 * 100) / 100,
+        current_price: h2.currentPrice || 100,
         triggered: true,
         triggered_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        message: 'All-time high alert'
-      }
-    ];
+        created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        message: `Breakout confirmed!`
+      });
+    }
+
     this.renderAlerts();
     this.updateStats();
+    this.updatePortfolioHoldingsDisplay();
+  }
+
+  updatePortfolioHoldingsDisplay() {
+    // Add portfolio holdings section to the page if it doesn't exist
+    const container = document.getElementById('active-alerts-container');
+    if (!container) return;
+
+    // Check if we already have holdings section
+    let holdingsSection = document.getElementById('portfolio-holdings-section');
+    if (!holdingsSection && this.holdings.length > 0) {
+      holdingsSection = document.createElement('div');
+      holdingsSection.id = 'portfolio-holdings-section';
+      holdingsSection.className = 'mb-6 glass-card-elevated p-4 rounded-lg';
+      holdingsSection.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-white font-semibold">Quick Alert from Portfolio</h3>
+          <span class="text-xs text-slate-400">${this.holdings.length} holdings</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          ${this.holdings.slice(0, 8).map(h => `
+            <button onclick="window.alertsManager.quickCreateAlert('${h.symbol}', ${h.currentPrice || 0})"
+                    class="px-3 py-1.5 bg-slate-700 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-500/50 rounded-lg text-sm transition-all group">
+              <span class="text-amber-500 font-mono font-bold">${h.symbol}</span>
+              <span class="text-slate-400 group-hover:text-white ml-1">$${(h.currentPrice || 0).toFixed(2)}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      container.parentNode.insertBefore(holdingsSection, container);
+    }
+  }
+
+  quickCreateAlert(symbol, currentPrice) {
+    // Pre-fill the create alert modal with this stock
+    document.getElementById('alert-symbol').value = symbol;
+    document.getElementById('alert-search').value = symbol;
+    if (currentPrice > 0) {
+      document.getElementById('current-price-display').classList.remove('hidden');
+      document.getElementById('current-price-value').textContent = `$${currentPrice.toFixed(2)}`;
+      // Suggest a target price 5% above current
+      document.getElementById('alert-price').value = (currentPrice * 1.05).toFixed(2);
+    }
+    this.openModal();
   }
 
   renderAlerts() {
@@ -677,15 +772,82 @@ class AlertsManager {
   }
 
   startPricePolling() {
+    // Initial price fetch for all portfolio holdings
+    this.fetchAllPrices();
+
     // Poll for current prices every 30 seconds
     setInterval(() => {
-      const activeAlerts = this.alerts.filter(a => !a.triggered);
-      const symbols = [...new Set(activeAlerts.map(a => a.symbol))];
-      
-      symbols.forEach(symbol => {
-        this.fetchCurrentPrice(symbol);
-      });
+      this.fetchAllPrices();
     }, 30000);
+  }
+
+  async fetchAllPrices() {
+    const FINNHUB_TOKEN = 'd4tm751r01qnn6llpesgd4tm751r01qnn6llpet0';
+
+    // Get unique symbols from alerts and holdings
+    const alertSymbols = this.alerts.map(a => a.symbol);
+    const holdingSymbols = this.holdings.map(h => h.symbol);
+    const allSymbols = [...new Set([...alertSymbols, ...holdingSymbols])];
+
+    for (const symbol of allSymbols) {
+      try {
+        const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.c && data.c > 0) {
+            // Update price in alerts
+            this.alerts.forEach(alert => {
+              if (alert.symbol === symbol) {
+                const oldPrice = alert.current_price;
+                alert.current_price = data.c;
+
+                // Check if alert should trigger
+                this.checkAlertTrigger(alert, oldPrice, data.c);
+              }
+            });
+
+            // Update price in holdings
+            this.holdings.forEach(holding => {
+              if (holding.symbol === symbol) {
+                holding.currentPrice = data.c;
+              }
+            });
+          }
+        }
+        // Rate limit - wait 200ms between calls
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.error(`Failed to fetch price for ${symbol}:`, error);
+      }
+    }
+
+    // Re-render alerts with updated prices
+    this.renderAlerts();
+  }
+
+  checkAlertTrigger(alert, oldPrice, newPrice) {
+    if (alert.triggered) return;
+
+    let shouldTrigger = false;
+    const targetPrice = alert.target_price;
+
+    if (alert.condition === 'above' && newPrice >= targetPrice && oldPrice < targetPrice) {
+      shouldTrigger = true;
+    } else if (alert.condition === 'below' && newPrice <= targetPrice && oldPrice > targetPrice) {
+      shouldTrigger = true;
+    } else if (alert.condition === 'equals' && Math.abs(newPrice - targetPrice) < 0.02) {
+      shouldTrigger = true;
+    }
+
+    if (shouldTrigger) {
+      alert.triggered = true;
+      alert.triggered_at = new Date().toISOString();
+      this.showToast(
+        `🔔 ${alert.symbol} Alert Triggered!`,
+        `${alert.symbol} is now $${newPrice.toFixed(2)} (Target: $${targetPrice.toFixed(2)})`
+      );
+      this.playNotificationSound();
+    }
   }
 
   showToast(title, message) {
