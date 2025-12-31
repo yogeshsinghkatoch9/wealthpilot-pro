@@ -649,4 +649,129 @@ async function fetchHistoricalData(symbol, period = '1y', startDate, endDate) {
 
 // REMOVED: generateMockHistoricalData() - All data must come from real APIs
 
+// ==================== PAPER TRADING ====================
+
+const paperTradingService = require('../services/trading/paperTradingService');
+
+/**
+ * GET /api/trading/paper/account
+ * Get paper trading account details
+ */
+router.get('/paper/account', authenticate, async (req, res) => {
+  try {
+    const account = await paperTradingService.getAccount(req.user.id);
+    res.json({ success: true, account });
+  } catch (error) {
+    logger.error('Error fetching paper account:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/trading/paper/account/reset
+ * Reset paper trading account to initial state
+ */
+router.post('/paper/account/reset', authenticate, async (req, res) => {
+  try {
+    const account = await paperTradingService.resetAccount(req.user.id);
+    res.json({ success: true, account, message: 'Account reset successfully' });
+  } catch (error) {
+    logger.error('Error resetting paper account:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/trading/paper/positions
+ * Get all paper trading positions
+ */
+router.get('/paper/positions', authenticate, async (req, res) => {
+  try {
+    const positions = await paperTradingService.getPositions(req.user.id);
+    res.json({ success: true, positions });
+  } catch (error) {
+    logger.error('Error fetching paper positions:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/trading/paper/orders
+ * Place a paper trade order
+ */
+router.post('/paper/orders', authenticate, async (req, res) => {
+  try {
+    const { symbol, side, quantity, orderType, limitPrice, stopPrice, timeInForce } = req.body;
+
+    if (!symbol || !side || !quantity) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: symbol, side, quantity'
+      });
+    }
+
+    const order = await paperTradingService.placeOrder(req.user.id, {
+      symbol,
+      side,
+      quantity: parseFloat(quantity),
+      orderType: orderType || 'market',
+      limitPrice: limitPrice ? parseFloat(limitPrice) : null,
+      stopPrice: stopPrice ? parseFloat(stopPrice) : null,
+      timeInForce: timeInForce || 'day'
+    });
+
+    res.json({ success: true, order });
+  } catch (error) {
+    logger.error('Error placing paper order:', error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/trading/paper/orders
+ * Get paper trading order history
+ */
+router.get('/paper/orders', authenticate, async (req, res) => {
+  try {
+    const { status, limit, offset } = req.query;
+    const orders = await paperTradingService.getOrders(req.user.id, {
+      status,
+      limit: parseInt(limit) || 50,
+      offset: parseInt(offset) || 0
+    });
+    res.json({ success: true, orders });
+  } catch (error) {
+    logger.error('Error fetching paper orders:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/trading/paper/orders/:orderId
+ * Cancel a pending paper order
+ */
+router.delete('/paper/orders/:orderId', authenticate, async (req, res) => {
+  try {
+    const order = await paperTradingService.cancelOrder(req.user.id, req.params.orderId);
+    res.json({ success: true, order, message: 'Order cancelled' });
+  } catch (error) {
+    logger.error('Error cancelling paper order:', error);
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/trading/paper/statistics
+ * Get paper trading statistics and performance
+ */
+router.get('/paper/statistics', authenticate, async (req, res) => {
+  try {
+    const statistics = await paperTradingService.getStatistics(req.user.id);
+    res.json({ success: true, statistics });
+  } catch (error) {
+    logger.error('Error fetching paper statistics:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

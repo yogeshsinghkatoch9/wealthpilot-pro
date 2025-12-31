@@ -47,6 +47,100 @@ const twoFactorRoutes = require('./routes/twoFactor');
 const extendedRoutes = require('./routes/extended');
 const stockSearchRoutes = require('./routes/stockSearch');
 
+// Broker integration routes with error handling
+let brokerRoutes;
+try {
+  brokerRoutes = require('./routes/brokers');
+  console.log('[INDEX] Broker routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load broker routes:', error.message);
+  const expressRouter = require('express').Router;
+  brokerRoutes = expressRouter();
+  brokerRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Broker routes failed to load' });
+  });
+}
+
+// ESG analysis routes with error handling
+let esgRoutes;
+try {
+  esgRoutes = require('./routes/esg');
+  console.log('[INDEX] ESG routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load ESG routes:', error.message);
+  const expressRouter = require('express').Router;
+  esgRoutes = expressRouter();
+  esgRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'ESG routes failed to load' });
+  });
+}
+
+// Security management routes with error handling
+let securityRoutes;
+try {
+  securityRoutes = require('./routes/security');
+  console.log('[INDEX] Security routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load security routes:', error.message);
+  const expressRouter = require('express').Router;
+  securityRoutes = expressRouter();
+  securityRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Security routes failed to load' });
+  });
+}
+
+// Database management routes with error handling
+let databaseRoutes;
+try {
+  databaseRoutes = require('./routes/database');
+  console.log('[INDEX] Database routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load database routes:', error.message);
+  const expressRouter = require('express').Router;
+  databaseRoutes = expressRouter();
+  databaseRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Database routes failed to load' });
+  });
+}
+
+// OAuth routes for broker authentication
+let oauthRoutes;
+try {
+  oauthRoutes = require('./routes/oauth');
+  console.log('[INDEX] OAuth routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load OAuth routes:', error.message);
+  const expressRouter = require('express').Router;
+  oauthRoutes = expressRouter();
+  oauthRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'OAuth routes failed to load' });
+  });
+}
+
+// Secrets management routes (admin only)
+let secretsRoutes;
+try {
+  secretsRoutes = require('./routes/secrets');
+  console.log('[INDEX] Secrets routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load secrets routes:', error.message);
+  const expressRouter = require('express').Router;
+  secretsRoutes = expressRouter();
+  secretsRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Secrets routes failed to load' });
+  });
+}
+
+// DDoS protection middleware
+let ddosProtection;
+try {
+  ddosProtection = require('./middleware/ddosProtection');
+  console.log('[INDEX] DDoS protection loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load DDoS protection:', error.message);
+  ddosProtection = null;
+}
+
 // Features routes (paper trading, goals, journal, etc.) with error handling
 let featuresRoutes;
 try {
@@ -289,6 +383,14 @@ const PORT = process.env.PORT || 4000;
 // Trust proxy (required for rate limiting behind reverse proxy)
 app.set('trust proxy', 1);
 
+// DDoS protection - apply first
+if (ddosProtection) {
+  app.use(ddosProtection.ddosProtection);
+  app.use(ddosProtection.requestSizeLimiter);
+  app.use(ddosProtection.slowlorisProtection);
+  logger.info('DDoS protection middleware active');
+}
+
 // Middleware - Allow multiple origins for CORS
 const allowedOrigins = [
   'http://localhost:3000',
@@ -448,6 +550,12 @@ app.use('/api/help', helpRoutes); // Help routes
 app.use('/api/auth/2fa', twoFactorRoutes); // Two-factor authentication
 app.use('/api/extended', extendedRoutes); // Extended API routes
 app.use('/api/stock-search', stockSearchRoutes); // Stock search
+app.use('/api/brokers', brokerRoutes); // Broker integrations
+app.use('/api/esg', esgRoutes); // ESG analysis
+app.use('/api/security', securityRoutes); // Security management
+app.use('/api/database', databaseRoutes); // Database management
+app.use('/api/oauth', oauthRoutes); // OAuth for broker authentication
+app.use('/api/secrets', secretsRoutes); // Secrets management (admin)
 
 app.use('/api', featuresRoutes); // Paper trading, goals, journal, crypto, social, etc.
 
