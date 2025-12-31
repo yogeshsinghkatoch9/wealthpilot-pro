@@ -112,6 +112,10 @@ const requestLogger = require('./middleware/requestLogger');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// Initialize Sentry error tracking (must be before other middleware)
+const { initSentry } = require('./services/sentry');
+const sentry = initSentry(app);
 // JWT Secret - MUST be set in production
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
@@ -4781,6 +4785,11 @@ async function main() {
     const alertService = require('./services/alertService');
     alertService.start();
 
+    // Initialize email notification scheduler
+    const emailNotifications = require('./services/emailNotifications');
+    emailNotifications.initialize();
+    logger.debug('✓ Email notification scheduler initialized');
+
     // Connect services to market data
     marketData.setWebSocketService(wsService);
 
@@ -4841,6 +4850,11 @@ async function main() {
 // ==================== ERROR HANDLERS (Must be last) ====================
 // 404 handler for undefined routes
 app.use(notFoundHandler);
+
+// Sentry error handler (before general error handler)
+if (sentry.isInitialized) {
+  app.use(sentry.errorHandler);
+}
 
 // Global error handler
 app.use(errorHandler);

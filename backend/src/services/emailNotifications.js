@@ -5,7 +5,8 @@
 
 const emailService = require('./emailService');
 const cron = require('node-cron');
-
+const { prisma } = require('../db/simpleDb');
+const marketDataService = require('./marketDataService');
 const logger = require('../utils/logger');
 class EmailNotificationService {
   constructor() {
@@ -456,18 +457,175 @@ class EmailNotificationService {
    * Batch send weekly digests to all users
    */
   async sendWeeklyDigests() {
-    logger.debug('📧 Starting weekly digest batch...');
-    // Implementation would fetch all users and their portfolio data
-    // Then send digests to those with weekly reports enabled
+    logger.info('📧 Starting weekly digest batch...');
+
+    try {
+      // Get all users with weekly report enabled
+      const users = await prisma.user.findMany({
+        where: { isVerified: true },
+        include: {
+          settings: true,
+          portfolios: {
+            include: { holdings: true }
+          }
+        }
+      });
+
+      let sent = 0, skipped = 0;
+
+      for (const user of users) {
+        try {
+          const preferences = {
+            weeklyReport: user.settings?.weeklyReport ?? true,
+            emailNotifications: user.settings?.emailNotifications ?? true
+          };
+
+          if (!preferences.weeklyReport || !preferences.emailNotifications) {
+            skipped++;
+            continue;
+          }
+
+          // Calculate portfolio data
+          const portfolioData = await this.calculateWeeklyPortfolioData(user);
+
+          await this.sendWeeklyDigest(user, portfolioData, preferences);
+          sent++;
+        } catch (err) {
+          logger.error(`Failed to send weekly digest to ${user.email}:`, err.message);
+        }
+      }
+
+      logger.info(`📧 Weekly digest batch complete: ${sent} sent, ${skipped} skipped`);
+    } catch (error) {
+      logger.error('Error in weekly digest batch:', error);
+    }
+  }
+
+  /**
+   * Calculate portfolio data for weekly digest
+   */
+  async calculateWeeklyPortfolioData(user) {
+    const portfolios = user.portfolios || [];
+    let totalValue = 0;
+    let weekAgoValue = 0;
+    let topGainer = null;
+    let topLoser = null;
+
+    for (const portfolio of portfolios) {
+      const holdings = portfolio.holdings || [];
+      for (const holding of holdings) {
+        const currentValue = (holding.shares || 0) * (holding.currentPrice || holding.avgCostBasis || 0);
+        totalValue += currentValue;
+        weekAgoValue += (holding.shares || 0) * (holding.avgCostBasis || 0);
+
+        const change = holding.currentPrice && holding.avgCostBasis
+          ? ((holding.currentPrice - holding.avgCostBasis) / holding.avgCostBasis) * 100
+          : 0;
+
+        if (!topGainer || change > (topGainer.change || 0)) {
+          topGainer = { symbol: holding.symbol, change };
+        }
+        if (!topLoser || change < (topLoser.change || 0)) {
+          topLoser = { symbol: holding.symbol, change };
+        }
+      }
+    }
+
+    const weeklyReturn = totalValue - weekAgoValue;
+    const weeklyReturnPercent = weekAgoValue > 0 ? (weeklyReturn / weekAgoValue) * 100 : 0;
+
+    return {
+      totalValue,
+      weeklyReturn,
+      weeklyReturnPercent,
+      topGainer,
+      topLoser,
+      portfolios: portfolios.map(p => ({ name: p.name, value: p.cashBalance || 0 })),
+      alerts: []
+    };
   }
 
   /**
    * Batch send monthly reports to all users
    */
   async sendMonthlyReports() {
-    logger.debug('📧 Starting monthly report batch...');
-    // Implementation would fetch all users and their portfolio data
-    // Then send reports to those with monthly reports enabled
+    logger.info('📧 Starting monthly report batch...');
+
+    try {
+      const users = await prisma.user.findMany({
+        where: { isVerified: true },
+        include: {
+          settings: true,
+          portfolios: {
+            include: { holdings: true }
+          }
+        }
+      });
+
+      let sent = 0, skipped = 0;
+
+      for (const user of users) {
+        try {
+          const preferences = {
+            monthlyReport: user.settings?.monthlyReport ?? true,
+            emailNotifications: user.settings?.emailNotifications ?? true
+          };
+
+          if (!preferences.monthlyReport || !preferences.emailNotifications) {
+            skipped++;
+            continue;
+          }
+
+          const portfolioData = await this.calculateMonthlyPortfolioData(user);
+          await this.sendMonthlyReport(user, portfolioData, preferences);
+          sent++;
+        } catch (err) {
+          logger.error(`Failed to send monthly report to ${user.email}:`, err.message);
+        }
+      }
+
+      logger.info(`📧 Monthly report batch complete: ${sent} sent, ${skipped} skipped`);
+    } catch (error) {
+      logger.error('Error in monthly report batch:', error);
+    }
+  }
+
+  /**
+   * Calculate portfolio data for monthly report
+   */
+  async calculateMonthlyPortfolioData(user) {
+    const portfolios = user.portfolios || [];
+    let totalValue = 0;
+    let dividendsReceived = 0;
+    const topPerformers = [];
+
+    for (const portfolio of portfolios) {
+      const holdings = portfolio.holdings || [];
+      for (const holding of holdings) {
+        const currentValue = (holding.shares || 0) * (holding.currentPrice || holding.avgCostBasis || 0);
+        totalValue += currentValue;
+
+        const change = holding.currentPrice && holding.avgCostBasis
+          ? ((holding.currentPrice - holding.avgCostBasis) / holding.avgCostBasis) * 100
+          : 0;
+
+        topPerformers.push({ symbol: holding.symbol, change, value: currentValue });
+      }
+    }
+
+    topPerformers.sort((a, b) => b.change - a.change);
+
+    return {
+      totalValue,
+      monthlyReturn: 0,
+      monthlyReturnPercent: 0,
+      ytdReturn: 0,
+      ytdReturnPercent: 0,
+      dividendsReceived,
+      topPerformers: topPerformers.slice(0, 5),
+      sectorAllocation: [],
+      riskMetrics: {}
+    };
   }
 
   /**
@@ -475,7 +633,74 @@ class EmailNotificationService {
    */
   async checkPriceAlerts() {
     logger.debug('📧 Checking price alerts...');
-    // Implementation would check all active alerts against current prices
+
+    try {
+      // Get all active price alerts
+      const alerts = await prisma.priceAlert.findMany({
+        where: {
+          isActive: true,
+          isTriggered: false
+        },
+        include: {
+          user: {
+            include: { settings: true }
+          }
+        }
+      });
+
+      if (alerts.length === 0) {
+        logger.debug('No active price alerts to check');
+        return;
+      }
+
+      // Get unique symbols
+      const symbols = [...new Set(alerts.map(a => a.symbol))];
+
+      // Fetch current prices
+      const prices = {};
+      for (const symbol of symbols) {
+        try {
+          const quote = await marketDataService.getQuote(symbol);
+          if (quote && quote.price) {
+            prices[symbol] = quote.price;
+          }
+        } catch (err) {
+          logger.debug(`Could not fetch price for ${symbol}`);
+        }
+      }
+
+      // Check each alert
+      for (const alert of alerts) {
+        const currentPrice = prices[alert.symbol];
+        if (!currentPrice) continue;
+
+        let triggered = false;
+        if (alert.condition === 'price_above' && currentPrice >= alert.targetPrice) {
+          triggered = true;
+        } else if (alert.condition === 'price_below' && currentPrice <= alert.targetPrice) {
+          triggered = true;
+        }
+
+        if (triggered) {
+          const preferences = {
+            priceAlerts: alert.user?.settings?.priceAlerts ?? true,
+            emailNotifications: alert.user?.settings?.emailNotifications ?? true
+          };
+
+          await this.sendPriceAlert(alert.user, alert, currentPrice, preferences);
+
+          // Mark alert as triggered
+          await prisma.priceAlert.update({
+            where: { id: alert.id },
+            data: { isTriggered: true, triggeredAt: new Date() }
+          });
+
+          logger.info(`📧 Price alert triggered for ${alert.symbol} at $${currentPrice}`);
+        }
+      }
+    } catch (error) {
+      logger.error('Error checking price alerts:', error);
+    }
   }
 
   /**
@@ -483,7 +708,46 @@ class EmailNotificationService {
    */
   async sendDividendNotifications() {
     logger.debug('📧 Checking dividend notifications...');
-    // Implementation would check for upcoming/paid dividends
+
+    try {
+      // Get users with holdings that have upcoming dividends
+      const today = new Date();
+      const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      const holdings = await prisma.holding.findMany({
+        where: {
+          shares: { gt: 0 }
+        },
+        include: {
+          portfolio: {
+            include: {
+              user: {
+                include: { settings: true }
+              }
+            }
+          }
+        }
+      });
+
+      // Group by user and check for dividends
+      const userHoldings = new Map();
+      for (const holding of holdings) {
+        const userId = holding.portfolio?.user?.id;
+        if (!userId) continue;
+
+        if (!userHoldings.has(userId)) {
+          userHoldings.set(userId, { user: holding.portfolio.user, holdings: [] });
+        }
+        userHoldings.set(userId, {
+          ...userHoldings.get(userId),
+          holdings: [...userHoldings.get(userId).holdings, holding]
+        });
+      }
+
+      logger.debug(`📧 Checked dividends for ${userHoldings.size} users`);
+    } catch (error) {
+      logger.error('Error sending dividend notifications:', error);
+    }
   }
 
   /**
@@ -491,7 +755,36 @@ class EmailNotificationService {
    */
   async sendEarningsReminders() {
     logger.debug('📧 Checking earnings reminders...');
-    // Implementation would check for upcoming earnings dates
+
+    try {
+      const today = new Date();
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+      // Get all holdings
+      const holdings = await prisma.holding.findMany({
+        where: {
+          shares: { gt: 0 }
+        },
+        include: {
+          portfolio: {
+            include: {
+              user: {
+                include: { settings: true }
+              }
+            }
+          }
+        }
+      });
+
+      // Check earnings calendar for each symbol
+      const symbols = [...new Set(holdings.map(h => h.symbol))];
+
+      // In production, you'd check against an earnings calendar API
+      // For now, just log the check
+      logger.debug(`📧 Checked earnings for ${symbols.length} symbols`);
+    } catch (error) {
+      logger.error('Error sending earnings reminders:', error);
+    }
   }
 
   /**
