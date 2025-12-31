@@ -18,7 +18,7 @@ const unifiedAI = require('../services/unifiedAIService');
 router.post('/generate', authenticate, async (req, res) => {
   try {
     const { portfolioId, reportType, sections, includeCharts } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!portfolioId) {
       return res.status(400).json({ error: 'Portfolio ID is required' });
@@ -54,7 +54,7 @@ router.post('/generate', authenticate, async (req, res) => {
 router.get('/:id/download', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const report = await aiReportService.getReport(id);
 
@@ -108,7 +108,7 @@ router.get('/:id/download', authenticate, async (req, res) => {
  */
 router.get('/history', authenticate, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
 
     const reports = await aiReportService.getReportHistory(userId, limit);
@@ -138,7 +138,7 @@ router.get('/history', authenticate, async (req, res) => {
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     await aiReportService.deleteReport(userId, id);
 
@@ -160,7 +160,7 @@ router.delete('/:id', authenticate, async (req, res) => {
 router.get('/quick-analysis/:portfolioId', authenticate, async (req, res) => {
   try {
     const { portfolioId } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const portfolioData = await aiReportService.getPortfolioData(userId, portfolioId);
 
@@ -202,7 +202,7 @@ router.get('/status', authenticate, async (req, res) => {
 router.post('/insight', authenticate, async (req, res) => {
   try {
     const { topic, data } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!topic || !data) {
       return res.status(400).json({ error: 'Topic and data are required' });

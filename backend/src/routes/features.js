@@ -55,6 +55,14 @@ router.put('/alerts/:id', (req, res) => {
 
 router.delete('/alerts/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const alert = Database.getAlertById(req.params.id);
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+    if (alert.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this alert' });
+    }
     Database.deleteAlert(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -109,6 +117,14 @@ router.put('/goals/:id', (req, res) => {
 
 router.delete('/goals/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const goal = Database.getGoalById(req.params.id);
+    if (!goal) {
+      return res.status(404).json({ error: 'Goal not found' });
+    }
+    if (goal.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this goal' });
+    }
     Database.deleteGoal(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -156,6 +172,14 @@ router.put('/journal/:id', (req, res) => {
 
 router.delete('/journal/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const entry = Database.getJournalEntryById(req.params.id);
+    if (!entry) {
+      return res.status(404).json({ error: 'Journal entry not found' });
+    }
+    if (entry.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this entry' });
+    }
     Database.deleteJournalEntry(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -327,6 +351,14 @@ router.put('/bonds/:id', (req, res) => {
 
 router.delete('/bonds/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const bond = Database.getBondById(req.params.id);
+    if (!bond) {
+      return res.status(404).json({ error: 'Bond not found' });
+    }
+    if (bond.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this bond' });
+    }
     Database.deleteBond(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -501,6 +533,14 @@ router.put('/crypto/:id', (req, res) => {
 
 router.delete('/crypto/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const holding = Database.getCryptoHoldingById(req.params.id);
+    if (!holding) {
+      return res.status(404).json({ error: 'Crypto holding not found' });
+    }
+    if (holding.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this holding' });
+    }
     Database.deleteCryptoHolding(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -531,6 +571,14 @@ router.post('/broker/connect', (req, res) => {
 
 router.delete('/broker/connections/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const connection = Database.getBrokerConnectionById(req.params.id);
+    if (!connection) {
+      return res.status(404).json({ error: 'Connection not found' });
+    }
+    if (connection.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this connection' });
+    }
     Database.deleteBrokerConnection(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -580,6 +628,14 @@ router.post('/api-keys', (req, res) => {
 
 router.delete('/api-keys/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const apiKey = Database.getApiKeyById(req.params.id);
+    if (!apiKey) {
+      return res.status(404).json({ error: 'API key not found' });
+    }
+    if (apiKey.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this API key' });
+    }
     Database.deleteUserApiKey(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -690,6 +746,14 @@ router.put('/copy-trading/:id', (req, res) => {
 
 router.delete('/copy-trading/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const trader = Database.getCopyTraderById(req.params.id);
+    if (!trader) {
+      return res.status(404).json({ error: 'Copy trader not found' });
+    }
+    if (trader.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this trader' });
+    }
     Database.deleteCopyTrader(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -731,6 +795,14 @@ router.post('/social/posts', (req, res) => {
 
 router.delete('/social/posts/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const post = Database.getSocialPostById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    if (post.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this post' });
+    }
     Database.deleteSocialPost(req.params.id);
     res.json({ success: true });
   } catch (err) {
@@ -916,6 +988,14 @@ router.put('/calendar/events/:id', (req, res) => {
 
 router.delete('/calendar/events/:id', (req, res) => {
   try {
+    // Verify ownership before deleting
+    const event = Database.getCalendarEventById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    if (event.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this event' });
+    }
     Database.deleteCalendarEvent(req.params.id);
     res.json({ success: true });
   } catch (err) {

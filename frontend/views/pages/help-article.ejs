@@ -1,0 +1,155 @@
+<%
+// Safe defaults
+const art = article || {};
+const cat = category || {};
+const related = relatedArticles || [];
+%>
+<%- include('../partials/header', { pageTitle: art.title || 'Help Article' }) %>
+
+<main class="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
+  <!-- Breadcrumb -->
+  <nav class="flex items-center gap-2 text-sm">
+    <a href="/help" class="text-slate-400 hover:text-white transition-colors">Help Center</a>
+    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <% if (cat.name) { %>
+    <a href="/help?category=<%= cat.slug || cat.id %>" class="text-slate-400 hover:text-white transition-colors"><%= cat.name %></a>
+    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+    </svg>
+    <% } %>
+    <span class="text-white"><%= art.title || 'Article' %></span>
+  </nav>
+
+  <!-- Article Header -->
+  <div class="glass-card-elevated p-8">
+    <div class="flex items-start gap-4 mb-6">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold text-white mb-2"><%= art.title || 'Help Article' %></h1>
+        <div class="flex flex-wrap items-center gap-4 text-sm text-slate-400">
+          <% if (cat.name) { %>
+          <span class="px-2 py-1 rounded bg-slate-700/50"><%= cat.name %></span>
+          <% } %>
+          <% if (art.readTime) { %>
+          <span><%= art.readTime %> min read</span>
+          <% } %>
+          <% if (art.updatedAt) { %>
+          <span>Updated <%= new Date(art.updatedAt).toLocaleDateString() %></span>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Article Content -->
+    <div class="prose prose-invert prose-slate max-w-none">
+      <% if (art.content) { %>
+      <%- art.content %>
+      <% } else { %>
+      <p class="text-slate-400">Article content is not available.</p>
+      <% } %>
+    </div>
+
+    <!-- Article Actions -->
+    <div class="flex items-center justify-between mt-8 pt-6 border-t border-slate-700/50">
+      <div class="flex items-center gap-4">
+        <span class="text-slate-400 text-sm">Was this helpful?</span>
+        <button onclick="rateArticle('yes')" class="btn-glass text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
+          </svg>
+          Yes
+        </button>
+        <button onclick="rateArticle('no')" class="btn-glass text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/>
+          </svg>
+          No
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="shareArticle()" class="btn-glass text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+          </svg>
+          Share
+        </button>
+        <button onclick="printArticle()" class="btn-glass text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          Print
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Related Articles -->
+  <% if (related.length > 0) { %>
+  <div class="glass-card-elevated">
+    <div class="p-4 border-b border-slate-700/50">
+      <h3 class="text-white font-semibold">Related Articles</h3>
+    </div>
+    <div class="divide-y divide-slate-700/50">
+      <% related.forEach(rel => { %>
+      <a href="/help/article/<%= rel.slug %>" class="flex items-center gap-4 p-4 hover:bg-slate-800/50 transition-colors">
+        <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-white font-medium truncate"><%= rel.title %></h4>
+          <% if (rel.summary) { %>
+          <p class="text-slate-400 text-sm truncate"><%= rel.summary %></p>
+          <% } %>
+        </div>
+        <svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+      <% }); %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Back to Help -->
+  <div class="text-center">
+    <a href="/help" class="btn-glass">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Back to Help Center
+    </a>
+  </div>
+</main>
+
+<script>
+function rateArticle(rating) {
+  // TODO: Send rating to backend
+  alert(`Thank you for your feedback!`);
+}
+
+function shareArticle() {
+  if (navigator.share) {
+    navigator.share({
+      title: document.title,
+      url: window.location.href
+    });
+  } else {
+    navigator.clipboard.writeText(window.location.href);
+    alert('Link copied to clipboard!');
+  }
+}
+
+function printArticle() {
+  window.print();
+}
+</script>
+
+<%- include('../partials/footer') %>

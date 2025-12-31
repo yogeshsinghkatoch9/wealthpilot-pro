@@ -1,0 +1,107 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeData = data || {};
+const overview = safeData.overview || {};
+const indicators = safeData.indicators || {};
+const signals = safeData.signals || [];
+%>
+<%- include('../partials/header', { pageTitle: 'Technical Analysis' }) %>
+
+<main class="p-4 md:p-6 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white">Technical Analysis Overview</h1>
+        <p class="text-slate-400 text-sm">Market-wide technical indicators and signals</p>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="refreshData()" class="btn-glass">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <% if (!data || data.error) { %>
+  <!-- No Data State -->
+  <div class="glass-card-elevated p-12 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center">
+      <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+    </div>
+    <h3 class="text-white font-semibold mb-2">Technical Data Unavailable</h3>
+    <p class="text-slate-400 text-sm mb-6">Unable to load technical analysis data. Try refreshing the page.</p>
+    <a href="/technicals" class="btn-primary">
+      View Stock Technicals
+    </a>
+  </div>
+  <% } else { %>
+
+  <!-- Market Overview -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Market Trend</div>
+      <div class="text-xl font-bold <%= overview.trend === 'bullish' ? 'text-emerald-400' : overview.trend === 'bearish' ? 'text-red-400' : 'text-amber-400' %>">
+        <%= overview.trend ? overview.trend.toUpperCase() : 'NEUTRAL' %>
+      </div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Avg RSI</div>
+      <div class="text-xl font-bold text-white"><%= (overview.avgRsi || 50).toFixed(1) %></div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Above 200 SMA</div>
+      <div class="text-xl font-bold text-emerald-400"><%= overview.above200sma || 0 %>%</div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Volatility</div>
+      <div class="text-xl font-bold text-white"><%= overview.volatility || 'Normal' %></div>
+    </div>
+  </div>
+
+  <!-- Technical Signals -->
+  <div class="glass-card-elevated">
+    <div class="p-4 border-b border-slate-700/50">
+      <h3 class="text-white font-semibold">Active Signals</h3>
+    </div>
+    <div class="p-4">
+      <% if (signals.length === 0) { %>
+      <p class="text-slate-400 text-center py-4">No active signals detected</p>
+      <% } else { %>
+      <div class="space-y-3">
+        <% signals.slice(0, 10).forEach(signal => { %>
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+          <div class="flex items-center gap-3">
+            <span class="font-mono font-bold text-white"><%= signal.symbol %></span>
+            <span class="text-slate-400"><%= signal.indicator %></span>
+          </div>
+          <span class="px-2 py-1 rounded text-xs font-medium <%= signal.type === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400' %>">
+            <%= signal.type ? signal.type.toUpperCase() : 'NEUTRAL' %>
+          </span>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <% } %>
+</main>
+
+<script>
+function refreshData() {
+  window.location.reload();
+}
+</script>
+
+<%- include('../partials/footer') %>
