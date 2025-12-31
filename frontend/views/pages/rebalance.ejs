@@ -269,7 +269,7 @@ const newHealthScore = typeof projectedHealth !== 'undefined' ? projectedHealth 
   </div>
   <div class="flex gap-3 pt-4 border-t border-slate-700">
     <button class="bloomberg-btn bloomberg-btn-primary">EXECUTE ALL RECOMMENDATIONS</button>
-    <button class="bloomberg-btn bloomberg-btn-secondary">EXPORT TO CSV</button>
+    <button class="bloomberg-btn bloomberg-btn-secondary" onclick="exportToCSV()">EXPORT TO CSV</button>
     <button class="bloomberg-btn bloomberg-btn-secondary">SCHEDULE FOR LATER</button>
   </div>
 </div>
@@ -305,6 +305,50 @@ function runAnalysis() {
     btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>RUN AI ANALYSIS';
     showToast('Analysis complete! Recommendations updated.', 'success');
   }, 2000);
+}
+
+// Export recommendations to CSV
+function exportToCSV() {
+  const recommendations = [
+    { priority: 'High', action: 'Reduce Tech Concentration', type: 'Sell', symbol: 'NVDA', shares: 10, amount: 4950, taxImpact: -320 },
+    { priority: 'Medium', action: 'Add Fixed Income', type: 'Buy', symbol: 'BND', shares: 'N/A', amount: 24750, taxImpact: 0 },
+    { priority: 'Opportunity', action: 'Increase Healthcare', type: 'Buy', symbol: 'JNJ', shares: 20, amount: 3136, taxImpact: 0 },
+    { priority: 'Opportunity', action: 'Increase Healthcare', type: 'Buy', symbol: 'UNH', shares: 15, amount: 7950, taxImpact: 0 },
+    { priority: 'Tax Optimization', action: 'Tax-Loss Harvest INTC', type: 'Sell', symbol: 'INTC', shares: 'All', amount: 'N/A', taxImpact: -650 },
+    { priority: 'Tax Optimization', action: 'Replace with AMD', type: 'Buy', symbol: 'AMD', shares: 'TBD', amount: 'TBD', taxImpact: 0 }
+  ];
+
+  // CSV header
+  let csv = 'Priority,Action,Type,Symbol,Shares,Amount ($),Tax Impact ($)\n';
+
+  // Add rows
+  recommendations.forEach(rec => {
+    csv += `${rec.priority},${rec.action},${rec.type},${rec.symbol},${rec.shares},${rec.amount},${rec.taxImpact}\n`;
+  });
+
+  // Add summary
+  csv += '\n';
+  csv += 'REBALANCING SUMMARY\n';
+  csv += 'Total Trades,6\n';
+  csv += 'Sells,3\n';
+  csv += 'Buys,3\n';
+  csv += 'Estimated Tax Impact,-$770\n';
+  csv += 'Current Health Score,72\n';
+  csv += 'New Health Score,89\n';
+  csv += `Export Date,${new Date().toISOString()}\n`;
+
+  // Create download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `rebalance_recommendations_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  showToast('Recommendations exported to CSV', 'success');
 }
 </script>
 <%- include('../partials/footer') %>
