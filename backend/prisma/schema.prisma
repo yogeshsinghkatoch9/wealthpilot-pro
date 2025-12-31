@@ -830,3 +830,163 @@ model AIUsage {
   @@index([createdAt])
   @@map("ai_usage")
 }
+
+// ============== PAPER TRADING ==============
+
+model PaperTradingAccount {
+  id             String           @id @default(uuid())
+  userId         String           @unique @map("user_id")
+  cashBalance    Float            @default(100000) @map("cash_balance")
+  initialBalance Float            @default(100000) @map("initial_balance")
+  totalTrades    Int              @default(0) @map("total_trades")
+  winningTrades  Int              @default(0) @map("winning_trades")
+  losingTrades   Int              @default(0) @map("losing_trades")
+  totalPnl       Float            @default(0) @map("total_pnl")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  positions      PaperPosition[]
+  orders         PaperOrder[]
+
+  @@index([userId])
+  @@map("paper_trading_accounts")
+}
+
+model PaperPosition {
+  id        String               @id @default(uuid())
+  accountId String               @map("account_id")
+  symbol    String
+  quantity  Float
+  avgCost   Float                @map("avg_cost")
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  account   PaperTradingAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, symbol])
+  @@index([accountId])
+  @@index([symbol])
+  @@map("paper_positions")
+}
+
+model PaperOrder {
+  id              String               @id @default(uuid())
+  accountId       String               @map("account_id")
+  symbol          String
+  side            String               // buy, sell
+  quantity        Float
+  orderType       String               @default("market") @map("order_type") // market, limit, stop, stop_limit
+  limitPrice      Float?               @map("limit_price")
+  stopPrice       Float?               @map("stop_price")
+  timeInForce     String               @default("day") @map("time_in_force") // day, gtc, ioc, fok
+  status          String               @default("pending") // pending, filled, partial, cancelled, rejected
+  submittedPrice  Float?               @map("submitted_price")
+  filledPrice     Float?               @map("filled_price")
+  filledQuantity  Float?               @map("filled_quantity")
+  filledAt        DateTime?            @map("filled_at")
+  commission      Float                @default(0)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  account         PaperTradingAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([symbol])
+  @@index([status])
+  @@index([createdAt])
+  @@map("paper_orders")
+}
+
+// ============== BROKER INTEGRATIONS ==============
+
+model BrokerConnection {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  brokerType      String    @map("broker_type") // alpaca, ibkr, td_ameritrade, etc.
+  accountId       String?   @map("account_id") // Broker's account ID
+  name            String    // User-friendly name for this connection
+  isPaper         Boolean   @default(true) @map("is_paper") // Paper vs live trading
+  isActive        Boolean   @default(true) @map("is_active")
+  isDefault       Boolean   @default(false) @map("is_default")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastError       String?   @map("last_error")
+  settings        String?   // JSON for broker-specific settings
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  credentials     BrokerCredential?
+  orders          BrokerOrder[]
+
+  @@unique([userId, brokerType, accountId])
+  @@index([userId])
+  @@index([brokerType])
+  @@index([isActive])
+  @@map("broker_connections")
+}
+
+model BrokerCredential {
+  id              String           @id @default(uuid())
+  connectionId    String           @unique @map("connection_id")
+  encryptedApiKey String           @map("encrypted_api_key")
+  encryptedSecret String           @map("encrypted_secret")
+  encryptedToken  String?          @map("encrypted_token") // For OAuth brokers
+  tokenExpiresAt  DateTime?        @map("token_expires_at")
+  scopes          String?          // JSON array of granted scopes
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  connection      BrokerConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@map("broker_credentials")
+}
+
+model BrokerOrder {
+  id              String           @id @default(uuid())
+  connectionId    String           @map("connection_id")
+  portfolioId     String?          @map("portfolio_id")
+  brokerOrderId   String           @map("broker_order_id") // Broker's internal order ID
+  symbol          String
+  side            String           // buy, sell
+  quantity        Float
+  orderType       String           @map("order_type") // market, limit, stop, stop_limit
+  limitPrice      Float?           @map("limit_price")
+  stopPrice       Float?           @map("stop_price")
+  timeInForce     String           @default("day") @map("time_in_force")
+  status          String           @default("pending") // pending, filled, partial, cancelled, rejected
+  filledPrice     Float?           @map("filled_price")
+  filledQuantity  Float?           @map("filled_quantity")
+  filledAt        DateTime?        @map("filled_at")
+  commission      Float            @default(0)
+  notes           String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  connection      BrokerConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
+  @@index([symbol])
+  @@index([status])
+  @@index([createdAt])
+  @@map("broker_orders")
+}
+
+// ============== OAUTH TOKENS ==============
+
+model OAuthToken {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  providerId    String    @map("provider_id") // schwab, etrade, robinhood, coinbase
+  accessToken   String    @map("access_token") // Encrypted
+  refreshToken  String?   @map("refresh_token") // Encrypted
+  expiresIn     Int       @default(3600) @map("expires_in") // Seconds
+  tokenType     String    @default("Bearer") @map("token_type")
+  scope         String?   // Granted scopes
+  obtainedAt    DateTime  @default(now()) @map("obtained_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, providerId])
+  @@index([userId])
+  @@index([providerId])
+  @@map("oauth_tokens")
+}

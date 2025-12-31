@@ -19,6 +19,8 @@
     'alt+n': { action: () => navigate('/analytics'), description: 'Go to Analytics', category: 'Navigation' },
     'alt+m': { action: () => navigate('/market-overview'), description: 'Go to Market Overview', category: 'Navigation' },
     'alt+c': { action: () => navigate('/crypto-portfolio'), description: 'Go to Crypto', category: 'Navigation' },
+    'alt+x': { action: () => navigate('/tax-dashboard'), description: 'Go to Tax Dashboard', category: 'Navigation' },
+    'alt+i': { action: () => navigate('/ai-assistant'), description: 'Go to AI Assistant', category: 'Navigation' },
 
     // Action shortcuts (Ctrl/Cmd + Key)
     'ctrl+k': { action: openCommandPalette, description: 'Open Command Palette', category: 'Actions' },
@@ -27,13 +29,31 @@
     'ctrl+shift+t': { action: toggleTheme, description: 'Toggle Dark/Light Theme', category: 'Actions' },
     'ctrl+r': { action: refreshData, description: 'Refresh Data', category: 'Actions' },
     'ctrl+shift+s': { action: quickSearch, description: 'Quick Symbol Search', category: 'Actions' },
+    'ctrl+b': { action: openBuyModal, description: 'Buy/Add Holding', category: 'Actions' },
+    'ctrl+e': { action: openExportMenu, description: 'Export Data', category: 'Actions' },
+    'ctrl+n': { action: openNewPortfolio, description: 'New Portfolio', category: 'Actions' },
+    'ctrl+shift+a': { action: openAddAlert, description: 'Add Price Alert', category: 'Actions' },
 
     // UI shortcuts
     'escape': { action: closeModals, description: 'Close Modals/Menus', category: 'UI' },
     '?': { action: toggleShortcutsHelp, description: 'Show Keyboard Shortcuts', category: 'UI' },
+    'f': { action: toggleFullscreen, description: 'Toggle Fullscreen', category: 'UI' },
+    's': { action: toggleSidebar, description: 'Toggle Sidebar', category: 'UI' },
+
+    // Vim-style navigation (g + letter)
     'g d': { action: () => navigate('/dividends'), description: 'Go to Dividends', category: 'Navigation' },
     'g e': { action: () => navigate('/esg'), description: 'Go to ESG Analysis', category: 'Navigation' },
     'g r': { action: () => navigate('/reports'), description: 'Go to Reports', category: 'Navigation' },
+    'g s': { action: () => navigate('/settings'), description: 'Go to Settings', category: 'Navigation' },
+    'g o': { action: () => navigate('/options-chain'), description: 'Go to Options', category: 'Navigation' },
+    'g f': { action: () => navigate('/fundamentals'), description: 'Go to Fundamentals', category: 'Navigation' },
+    'g t': { action: () => navigate('/technical-analysis'), description: 'Go to Technicals', category: 'Navigation' },
+    'g c': { action: () => navigate('/calendar'), description: 'Go to Calendar', category: 'Navigation' },
+
+    // Table navigation (when focused)
+    'j': { action: () => tableNavigate('down'), description: 'Next row', category: 'Table' },
+    'k': { action: () => tableNavigate('up'), description: 'Previous row', category: 'Table' },
+    'enter': { action: tableSelect, description: 'Select/Open row', category: 'Table' },
   };
 
   // Vim-style navigation buffer
@@ -212,6 +232,111 @@
     }
   }
 
+  // Open buy/add holding modal
+  function openBuyModal() {
+    const buyBtn = document.querySelector('[data-action="buy"], #addHoldingBtn, button:has-text("Add"), button:has-text("Buy")');
+    if (buyBtn) {
+      buyBtn.click();
+    } else {
+      showToast('Navigate to a portfolio to add holdings', 'info');
+    }
+  }
+
+  // Open export menu
+  function openExportMenu() {
+    const exportBtn = document.querySelector('[data-action="export"], #exportBtn, button:has-text("Export")');
+    if (exportBtn) {
+      exportBtn.click();
+    } else {
+      navigate('/exports');
+    }
+  }
+
+  // Open new portfolio modal
+  function openNewPortfolio() {
+    const newBtn = document.querySelector('[data-action="new-portfolio"], #newPortfolioBtn');
+    if (newBtn) {
+      newBtn.click();
+    } else {
+      navigate('/portfolios?action=new');
+    }
+  }
+
+  // Open add alert modal
+  function openAddAlert() {
+    const alertBtn = document.querySelector('[data-action="add-alert"], #addAlertBtn');
+    if (alertBtn) {
+      alertBtn.click();
+    } else {
+      navigate('/alerts?action=new');
+    }
+  }
+
+  // Toggle fullscreen
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      showToast('Fullscreen mode', 'info');
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  // Toggle sidebar
+  function toggleSidebar() {
+    const sidebar = document.querySelector('aside, [data-sidebar], .sidebar');
+    if (sidebar) {
+      sidebar.classList.toggle('collapsed');
+      sidebar.classList.toggle('-translate-x-full');
+    }
+  }
+
+  // Table navigation state
+  let selectedRowIndex = -1;
+
+  // Navigate table rows
+  function tableNavigate(direction) {
+    const table = document.querySelector('table tbody, [data-table] tbody');
+    if (!table) return;
+
+    const rows = table.querySelectorAll('tr');
+    if (rows.length === 0) return;
+
+    // Remove previous selection
+    rows.forEach(row => row.classList.remove('ring-2', 'ring-primary-500', 'bg-primary-500/10'));
+
+    // Update index
+    if (direction === 'down') {
+      selectedRowIndex = Math.min(selectedRowIndex + 1, rows.length - 1);
+    } else {
+      selectedRowIndex = Math.max(selectedRowIndex - 1, 0);
+    }
+
+    // Highlight new row
+    const selectedRow = rows[selectedRowIndex];
+    if (selectedRow) {
+      selectedRow.classList.add('ring-2', 'ring-primary-500', 'bg-primary-500/10');
+      selectedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Select table row
+  function tableSelect() {
+    const table = document.querySelector('table tbody, [data-table] tbody');
+    if (!table || selectedRowIndex < 0) return;
+
+    const rows = table.querySelectorAll('tr');
+    const selectedRow = rows[selectedRowIndex];
+    if (selectedRow) {
+      const link = selectedRow.querySelector('a');
+      if (link) {
+        link.click();
+      } else {
+        selectedRow.click();
+      }
+    }
+  }
+
   // Open command palette
   function openCommandPalette() {
     const cmdPalette = document.getElementById('commandPalette');
@@ -359,6 +484,7 @@
 
   // Command items for palette
   const commands = [
+    // Navigation
     { icon: '📊', label: 'Go to Dashboard', action: () => navigate('/dashboard') },
     { icon: '📈', label: 'Go to Holdings', action: () => navigate('/holdings') },
     { icon: '💼', label: 'Go to Portfolios', action: () => navigate('/portfolios') },
@@ -373,10 +499,25 @@
     { icon: '💰', label: 'Go to Dividends', action: () => navigate('/dividends') },
     { icon: '📄', label: 'Go to Reports', action: () => navigate('/reports') },
     { icon: '⚙️', label: 'Go to Settings', action: () => navigate('/settings') },
+    { icon: '💸', label: 'Go to Tax Dashboard', action: () => navigate('/tax-dashboard') },
+    { icon: '🤖', label: 'Go to AI Assistant', action: () => navigate('/ai-assistant') },
+    { icon: '📅', label: 'Go to Calendar', action: () => navigate('/calendar') },
+    { icon: '📊', label: 'Go to Fundamentals', action: () => navigate('/fundamentals') },
+    { icon: '📈', label: 'Go to Technical Analysis', action: () => navigate('/technical-analysis') },
+    { icon: '⚡', label: 'Go to Options Chain', action: () => navigate('/options-chain') },
+    { icon: '⚠️', label: 'Go to Risk Analysis', action: () => navigate('/risk-analysis') },
+    { icon: '🏢', label: 'Go to Sector Heatmap', action: () => navigate('/sector-heatmap') },
+    // Actions
     { icon: '🎯', label: 'Run Simulator', action: () => navigate('/simulator') },
     { icon: '🌓', label: 'Toggle Theme', action: toggleTheme },
     { icon: '🔄', label: 'Refresh Data', action: refreshData },
     { icon: '⌨️', label: 'Show Keyboard Shortcuts', action: toggleShortcutsHelp },
+    { icon: '➕', label: 'Add Holding', action: openBuyModal },
+    { icon: '📤', label: 'Export Data', action: openExportMenu },
+    { icon: '📁', label: 'New Portfolio', action: openNewPortfolio },
+    { icon: '🔔', label: 'Add Price Alert', action: openAddAlert },
+    { icon: '⛶', label: 'Toggle Fullscreen', action: toggleFullscreen },
+    { icon: '◧', label: 'Toggle Sidebar', action: toggleSidebar },
   ];
 
   // Render command items

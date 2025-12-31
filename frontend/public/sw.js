@@ -1,14 +1,36 @@
-const CACHE_NAME = 'wealthpilot-v5';
+const CACHE_NAME = 'wealthpilot-v6';
 const OFFLINE_URL = '/offline.html';
+const API_CACHE = 'wealthpilot-api-v1';
+const STATIC_CACHE = 'wealthpilot-static-v1';
 
+// Core app shell - always cache these
 const PRECACHE_URLS = [
   '/',
   '/dashboard',
-  '/css/styles.css',
-  '/js/app.js',
+  '/portfolios',
+  '/offline.html',
   '/manifest.json',
-  '/offline.html'
+  '/css/styles.css',
+  '/css/modern-design-system.css',
+  '/js/app.js',
+  '/js/keyboard-shortcuts.js',
+  '/js/theme-toggle.js',
+  '/js/toast.js',
+  '/icons/icon-192.svg'
 ];
+
+// API endpoints to cache for offline viewing
+const CACHEABLE_API_PATTERNS = [
+  /\/api\/market\/quote\//,
+  /\/api\/portfolios$/,
+  /\/api\/settings$/
+];
+
+// Cache duration for different content types (in ms)
+const CACHE_DURATION = {
+  api: 5 * 60 * 1000,      // 5 minutes for API data
+  static: 7 * 24 * 60 * 60 * 1000  // 7 days for static assets
+};
 
 // Install event
 self.addEventListener('install', event => {
