@@ -140,6 +140,34 @@
     }
   }
 
+  // Notification dropdown toggle
+  function toggleNotifications() {
+    const dropdown = document.getElementById('notificationDropdown');
+    if (dropdown) {
+      dropdown.classList.toggle('show');
+    }
+  }
+
+  // Mark all notifications as read
+  function markAllRead() {
+    const items = document.querySelectorAll('.notification-item.unread');
+    items.forEach(item => item.classList.remove('unread'));
+    const badge = document.getElementById('notificationCount');
+    if (badge) {
+      badge.style.display = 'none';
+    }
+    showToast('All notifications marked as read', 'success');
+  }
+
+  // Close notification dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('notificationDropdown');
+    const wrapper = document.querySelector('.topnav-notification-wrapper');
+    if (dropdown && wrapper && !wrapper.contains(e.target)) {
+      dropdown.classList.remove('show');
+    }
+  });
+
   // PWA Service Worker Registration
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

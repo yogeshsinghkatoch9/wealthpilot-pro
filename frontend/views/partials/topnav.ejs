@@ -82,7 +82,7 @@
       </div>
 
       <!-- Search Button -->
-      <button class="topnav-search" onclick="openCommandPalette && openCommandPalette()">
+      <button class="topnav-search" onclick="window.commandPalette?.open()">
         <svg class="topnav-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/>
           <path d="M21 21l-4.35-4.35"/>
@@ -92,13 +92,73 @@
       </button>
 
       <!-- Notifications -->
-      <button class="topnav-notification" aria-label="Notifications">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-        <span class="topnav-notification-badge">3</span>
-      </button>
+      <div class="topnav-notification-wrapper" style="position: relative;">
+        <button class="topnav-notification" aria-label="Notifications" onclick="toggleNotifications()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="topnav-notification-badge" id="notificationCount">3</span>
+        </button>
+
+        <!-- Notification Dropdown -->
+        <div class="notification-dropdown" id="notificationDropdown">
+          <div class="notification-dropdown-header">
+            <span class="notification-dropdown-title">Notifications</span>
+            <button class="notification-mark-read" onclick="markAllRead()">Mark all read</button>
+          </div>
+          <div class="notification-dropdown-list" id="notificationList">
+            <div class="notification-item unread" data-id="1">
+              <div class="notification-icon alert">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div class="notification-content">
+                <p class="notification-text"><strong>NVDA</strong> hit your price alert of $140.00</p>
+                <span class="notification-time">2 minutes ago</span>
+              </div>
+            </div>
+            <div class="notification-item unread" data-id="2">
+              <div class="notification-icon success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="notification-content">
+                <p class="notification-text">Dividend received: <strong>$45.20</strong> from AAPL</p>
+                <span class="notification-time">1 hour ago</span>
+              </div>
+            </div>
+            <div class="notification-item unread" data-id="3">
+              <div class="notification-icon info">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+              </div>
+              <div class="notification-content">
+                <p class="notification-text"><strong>TSLA</strong> earnings report tomorrow after market close</p>
+                <span class="notification-time">3 hours ago</span>
+              </div>
+            </div>
+            <div class="notification-item" data-id="4">
+              <div class="notification-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <div class="notification-content">
+                <p class="notification-text">Weekly portfolio report is ready</p>
+                <span class="notification-time">Yesterday</span>
+              </div>
+            </div>
+          </div>
+          <div class="notification-dropdown-footer">
+            <a href="/alerts" class="notification-view-all">View all notifications</a>
+          </div>
+        </div>
+      </div>
 
       <!-- Theme Toggle -->
       <button id="theme-toggle" class="topnav-notification" aria-label="Toggle theme" onclick="toggleTheme()">
