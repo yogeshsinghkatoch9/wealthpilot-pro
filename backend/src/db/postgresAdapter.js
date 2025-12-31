@@ -103,9 +103,11 @@ class PostgresAdapter {
   }
 
   async createTables() {
+    // NOTE: Using TEXT for IDs to match Prisma schema (String @default(uuid()))
+    // Prisma maps String to TEXT in PostgreSQL, not UUID
     const queries = `
       CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        id TEXT PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password_hash VARCHAR(255) NOT NULL,
         first_name VARCHAR(100),
@@ -119,8 +121,8 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS sessions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         token TEXT UNIQUE NOT NULL,
         expires_at TIMESTAMP NOT NULL,
         user_agent TEXT,
@@ -129,8 +131,8 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS portfolios (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         currency VARCHAR(10) DEFAULT 'USD',
@@ -143,8 +145,8 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS holdings (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        portfolio_id TEXT REFERENCES portfolios(id) ON DELETE CASCADE,
         symbol VARCHAR(20) NOT NULL,
         name VARCHAR(255),
         shares DECIMAL(15,6) NOT NULL,
@@ -155,16 +157,16 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS watchlists (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
       CREATE TABLE IF NOT EXISTS watchlist_items (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        watchlist_id UUID REFERENCES watchlists(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        watchlist_id TEXT REFERENCES watchlists(id) ON DELETE CASCADE,
         symbol VARCHAR(20) NOT NULL,
         target_price DECIMAL(15,4),
         notes TEXT,
@@ -172,9 +174,9 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS transactions (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id),
-        portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id),
+        portfolio_id TEXT REFERENCES portfolios(id) ON DELETE CASCADE,
         symbol VARCHAR(20) NOT NULL,
         type VARCHAR(20) NOT NULL,
         shares DECIMAL(15,6),
@@ -185,8 +187,8 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS alerts (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         symbol VARCHAR(20),
         type VARCHAR(50) NOT NULL,
         alert_type VARCHAR(50),
@@ -201,8 +203,8 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS paper_portfolio (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         cash_balance DECIMAL(15,2) DEFAULT 100000,
         total_value DECIMAL(15,2) DEFAULT 100000,
         total_profit_loss DECIMAL(15,2) DEFAULT 0,
@@ -211,8 +213,8 @@ class PostgresAdapter {
       );
 
       CREATE TABLE IF NOT EXISTS paper_trades (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        id TEXT PRIMARY KEY,
+        user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
         symbol VARCHAR(20) NOT NULL,
         trade_type VARCHAR(20) NOT NULL,
         quantity DECIMAL(15,6) NOT NULL,
