@@ -169,7 +169,7 @@ app.post('/login', async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true, // Secure: prevent XSS from stealing tokens
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production' // Enable in production with HTTPS
+    secure: process.env.USE_HTTPS === 'true' // Only enable secure cookies with HTTPS
   });
 
   // Render a page that sets localStorage (for client-side JS) then redirects
