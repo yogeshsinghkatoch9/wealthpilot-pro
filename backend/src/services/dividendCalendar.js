@@ -28,35 +28,37 @@ class DividendCalendarService {
 
   /**
    * Generate realistic dividend data for major dividend-paying stocks
+   * Uses deterministic dates based on typical quarterly schedules
    */
   generateDividendData() {
     const today = new Date();
     const dividendStocks = [
-      // High-yield dividend aristocrats
-      { symbol: 'JNJ', name: 'Johnson & Johnson', amount: 1.19, yield: 2.8, freq: 'quarterly' },
-      { symbol: 'PG', name: 'Procter & Gamble', amount: 0.9407, yield: 2.4, freq: 'quarterly' },
-      { symbol: 'KO', name: 'Coca-Cola', amount: 0.485, yield: 2.9, freq: 'quarterly' },
-      { symbol: 'PEP', name: 'PepsiCo', amount: 1.265, yield: 2.6, freq: 'quarterly' },
-      { symbol: 'XOM', name: 'Exxon Mobil', amount: 0.95, yield: 3.2, freq: 'quarterly' },
-      { symbol: 'CVX', name: 'Chevron', amount: 1.63, yield: 3.4, freq: 'quarterly' },
-      { symbol: 'T', name: 'AT&T', amount: 0.2775, yield: 4.5, freq: 'quarterly' },
-      { symbol: 'VZ', name: 'Verizon', amount: 0.665, yield: 6.2, freq: 'quarterly' },
-      { symbol: 'MCD', name: 'McDonald\'s', amount: 1.67, yield: 2.1, freq: 'quarterly' },
-      { symbol: 'IBM', name: 'IBM', amount: 1.67, yield: 3.5, freq: 'quarterly' },
-      { symbol: 'MMM', name: '3M Company', amount: 1.51, yield: 3.6, freq: 'quarterly' },
-      { symbol: 'CAT', name: 'Caterpillar', amount: 1.30, yield: 1.8, freq: 'quarterly' },
-      { symbol: 'WBA', name: 'Walgreens Boots Alliance', amount: 0.48, yield: 8.5, freq: 'quarterly' },
-      { symbol: 'MO', name: 'Altria Group', amount: 0.98, yield: 7.8, freq: 'quarterly' },
-      { symbol: 'O', name: 'Realty Income Corp', amount: 0.263, yield: 5.4, freq: 'monthly' },
-      { symbol: 'MAIN', name: 'Main Street Capital', amount: 0.2350, yield: 6.1, freq: 'monthly' },
-      { symbol: 'STAG', name: 'STAG Industrial', amount: 0.1233, yield: 4.2, freq: 'monthly' },
-      { symbol: 'SPY', name: 'SPDR S&P 500 ETF', amount: 1.79, yield: 1.3, freq: 'quarterly' },
-      { symbol: 'VYM', name: 'Vanguard High Dividend Yield ETF', amount: 0.89, yield: 2.8, freq: 'quarterly' },
-      { symbol: 'SCHD', name: 'Schwab US Dividend Equity ETF', amount: 0.71, yield: 3.4, freq: 'quarterly' },
-      { symbol: 'MSFT', name: 'Microsoft', amount: 0.83, yield: 0.7, freq: 'quarterly' },
-      { symbol: 'AAPL', name: 'Apple', amount: 0.25, yield: 0.4, freq: 'quarterly' },
-      { symbol: 'JPM', name: 'JPMorgan Chase', amount: 1.15, yield: 2.1, freq: 'quarterly' },
-      { symbol: 'BAC', name: 'Bank of America', amount: 0.26, yield: 2.4, freq: 'quarterly' }
+      // High-yield dividend aristocrats with typical ex-div month offsets
+      { symbol: 'JNJ', name: 'Johnson & Johnson', amount: 1.24, yield: 2.9, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'PG', name: 'Procter & Gamble', amount: 1.01, yield: 2.5, freq: 'quarterly', monthOffset: 0 },
+      { symbol: 'KO', name: 'Coca-Cola', amount: 0.49, yield: 3.0, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'PEP', name: 'PepsiCo', amount: 1.35, yield: 2.8, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'XOM', name: 'Exxon Mobil', amount: 0.99, yield: 3.3, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'CVX', name: 'Chevron', amount: 1.63, yield: 4.1, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'T', name: 'AT&T', amount: 0.28, yield: 5.2, freq: 'quarterly', monthOffset: 0 },
+      { symbol: 'VZ', name: 'Verizon', amount: 0.67, yield: 6.5, freq: 'quarterly', monthOffset: 0 },
+      { symbol: 'MCD', name: "McDonald's", amount: 1.77, yield: 2.2, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'IBM', name: 'IBM', amount: 1.67, yield: 3.0, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'MMM', name: '3M Company', amount: 1.51, yield: 5.8, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'CAT', name: 'Caterpillar', amount: 1.41, yield: 1.5, freq: 'quarterly', monthOffset: 0 },
+      { symbol: 'ABBV', name: 'AbbVie', amount: 1.64, yield: 3.6, freq: 'quarterly', monthOffset: 0 },
+      { symbol: 'MO', name: 'Altria Group', amount: 1.02, yield: 8.2, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'O', name: 'Realty Income Corp', amount: 0.264, yield: 5.5, freq: 'monthly', monthOffset: 0 },
+      { symbol: 'MAIN', name: 'Main Street Capital', amount: 0.245, yield: 6.2, freq: 'monthly', monthOffset: 0 },
+      { symbol: 'STAG', name: 'STAG Industrial', amount: 0.124, yield: 4.3, freq: 'monthly', monthOffset: 0 },
+      { symbol: 'VYM', name: 'Vanguard High Dividend Yield ETF', amount: 0.98, yield: 2.9, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'SCHD', name: 'Schwab US Dividend Equity ETF', amount: 0.78, yield: 3.5, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'MSFT', name: 'Microsoft', amount: 0.83, yield: 0.7, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'AAPL', name: 'Apple', amount: 0.26, yield: 0.4, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'JPM', name: 'JPMorgan Chase', amount: 1.25, yield: 2.2, freq: 'quarterly', monthOffset: 0 },
+      { symbol: 'BAC', name: 'Bank of America', amount: 0.26, yield: 2.5, freq: 'quarterly', monthOffset: 2 },
+      { symbol: 'WFC', name: 'Wells Fargo', amount: 0.40, yield: 2.3, freq: 'quarterly', monthOffset: 1 },
+      { symbol: 'GS', name: 'Goldman Sachs', amount: 3.00, yield: 2.0, freq: 'quarterly', monthOffset: 1 }
     ];
 
     const stmt = this.db.prepare(`
@@ -66,23 +68,35 @@ class DividendCalendarService {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    dividendStocks.forEach(stock => {
-      // Generate dividend dates for next 12 months
+    dividendStocks.forEach((stock, stockIndex) => {
+      // Generate dividend dates for next 12 months using deterministic schedule
       const dividendsPerYear = stock.freq === 'monthly' ? 12 : 4;
-      const daysBetween = stock.freq === 'monthly' ? 30 : 90;
+      const monthsBetween = stock.freq === 'monthly' ? 1 : 3;
 
       for (let i = 0; i < dividendsPerYear; i++) {
-        const exDate = new Date(today);
-        exDate.setDate(exDate.getDate() + (i * daysBetween) + Math.floor(Math.random() * 10));
+        // Calculate ex-dividend date: deterministic based on stock's typical schedule
+        const exDate = new Date(today.getFullYear(), today.getMonth() + (i * monthsBetween) + stock.monthOffset, 15);
 
+        // Skip if date is in the past
+        if (exDate < today) {
+          exDate.setFullYear(exDate.getFullYear() + 1);
+        }
+
+        // Adjust to a weekday (Mon-Fri) - consistent offset based on stock symbol
+        const dayAdjust = (stockIndex % 5) - 2; // -2 to +2 days
+        exDate.setDate(exDate.getDate() + dayAdjust);
+
+        // Record date is 1 business day after ex-date
         const recordDate = new Date(exDate);
         recordDate.setDate(recordDate.getDate() + 1);
 
+        // Payment date is typically 2-3 weeks after ex-date
         const paymentDate = new Date(exDate);
-        paymentDate.setDate(paymentDate.getDate() + 21 + Math.floor(Math.random() * 7));
+        paymentDate.setDate(paymentDate.getDate() + 21 + (stockIndex % 7)); // 21-28 days
 
+        // Declaration date is typically 1-2 weeks before ex-date
         const declarationDate = new Date(exDate);
-        declarationDate.setDate(declarationDate.getDate() - 30);
+        declarationDate.setDate(declarationDate.getDate() - 14 - (stockIndex % 7));
 
         stmt.run(
           uuidv4(),
@@ -95,12 +109,12 @@ class DividendCalendarService {
           stock.amount,
           stock.yield,
           stock.freq,
-          'confirmed'
+          'fallback' // Mark as fallback data, will be replaced by API data
         );
       }
     });
 
-    logger.info('Dividend calendar data initialized successfully');
+    logger.info('Dividend calendar fallback data initialized (will be replaced by live API data)');
   }
 
   /**
