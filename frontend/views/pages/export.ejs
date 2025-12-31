@@ -1,0 +1,229 @@
+<%
+// Safe defaults
+const safePortfolios = portfolios || [];
+%>
+<%- include('../partials/header', { pageTitle: 'Export Data' }) %>
+
+<main class="p-4 md:p-6 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-teal-500/25">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white">Export Data</h1>
+        <p class="text-slate-400 text-sm">Download your portfolio data in various formats</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Options -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Portfolio Export -->
+    <div class="glass-card-elevated p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold">Portfolio Holdings</h3>
+      </div>
+      <p class="text-slate-400 text-sm mb-4">Export all your portfolio holdings with current prices and performance metrics.</p>
+
+      <div class="space-y-3">
+        <select id="portfolioSelect" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+          <option value="all">All Portfolios</option>
+          <% safePortfolios.forEach(p => { %>
+          <option value="<%= p.id %>"><%= p.name %></option>
+          <% }); %>
+        </select>
+
+        <div class="flex gap-2">
+          <button onclick="exportPortfolio('csv')" class="flex-1 btn-glass text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            CSV
+          </button>
+          <button onclick="exportPortfolio('json')" class="flex-1 btn-glass text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+            </svg>
+            JSON
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transaction History -->
+    <div class="glass-card-elevated p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold">Transaction History</h3>
+      </div>
+      <p class="text-slate-400 text-sm mb-4">Download your complete transaction history for tax reporting or record keeping.</p>
+
+      <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <input type="date" id="startDate" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" placeholder="Start Date">
+          <input type="date" id="endDate" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm" placeholder="End Date">
+        </div>
+
+        <button onclick="exportTransactions()" class="w-full btn-primary text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export Transactions
+        </button>
+      </div>
+    </div>
+
+    <!-- Tax Documents -->
+    <div class="glass-card-elevated p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-white font-semibold">Tax Reports</h3>
+      </div>
+      <p class="text-slate-400 text-sm mb-4">Generate tax reports including realized gains/losses and dividend income.</p>
+
+      <div class="space-y-3">
+        <select id="taxYear" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+          <option value="2024">Tax Year 2024</option>
+          <option value="2023">Tax Year 2023</option>
+          <option value="2022">Tax Year 2022</option>
+        </select>
+
+        <button onclick="exportTaxReport()" class="w-full btn-primary text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Generate Tax Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Exports -->
+  <div class="glass-card-elevated">
+    <div class="p-4 border-b border-slate-700/50">
+      <h3 class="text-white font-semibold">Export Formats Guide</h3>
+    </div>
+    <div class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 rounded-lg bg-slate-800/50">
+          <h4 class="text-white font-medium mb-2">CSV Format</h4>
+          <p class="text-slate-400 text-sm">Compatible with Excel, Google Sheets, and most spreadsheet applications.</p>
+        </div>
+        <div class="p-4 rounded-lg bg-slate-800/50">
+          <h4 class="text-white font-medium mb-2">JSON Format</h4>
+          <p class="text-slate-400 text-sm">Machine-readable format for developers and data integration.</p>
+        </div>
+        <div class="p-4 rounded-lg bg-slate-800/50">
+          <h4 class="text-white font-medium mb-2">PDF Reports</h4>
+          <p class="text-slate-400 text-sm">Professional formatted reports for printing and sharing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const token = localStorage.getItem('token');
+
+async function exportPortfolio(format) {
+  const portfolioId = document.getElementById('portfolioSelect').value;
+  try {
+    const response = await fetch(`/api/portfolios/${portfolioId}/export?format=${format}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `portfolio-${portfolioId}.${format}`;
+      a.click();
+      showToast('Export successful!', 'success');
+    } else {
+      showToast('Export failed', 'error');
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    showToast('Export failed', 'error');
+  }
+}
+
+async function exportTransactions() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  try {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const response = await fetch(`/api/transactions/export?${params}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'transactions.csv';
+      a.click();
+      showToast('Transactions exported!', 'success');
+    } else {
+      showToast('Export failed', 'error');
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    showToast('Export failed', 'error');
+  }
+}
+
+async function exportTaxReport() {
+  const year = document.getElementById('taxYear').value;
+  try {
+    const response = await fetch(`/api/tax/year-end?year=${year}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tax-report-${year}.pdf`;
+      a.click();
+      showToast('Tax report generated!', 'success');
+    } else {
+      showToast('Report generation failed', 'error');
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    showToast('Report generation failed', 'error');
+  }
+}
+
+function showToast(message, type) {
+  // Use existing toast system or create simple alert
+  if (typeof window.showNotification === 'function') {
+    window.showNotification(message, type);
+  } else {
+    alert(message);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

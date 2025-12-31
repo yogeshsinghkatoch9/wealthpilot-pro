@@ -1435,16 +1435,6 @@ app.get('/technical-analysis', requireAuth, async (req, res) => {
   });
 });
 
-app.get('/earnings-calendar', requireAuth, async (req, res) => {
-  const token = res.locals.token;
-  const earningsData = await apiFetch('/analytics/earnings-calendar', token);
-
-  res.render('pages/earnings-calendar', {
-    pageTitle: 'Earnings Calendar',
-    data: earningsData.error ? null : earningsData
-  });
-});
-
 app.get('/sector-rotation', requireAuth, async (req, res) => {
   const token = res.locals.token;
 
@@ -2165,20 +2155,6 @@ app.get('/calendar', requireAuth, async (req, res) => {
   });
 });
 
-app.get('/dividend-calendar', requireAuth, async (req, res) => {
-  res.render('pages/dividend-calendar', {
-    pageTitle: 'Dividend Calendar',
-    fmt
-  });
-});
-
-app.get('/earnings-calendar', requireAuth, async (req, res) => {
-  res.render('pages/earnings-calendar', {
-    pageTitle: 'Earnings Calendar',
-    fmt
-  });
-});
-
 app.get('/relative-strength', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
@@ -2562,10 +2538,6 @@ app.get('/optimizer', requireAuth, async (req, res) => {
 
 app.get('/backtest', requireAuth, async (req, res) => {
   res.render('pages/backtest', { pageTitle: 'Backtest', fmt });
-});
-
-app.get('/etf-analyzer', requireAuth, async (req, res) => {
-  res.render('pages/etf-analyzer', { pageTitle: 'ETF Analyzer', fmt });
 });
 
 app.get('/compare-portfolios', requireAuth, async (req, res) => {
@@ -3137,16 +3109,6 @@ app.get('/news', requireAuth, async (req, res) => {
   });
 });
 
-app.get('/calendar', requireAuth, async (req, res) => {
-  const token = res.locals.token;
-  const events = await apiFetch('/calendar/events', token);
-  res.render('pages/calendar', {
-    pageTitle: 'Calendar',
-    events: events.error ? [] : events,
-    fmt
-  });
-});
-
 // Account Settings
 app.get('/settings', requireAuth, async (req, res) => {
   const token = res.locals.token;
@@ -3417,33 +3379,6 @@ app.get('/simulator', requireAuth, async (req, res) => {
     selectedPid,
     analysis,
     currentPage: 'simulator',
-    theme: req.cookies?.theme || 'dark'
-  });
-});
-
-// ===================== CRYPTO PORTFOLIO ROUTE =====================
-
-app.get('/crypto-portfolio', requireAuth, async (req, res) => {
-  const token = res.locals.token;
-
-  res.render('pages/crypto-portfolio', {
-    pageTitle: 'Crypto Portfolio',
-    currentPage: 'crypto-portfolio',
-    theme: req.cookies?.theme || 'dark'
-  });
-});
-
-// ===================== ESG ROUTE =====================
-
-app.get('/esg', requireAuth, async (req, res) => {
-  const token = res.locals.token;
-  const portfoliosData = await apiFetch('/portfolios', token);
-  const portfolios = portfoliosData.error ? [] : portfoliosData;
-
-  res.render('pages/esg', {
-    pageTitle: 'ESG Analysis',
-    portfolios,
-    currentPage: 'esg',
     theme: req.cookies?.theme || 'dark'
   });
 });

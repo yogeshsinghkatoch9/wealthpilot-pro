@@ -19,7 +19,7 @@ const chatSessions = new Map();
  */
 router.post('/stream', authenticate, async (req, res) => {
   const { message, sessionId, portfolioContext } = req.body;
-  const userId = req.user.userId;
+  const userId = req.user.id;
 
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
@@ -115,7 +115,7 @@ router.post('/stream', authenticate, async (req, res) => {
 router.post('/message', authenticate, async (req, res) => {
   try {
     const { message, sessionId, portfolioContext } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -171,7 +171,7 @@ router.post('/message', authenticate, async (req, res) => {
  */
 router.get('/sessions', authenticate, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const userSessions = [];
 
     // Get sessions from memory
@@ -208,7 +208,7 @@ router.get('/sessions', authenticate, async (req, res) => {
 router.get('/sessions/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const session = chatSessions.get(id);
 
@@ -239,7 +239,7 @@ router.get('/sessions/:id', authenticate, async (req, res) => {
 router.delete('/sessions/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const session = chatSessions.get(id);
 
@@ -266,7 +266,7 @@ router.delete('/sessions/:id', authenticate, async (req, res) => {
  */
 router.post('/sessions', authenticate, async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.id;
     const { title } = req.body;
 
     const session = createSession(userId);
@@ -296,7 +296,7 @@ router.post('/sessions', authenticate, async (req, res) => {
 router.post('/quick-insight', authenticate, async (req, res) => {
   try {
     const { type, data } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     if (!type || !data) {
       return res.status(400).json({ error: 'Type and data are required' });
