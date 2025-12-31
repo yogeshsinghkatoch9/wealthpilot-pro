@@ -73,7 +73,8 @@ jobs:
 
       - name: Run linting
         working-directory: ./backend
-        run: npm run lint --if-present || true
+        run: npm run lint --if-present
+        continue-on-error: true
 
       - name: Run backend tests
         working-directory: ./backend
@@ -81,7 +82,7 @@ jobs:
           NODE_ENV: test
           DATABASE_URL: postgresql://test:test@localhost:5432/wealthpilot_test
           JWT_SECRET: test-secret-key-for-ci-do-not-use-in-production
-        run: npm test || true
+        run: npm test
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
