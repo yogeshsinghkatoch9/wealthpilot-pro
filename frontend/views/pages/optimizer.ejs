@@ -108,6 +108,9 @@
     border-radius: 12px;
     z-index: 10;
   }
+  .loading-overlay.hidden {
+    display: none !important;
+  }
   .spinner {
     width: 40px;
     height: 40px;
@@ -684,6 +687,14 @@ new Chart(document.getElementById('allocationChart'), {
         }
       }
     }
+  }
+});
+
+// Hide loading overlay once charts are rendered
+document.addEventListener('DOMContentLoaded', function() {
+  const loader = document.getElementById('chartLoading');
+  if (loader) {
+    loader.classList.add('hidden');
   }
 });
 </script>
