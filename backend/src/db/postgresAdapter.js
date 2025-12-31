@@ -16,11 +16,20 @@ class PostgresAdapter {
       throw new Error('POSTGRES_URL environment variable is required for PostgreSQL adapter');
     }
 
+    // Configure SSL for AWS RDS and other cloud databases
+    // Remove sslmode from connection string to handle SSL manually
+    const isCloudDb = connectionString.includes('amazonaws.com') ||
+                      connectionString.includes('sslmode=require');
+
+    // Strip sslmode param from connection string (pg handles it via ssl option)
+    const cleanConnectionString = connectionString.replace(/[?&]sslmode=[^&]*/, '');
+
     this.pool = new Pool({
-      connectionString,
+      connectionString: cleanConnectionString,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000
+      connectionTimeoutMillis: 2000,
+      ssl: isCloudDb ? { rejectUnauthorized: false } : false
     });
 
     this.pool.on('error', (err) => {
