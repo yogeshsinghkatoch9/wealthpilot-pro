@@ -164,13 +164,34 @@ app.post('/login', async (req, res) => {
     });
   }
 
+  // Set httpOnly cookie for server-side auth
   res.cookie('token', data.token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true, // Secure: prevent XSS from stealing tokens
     sameSite: 'lax',
     secure: false // Disabled until HTTPS is configured
   });
-  res.redirect('/');
+
+  // Render a page that sets localStorage (for client-side JS) then redirects
+  // This ensures both cookie AND localStorage have the token
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Logging in...</title>
+      <script>
+        // Store token in localStorage for client-side JavaScript access
+        localStorage.setItem('wealthpilot_token', '${data.token}');
+        console.log('[Login] Token stored in localStorage');
+        // Redirect to dashboard
+        window.location.href = '/';
+      </script>
+    </head>
+    <body style="background: #0f172a; color: #94a3b8; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+      <div>Logging in...</div>
+    </body>
+    </html>
+  `);
 });
 
 app.get('/register', (req, res) => {
@@ -243,7 +264,23 @@ app.post('/resend-verification', async (req, res) => {
 
 app.get('/logout', (req, res) => {
   res.clearCookie('token');
-  res.redirect('/login');
+  // Render page that clears localStorage before redirecting
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Logging out...</title>
+      <script>
+        localStorage.removeItem('wealthpilot_token');
+        console.log('[Logout] Token cleared from localStorage');
+        window.location.href = '/login';
+      </script>
+    </head>
+    <body style="background: #0f172a; color: #94a3b8; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif;">
+      <div>Logging out...</div>
+    </body>
+    </html>
+  `);
 });
 
 // ===================== ADVANCED ANALYTICS DASHBOARD =====================
@@ -1450,7 +1487,8 @@ app.get('/alerts', requireAuth, async (req, res) => {
 
   res.render('pages/alerts', {
     pageTitle: 'Alerts',
-    alerts: alerts.error ? [] : alerts
+    alerts: alerts.error ? [] : alerts,
+    token: token // Pass token for client-side JS
   });
 });
 

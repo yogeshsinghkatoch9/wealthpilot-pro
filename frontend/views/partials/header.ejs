@@ -189,19 +189,14 @@
   <!-- Token Sync Script -->
   <script>
     (function() {
-      // Function to get cookie value by name
-      function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-      }
+      // Sync token from server to localStorage (for existing sessions)
+      // The token is provided by the server since the cookie is httpOnly
+      const storedToken = localStorage.getItem('wealthpilot_token');
+      const serverToken = '<%= typeof token !== "undefined" && token ? token : "" %>';
 
-      // Sync token from cookie to localStorage
-      const tokenFromCookie = getCookie('token');
-      if (tokenFromCookie) {
-        localStorage.setItem('wealthpilot_token', tokenFromCookie);
-        console.log('✓ Token synced from cookie to localStorage');
+      if (!storedToken && serverToken) {
+        localStorage.setItem('wealthpilot_token', serverToken);
+        console.log('[Auth] Token synced from server to localStorage');
       }
     })();
   </script>
