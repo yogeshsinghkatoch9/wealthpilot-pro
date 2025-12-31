@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const { prisma } = require('../db/simpleDb');
 const { v4: uuidv4 } = require('uuid');
@@ -9,10 +10,30 @@ const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
 
-// Use consistent JWT_SECRET with fallback (must match server.js)
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+// JWT_SECRET - MUST be set (no insecure fallback)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 const router = express.Router();
+
+// Strict rate limiting for auth endpoints to prevent brute force attacks
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn(`Rate limit exceeded for auth from IP: ${req.ip}`);
+    res.status(429).json({ error: 'Too many authentication attempts. Please try again in 15 minutes.' });
+  }
+});
+
+// Apply rate limiter to login and register
+router.use('/login', authLimiter);
+router.use('/register', authLimiter);
 
 // Generate secure verification token
 const generateVerificationToken = () => {

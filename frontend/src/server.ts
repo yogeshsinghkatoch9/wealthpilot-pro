@@ -169,11 +169,13 @@ app.post('/login', async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true, // Secure: prevent XSS from stealing tokens
     sameSite: 'lax',
-    secure: false // Disabled until HTTPS is configured
+    secure: process.env.NODE_ENV === 'production' // Enable in production with HTTPS
   });
 
   // Render a page that sets localStorage (for client-side JS) then redirects
   // This ensures both cookie AND localStorage have the token
+  // Use JSON.stringify to safely encode the token for JavaScript context
+  const safeToken = JSON.stringify(data.token);
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -181,7 +183,7 @@ app.post('/login', async (req, res) => {
       <title>Logging in...</title>
       <script>
         // Store token in localStorage for client-side JavaScript access
-        localStorage.setItem('wealthpilot_token', '${data.token}');
+        localStorage.setItem('wealthpilot_token', ${safeToken});
         console.log('[Login] Token stored in localStorage');
         // Redirect to dashboard
         window.location.href = '/';

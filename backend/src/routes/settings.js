@@ -232,8 +232,8 @@ router.post('/password', [
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash new password
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    // Hash new password with secure settings (12 rounds)
+    const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
     // Update password
     await prisma.user.update({

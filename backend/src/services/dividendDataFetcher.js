@@ -10,7 +10,10 @@ const logger = require('../utils/logger');
 
 class DividendDataFetcher {
   constructor() {
-    this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY || '1S2UQSH44L0953E5';
+    this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY;
+    if (!this.alphaVantageKey) {
+      logger.warn('ALPHA_VANTAGE_API_KEY not set - dividend data fetching will be limited');
+    }
     this.baseUrl = 'https://www.alphavantage.co/query';
     this.cache = new Map();
     this.cacheTTL = 24 * 60 * 60 * 1000; // 24 hours (dividend data changes infrequently)

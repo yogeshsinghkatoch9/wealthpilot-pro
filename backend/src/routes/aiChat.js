@@ -14,6 +14,31 @@ const { prisma } = require('../db/simpleDb');
 const chatSessions = new Map();
 
 /**
+ * Get AI service status
+ * GET /api/ai/chat/status OR /api/ai/status (if mounted at /api/ai)
+ */
+router.get('/status', (req, res) => {
+  try {
+    const status = unifiedAI.getStatus();
+    res.json({
+      success: true,
+      status,
+      primaryProvider: process.env.AI_PRIMARY_PROVIDER || 'claude'
+    });
+  } catch (error) {
+    console.error('[AIChat] Status error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get AI status',
+      status: {
+        available: false,
+        providers: []
+      }
+    });
+  }
+});
+
+/**
  * Streaming chat endpoint using Server-Sent Events
  * POST /api/ai/chat/stream
  */

@@ -85,7 +85,7 @@
 
   <script>
     <% if (typeof error !== 'undefined' && error) { %>
-    document.getElementById('error-message').textContent = '<%= error %>';
+    document.getElementById('error-message').textContent = <%- JSON.stringify(error || '') %>;
     document.getElementById('error-message').classList.remove('hidden');
     <% } %>
   </script>

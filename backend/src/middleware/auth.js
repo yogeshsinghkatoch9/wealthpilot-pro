@@ -2,8 +2,17 @@ const jwt = require('jsonwebtoken');
 const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 
-// Use consistent JWT_SECRET with fallback (must match server.js)
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-insecure-key-do-not-use-in-production';
+// JWT_SECRET - MUST be set in production (no insecure fallback)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: JWT_SECRET must be set in production environment');
+  }
+  logger.warn('WARNING: JWT_SECRET not set. Set JWT_SECRET in .env for production!');
+}
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 /**
  * Authentication middleware
@@ -67,10 +76,18 @@ const authenticate = async (req, res, next) => {
 
     next();
   } catch (err) {
+    logger.error('[Auth] Error during authentication:', {
+      name: err.name,
+      message: err.message,
+      url: req.originalUrl,
+      method: req.method
+    });
     if (err.name === 'JsonWebTokenError') {
+      logger.warn('[Auth] JWT Error - Invalid token format or signature');
       return res.status(401).json({ error: 'Invalid token' });
     }
     if (err.name === 'TokenExpiredError') {
+      logger.warn('[Auth] JWT Error - Token has expired');
       return res.status(401).json({ error: 'Token expired' });
     }
     logger.error('Auth middleware error:', err.message, err.stack);
