@@ -2732,6 +2732,17 @@ app.get('/rebalance', requireAuth, async (req, res) => {
   });
 });
 
+// Alias for /rebalance (many navigation links use /rebalancer)
+app.get('/rebalancer', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const analysis = await apiFetch('/rebalancer/analysis', token);
+  res.render('pages/rebalance', {
+    pageTitle: 'Rebalancer',
+    analysis: analysis.error ? null : analysis,
+    fmt
+  });
+});
+
 app.get('/income-projections', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const projections = await apiFetch('/income/projections', token);
