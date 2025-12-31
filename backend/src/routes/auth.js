@@ -9,6 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const emailService = require('../services/emailService');
+const twoFactorService = require('../services/twoFactorService');
 
 // JWT_SECRET - MUST be set (no insecure fallback)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -142,7 +143,7 @@ router.post('/register', [
 
 /**
  * POST /api/auth/login
- * Login user
+ * Login user (with 2FA support)
  */
 router.post('/login', [
   body('email').isEmail().normalizeEmail(),
@@ -175,10 +176,27 @@ router.post('/login', [
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate unique session ID to prevent token collisions
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Generate temporary token for 2FA verification (short-lived)
+      const tempToken = jwt.sign(
+        { userId: user.id, email: user.email, pending2FA: true },
+        JWT_SECRET,
+        { expiresIn: '5m' } // 5 minute expiry for 2FA verification
+      );
+
+      logger.info(`2FA required for user: ${email}`);
+
+      return res.json({
+        requires2FA: true,
+        tempToken,
+        message: 'Please enter your 2FA code to complete login'
+      });
+    }
+
+    // No 2FA - proceed with normal login
     const sessionId = uuidv4();
 
-    // Create session token with unique identifier
     const token = jwt.sign(
       { userId: user.id, email: user.email, sessionId },
       JWT_SECRET,
@@ -188,7 +206,6 @@ router.post('/login', [
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Delete any existing sessions with duplicate tokens (shouldn't happen with sessionId)
     await prisma.session.deleteMany({
       where: { token }
     }).catch(() => {});
@@ -203,7 +220,6 @@ router.post('/login', [
       }
     });
 
-    // Update last login
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() }
@@ -211,12 +227,11 @@ router.post('/login', [
 
     logger.info(`User logged in: ${email}`);
 
-    // Set token as HTTP-only cookie for browser-based auth
     res.cookie('token', token, {
-      httpOnly: true, // Secure: prevent XSS from stealing tokens
-      secure: process.env.NODE_ENV === 'production', // Use secure in production (HTTPS)
+      httpOnly: true,
+      secure: process.env.USE_HTTPS === 'true',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
     res.json({
@@ -236,6 +251,125 @@ router.post('/login', [
   } catch (err) {
     logger.error('Login error:', err);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+/**
+ * POST /api/auth/verify-2fa
+ * Complete login with 2FA verification
+ */
+router.post('/verify-2fa', [
+  body('tempToken').notEmpty(),
+  body('code').notEmpty()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { tempToken, code, isBackupCode } = req.body;
+
+    // Verify temp token
+    let decoded;
+    try {
+      decoded = jwt.verify(tempToken, JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: '2FA session expired. Please login again.' });
+    }
+
+    if (!decoded.pending2FA) {
+      return res.status(400).json({ error: 'Invalid 2FA token' });
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId }
+    });
+
+    if (!user || !user.twoFactorEnabled) {
+      return res.status(400).json({ error: '2FA is not enabled for this account' });
+    }
+
+    let isValid = false;
+
+    if (isBackupCode) {
+      // Verify backup code
+      const hashedCodes = user.backupCodes ? JSON.parse(user.backupCodes) : [];
+      const codeIndex = twoFactorService.verifyBackupCode(code, hashedCodes);
+
+      if (codeIndex >= 0) {
+        // Remove used backup code
+        hashedCodes.splice(codeIndex, 1);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { backupCodes: JSON.stringify(hashedCodes) }
+        });
+        isValid = true;
+        logger.info(`Backup code used for user: ${user.email}. ${hashedCodes.length} codes remaining.`);
+      }
+    } else {
+      // Verify TOTP code
+      isValid = twoFactorService.verifyToken(user.twoFactorSecret, code);
+    }
+
+    if (!isValid) {
+      return res.status(401).json({ error: 'Invalid verification code' });
+    }
+
+    // 2FA verified - create full session
+    const sessionId = uuidv4();
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, sessionId },
+      JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+        userAgent: req.get('user-agent'),
+        ipAddress: req.ip
+      }
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    });
+
+    logger.info(`User logged in with 2FA: ${user.email}`);
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.USE_HTTPS === 'true',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        plan: user.plan,
+        theme: user.theme,
+        currency: user.currency,
+        timezone: user.timezone
+      },
+      token,
+      expiresAt
+    });
+  } catch (err) {
+    logger.error('2FA verification error:', err);
+    res.status(500).json({ error: '2FA verification failed' });
   }
 });
 

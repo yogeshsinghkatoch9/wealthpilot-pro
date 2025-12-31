@@ -87,6 +87,8 @@ const notificationsRoutes = require('./routes/notifications');
 const aiReportsRoutes = require('./routes/aiReports');
 const aiChatRoutes = require('./routes/aiChat');
 const scannerRoutes = require('./routes/scanner');
+const backupRoutes = require('./routes/backup');
+const webhookRoutes = require('./routes/webhooks');
 const { requestMonitoringMiddleware } = require('./services/monitoringService');
 
 // Security middleware
@@ -434,6 +436,8 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 // ==================== TWO-FACTOR AUTHENTICATION ROUTES ====================
 app.use('/api/2fa', authenticate, twoFactorRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/backup', backupRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // ==================== CACHE MANAGEMENT ENDPOINTS ====================
 // Cache stats (admin/monitoring)

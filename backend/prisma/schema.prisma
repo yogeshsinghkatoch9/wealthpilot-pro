@@ -31,6 +31,12 @@ model User {
   plan          String    @default("free")
   planExpiresAt DateTime? @map("plan_expires_at")
 
+  // Two-Factor Authentication
+  twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorSecret  String?  @map("two_factor_secret")
+  twoFactorPending Boolean  @default(false) @map("two_factor_pending")
+  backupCodes      String?  @map("backup_codes")
+
   portfolios    Portfolio[]
   watchlists    Watchlist[]
   alerts        Alert[]
@@ -71,6 +77,45 @@ model ApiKey {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([keyHash])
+}
+
+model Webhook {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  url            String
+  secret         String
+  events         String    // JSON array of event types
+  description    String?
+  headers        String?   // JSON object of custom headers
+  isActive       Boolean   @default(true) @map("is_active")
+  disabledReason String?   @map("disabled_reason")
+  disabledAt     DateTime? @map("disabled_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  deliveries     WebhookDelivery[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id          String   @id @default(uuid())
+  webhookId   String   @map("webhook_id")
+  deliveryId  String   @map("delivery_id")
+  eventType   String   @map("event_type")
+  status      String   // success, failed
+  statusCode  Int?     @map("status_code")
+  attempt     Int      @default(0)
+  error       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([deliveryId])
+  @@map("webhook_deliveries")
 }
 
 model VerificationToken {

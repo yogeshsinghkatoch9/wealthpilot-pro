@@ -12,7 +12,11 @@
     "lint:fix": "eslint src/ --ext .ts,.js --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@sentry/node": "^10.32.1",
@@ -30,6 +34,7 @@
     "socket.io": "^4.6.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@babel/preset-env": "^7.28.5",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.6",

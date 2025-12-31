@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const twoFactorService = require('../services/twoFactorService');
-const Database = require('../db/database');
+const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 
 /**
@@ -26,8 +26,8 @@ router.post('/setup', async (req, res) => {
     const userEmail = req.user.email;
 
     // Check if 2FA is already enabled
-    const user = Database.getUserById(userId);
-    if (user?.two_factor_enabled) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user?.twoFactorEnabled) {
       return res.status(400).json({
         error: '2FA is already enabled. Disable it first to set up again.'
       });
@@ -40,10 +40,13 @@ router.post('/setup', async (req, res) => {
     const qrCode = await twoFactorService.generateQRCode(secret.otpauthUrl);
 
     // Store temporary secret (not enabled until verified)
-    Database.db.prepare(`
-      UPDATE users SET two_factor_secret = ?, two_factor_pending = 1
-      WHERE id = ?
-    `).run(secret.base32, userId);
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorSecret: secret.base32,
+        twoFactorPending: true
+      }
+    });
 
     res.json({
       message: 'Scan the QR code with your authenticator app',
@@ -88,15 +91,15 @@ router.post('/verify-setup', async (req, res) => {
     }
 
     // Get pending secret
-    const user = Database.getUserById(userId);
-    if (!user?.two_factor_secret || !user?.two_factor_pending) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.twoFactorSecret || !user?.twoFactorPending) {
       return res.status(400).json({
         error: 'No pending 2FA setup. Please start setup first.'
       });
     }
 
     // Verify token
-    const isValid = twoFactorService.verifyToken(user.two_factor_secret, token);
+    const isValid = twoFactorService.verifyToken(user.twoFactorSecret, token);
     if (!isValid) {
       return res.status(400).json({ error: 'Invalid token. Please try again.' });
     }
@@ -105,13 +108,14 @@ router.post('/verify-setup', async (req, res) => {
     const backupCodes = twoFactorService.generateBackupCodes();
 
     // Enable 2FA and store backup codes
-    Database.db.prepare(`
-      UPDATE users
-      SET two_factor_enabled = 1,
-          two_factor_pending = 0,
-          backup_codes = ?
-      WHERE id = ?
-    `).run(JSON.stringify(backupCodes.hashedCodes), userId);
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: true,
+        twoFactorPending: false,
+        backupCodes: JSON.stringify(backupCodes.hashedCodes)
+      }
+    });
 
     logger.info(`2FA enabled for user: ${userId}`);
 
@@ -151,8 +155,8 @@ router.post('/verify', async (req, res) => {
       return res.status(400).json({ error: 'User ID and token are required' });
     }
 
-    const user = Database.getUserById(userId);
-    if (!user?.two_factor_enabled) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.twoFactorEnabled) {
       return res.status(400).json({ error: '2FA is not enabled for this user' });
     }
 
@@ -160,22 +164,23 @@ router.post('/verify', async (req, res) => {
 
     if (isBackupCode) {
       // Verify backup code
-      const hashedCodes = JSON.parse(user.backup_codes || '[]');
+      const hashedCodes = JSON.parse(user.backupCodes || '[]');
       const codeIndex = twoFactorService.verifyBackupCode(token, hashedCodes);
 
       if (codeIndex >= 0) {
         // Remove used backup code
         hashedCodes.splice(codeIndex, 1);
-        Database.db.prepare(`
-          UPDATE users SET backup_codes = ? WHERE id = ?
-        `).run(JSON.stringify(hashedCodes), userId);
+        await prisma.user.update({
+          where: { id: userId },
+          data: { backupCodes: JSON.stringify(hashedCodes) }
+        });
 
         isValid = true;
         logger.info(`Backup code used for user: ${userId}. ${hashedCodes.length} codes remaining.`);
       }
     } else {
       // Verify TOTP
-      isValid = twoFactorService.verifyToken(user.two_factor_secret, token);
+      isValid = twoFactorService.verifyToken(user.twoFactorSecret, token);
     }
 
     if (!isValid) {
@@ -219,33 +224,34 @@ router.post('/disable', async (req, res) => {
       return res.status(400).json({ error: 'Token and password are required' });
     }
 
-    const user = Database.getUserById(userId);
-    if (!user?.two_factor_enabled) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.twoFactorEnabled) {
       return res.status(400).json({ error: '2FA is not enabled' });
     }
 
     // Verify password
     const bcrypt = require('bcryptjs');
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid password' });
     }
 
     // Verify 2FA token
-    const isValid = twoFactorService.verifyToken(user.two_factor_secret, token);
+    const isValid = twoFactorService.verifyToken(user.twoFactorSecret, token);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid 2FA token' });
     }
 
     // Disable 2FA
-    Database.db.prepare(`
-      UPDATE users
-      SET two_factor_enabled = 0,
-          two_factor_secret = NULL,
-          two_factor_pending = 0,
-          backup_codes = NULL
-      WHERE id = ?
-    `).run(userId);
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecret: null,
+        twoFactorPending: false,
+        backupCodes: null
+      }
+    });
 
     logger.info(`2FA disabled for user: ${userId}`);
 
@@ -264,16 +270,16 @@ router.post('/disable', async (req, res) => {
  *     summary: Get 2FA status for current user
  *     security: [{ bearerAuth: [] }]
  */
-router.get('/status', (req, res) => {
+router.get('/status', async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = Database.getUserById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    const backupCodes = user?.backup_codes ? JSON.parse(user.backup_codes) : [];
+    const backupCodes = user?.backupCodes ? JSON.parse(user.backupCodes) : [];
 
     res.json({
-      enabled: !!user?.two_factor_enabled,
-      pending: !!user?.two_factor_pending,
+      enabled: !!user?.twoFactorEnabled,
+      pending: !!user?.twoFactorPending,
       backupCodesRemaining: backupCodes.length
     });
   } catch (err) {
@@ -308,13 +314,13 @@ router.post('/regenerate-backup-codes', async (req, res) => {
       return res.status(400).json({ error: 'Token is required' });
     }
 
-    const user = Database.getUserById(userId);
-    if (!user?.two_factor_enabled) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.twoFactorEnabled) {
       return res.status(400).json({ error: '2FA is not enabled' });
     }
 
     // Verify token
-    const isValid = twoFactorService.verifyToken(user.two_factor_secret, token);
+    const isValid = twoFactorService.verifyToken(user.twoFactorSecret, token);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid 2FA token' });
     }
@@ -323,9 +329,10 @@ router.post('/regenerate-backup-codes', async (req, res) => {
     const backupCodes = twoFactorService.generateBackupCodes();
 
     // Store new codes
-    Database.db.prepare(`
-      UPDATE users SET backup_codes = ? WHERE id = ?
-    `).run(JSON.stringify(backupCodes.hashedCodes), userId);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { backupCodes: JSON.stringify(backupCodes.hashedCodes) }
+    });
 
     logger.info(`Backup codes regenerated for user: ${userId}`);
 

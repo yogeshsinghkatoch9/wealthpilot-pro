@@ -25,69 +25,264 @@
 
     <!-- Login Card -->
     <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-8">
-      <h2 class="text-2xl font-semibold text-white mb-6">Welcome back</h2>
+      <!-- Login Form (Step 1) -->
+      <div id="login-step">
+        <h2 class="text-2xl font-semibold text-white mb-6">Welcome back</h2>
 
-      <!-- Success message -->
-      <% if (typeof success !== 'undefined' && success) { %>
-      <div class="mb-4 p-3 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-400 text-sm">
-        <%= success %>
+        <!-- Success message -->
+        <% if (typeof success !== 'undefined' && success) { %>
+        <div class="mb-4 p-3 bg-emerald-500/20 border border-emerald-500/50 rounded-lg text-emerald-400 text-sm">
+          <%= success %>
+        </div>
+        <% } %>
+
+        <!-- Error message -->
+        <div id="error-message" class="hidden mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm"></div>
+
+        <form id="login-form" class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
+            <input
+              type="email"
+              name="email"
+              id="email"
+              required
+              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="you@example.com"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Password</label>
+            <input
+              type="password"
+              name="password"
+              id="password"
+              required
+              class="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="••••••••"
+            >
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2 text-sm text-slate-400">
+              <input type="checkbox" class="rounded bg-slate-700 border-slate-600">
+              Remember me
+            </label>
+            <a href="/forgot-password" class="text-sm text-blue-400 hover:text-blue-300">Forgot password?</a>
+          </div>
+
+          <button
+            type="submit"
+            id="login-btn"
+            class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition disabled:opacity-50"
+          >
+            Sign in
+          </button>
+        </form>
+
+        <div class="mt-6 text-center text-slate-400 text-sm">
+          Don't have an account?
+          <a href="/register" class="text-blue-400 hover:text-blue-300">Sign up</a>
+        </div>
       </div>
-      <% } %>
 
-      <!-- Error message -->
-      <div id="error-message" class="hidden mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm"></div>
+      <!-- 2FA Verification Step (Step 2) -->
+      <div id="2fa-step" class="hidden">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-semibold text-white">Two-Factor Authentication</h2>
+          <p class="text-slate-400 mt-2">Enter the 6-digit code from your authenticator app</p>
+        </div>
 
-      <form id="login-form" method="POST" action="/login" class="space-y-5">
-        <div>
-          <label class="block text-sm font-medium text-slate-300 mb-2">Email</label>
-          <input 
-            type="email" 
-            name="email" 
-            required
-            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="you@example.com"
+        <div id="2fa-error" class="hidden mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm"></div>
+
+        <form id="2fa-form" class="space-y-5">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Verification Code</label>
+            <input
+              type="text"
+              id="2fa-code"
+              required
+              maxlength="6"
+              pattern="[0-9]{6}"
+              autocomplete="one-time-code"
+              class="w-full px-4 py-4 bg-slate-900/50 border border-slate-600 rounded-lg text-white text-center text-2xl tracking-[0.5em] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="000000"
+            >
+          </div>
+
+          <button
+            type="submit"
+            id="2fa-btn"
+            class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition disabled:opacity-50"
           >
-        </div>
+            Verify
+          </button>
+        </form>
 
-        <div>
-          <label class="block text-sm font-medium text-slate-300 mb-2">Password</label>
-          <input 
-            type="password" 
-            name="password" 
-            required
-            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="••••••••"
+        <div class="mt-6">
+          <button
+            type="button"
+            id="use-backup-btn"
+            class="w-full py-2 text-slate-400 text-sm hover:text-slate-300 transition"
           >
+            Use a backup code instead
+          </button>
         </div>
 
-        <div class="flex items-center justify-between">
-          <label class="flex items-center gap-2 text-sm text-slate-400">
-            <input type="checkbox" class="rounded bg-slate-700 border-slate-600">
-            Remember me
-          </label>
-          <a href="/forgot-password" class="text-sm text-blue-400 hover:text-blue-300">Forgot password?</a>
+        <!-- Backup Code Input (hidden by default) -->
+        <div id="backup-code-section" class="hidden mt-4 pt-4 border-t border-slate-700">
+          <label class="block text-sm font-medium text-slate-300 mb-2">Backup Code</label>
+          <input
+            type="text"
+            id="backup-code"
+            maxlength="10"
+            class="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter backup code"
+          >
+          <button
+            type="button"
+            id="verify-backup-btn"
+            class="w-full mt-3 py-3 bg-slate-600 text-white font-medium rounded-lg hover:bg-slate-500 transition"
+          >
+            Verify with Backup Code
+          </button>
         </div>
 
-        <button
-          type="submit"
-          class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800 transition"
-        >
-          Sign in
-        </button>
-      </form>
-
-      <div class="mt-6 text-center text-slate-400 text-sm">
-        Don't have an account?
-        <a href="/register" class="text-blue-400 hover:text-blue-300">Sign up</a>
+        <div class="mt-4 text-center">
+          <button type="button" id="back-to-login" class="text-sm text-slate-400 hover:text-slate-300">
+            ← Back to login
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
+    let tempToken = null;
+
+    // Show server-side error if any
     <% if (typeof error !== 'undefined' && error) { %>
     document.getElementById('error-message').textContent = <%- JSON.stringify(error || '') %>;
     document.getElementById('error-message').classList.remove('hidden');
     <% } %>
+
+    // Login form handler
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('login-btn');
+      const errorEl = document.getElementById('error-message');
+
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      errorEl.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        // Check if 2FA is required
+        if (data.requires2FA) {
+          tempToken = data.tempToken;
+          document.getElementById('login-step').classList.add('hidden');
+          document.getElementById('2fa-step').classList.remove('hidden');
+          document.getElementById('2fa-code').focus();
+        } else {
+          // Login successful, redirect to dashboard
+          window.location.href = '/dashboard';
+        }
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+      }
+    });
+
+    // 2FA verification handler
+    document.getElementById('2fa-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await verify2FA(document.getElementById('2fa-code').value, false);
+    });
+
+    // Backup code verification
+    document.getElementById('verify-backup-btn').addEventListener('click', async () => {
+      await verify2FA(document.getElementById('backup-code').value, true);
+    });
+
+    async function verify2FA(code, isBackupCode) {
+      const btn = isBackupCode ? document.getElementById('verify-backup-btn') : document.getElementById('2fa-btn');
+      const errorEl = document.getElementById('2fa-error');
+
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      errorEl.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/auth/verify-2fa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tempToken,
+            code,
+            isBackupCode
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Verification failed');
+        }
+
+        // 2FA verified, redirect to dashboard
+        window.location.href = '/dashboard';
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = isBackupCode ? 'Verify with Backup Code' : 'Verify';
+      }
+    }
+
+    // Toggle backup code section
+    document.getElementById('use-backup-btn').addEventListener('click', () => {
+      document.getElementById('backup-code-section').classList.toggle('hidden');
+    });
+
+    // Back to login
+    document.getElementById('back-to-login').addEventListener('click', () => {
+      document.getElementById('2fa-step').classList.add('hidden');
+      document.getElementById('login-step').classList.remove('hidden');
+      tempToken = null;
+    });
+
+    // Auto-submit 2FA when 6 digits entered
+    document.getElementById('2fa-code').addEventListener('input', (e) => {
+      if (e.target.value.length === 6) {
+        document.getElementById('2fa-form').dispatchEvent(new Event('submit'));
+      }
+    });
   </script>
 </body>
 </html>
