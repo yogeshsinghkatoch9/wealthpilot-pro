@@ -62,16 +62,15 @@ cookies.txt
 *.old
 *.visualizations
 
-# Test files
+# Test files (keep actual test directories)
 test-*.js
 test-*.sh
 test-*.html
-tests/
-backend/tests/
-frontend/__tests__/
 **/test-data/
-jest.config.js
-jest.config.prod.js
+# Keep test directories for CI
+!backend/tests/
+!frontend/__tests__/
+!backend/jest.config.js
 
 # Generated files
 *.pdf
@@ -95,12 +94,12 @@ postman/
 
 # Duplicate folders
 /public/
-/scripts/
 
-# Shell scripts (except docker entrypoint)
+# Shell scripts (keep infrastructure scripts)
 test-*.sh
 deploy-*.sh
-setup-*.sh
+# Keep setup scripts for SSL
+!scripts/setup-ssl.sh
 !backend/docker-entrypoint.sh
 
 # Python files
@@ -123,8 +122,9 @@ docker-compose.dev.yml
 *.template
 *.sample
 
-# Nginx
-nginx/
+# Nginx SSL certificates (keep config)
+nginx/ssl/
+!nginx/nginx.conf
 
 # Migration locks
 *.toml
