@@ -2677,6 +2677,39 @@ app.get('/tax-opportunities', requireAuth, async (req, res) => {
   });
 });
 
+app.get('/tax-year-end', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const taxYear = parseInt(req.query.year as string) || new Date().getFullYear();
+
+  // Get portfolios for selection
+  const portfoliosRes = await apiFetch('/portfolios', token);
+  const portfolioList = portfoliosRes.error ? [] : (portfoliosRes.portfolios || portfoliosRes || []);
+  const selectedPid = (req.query.portfolioId as string) || portfolioList[0]?.id;
+
+  let yearEndReport: any = {};
+  if (selectedPid) {
+    const reportRes = await apiFetch(`/tax/year-end/${selectedPid}?year=${taxYear}`, token);
+    yearEndReport = reportRes.error ? {} : reportRes;
+
+    // Get harvest history for the year
+    const historyRes = await apiFetch(`/tax/history/${selectedPid}?year=${taxYear}`, token);
+    yearEndReport.harvestHistory = historyRes.error ? [] : (historyRes.history || []);
+
+    // Get carryforward balance
+    const carryRes = await apiFetch('/tax/carryforward', token);
+    yearEndReport.carryforward = carryRes.error ? { totalBalance: 0, byYear: [] } : carryRes;
+  }
+
+  res.render('pages/tax-year-end', {
+    pageTitle: `Tax Year-End Report ${taxYear}`,
+    yearEndReport,
+    portfolios: portfolioList,
+    selectedPid,
+    taxYear,
+    fmt
+  });
+});
+
 app.get('/export', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const portfolios = await apiFetch('/portfolios', token);
