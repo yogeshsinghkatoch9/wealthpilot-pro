@@ -354,12 +354,13 @@ class MegaMenu {
           </ul>
         </div>
         <div class="megamenu-column">
-          <h3 class="megamenu-column-title">Integrations</h3>
+          <h3 class="megamenu-column-title">AI & Integrations</h3>
           <ul class="megamenu-links">
+            <li><a href="/finance-assistant" class="megamenu-link megamenu-link-new">Finance Assistant <span class="megamenu-badge">NEW</span></a></li>
+            <li><a href="/assistant" class="megamenu-link">AI Assistant</a></li>
             <li><a href="/broker" class="megamenu-link">Broker Connect</a></li>
             <li><a href="/api" class="megamenu-link">API Access</a></li>
             <li><a href="/templates" class="megamenu-link">Templates</a></li>
-            <li><a href="/assistant" class="megamenu-link">AI Assistant</a></li>
           </ul>
         </div>
       </div>
