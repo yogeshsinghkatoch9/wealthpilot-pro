@@ -13,6 +13,7 @@ env:
   FRONTEND_ECR_REPOSITORY: wealthpilot-frontend
   BACKEND_ECS_SERVICE: wealthpilot-backend
   FRONTEND_ECS_SERVICE: wealthpilot-frontend
+  ALB_URL: http://wealthpilot-alb-362647674.us-east-2.elb.amazonaws.com
 
 jobs:
   deploy-backend:
@@ -35,13 +36,11 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push backend image to ECR
-        id: build-backend
         working-directory: ./backend
         run: |
           docker build -t $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:latest -t $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:${{ github.sha }} .
           docker push $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:${{ github.sha }}
-          echo "image=$ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Update ECS backend service
         run: |
@@ -51,19 +50,9 @@ jobs:
             --force-new-deployment \
             --region $AWS_REGION
 
-      - name: Wait for backend deployment
-        run: |
-          echo "Waiting for backend deployment to stabilize..."
-          aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER \
-            --services $BACKEND_ECS_SERVICE \
-            --region $AWS_REGION
-          echo "Backend deployment complete!"
-
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
-    needs: deploy-backend
 
     steps:
       - name: Checkout code
@@ -81,13 +70,11 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build, tag, and push frontend image to ECR
-        id: build-frontend
         working-directory: ./frontend
         run: |
           docker build -t $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:latest -t $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:${{ github.sha }} .
           docker push $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:${{ github.sha }}
-          echo "image=$ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Update ECS frontend service
         run: |
@@ -97,32 +84,48 @@ jobs:
             --force-new-deployment \
             --region $AWS_REGION
 
-      - name: Wait for frontend deployment
-        run: |
-          echo "Waiting for frontend deployment to stabilize..."
-          aws ecs wait services-stable \
-            --cluster $ECS_CLUSTER \
-            --services $FRONTEND_ECS_SERVICE \
-            --region $AWS_REGION
-          echo "Frontend deployment complete!"
-
   verify-deployment:
     name: Verify Deployment
     runs-on: ubuntu-latest
     needs: [deploy-backend, deploy-frontend]
 
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Wait for deployments
+        run: |
+          echo "Waiting for ECS services to stabilize..."
+          for i in {1..30}; do
+            backend_deploys=$(aws ecs describe-services --cluster $ECS_CLUSTER --services $BACKEND_ECS_SERVICE --region $AWS_REGION --query 'services[0].deployments | length(@)' --output text)
+            frontend_deploys=$(aws ecs describe-services --cluster $ECS_CLUSTER --services $FRONTEND_ECS_SERVICE --region $AWS_REGION --query 'services[0].deployments | length(@)' --output text)
+            echo "Attempt $i/30: Backend deployments: $backend_deploys, Frontend deployments: $frontend_deploys"
+            if [ "$backend_deploys" = "1" ] && [ "$frontend_deploys" = "1" ]; then
+              echo "All deployments complete!"
+              break
+            fi
+            sleep 20
+          done
+
       - name: Health check
         run: |
-          echo "Waiting for services to be fully available..."
-          sleep 30
-
           echo "Checking backend health..."
-          curl -f http://wealthpilot-alb-362647674.us-east-2.elb.amazonaws.com/health || exit 1
+          for i in {1..5}; do
+            if curl -sf $ALB_URL/health; then
+              echo "Backend is healthy!"
+              break
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 10
+          done
 
           echo ""
           echo "Checking frontend..."
-          curl -f http://wealthpilot-alb-362647674.us-east-2.elb.amazonaws.com/login || exit 1
+          curl -sf $ALB_URL/login && echo "Frontend is healthy!"
 
           echo ""
           echo "Deployment verified successfully!"
