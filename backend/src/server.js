@@ -91,6 +91,20 @@ const backupRoutes = require('./routes/backup');
 const webhookRoutes = require('./routes/webhooks');
 const { requestMonitoringMiddleware } = require('./services/monitoringService');
 
+// Finance Assistant routes with error handling
+let assistantRoutes;
+try {
+  assistantRoutes = require('./routes/assistant');
+  console.log('[SERVER] Finance Assistant routes loaded successfully');
+} catch (error) {
+  console.error('[SERVER] Failed to load Finance Assistant routes:', error.message);
+  const expressRouter = require('express').Router;
+  assistantRoutes = expressRouter();
+  assistantRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Finance Assistant routes failed to load' });
+  });
+}
+
 // Security middleware
 const securityHeaders = require('./middleware/securityHeaders');
 const {
@@ -680,6 +694,10 @@ app.use('/api/notifications', authenticate, notificationsRoutes);
 // ==================== FEATURE ROUTES (Protected) ====================
 // Mount all feature routes with authentication
 app.use('/api', authenticate, featuresRoutes);
+
+// ==================== FINANCE ASSISTANT ROUTES ====================
+// ChatGPT-like AI assistant with streaming, tool calling, and file analysis
+app.use('/api/assistant', assistantRoutes);
 
 // GET /api/users/me - Get current user profile
 app.get('/api/users/me', authenticate, async (req, res) => {
