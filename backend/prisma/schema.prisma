@@ -990,3 +990,57 @@ model OAuthToken {
   @@index([providerId])
   @@map("oauth_tokens")
 }
+
+// ============== FINANCE ASSISTANT ==============
+
+model AssistantSession {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  title        String   @default("New Conversation")
+  portfolioId  String?  @map("portfolio_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  messages     AssistantMessage[]
+  attachments  AssistantAttachment[]
+
+  @@index([userId])
+  @@index([portfolioId])
+  @@index([createdAt])
+  @@map("assistant_sessions")
+}
+
+model AssistantMessage {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  role        String   // 'user' | 'assistant' | 'system' | 'tool'
+  content     String   @db.Text
+  toolCalls   String?  @map("tool_calls") @db.Text // JSON for tool invocations
+  toolResults String?  @map("tool_results") @db.Text // JSON for tool responses
+  tokens      Int?
+  provider    String?  // 'claude' | 'openai'
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session     AssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("assistant_messages")
+}
+
+model AssistantAttachment {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  messageId   String?  @map("message_id")
+  filename    String
+  mimeType    String   @map("mime_type")
+  size        Int
+  content     String?  @db.Text // Extracted text content
+  analysis    String?  @db.Text // AI analysis summary
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session     AssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("assistant_attachments")
+}

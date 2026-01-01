@@ -182,6 +182,20 @@ try {
   });
 }
 
+// Finance Assistant routes with error handling
+let assistantRoutes;
+try {
+  assistantRoutes = require('./routes/assistant');
+  console.log('[INDEX] Finance Assistant routes loaded successfully');
+} catch (error) {
+  console.error('[INDEX] Failed to load Finance Assistant routes:', error.message);
+  const expressRouter = require('express').Router;
+  assistantRoutes = expressRouter();
+  assistantRoutes.all('*', (req, res) => {
+    res.status(500).json({ success: false, error: 'Finance Assistant routes failed to load' });
+  });
+}
+
 // Earnings calendar routes with error handling
 let earningsCalendarRoutes;
 try {
@@ -503,6 +517,7 @@ app.use('/api/tax', taxHarvestingRoutes); // Tax-loss harvesting
 // AI Routes
 app.use('/api/ai/chat', aiChatRoutes); // AI chat with streaming
 app.use('/api/ai-reports', aiReportsRoutes); // AI report generation
+app.use('/api/assistant', assistantRoutes); // Finance Assistant (ChatGPT-like)
 
 // Direct AI status endpoint at /api/ai/status for compatibility
 app.get('/api/ai/status', (req, res) => {

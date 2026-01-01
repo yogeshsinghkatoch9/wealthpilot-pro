@@ -2961,6 +2961,32 @@ app.get('/chat', requireAuth, async (req, res) => {
   });
 });
 
+// Finance Assistant - ChatGPT-like financial assistant
+app.get('/finance-assistant', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const selectedPortfolioId = req.query.portfolio as string || '';
+
+  const [portfoliosRes, sessionsRes, suggestionsRes] = await Promise.all([
+    apiFetch('/portfolios', token),
+    apiFetch('/assistant/sessions?limit=20', token),
+    apiFetch(`/assistant/suggestions${selectedPortfolioId ? `?portfolioId=${selectedPortfolioId}` : ''}`, token)
+  ]);
+
+  const portfolios = portfoliosRes.error ? [] : portfoliosRes;
+  const sessions = sessionsRes.error ? [] : (sessionsRes.sessions || []);
+  const suggestions = suggestionsRes.error ? [] : (suggestionsRes.suggestions || []);
+
+  res.render('pages/finance-assistant', {
+    pageTitle: 'Finance Assistant',
+    portfolios,
+    sessions,
+    suggestions,
+    selectedPortfolioId,
+    authToken: token,
+    fmt
+  });
+});
+
 app.get('/crypto', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const data = await apiFetch('/crypto', token);
