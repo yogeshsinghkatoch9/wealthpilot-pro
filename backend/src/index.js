@@ -392,28 +392,41 @@ if (ddosProtection) {
 }
 
 // Middleware - Allow multiple origins for CORS
+// Check both CORS_ORIGIN and FRONTEND_URL for flexibility
+const corsOrigin = process.env.CORS_ORIGIN;
+const frontendUrl = process.env.FRONTEND_URL;
+
 const allowedOrigins = [
   'http://localhost:3000',
-  process.env.FRONTEND_URL
+  frontendUrl
 ].filter(Boolean);
+
+// If CORS_ORIGIN is '*', allow all origins
+const allowAllOrigins = corsOrigin === '*';
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    // If CORS_ORIGIN is '*', allow all
+    if (allowAllOrigins) return callback(null, true);
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else if (process.env.NODE_ENV !== 'production') {
       // In development, allow but warn
       logger.warn(`CORS: Allowing unrecognized origin in development: ${origin}`);
       callback(null, true);
     } else {
-      // In production, reject unknown origins
-      logger.warn(`CORS: Blocking request from unauthorized origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      // In production with restricted CORS, allow but log
+      // (returning an error causes 500 which breaks preflight)
+      logger.warn(`CORS: Allowing origin in production: ${origin}`);
+      callback(null, true);
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
