@@ -1,0 +1,128 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REGISTRY: 110683565876.dkr.ecr.us-east-2.amazonaws.com
+  ECS_CLUSTER: wealthpilot-cluster
+  BACKEND_ECR_REPOSITORY: wealthpilot-backend
+  FRONTEND_ECR_REPOSITORY: wealthpilot-frontend
+  BACKEND_ECS_SERVICE: wealthpilot-backend
+  FRONTEND_ECS_SERVICE: wealthpilot-frontend
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push backend image to ECR
+        id: build-backend
+        working-directory: ./backend
+        run: |
+          docker build -t $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:latest -t $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:${{ github.sha }} .
+          docker push $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:${{ github.sha }}
+          echo "image=$ECR_REGISTRY/$BACKEND_ECR_REPOSITORY:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Update ECS backend service
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $BACKEND_ECS_SERVICE \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      - name: Wait for backend deployment
+        run: |
+          echo "Waiting for backend deployment to stabilize..."
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $BACKEND_ECS_SERVICE \
+            --region $AWS_REGION
+          echo "Backend deployment complete!"
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: deploy-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push frontend image to ECR
+        id: build-frontend
+        working-directory: ./frontend
+        run: |
+          docker build -t $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:latest -t $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:${{ github.sha }} .
+          docker push $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:${{ github.sha }}
+          echo "image=$ECR_REGISTRY/$FRONTEND_ECR_REPOSITORY:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Update ECS frontend service
+        run: |
+          aws ecs update-service \
+            --cluster $ECS_CLUSTER \
+            --service $FRONTEND_ECS_SERVICE \
+            --force-new-deployment \
+            --region $AWS_REGION
+
+      - name: Wait for frontend deployment
+        run: |
+          echo "Waiting for frontend deployment to stabilize..."
+          aws ecs wait services-stable \
+            --cluster $ECS_CLUSTER \
+            --services $FRONTEND_ECS_SERVICE \
+            --region $AWS_REGION
+          echo "Frontend deployment complete!"
+
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+
+    steps:
+      - name: Health check
+        run: |
+          echo "Waiting for services to be fully available..."
+          sleep 30
+
+          echo "Checking backend health..."
+          curl -f http://wealthpilot-alb-362647674.us-east-2.elb.amazonaws.com/health || exit 1
+
+          echo ""
+          echo "Checking frontend..."
+          curl -f http://wealthpilot-alb-362647674.us-east-2.elb.amazonaws.com/login || exit 1
+
+          echo ""
+          echo "Deployment verified successfully!"
