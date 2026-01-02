@@ -144,13 +144,33 @@ if (currentRsi >= 70) {
 <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/js/tradingview-charts.js"></script>
 <script>
-// RSI Chart with TradingView
-const rsiValue = <%= currentRsi %>;
-const rsiHistory = <%- JSON.stringify(rsiHistory) %> || [];
-
+// RSI Chart with TradingView - fetch data client-side
+const symbol = '<%= symbol || "AAPL" %>';
 const container = document.getElementById('tvRsiChart');
-if (container && typeof LightweightCharts !== 'undefined') {
+
+async function loadRsiChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
   try {
+    // Fetch technicals data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/technicals/${symbol}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    const rsiSeries = data.rsi?.series || [];
+    const dates = data.dates || [];
+
+    if (rsiSeries.length === 0) throw new Error('No RSI data');
+
+    // Clear loading message
+    container.innerHTML = '';
+
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: 320,
@@ -173,34 +193,21 @@ if (container && typeof LightweightCharts !== 'undefined') {
     });
 
     // Add RSI line series
-    const rsiSeries = chart.addLineSeries({
+    const rsiLine = chart.addLineSeries({
       color: '#f59e0b',
       lineWidth: 2,
       priceScaleId: 'right',
     });
 
-    // Generate RSI data points
-    const rsiData = [];
-    const now = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      // Use historical data if available, otherwise generate based on current value
-      const histValue = rsiHistory[29 - i]?.value || rsiHistory[29 - i];
-      const value = i === 0 ? rsiValue : (histValue || (rsiValue + (Math.sin(i * 0.5) * 10)));
-      rsiData.push({ time: dateStr, value: Math.max(0, Math.min(100, value)) });
-    }
-    rsiSeries.setData(rsiData);
-
-    // Set price scale range for RSI (0-100)
-    chart.priceScale('right').applyOptions({
-      autoScale: false,
-      scaleMargins: { top: 0.05, bottom: 0.05 },
-    });
+    // Build RSI data with actual dates
+    const rsiData = rsiSeries.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (rsiSeries.length - i) * 86400000).toISOString().split('T')[0],
+      value: Math.max(0, Math.min(100, value))
+    }));
+    rsiLine.setData(rsiData);
 
     // Add overbought/oversold lines
-    rsiSeries.createPriceLine({
+    rsiLine.createPriceLine({
       price: 70,
       color: '#ef4444',
       lineWidth: 1,
@@ -209,7 +216,7 @@ if (container && typeof LightweightCharts !== 'undefined') {
       title: 'Overbought',
     });
 
-    rsiSeries.createPriceLine({
+    rsiLine.createPriceLine({
       price: 30,
       color: '#10b981',
       lineWidth: 1,
@@ -218,7 +225,7 @@ if (container && typeof LightweightCharts !== 'undefined') {
       title: 'Oversold',
     });
 
-    rsiSeries.createPriceLine({
+    rsiLine.createPriceLine({
       price: 50,
       color: '#64748b',
       lineWidth: 1,
@@ -237,6 +244,13 @@ if (container && typeof LightweightCharts !== 'undefined') {
     console.error('TradingView RSI chart error:', error);
     container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadRsiChart);
+} else {
+  loadRsiChart();
 }
 </script>
 <%- include('../partials/footer') %>

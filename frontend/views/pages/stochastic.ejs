@@ -212,13 +212,33 @@ const bearishCross = kValue < dValue;
 <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/js/tradingview-charts.js"></script>
 <script>
-// Stochastic Chart with TradingView
-const currentK = <%= kValue %>;
-const currentD = <%= dValue %>;
-
+// Stochastic Chart with TradingView - fetch data client-side
+const symbol = '<%= symbol || "AAPL" %>';
 const container = document.getElementById('tvStochChart');
-if (container && typeof LightweightCharts !== 'undefined') {
+
+async function loadStochChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
   try {
+    // Fetch technicals data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/technicals/${symbol}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    const stochSeries = data.stochastic?.series || {};
+    const dates = data.dates || [];
+
+    if (!stochSeries.k || stochSeries.k.length === 0) throw new Error('No Stochastic data');
+
+    // Clear loading message
+    container.innerHTML = '';
+
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: 320,
@@ -241,43 +261,36 @@ if (container && typeof LightweightCharts !== 'undefined') {
     });
 
     // Add %K line series
-    const kSeries = chart.addLineSeries({
+    const kLine = chart.addLineSeries({
       color: '#0ea5e9',
       lineWidth: 2,
       priceScaleId: 'right',
     });
 
     // Add %D line series
-    const dSeries = chart.addLineSeries({
+    const dLine = chart.addLineSeries({
       color: '#f59e0b',
       lineWidth: 2,
       lineStyle: LightweightCharts.LineStyle.Dashed,
       priceScaleId: 'right',
     });
 
-    // Generate stochastic data points
-    const kData = [];
-    const dData = [];
-    const now = new Date();
+    // Build data with actual dates
+    const kData = stochSeries.k.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (stochSeries.k.length - i) * 86400000).toISOString().split('T')[0],
+      value: Math.max(0, Math.min(100, value))
+    }));
 
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+    const dData = stochSeries.d.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (stochSeries.d.length - i) * 86400000).toISOString().split('T')[0],
+      value: Math.max(0, Math.min(100, value))
+    }));
 
-      // Generate values using sine wave pattern
-      const kVal = i === 0 ? currentK : Math.max(5, Math.min(95, currentK + Math.sin(i * 0.4) * 15));
-      const dVal = i === 0 ? currentD : Math.max(5, Math.min(95, currentD + Math.sin(i * 0.4 + 0.3) * 12));
-
-      kData.push({ time: dateStr, value: kVal });
-      dData.push({ time: dateStr, value: dVal });
-    }
-
-    kSeries.setData(kData);
-    dSeries.setData(dData);
+    kLine.setData(kData);
+    dLine.setData(dData);
 
     // Add overbought/oversold lines
-    kSeries.createPriceLine({
+    kLine.createPriceLine({
       price: 80,
       color: '#ef4444',
       lineWidth: 1,
@@ -286,7 +299,7 @@ if (container && typeof LightweightCharts !== 'undefined') {
       title: 'Overbought',
     });
 
-    kSeries.createPriceLine({
+    kLine.createPriceLine({
       price: 20,
       color: '#10b981',
       lineWidth: 1,
@@ -295,7 +308,7 @@ if (container && typeof LightweightCharts !== 'undefined') {
       title: 'Oversold',
     });
 
-    kSeries.createPriceLine({
+    kLine.createPriceLine({
       price: 50,
       color: '#64748b',
       lineWidth: 1,
@@ -314,6 +327,13 @@ if (container && typeof LightweightCharts !== 'undefined') {
     console.error('TradingView Stochastic chart error:', error);
     container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadStochChart);
+} else {
+  loadStochChart();
 }
 </script>
 <%- include('../partials/footer') %>

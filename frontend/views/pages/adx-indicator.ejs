@@ -2,13 +2,12 @@
 // Safe defaults
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const t = typeof technicals !== 'undefined' && technicals ? technicals : {};
-const tech = t.technicals || {};
-const adx = tech.adx || {};
-const price = t.currentPrice || 0;
-const chartData = t.chartData || [];
+// API returns adx directly, not nested under technicals
+const adx = t.adx || {};
+const price = t.price?.current || 0;
 
 // ADX values
-const adxValue = adx.adx || adx.value || 0;
+const adxValue = adx.value || adx.adx || 0;
 const plusDI = adx.plusDI || adx.pdi || 0;
 const minusDI = adx.minusDI || adx.mdi || 0;
 const diSpread = plusDI - minusDI;
@@ -183,105 +182,143 @@ const adxPosition = Math.min(adxValue * 2, 100);
   </div>
 </div>
 
-<!-- Charts -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-white mb-4"><%= symbol %> ADX & DI Lines</h3>
-    <div class="h-56"><canvas id="adxChart"></canvas></div>
-  </div>
-  <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-white mb-4">DI Comparison</h3>
-    <div class="h-56"><canvas id="diChart"></canvas></div>
-  </div>
+<!-- ADX Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4"><%= symbol %> ADX & DI Lines</h3>
+  <div id="tvAdxChart" class="h-80"></div>
 </div>
 <% } %>
 </div></div></main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
 <script>
-<% if (technicals) { %>
-const adxValue = <%= adxValue %>;
-const plusDI = <%= plusDI %>;
-const minusDI = <%= minusDI %>;
+// ADX Chart with TradingView - fetch data client-side
+const symbol = '<%= symbol || "AAPL" %>';
+const container = document.getElementById('tvAdxChart');
 
-// ADX & DI Lines Chart
-<% if (chartData.length > 0) { %>
-const chartLabels = <%- JSON.stringify(chartData.slice(-20).map(d => {
-  const date = new Date(d.date);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-})) %>;
-<% } else { %>
-const chartLabels = ['Current'];
-<% } %>
+async function loadAdxChart() {
+  if (!container) return;
 
-new Chart(document.getElementById('adxChart'), {
-  type: 'line',
-  data: {
-    labels: chartLabels.length > 1 ? chartLabels : ['Previous', 'Current'],
-    datasets: [
-      {
-        label: 'ADX',
-        data: chartLabels.length > 1 ? Array(chartLabels.length).fill(adxValue) : [adxValue * 0.95, adxValue],
-        borderColor: '#8b5cf6',
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.3
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
+  try {
+    // Fetch technicals data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/technicals/${symbol}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    const adxSeries = data.adx?.series || {};
+    const dates = data.dates || [];
+
+    if (!adxSeries.adx || adxSeries.adx.length === 0) throw new Error('No ADX data');
+
+    // Clear loading message
+    container.innerHTML = '';
+
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: 320,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#94a3b8',
       },
-      {
-        label: '+DI',
-        data: chartLabels.length > 1 ? Array(chartLabels.length).fill(plusDI) : [plusDI * 0.95, plusDI],
-        borderColor: '#10b981',
-        borderWidth: 2,
-        fill: false,
-        tension: 0.3
+      grid: {
+        vertLines: { color: '#1e293b' },
+        horzLines: { color: '#1e293b' },
       },
-      {
-        label: '-DI',
-        data: chartLabels.length > 1 ? Array(chartLabels.length).fill(minusDI) : [minusDI * 1.05, minusDI],
-        borderColor: '#ef4444',
-        borderWidth: 2,
-        fill: false,
-        tension: 0.3
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
-    scales: {
-      y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-    }
+      rightPriceScale: {
+        borderColor: '#334155',
+        scaleMargins: { top: 0.05, bottom: 0.05 },
+      },
+      timeScale: {
+        borderColor: '#334155',
+        timeVisible: true,
+      },
+    });
+
+    // Add ADX line series
+    const adxLine = chart.addLineSeries({
+      color: '#8b5cf6',
+      lineWidth: 2,
+      priceScaleId: 'right',
+    });
+
+    // Add +DI line series
+    const plusDILine = chart.addLineSeries({
+      color: '#10b981',
+      lineWidth: 1,
+      priceScaleId: 'right',
+    });
+
+    // Add -DI line series
+    const minusDILine = chart.addLineSeries({
+      color: '#ef4444',
+      lineWidth: 1,
+      priceScaleId: 'right',
+    });
+
+    // Build data with actual dates
+    const adxData = adxSeries.adx.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (adxSeries.adx.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
+
+    const plusDIData = adxSeries.plusDI.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (adxSeries.plusDI.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
+
+    const minusDIData = adxSeries.minusDI.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (adxSeries.minusDI.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
+
+    adxLine.setData(adxData);
+    plusDILine.setData(plusDIData);
+    minusDILine.setData(minusDIData);
+
+    // Add trend strength lines
+    adxLine.createPriceLine({
+      price: 25,
+      color: '#f59e0b',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Strong Trend',
+    });
+
+    adxLine.createPriceLine({
+      price: 20,
+      color: '#64748b',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dotted,
+      axisLabelVisible: false,
+    });
+
+    chart.timeScale().fitContent();
+
+    // Handle resize
+    new ResizeObserver(entries => {
+      chart.applyOptions({ width: entries[0].contentRect.width });
+    }).observe(container);
+
+  } catch (error) {
+    console.error('TradingView ADX chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
-});
+}
 
-// DI Comparison Bar Chart
-new Chart(document.getElementById('diChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Bullish (+DI)', 'Bearish (-DI)', 'ADX'],
-    datasets: [{
-      data: [plusDI, minusDI, adxValue],
-      backgroundColor: ['#10b981', '#ef4444', '#8b5cf6'],
-      borderRadius: 4
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: {
-        grid: { color: '#1e293b' },
-        ticks: { color: '#94a3b8' },
-        suggestedMax: 50
-      },
-      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-    }
-  }
-});
-<% } %>
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadAdxChart);
+} else {
+  loadAdxChart();
+}
 </script>
 <%- include('../partials/footer') %>
