@@ -78,25 +78,57 @@ class MarketDataService {
     }
   }
 
-  async fetchQuote(symbol) {
+  async fetchQuote(symbol, retries = 2) {
     // Try cache first (5 minute TTL)
     return await cacheService.getMarketQuote(symbol, async () => {
-      try {
-        const quote = await this.fetchFromYahooFinance(symbol);
-        logger.info(`Fetched ${symbol}: $${quote.price} (${quote.changePercent.toFixed(2)}%)`);
-        return quote;
-      } catch (error) {
-        logger.error(`Failed to fetch ${symbol}:`, error.message);
-        return null;
+      let lastError;
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const quote = await this.fetchFromYahooFinance(symbol);
+          logger.info(`[Quote] SUCCESS via Yahoo Finance: ${symbol}`);
+          return quote;
+        } catch (error) {
+          lastError = error;
+          if (attempt < retries) {
+            // Wait before retry with exponential backoff
+            await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          }
+        }
       }
+
+      // Only log error on final failure (reduces log noise)
+      logger.debug(`[Quote] Failed ${symbol} after ${retries + 1} attempts: ${lastError?.message}`);
+      return null;
     });
   }
 
   async fetchQuotes(symbols) {
-    const uniqueSymbols = [...new Set(symbols)];
-    const promises = uniqueSymbols.map(symbol => this.fetchQuote(symbol));
-    const results = await Promise.allSettled(promises);
-    return results.filter(r => r.status === 'fulfilled' && r.value !== null).map(r => r.value);
+    const uniqueSymbols = [...new Set(symbols)].filter(Boolean);
+    if (uniqueSymbols.length === 0) return [];
+
+    // Batch processing to avoid overwhelming APIs (10 at a time)
+    const batchSize = 10;
+    const results = [];
+
+    for (let i = 0; i < uniqueSymbols.length; i += batchSize) {
+      const batch = uniqueSymbols.slice(i, i + batchSize);
+      const batchPromises = batch.map(symbol => this.fetchQuote(symbol));
+      const batchResults = await Promise.allSettled(batchPromises);
+
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled' && result.value !== null) {
+          results.push(result.value);
+        }
+      }
+
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < uniqueSymbols.length) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+
+    return results;
   }
 
   /**
@@ -151,23 +183,24 @@ class MarketDataService {
   }
 
   async updateStockQuotes(quotes) {
-    const updateStmt = db.prepare(`
-      INSERT INTO stock_quotes (symbol, price, change_amount, change_percent, volume, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(symbol) DO UPDATE SET
-        price = excluded.price, change_amount = excluded.change_amount,
-        change_percent = excluded.change_percent, volume = excluded.volume,
-        updated_at = excluded.updated_at
-    `);
-
-    const updateMany = db.transaction((quotes) => {
-      for (const quote of quotes) {
-        updateStmt.run(quote.symbol, quote.price, quote.change, quote.changePercent, quote.volume || 0, quote.timestamp);
-      }
-    });
-
     try {
-      updateMany(quotes);
+      // Update quotes one by one (PostgreSQL compatible)
+      for (const quote of quotes) {
+        try {
+          await db.prepare(`
+            INSERT INTO stock_quotes (symbol, price, change_amount, change_percent, volume, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(symbol) DO UPDATE SET
+              price = excluded.price, change_amount = excluded.change_amount,
+              change_percent = excluded.change_percent, volume = excluded.volume,
+              updated_at = excluded.updated_at
+          `).run(quote.symbol, quote.price, quote.change, quote.changePercent, quote.volume || 0, quote.timestamp);
+        } catch (err) {
+          // Table might not exist, skip silently
+          logger.debug(`Could not update quote for ${quote.symbol}: ${err.message}`);
+        }
+      }
+
       logger.info(`Updated ${quotes.length} stock quotes`);
 
       // Broadcast to WebSocket clients
@@ -202,21 +235,51 @@ class MarketDataService {
     }
   }
 
-  getActiveSymbols() {
-    const query = 'SELECT DISTINCT h.symbol FROM holdings h WHERE h.shares > 0';
-    const rows = db.prepare(query).all();
-    return rows.map(r => r.symbol);
+  async getActiveSymbols() {
+    try {
+      // Get symbols from holdings
+      const holdingsQuery = 'SELECT DISTINCT symbol FROM holdings WHERE shares > 0';
+      const holdingsRows = await db.prepare(holdingsQuery).all();
+      const holdingSymbols = Array.isArray(holdingsRows) ? holdingsRows.map(r => r.symbol) : [];
+
+      // Get symbols from watchlist items
+      const watchlistQuery = 'SELECT DISTINCT symbol FROM watchlist_items';
+      const watchlistRows = await db.prepare(watchlistQuery).all();
+      const watchlistSymbols = Array.isArray(watchlistRows) ? watchlistRows.map(r => r.symbol) : [];
+
+      // Combine and deduplicate
+      const allSymbols = [...new Set([...holdingSymbols, ...watchlistSymbols])];
+
+      // Add default market symbols for indices
+      const defaultSymbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI'];
+      const combined = [...new Set([...allSymbols, ...defaultSymbols])];
+
+      return combined.filter(s => s && typeof s === 'string');
+    } catch (error) {
+      logger.error('Error getting active symbols:', error.message);
+      // Return default symbols as fallback
+      return ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI'];
+    }
   }
 
   async updateAllPrices() {
-    const symbols = this.getActiveSymbols();
-    if (symbols.length === 0) return 0;
-    
-    logger.info(`Updating prices for ${symbols.length} symbols`);
+    const symbols = await this.getActiveSymbols();
+    if (!symbols || symbols.length === 0) {
+      logger.debug('No active symbols to update');
+      return 0;
+    }
+
+    logger.info(`📈 Updating ${symbols.length} symbols from live APIs`);
     const quotes = await this.fetchQuotes(symbols);
-    if (quotes.length === 0) return 0;
-    
-    return await this.updateStockQuotes(quotes);
+
+    if (!quotes || quotes.length === 0) {
+      logger.warn('No quotes fetched from APIs');
+      return 0;
+    }
+
+    const updated = await this.updateStockQuotes(quotes);
+    logger.info(`✅ Updated ${quotes.length}/${symbols.length} quotes from live APIs`);
+    return updated;
   }
 
   startPeriodicUpdates(intervalSeconds = 30) {
