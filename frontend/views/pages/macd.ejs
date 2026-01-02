@@ -151,13 +151,33 @@ const bearishCross = macd < signal && histogram < 0;
 <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/js/tradingview-charts.js"></script>
 <script>
-// MACD Chart with TradingView
-const currentMacd = <%= macd %>;
-const currentSignal = <%= signal %>;
-
+// MACD Chart with TradingView - fetch data client-side
+const symbol = '<%= symbol || "AAPL" %>';
 const container = document.getElementById('tvMacdChart');
-if (container && typeof LightweightCharts !== 'undefined') {
+
+async function loadMacdChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
   try {
+    // Fetch technicals data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/technicals/${symbol}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    const macdSeries = data.macd?.series || {};
+    const dates = data.dates || [];
+
+    if (!macdSeries.macd || macdSeries.macd.length === 0) throw new Error('No MACD data');
+
+    // Clear loading message
+    container.innerHTML = '';
+
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: 320,
@@ -179,57 +199,48 @@ if (container && typeof LightweightCharts !== 'undefined') {
     });
 
     // Add histogram series
-    const histogramSeries = chart.addHistogramSeries({
+    const histogramChart = chart.addHistogramSeries({
       priceScaleId: 'right',
     });
 
     // Add MACD line series
-    const macdSeries = chart.addLineSeries({
+    const macdLine = chart.addLineSeries({
       color: '#0ea5e9',
       lineWidth: 2,
       priceScaleId: 'right',
     });
 
     // Add Signal line series
-    const signalSeries = chart.addLineSeries({
+    const signalLine = chart.addLineSeries({
       color: '#f59e0b',
       lineWidth: 2,
       lineStyle: LightweightCharts.LineStyle.Dashed,
       priceScaleId: 'right',
     });
 
-    // Generate MACD data points
-    const macdData = [];
-    const signalData = [];
-    const histogramData = [];
-    const now = new Date();
+    // Build data with actual dates
+    const macdData = macdSeries.macd.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (macdSeries.macd.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
 
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+    const signalData = macdSeries.signal.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (macdSeries.signal.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
 
-      // Generate values based on sine wave pattern with current value at end
-      const progress = (29 - i) / 29;
-      const macdVal = i === 0 ? currentMacd : (currentMacd + Math.sin(i * 0.3) * 1.5);
-      const signalVal = i === 0 ? currentSignal : (currentSignal + Math.sin(i * 0.3 + 0.5) * 1.2);
-      const histVal = macdVal - signalVal;
+    const histogramData = macdSeries.histogram.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (macdSeries.histogram.length - i) * 86400000).toISOString().split('T')[0],
+      value: value,
+      color: value >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+    }));
 
-      macdData.push({ time: dateStr, value: macdVal });
-      signalData.push({ time: dateStr, value: signalVal });
-      histogramData.push({
-        time: dateStr,
-        value: histVal,
-        color: histVal >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'
-      });
-    }
-
-    histogramSeries.setData(histogramData);
-    macdSeries.setData(macdData);
-    signalSeries.setData(signalData);
+    histogramChart.setData(histogramData);
+    macdLine.setData(macdData);
+    signalLine.setData(signalData);
 
     // Add zero line
-    macdSeries.createPriceLine({
+    macdLine.createPriceLine({
       price: 0,
       color: '#64748b',
       lineWidth: 1,
@@ -248,6 +259,13 @@ if (container && typeof LightweightCharts !== 'undefined') {
     console.error('TradingView MACD chart error:', error);
     container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMacdChart);
+} else {
+  loadMacdChart();
 }
 </script>
 <%- include('../partials/footer') %>

@@ -276,52 +276,77 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/js/tradingview-charts.js"></script>
 <script>
-<% if (movingAverages && chartData.length > 0) { %>
-// Prepare OHLC data for TradingView
-const ohlcData = <%- JSON.stringify(chartData.slice(-90).map(d => ({
-  time: d.date.split('T')[0],
-  open: d.open,
-  high: d.high,
-  low: d.low,
-  close: d.close,
-  volume: d.volume
-}))) %>;
-
-// Initialize TradingView chart
+// Fetch and render Moving Averages chart
+const symbol = '<%= symbol || "AAPL" %>';
 const container = document.getElementById('tvMAChart');
-if (container && typeof TradingViewChart !== 'undefined') {
+
+async function loadMAChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
   try {
-    const chart = new TradingViewChart(container, {
-      theme: 'dark',
-      height: 320
+    // Fetch historical data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/market/history/${symbol}?range=1y`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
 
-    // Add candlestick series
-    chart.addCandlestick(ohlcData);
+    if (!response.ok) throw new Error('Failed to fetch data');
 
-    // Add moving averages
-    chart.addSMA(ohlcData, 20, '#3b82f6');  // Blue - 20 SMA
-    chart.addSMA(ohlcData, 50, '#f59e0b');  // Amber - 50 SMA
-    chart.addSMA(ohlcData, 200, '#8b5cf6'); // Purple - 200 SMA
+    const result = await response.json();
+    const data = result.data || result;
+    if (!data || data.length === 0) throw new Error('No data');
 
-    // Add volume
-    chart.addVolume(ohlcData);
+    // Format for TradingView
+    const ohlcData = data.slice(-250).map(d => ({
+      time: d.date.split('T')[0],
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+      volume: d.volume
+    }));
 
-    // Fit content
-    chart.fitContent();
+    // Clear loading message
+    container.innerHTML = '';
+
+    // Initialize TradingView chart
+    if (typeof TradingViewChart !== 'undefined') {
+      const chart = new TradingViewChart(container, {
+        theme: 'dark',
+        height: 320
+      });
+
+      // Add candlestick series
+      chart.addCandlestick(ohlcData);
+
+      // Add moving averages
+      chart.addSMA(ohlcData, 20, '#3b82f6');  // Blue - 20 SMA
+      chart.addSMA(ohlcData, 50, '#f59e0b');  // Amber - 50 SMA
+      if (ohlcData.length >= 200) {
+        chart.addSMA(ohlcData, 200, '#8b5cf6'); // Purple - 200 SMA
+      }
+
+      // Add volume
+      chart.addVolume(ohlcData);
+
+      // Fit content
+      chart.fitContent();
+    } else {
+      throw new Error('TradingView not available');
+    }
   } catch (error) {
-    console.error('TradingView chart error:', error);
+    console.error('Chart error:', error);
     container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMAChart);
 } else {
-  console.log('TradingView not available');
+  loadMAChart();
 }
-<% } else if (movingAverages) { %>
-// No chart data available
-const container = document.getElementById('tvMAChart');
-if (container) {
-  container.innerHTML = '<p class="text-slate-400 text-center py-8">No historical data available for chart</p>';
-}
-<% } %>
 </script>
 <%- include('../partials/footer') %>
