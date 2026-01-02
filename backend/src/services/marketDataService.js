@@ -326,6 +326,15 @@ class MarketDataService {
       lastUpdate: new Date().toISOString()
     };
   }
+
+  // Alias methods for backward compatibility
+  async getQuote(symbol) {
+    return this.fetchQuote(symbol);
+  }
+
+  async getQuotes(symbols) {
+    return this.fetchQuotes(symbols);
+  }
 }
 
 module.exports = MarketDataService;

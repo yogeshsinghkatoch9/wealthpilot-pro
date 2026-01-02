@@ -2,7 +2,9 @@ const express = require('express');
 const { query, param, validationResult } = require('express-validator');
 const MarketDataService = require('../services/marketData');
 const UnifiedMarketDataService = require('../services/unifiedMarketData');
-const { optionalAuth } = require('../middleware/auth');
+const stockDataManager = require('../services/stockDataManager');
+const jobQueue = require('../services/jobQueue');
+const { optionalAuth, authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -232,7 +234,8 @@ router.get('/profile/:symbol', async (req, res) => {
 
 /**
  * GET /api/market/history/:symbol
- * Uses unified service with 4-provider fallback for historical data
+ * Uses StockDataManager - DB first, API fallback
+ * Automatically stores data for future requests
  */
 router.get('/history/:symbol', [
   query('days').optional().isInt({ min: 1, max: 3650 }).toInt()
@@ -241,9 +244,10 @@ router.get('/history/:symbol', [
     const symbol = req.params.symbol.toUpperCase();
     const days = parseInt(req.query.days) || 365;
 
-    logger.info(`[API] Fetching history for ${symbol}, days: ${days} via unified service`);
+    logger.info(`[API] Fetching history for ${symbol}, days: ${days} via StockDataManager`);
 
-    const history = await unifiedMarketData.fetchHistoricalData(symbol, days);
+    // Use StockDataManager which checks DB first, then API
+    const history = await stockDataManager.getHistoricalData(symbol, days);
 
     if (!history || history.length === 0) {
       return res.status(404).json({ error: 'No historical data found for symbol' });
@@ -254,7 +258,8 @@ router.get('/history/:symbol', [
     res.json({
       symbol,
       days,
-      data: history
+      data: history,
+      count: history.length
     });
   } catch (err) {
     logger.error('[API] History error:', {
@@ -426,6 +431,216 @@ router.get('/movers', async (req, res) => {
   } catch (err) {
     logger.error('Get movers error:', err);
     res.status(500).json({ error: 'Failed to get movers' });
+  }
+});
+
+// ==================== STOCK DATA MANAGEMENT ENDPOINTS ====================
+
+/**
+ * GET /api/market/data/status
+ * Get stock data system status
+ */
+router.get('/data/status', async (req, res) => {
+  try {
+    const status = await stockDataManager.getStatus();
+    const queueStats = jobQueue.getStats();
+
+    res.json({
+      stockData: status,
+      jobQueue: queueStats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    logger.error('Data status error:', err);
+    res.status(500).json({ error: 'Failed to get status' });
+  }
+});
+
+/**
+ * POST /api/market/data/populate
+ * Trigger population of stock data for all existing holdings
+ */
+router.post('/data/populate', authenticate, async (req, res) => {
+  try {
+    logger.info('[API] Triggering stock data population');
+
+    const result = await stockDataManager.populateExistingSymbols();
+
+    res.json({
+      success: true,
+      message: `Queued ${result.queued} symbols for data fetch`,
+      total: result.total,
+      queued: result.queued
+    });
+  } catch (err) {
+    logger.error('Data populate error:', err);
+    res.status(500).json({ error: 'Failed to populate data' });
+  }
+});
+
+/**
+ * POST /api/market/data/fetch/:symbol
+ * Trigger data fetch for a specific symbol
+ */
+router.post('/data/fetch/:symbol', authenticate, async (req, res) => {
+  try {
+    const symbol = req.params.symbol.toUpperCase();
+    logger.info(`[API] Triggering data fetch for ${symbol}`);
+
+    const result = await stockDataManager.onTickerAdded(symbol);
+
+    res.json({
+      success: true,
+      symbol,
+      status: result.status,
+      message: result.status === 'queued' ? 'Data fetch queued' :
+               result.status === 'exists' ? 'Data already exists, checking for updates' :
+               'Data fetch pending'
+    });
+  } catch (err) {
+    logger.error(`Data fetch error for ${req.params.symbol}:`, err);
+    res.status(500).json({ error: 'Failed to trigger fetch' });
+  }
+});
+
+/**
+ * POST /api/market/data/update
+ * Trigger daily update for all tracked symbols
+ */
+router.post('/data/update', authenticate, async (req, res) => {
+  try {
+    logger.info('[API] Triggering daily data update');
+
+    const result = await stockDataManager.runDailyUpdate();
+
+    res.json({
+      success: true,
+      message: `Queued ${result.queued} symbols for update`,
+      total: result.total,
+      queued: result.queued
+    });
+  } catch (err) {
+    logger.error('Data update error:', err);
+    res.status(500).json({ error: 'Failed to trigger update' });
+  }
+});
+
+/**
+ * GET /api/market/data/tracker/:symbol
+ * Get tracker info for a specific symbol
+ */
+router.get('/data/tracker/:symbol', async (req, res) => {
+  try {
+    const { prisma } = require('../db/simpleDb');
+    const symbol = req.params.symbol.toUpperCase();
+
+    const tracker = await prisma.stockDataTracker.findUnique({
+      where: { symbol }
+    });
+
+    if (!tracker) {
+      return res.status(404).json({ error: 'Symbol not tracked' });
+    }
+
+    // Also get history count
+    const historyCount = await prisma.stockHistory.count({
+      where: { symbol }
+    });
+
+    // Get date range
+    const dateRange = await prisma.stockHistory.aggregate({
+      where: { symbol },
+      _min: { date: true },
+      _max: { date: true }
+    });
+
+    res.json({
+      ...tracker,
+      actualHistoryCount: historyCount,
+      actualDateRange: {
+        start: dateRange._min.date,
+        end: dateRange._max.date
+      }
+    });
+  } catch (err) {
+    logger.error(`Tracker error for ${req.params.symbol}:`, err);
+    res.status(500).json({ error: 'Failed to get tracker' });
+  }
+});
+
+/**
+ * GET /api/market/data/trackers
+ * Get all tracked symbols
+ */
+router.get('/data/trackers', async (req, res) => {
+  try {
+    const { prisma } = require('../db/simpleDb');
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+
+    const trackers = await prisma.stockDataTracker.findMany({
+      take: limit,
+      skip: offset,
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const total = await prisma.stockDataTracker.count();
+
+    res.json({
+      trackers,
+      total,
+      limit,
+      offset
+    });
+  } catch (err) {
+    logger.error('Trackers error:', err);
+    res.status(500).json({ error: 'Failed to get trackers' });
+  }
+});
+
+/**
+ * GET /api/market/data/history/:symbol
+ * Get stored historical data directly from database
+ */
+router.get('/data/history/:symbol', async (req, res) => {
+  try {
+    const { prisma } = require('../db/simpleDb');
+    const symbol = req.params.symbol.toUpperCase();
+    const limit = parseInt(req.query.limit) || 365;
+
+    const history = await prisma.stockHistory.findMany({
+      where: { symbol },
+      orderBy: { date: 'desc' },
+      take: limit
+    });
+
+    if (history.length === 0) {
+      return res.status(404).json({
+        error: 'No stored history for symbol',
+        hint: `POST /api/market/data/fetch/${symbol} to trigger fetch`
+      });
+    }
+
+    // Reverse to chronological order
+    history.reverse();
+
+    res.json({
+      symbol,
+      count: history.length,
+      data: history.map(h => ({
+        date: h.date.toISOString().split('T')[0],
+        open: h.open,
+        high: h.high,
+        low: h.low,
+        close: h.close,
+        adjClose: h.adjClose,
+        volume: Number(h.volume),
+        changePercent: h.changePercent
+      }))
+    });
+  } catch (err) {
+    logger.error(`DB history error for ${req.params.symbol}:`, err);
+    res.status(500).json({ error: 'Failed to get history' });
   }
 });
 

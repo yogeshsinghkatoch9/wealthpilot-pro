@@ -431,23 +431,54 @@
   </div>
 
   <script>
-    const symbol = '<%= symbol %>';
+    const symbol = '<%= symbol %>' || 'AAPL';
     const FINNHUB_TOKEN = 'd4tm751r01qnn6llpesgd4tm751r01qnn6llpet0';
     let stockData = null;
     let chartInstance = null;
     let currentPeriod = '1W';
 
-    // Load stock data using Finnhub API
+    // Load stock data using backend API (with 7-provider fallback) first, then Finnhub as backup
     async function loadStockData() {
       try {
-        // Fetch quote and profile in parallel
-        const [quoteRes, profileRes] = await Promise.all([
-          fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`),
-          fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${FINNHUB_TOKEN}`)
-        ]);
+        // Try backend API first (has 7-provider fallback)
+        let quote = null;
+        let company = null;
 
-        const quote = await quoteRes.json();
-        const company = await profileRes.json();
+        try {
+          const backendRes = await fetch(`/api/market/quote/${symbol}`, { credentials: 'include' });
+          if (backendRes.ok) {
+            const backendData = await backendRes.json();
+            if (backendData && backendData.price && backendData.price > 0) {
+              quote = {
+                c: backendData.price,
+                d: backendData.change || 0,
+                dp: backendData.changePercent || 0,
+                o: backendData.open || backendData.price,
+                h: backendData.high || backendData.price,
+                l: backendData.low || backendData.price,
+                pc: backendData.previousClose || backendData.price
+              };
+              company = {
+                name: backendData.name || symbol,
+                finnhubIndustry: backendData.sector || '',
+                marketCapitalization: backendData.marketCap ? backendData.marketCap / 1e6 : null
+              };
+            }
+          }
+        } catch (backendError) {
+          console.warn('Backend API failed, trying Finnhub:', backendError);
+        }
+
+        // Fallback to direct Finnhub API if backend didn't work
+        if (!quote || !quote.c || quote.c === 0) {
+          const [quoteRes, profileRes] = await Promise.all([
+            fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`),
+            fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${FINNHUB_TOKEN}`)
+          ]);
+
+          quote = await quoteRes.json();
+          company = await profileRes.json();
+        }
 
         if (!quote.c || quote.c === 0) {
           throw new Error('Stock symbol not found or no data available');

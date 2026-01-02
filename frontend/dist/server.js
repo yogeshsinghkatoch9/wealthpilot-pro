@@ -706,11 +706,15 @@ app.get('/api/auth-check', (req, res) => {
         cookieValue: req.cookies.token ? req.cookies.token.substring(0, 20) + '...' : null
     });
 });
-// Stock Detail Page
+// Stock Detail Page - Redirect /stock without symbol to AAPL
+app.get('/stock', requireAuth, (req, res) => {
+    res.redirect('/stock/AAPL');
+});
 app.get('/stock/:symbol', requireAuth, (req, res) => {
+    const symbol = req.params.symbol?.toUpperCase() || 'AAPL';
     res.render('pages/stock-detail', {
-        pageTitle: `${req.params.symbol} Stock`,
-        symbol: req.params.symbol.toUpperCase()
+        pageTitle: `${symbol} Stock`,
+        symbol
     });
 });
 // Stock Search API Proxy (POST - for search)
@@ -962,10 +966,20 @@ app.get('/watchlist', requireAuth, async (req, res) => {
 app.get('/analytics', requireAuth, async (req, res) => {
     const token = res.locals.token;
     const period = req.query.period || '1Y';
+    // Helper to add timeout to fetch requests
+    const fetchWithTimeout = async (endpoint, timeoutMs = 5000) => {
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeoutMs));
+        try {
+            return await Promise.race([apiFetch(endpoint, token), timeoutPromise]);
+        }
+        catch (e) {
+            return { error: 'Request timeout' };
+        }
+    };
     const [performanceData, attributionData, portfoliosData] = await Promise.all([
-        apiFetch(`/analytics/portfolio-performance?period=${period}`, token),
-        apiFetch('/analytics/attribution', token),
-        apiFetch('/portfolios', token)
+        fetchWithTimeout(`/analytics/portfolio-performance?period=${period}`, 8000),
+        fetchWithTimeout('/analytics/attribution', 5000),
+        fetchWithTimeout('/portfolios', 5000)
     ]);
     const performance = performanceData.error ? null : performanceData;
     const attribution = attributionData.error ? null : attributionData;
@@ -1086,8 +1100,8 @@ app.get('/risk', requireAuth, async (req, res) => {
     const [portfoliosData, riskData] = await Promise.all([
         apiFetch('/portfolios', token),
         selectedPortfolioId
-            ? apiFetch(`/analytics/risk-metrics?portfolioId=${selectedPortfolioId}`, token)
-            : apiFetch('/analytics/risk-metrics', token)
+            ? apiFetch(`/analytics/risk?portfolioId=${selectedPortfolioId}`, token)
+            : apiFetch('/analytics/risk', token)
     ]);
     const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
     res.render('pages/risk', {
@@ -1248,7 +1262,7 @@ app.get('/tax-lots', requireAuth, async (req, res) => {
 });
 app.get('/correlation', requireAuth, async (req, res) => {
     const token = res.locals.token;
-    const correlationData = await apiFetch('/analytics/correlation-matrix', token);
+    const correlationData = await apiFetch('/analytics/correlation', token);
     res.render('pages/correlation', {
         pageTitle: 'Correlation Matrix',
         data: correlationData.error ? null : correlationData,
@@ -2167,6 +2181,8 @@ app.get('/factors', requireAuth, async (req, res) => {
     const attribution = await apiFetch('/analytics/attribution', token);
     res.render('pages/factors', { pageTitle: 'Factor Investing', factors: attribution.error ? null : attribution, fmt });
 });
+// Alias for factor-analysis
+app.get('/factor-analysis', requireAuth, (req, res) => res.redirect('/factors'));
 app.get('/seasonality', requireAuth, async (req, res) => {
     const token = res.locals.token;
     const symbol = req.query.symbol || 'AAPL';
@@ -3067,6 +3083,63 @@ app.get('/dashboard-custom', requireAuth, async (req, res) => {
         portfolios,
         currentPage: 'dashboard-custom',
         theme: req.cookies?.theme || 'dark'
+    });
+});
+// ===================== MISSING ROUTES =====================
+app.get('/options', requireAuth, (req, res) => {
+    res.render('pages/options', { pageTitle: 'Options Tracker' });
+});
+app.get('/dividend-safety', requireAuth, (req, res) => {
+    res.render('pages/dividend-safety', { pageTitle: 'Dividend Safety' });
+});
+app.get('/screener', requireAuth, (req, res) => {
+    res.render('pages/screener', { pageTitle: 'Advanced Stock Screener' });
+});
+app.get('/benchmark', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const metric = req.query.metric || 'return';
+    const benchmark = await apiFetch(`/community/benchmark?metric=${metric}`, token);
+    const leaderboard = await apiFetch('/community/leaderboard', token);
+    res.render('pages/benchmark', {
+        pageTitle: 'Community Benchmark',
+        benchmark: benchmark.error ? {} : benchmark,
+        leaderboard: leaderboard.error ? {} : leaderboard,
+        metric
+    });
+});
+app.get('/institutional-flow', requireAuth, (req, res) => {
+    res.render('pages/institutional-flow', { pageTitle: 'Institutional Flow' });
+});
+app.get('/whale-tracker', requireAuth, (req, res) => {
+    res.render('pages/whale-tracker', { pageTitle: 'Whale Tracker' });
+});
+app.get('/retirement', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const portfoliosData = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosData.error ? [] : portfoliosData;
+    const portfolioValue = portfolios.length > 0 ? (portfolios[0].totalValue || 100000) : 100000;
+    res.render('pages/retirement', {
+        pageTitle: 'Retirement Planner',
+        portfolioValue
+    });
+});
+app.get('/income', requireAuth, async (req, res) => {
+    const token = res.locals.token;
+    const portfoliosData = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosData.error ? [] : portfoliosData;
+    const selectedPid = req.query.portfolio || (portfolios.length > 0 ? portfolios[0].id : null);
+    let incomeData = null;
+    if (selectedPid) {
+        incomeData = await apiFetch(`/analytics/dividend-analysis?portfolioId=${selectedPid}`, token);
+        if (incomeData.error)
+            incomeData = null;
+    }
+    res.render('pages/income', {
+        pageTitle: 'Income Analysis',
+        portfolios,
+        selectedPid,
+        incomeData,
+        fmt
     });
 });
 // ===================== START SERVER =====================
