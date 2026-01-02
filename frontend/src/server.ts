@@ -2461,6 +2461,9 @@ app.get('/factors', requireAuth, async (req, res) => {
   res.render('pages/factors', { pageTitle: 'Factor Investing', factors: attribution.error ? null : attribution, fmt });
 });
 
+// Alias for factor-analysis
+app.get('/factor-analysis', requireAuth, (req, res) => res.redirect('/factors'));
+
 app.get('/seasonality', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
