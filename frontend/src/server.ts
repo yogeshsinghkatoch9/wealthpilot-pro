@@ -807,11 +807,16 @@ app.get('/api/auth-check', (req, res) => {
   });
 });
 
-// Stock Detail Page
+// Stock Detail Page - Redirect /stock without symbol to AAPL
+app.get('/stock', requireAuth, (req, res) => {
+  res.redirect('/stock/AAPL');
+});
+
 app.get('/stock/:symbol', requireAuth, (req, res) => {
+  const symbol = req.params.symbol?.toUpperCase() || 'AAPL';
   res.render('pages/stock-detail', {
-    pageTitle: `${req.params.symbol} Stock`,
-    symbol: req.params.symbol.toUpperCase()
+    pageTitle: `${symbol} Stock`,
+    symbol
   });
 });
 

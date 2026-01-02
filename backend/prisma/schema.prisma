@@ -360,6 +360,46 @@ model Notification {
   @@map("notifications")
 }
 
+// ============== STOCK DATA TRACKING ==============
+
+model StockDataTracker {
+  symbol              String    @id
+  isActive            Boolean   @default(true) @map("is_active")
+
+  // Historical data tracking
+  historyStartDate    DateTime? @map("history_start_date")
+  historyEndDate      DateTime? @map("history_end_date")
+  historyRecordCount  Int       @default(0) @map("history_record_count")
+
+  // Update timestamps
+  lastQuoteUpdate     DateTime? @map("last_quote_update")
+  lastHistoryUpdate   DateTime? @map("last_history_update")
+  lastDividendUpdate  DateTime? @map("last_dividend_update")
+  lastEarningsUpdate  DateTime? @map("last_earnings_update")
+  lastProfileUpdate   DateTime? @map("last_profile_update")
+  lastFinancialsUpdate DateTime? @map("last_financials_update")
+
+  // Initial fetch tracking
+  initialFetchStarted DateTime? @map("initial_fetch_started")
+  initialFetchCompleted DateTime? @map("initial_fetch_completed")
+
+  // Error tracking
+  errorCount          Int       @default(0) @map("error_count")
+  lastError           String?   @map("last_error")
+  lastErrorAt         DateTime? @map("last_error_at")
+
+  // Source tracking
+  primaryDataSource   String?   @map("primary_data_source") // yahoo, finnhub, fmp, etc.
+
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([lastHistoryUpdate])
+  @@index([initialFetchCompleted])
+  @@map("stock_data_tracker")
+}
+
 // ============== MARKET DATA CACHE ==============
 
 model StockQuote {
@@ -391,17 +431,25 @@ model StockQuote {
 model StockHistory {
   id            String    @id @default(uuid())
   symbol        String
-  date          DateTime
+  date          DateTime  @db.Date
   open          Float
   high          Float
   low           Float
   close         Float
-  adjClose      Float
-  volume        Int
+  adjClose      Float     @map("adj_close")
+  volume        BigInt    // Changed to BigInt to handle large volumes like SPY
+
+  // Optional additional data
+  vwap          Float?    // Volume-weighted average price
+  changePercent Float?    @map("change_percent")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
 
   @@unique([symbol, date])
   @@index([symbol])
   @@index([date])
+  @@index([symbol, date(sort: Desc)]) // For efficient recent data queries
+  @@map("stock_history")
 }
 
 model DividendHistory {

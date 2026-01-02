@@ -669,6 +669,174 @@ app.use('/api/stock-search', searchLimiter, stockSearchRoutes);
 // Portfolio management routes (protected) with rate limiting
 app.use('/api/portfolios', portfolioLimiter, portfoliosRoutes);
 app.use('/api/holdings', holdingsRoutes);
+
+// ==================== TECHNICAL ANALYSIS ROUTES (Real Data - DB First) ====================
+// These routes use stockDataManager for DB-first data fetching with real calculations
+// Defined before analyticsRoutes to ensure they take precedence
+
+// Bollinger Bands - Real calculation from historical data
+app.get('/api/analytics/bollinger/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const period = parseInt(req.query.period) || 20;
+    const stdDev = parseFloat(req.query.stdDev) || 2;
+    const stockDataManager = require('./services/stockDataManager');
+    const history = await stockDataManager.getHistoricalData(symbol, 90);
+    if (!history || history.length < period) {
+      return res.status(400).json({ error: 'Insufficient historical data' });
+    }
+    const closes = history.map(h => h.close);
+    const data = [];
+    for (let i = period - 1; i < closes.length; i++) {
+      const slice = closes.slice(i - period + 1, i + 1);
+      const sma = slice.reduce((a, b) => a + b, 0) / period;
+      const variance = slice.reduce((sum, val) => sum + Math.pow(val - sma, 2), 0) / period;
+      const std = Math.sqrt(variance);
+      const upperBand = sma + stdDev * std;
+      const lowerBand = sma - stdDev * std;
+      data.push({ date: history[i].date, close: closes[i], sma, upperBand, lowerBand,
+        bandwidth: ((upperBand - lowerBand) / sma) * 100,
+        percentB: ((closes[i] - lowerBand) / (upperBand - lowerBand)) * 100 });
+    }
+    const latest = data[data.length - 1];
+    res.json({ symbol, period, stdDev, data, current: latest,
+      signal: latest.percentB > 100 ? 'overbought' : latest.percentB < 0 ? 'oversold' : 'neutral',
+      squeeze: latest.bandwidth < 5 });
+  } catch (error) { logger.error('Bollinger API error:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Fibonacci Levels - Real swing high/low from historical data
+app.get('/api/analytics/fibonacci/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const days = parseInt(req.query.days) || 90;
+    const stockDataManager = require('./services/stockDataManager');
+    const history = await stockDataManager.getHistoricalData(symbol, days);
+    const quote = await marketData.getQuote(symbol);
+    const price = quote?.price || (history.length ? history[history.length - 1].close : 100);
+    if (!history || history.length < 10) return res.status(400).json({ error: 'Insufficient historical data' });
+    const high = Math.max(...history.map(h => h.high));
+    const low = Math.min(...history.map(h => h.low));
+    const range = high - low;
+    const levels = [
+      { level: 0, price: low, name: '0%' }, { level: 0.236, price: low + range * 0.236, name: '23.6%' },
+      { level: 0.382, price: low + range * 0.382, name: '38.2%' }, { level: 0.5, price: low + range * 0.5, name: '50%' },
+      { level: 0.618, price: low + range * 0.618, name: '61.8%' }, { level: 0.786, price: low + range * 0.786, name: '78.6%' },
+      { level: 1, price: high, name: '100%' }, { level: 1.272, price: high + range * 0.272, name: '127.2%' },
+      { level: 1.618, price: high + range * 0.618, name: '161.8%' }
+    ];
+    const nearestLevel = levels.reduce((n, l) => Math.abs(l.price - price) < Math.abs(n.price - price) ? l : n, levels[0]);
+    res.json({ symbol, currentPrice: price, swingHigh: high, swingLow: low, levels, nearestLevel,
+      trend: price > low + range * 0.5 ? 'bullish' : 'bearish',
+      support: levels.filter(l => l.price < price).slice(-1)[0],
+      resistance: levels.filter(l => l.price > price)[0] });
+  } catch (error) { logger.error('Fibonacci API error:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Moving Averages - Real SMA/EMA calculations
+app.get('/api/analytics/moving-averages/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const stockDataManager = require('./services/stockDataManager');
+    const history = await stockDataManager.getHistoricalData(symbol, 250);
+    const quote = await marketData.getQuote(symbol);
+    const price = quote?.price || (history.length ? history[history.length - 1].close : 100);
+    if (!history || history.length < 20) return res.status(400).json({ error: 'Insufficient historical data' });
+    const closes = history.map(h => h.close);
+    const calcSMA = (data, p) => data.length < p ? null : data.slice(-p).reduce((a, b) => a + b, 0) / p;
+    const calcEMA = (data, p) => {
+      if (data.length < p) return null;
+      const k = 2 / (p + 1); let ema = data.slice(0, p).reduce((a, b) => a + b, 0) / p;
+      for (let i = p; i < data.length; i++) ema = data[i] * k + ema * (1 - k);
+      return ema;
+    };
+    const mas = [5, 10, 20, 50, 100, 200].map(p => {
+      const sma = calcSMA(closes, p), ema = calcEMA(closes, p);
+      return { period: p, type: p <= 20 ? 'short' : p <= 50 ? 'medium' : 'long',
+        sma: sma ? Math.round(sma * 100) / 100 : null, ema: ema ? Math.round(ema * 100) / 100 : null,
+        signal: sma && price > sma ? 'bullish' : 'bearish' };
+    });
+    const sma50 = mas.find(m => m.period === 50)?.sma, sma200 = mas.find(m => m.period === 200)?.sma;
+    res.json({ symbol, currentPrice: price, movingAverages: mas,
+      goldenCross: sma50 && sma200 && sma50 > sma200, deathCross: sma50 && sma200 && sma50 < sma200,
+      overallTrend: mas.filter(m => m.sma && m.signal === 'bullish').length > mas.length / 2 ? 'bullish' : 'bearish',
+      support: Math.max(...mas.filter(m => m.sma && m.sma < price).map(m => m.sma)) || null,
+      resistance: Math.min(...mas.filter(m => m.sma && m.sma > price).map(m => m.sma)) || null });
+  } catch (error) { logger.error('Moving Averages API error:', error); res.status(500).json({ error: error.message }); }
+});
+
+// Volume Profile - Real volume distribution from historical data
+app.get('/api/analytics/volume-profile/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const numLevels = parseInt(req.query.levels) || 20;
+    const stockDataManager = require('./services/stockDataManager');
+    const history = await stockDataManager.getHistoricalData(symbol, 90);
+    const quote = await marketData.getQuote(symbol);
+    const currentPrice = quote?.price || (history.length ? history[history.length - 1].close : 100);
+    if (!history || history.length < 10) return res.status(400).json({ error: 'Insufficient historical data' });
+    const allPrices = history.flatMap(h => [h.high, h.low]);
+    const minPrice = Math.min(...allPrices), maxPrice = Math.max(...allPrices);
+    const levelSize = (maxPrice - minPrice) / numLevels;
+    const levels = [];
+    for (let i = 0; i < numLevels; i++) {
+      const priceLevel = minPrice + (levelSize * (i + 0.5));
+      const levelLow = minPrice + (levelSize * i), levelHigh = levelLow + levelSize;
+      let volume = 0;
+      history.forEach(h => {
+        if (h.high >= levelLow && h.low <= levelHigh) {
+          const overlap = Math.min(h.high, levelHigh) - Math.max(h.low, levelLow);
+          volume += Math.floor(Number(h.volume) * (overlap / (h.high - h.low || 1)));
+        }
+      });
+      levels.push({ priceLevel: priceLevel.toFixed(2), volume, percentage: 0 });
+    }
+    const totalVol = levels.reduce((s, l) => s + l.volume, 0);
+    levels.forEach(l => l.percentage = ((l.volume / totalVol) * 100).toFixed(1));
+    const poc = levels.reduce((m, l) => l.volume > m.volume ? l : m, levels[0]);
+    res.json({ symbol, currentPrice, levels, poc: { price: poc.priceLevel, volume: poc.volume },
+      valueAreaHigh: levels.filter(l => parseFloat(l.priceLevel) > currentPrice).reduce((m, l) => l.volume > m.volume ? l : m, { volume: 0, priceLevel: currentPrice }).priceLevel,
+      valueAreaLow: levels.filter(l => parseFloat(l.priceLevel) < currentPrice).reduce((m, l) => l.volume > m.volume ? l : m, { volume: 0, priceLevel: currentPrice }).priceLevel,
+      totalVolume: totalVol });
+  } catch (error) { logger.error('Volume Profile API error:', error); res.status(500).json({ error: error.message }); }
+});
+
+// ADX Indicator - Real calculation using Wilder's method
+app.get('/api/analytics/adx/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const period = parseInt(req.query.period) || 14;
+    const stockDataManager = require('./services/stockDataManager');
+    const history = await stockDataManager.getHistoricalData(symbol, 90);
+    if (!history || history.length < period + 1) return res.status(400).json({ error: 'Insufficient historical data' });
+    const highs = history.map(h => h.high), lows = history.map(h => h.low), closes = history.map(h => h.close);
+    const tr = [], plusDM = [], minusDM = [];
+    for (let i = 1; i < history.length; i++) {
+      tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i-1]), Math.abs(lows[i] - closes[i-1])));
+      const upMove = highs[i] - highs[i-1], downMove = lows[i-1] - lows[i];
+      plusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+      minusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+    }
+    const smooth = (arr, p) => { const r = [arr.slice(0, p).reduce((a,b) => a+b, 0)]; for (let i = p; i < arr.length; i++) r.push(r[r.length-1] - r[r.length-1]/p + arr[i]); return r; };
+    const atr = smooth(tr, period), sPlusDM = smooth(plusDM, period), sMinusDM = smooth(minusDM, period);
+    const data = [], dx = [];
+    for (let i = 0; i < atr.length; i++) {
+      const pDI = (sPlusDM[i] / (atr[i] || 1)) * 100, mDI = (sMinusDM[i] / (atr[i] || 1)) * 100;
+      dx.push(Math.abs(pDI - mDI) / (pDI + mDI || 1) * 100);
+      if (i >= period - 1) {
+        const adx = dx.slice(Math.max(0, i - period + 1), i + 1).reduce((a,b) => a+b, 0) / Math.min(dx.length, period);
+        data.push({ date: history[i+1].date, adx: adx.toFixed(2), plusDI: pDI.toFixed(2), minusDI: mDI.toFixed(2) });
+      }
+    }
+    const latest = data[data.length - 1];
+    res.json({ symbol, period, data, current: latest,
+      trendStrength: parseFloat(latest.adx) > 25 ? 'strong' : parseFloat(latest.adx) > 20 ? 'moderate' : 'weak',
+      direction: parseFloat(latest.plusDI) > parseFloat(latest.minusDI) ? 'bullish' : 'bearish',
+      signal: parseFloat(latest.adx) > 25 && parseFloat(latest.plusDI) > parseFloat(latest.minusDI) ? 'buy' :
+              parseFloat(latest.adx) > 25 && parseFloat(latest.plusDI) < parseFloat(latest.minusDI) ? 'sell' : 'neutral' });
+  } catch (error) { logger.error('ADX API error:', error); res.status(500).json({ error: error.message }); }
+});
+
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/margins', marginsRoutes);
 app.use('/api/dividends', dividendsRoutes);
@@ -3817,235 +3985,6 @@ app.get('/api/analytics/straddles/:symbol', async (req, res) => {
       straddles,
       historicalMove: (price * 0.05).toFixed(2),
       avgImpliedMove: (straddles.reduce((s, str) => s + parseFloat(str.impliedMove), 0) / straddles.length).toFixed(1)
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Technical Indicators - Bollinger Bands API
-app.get('/api/analytics/bollinger/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const period = parseInt(req.query.period) || 20;
-    const stdDev = parseFloat(req.query.stdDev) || 2;
-
-    const quote = await marketData.getQuote(symbol);
-    const price = quote?.price || 100;
-
-    // Generate historical data with Bollinger Bands
-    const data = [];
-    let currentPrice = price * 0.9;
-    const volatility = 0.02;
-
-    for (let i = 60; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-
-      currentPrice = currentPrice * (1 + (Math.random() - 0.5) * volatility);
-      const sma = currentPrice * (1 + (Math.random() - 0.5) * 0.02);
-      const std = currentPrice * volatility * Math.sqrt(period);
-
-      data.push({
-        date: date.toISOString().split('T')[0],
-        close: currentPrice,
-        sma,
-        upperBand: sma + stdDev * std,
-        lowerBand: sma - stdDev * std,
-        bandwidth: ((sma + stdDev * std) - (sma - stdDev * std)) / sma * 100,
-        percentB: ((currentPrice - (sma - stdDev * std)) / ((sma + stdDev * std) - (sma - stdDev * std))) * 100
-      });
-    }
-
-    const latest = data[data.length - 1];
-    const signal = latest.percentB > 100 ? 'overbought' : latest.percentB < 0 ? 'oversold' : 'neutral';
-
-    res.json({
-      symbol,
-      period,
-      stdDev,
-      data,
-      current: latest,
-      signal,
-      squeeze: latest.bandwidth < 5
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Volume Profile API
-app.get('/api/analytics/volume-profile/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const quote = await marketData.getQuote(symbol);
-    const price = quote?.price || 100;
-
-    // Generate volume profile
-    const levels = [];
-    const numLevels = 20;
-    const range = price * 0.2;
-
-    for (let i = 0; i < numLevels; i++) {
-      const priceLevel = price - range / 2 + (range / numLevels) * i;
-      const distFromCenter = Math.abs(i - numLevels / 2) / (numLevels / 2);
-      const volume = Math.floor(1000000 * (1 - distFromCenter * 0.7) * (0.8 + Math.random() * 0.4));
-
-      levels.push({
-        priceLevel: priceLevel.toFixed(2),
-        volume,
-        percentage: 0
-      });
-    }
-
-    const totalVol = levels.reduce((sum, l) => sum + l.volume, 0);
-    levels.forEach(l => l.percentage = ((l.volume / totalVol) * 100).toFixed(1));
-
-    const poc = levels.reduce((max, l) => l.volume > max.volume ? l : max, levels[0]);
-    const vah = levels.filter(l => parseFloat(l.priceLevel) > price).reduce((max, l) => l.volume > max.volume ? l : max, { volume: 0, priceLevel: price });
-    const val = levels.filter(l => parseFloat(l.priceLevel) < price).reduce((max, l) => l.volume > max.volume ? l : max, { volume: 0, priceLevel: price });
-
-    res.json({
-      symbol,
-      currentPrice: price,
-      levels,
-      poc: { price: poc.priceLevel, volume: poc.volume },
-      valueAreaHigh: vah.priceLevel,
-      valueAreaLow: val.priceLevel,
-      totalVolume: totalVol
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Fibonacci Levels API
-app.get('/api/analytics/fibonacci/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const quote = await marketData.getQuote(symbol);
-    const price = quote?.price || 100;
-
-    // Simulate swing high/low
-    const high = price * 1.15;
-    const low = price * 0.85;
-    const range = high - low;
-
-    const levels = [
-      { level: 0, price: low, name: '0%' },
-      { level: 0.236, price: low + range * 0.236, name: '23.6%' },
-      { level: 0.382, price: low + range * 0.382, name: '38.2%' },
-      { level: 0.5, price: low + range * 0.5, name: '50%' },
-      { level: 0.618, price: low + range * 0.618, name: '61.8%' },
-      { level: 0.786, price: low + range * 0.786, name: '78.6%' },
-      { level: 1, price: high, name: '100%' },
-      { level: 1.272, price: high + range * 0.272, name: '127.2%' },
-      { level: 1.618, price: high + range * 0.618, name: '161.8%' }
-    ];
-
-    const nearestLevel = levels.reduce((nearest, l) =>
-      Math.abs(l.price - price) < Math.abs(nearest.price - price) ? l : nearest, levels[0]);
-
-    res.json({
-      symbol,
-      currentPrice: price,
-      swingHigh: high,
-      swingLow: low,
-      levels,
-      nearestLevel,
-      trend: price > low + range * 0.5 ? 'bullish' : 'bearish',
-      support: levels.filter(l => l.price < price).slice(-1)[0],
-      resistance: levels.filter(l => l.price > price)[0]
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ADX Indicator API
-app.get('/api/analytics/adx/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const period = parseInt(req.query.period) || 14;
-
-    const quote = await marketData.getQuote(symbol);
-    const price = quote?.price || 100;
-
-    // Generate ADX data
-    const data = [];
-    let adx = 20 + Math.random() * 30;
-    let plusDI = 20 + Math.random() * 20;
-    let minusDI = 20 + Math.random() * 20;
-
-    for (let i = 60; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-
-      adx += (Math.random() - 0.5) * 3;
-      adx = Math.max(10, Math.min(60, adx));
-      plusDI += (Math.random() - 0.5) * 4;
-      plusDI = Math.max(5, Math.min(50, plusDI));
-      minusDI += (Math.random() - 0.5) * 4;
-      minusDI = Math.max(5, Math.min(50, minusDI));
-
-      data.push({
-        date: date.toISOString().split('T')[0],
-        adx: adx.toFixed(2),
-        plusDI: plusDI.toFixed(2),
-        minusDI: minusDI.toFixed(2)
-      });
-    }
-
-    const latest = data[data.length - 1];
-    const trend = parseFloat(latest.adx) > 25 ? 'strong' : parseFloat(latest.adx) > 20 ? 'moderate' : 'weak';
-    const direction = parseFloat(latest.plusDI) > parseFloat(latest.minusDI) ? 'bullish' : 'bearish';
-
-    res.json({
-      symbol,
-      period,
-      data,
-      current: latest,
-      trendStrength: trend,
-      direction,
-      signal: trend === 'strong' && direction === 'bullish' ? 'buy' :
-        trend === 'strong' && direction === 'bearish' ? 'sell' : 'neutral'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Moving Averages API
-app.get('/api/analytics/moving-averages/:symbol', async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const quote = await marketData.getQuote(symbol);
-    const price = quote?.price || 100;
-
-    const periods = [5, 10, 20, 50, 100, 200];
-    const mas = periods.map(p => {
-      const ma = price * (0.95 + Math.random() * 0.1);
-      return {
-        period: p,
-        type: p <= 20 ? 'short' : p <= 50 ? 'medium' : 'long',
-        sma: ma,
-        ema: ma * (1 + (Math.random() - 0.5) * 0.02),
-        signal: price > ma ? 'bullish' : 'bearish'
-      };
-    });
-
-    const goldenCross = mas.find(m => m.period === 50).sma > mas.find(m => m.period === 200).sma;
-    const deathCross = mas.find(m => m.period === 50).sma < mas.find(m => m.period === 200).sma;
-
-    res.json({
-      symbol,
-      currentPrice: price,
-      movingAverages: mas,
-      goldenCross,
-      deathCross,
-      overallTrend: mas.filter(m => m.signal === 'bullish').length > mas.length / 2 ? 'bullish' : 'bearish',
-      support: Math.min(...mas.filter(m => m.sma < price).map(m => m.sma)),
-      resistance: Math.max(...mas.filter(m => m.sma > price).map(m => m.sma))
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

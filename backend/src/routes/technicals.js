@@ -1,34 +1,40 @@
 /**
  * Technical Analysis Routes
  * Provides endpoints for all technical indicators with real calculations
+ * Uses DB-first approach via stockDataManager for optimal performance
  */
 
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const technicalAnalysis = require('../services/technicalAnalysis');
-const MarketDataService = require('../services/marketDataService');
+const stockDataManager = require('../services/stockDataManager');
 const logger = require('../utils/logger');
-
-// Initialize market data service
-const marketData = new MarketDataService(process.env.ALPHA_VANTAGE_API_KEY);
 
 // All routes require authentication
 router.use(authenticate);
 
 /**
- * Helper to fetch historical price data
+ * Helper to fetch historical price data using DB-first approach
+ * This checks the database before hitting external APIs
  */
 async function fetchHistoricalData(symbol, range = '6mo') {
   try {
-    // Try to get data from Yahoo Finance via market data service
-    const data = await marketData.getHistoricalData(symbol, range);
+    // Convert range to days for stockDataManager
+    const rangeDays = {
+      '1d': 1, '5d': 5, '1w': 7, '1mo': 30, '3mo': 90,
+      '6mo': 180, '1y': 365, '2y': 730, '5y': 1825, 'ytd': 365
+    };
+    const days = rangeDays[range.toLowerCase()] || 180;
+
+    // Use DB-first approach - checks database before API
+    const data = await stockDataManager.getHistoricalData(symbol, days);
 
     if (!data || !data.length) {
       throw new Error('No data available');
     }
 
-    // Format data
+    // Format data for technical analysis calculations
     const dates = [];
     const opens = [];
     const highs = [];

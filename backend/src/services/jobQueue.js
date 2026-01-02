@@ -436,6 +436,300 @@ jobQueue.registerWorker('create-snapshot', async (data) => {
   }
 });
 
+// ==================== STOCK DATA WORKERS ====================
+
+// Initial fetch job - fetches 1 year of historical data for a new symbol
+jobQueue.registerWorker('stock-initial-fetch', async (data) => {
+  const { prisma } = require('../db/simpleDb');
+  const UnifiedMarketDataService = require('./unifiedMarketData');
+  const unifiedMarketData = new UnifiedMarketDataService();
+  const { symbol } = data;
+
+  logger.info(`[stock-initial-fetch] Starting initial fetch for ${symbol}`);
+
+  try {
+    // Fetch 1 year of historical data
+    const history = await unifiedMarketData.fetchHistoricalData(symbol, '1y');
+
+    if (!history || history.length === 0) {
+      throw new Error(`No historical data returned for ${symbol}`);
+    }
+
+    logger.info(`[stock-initial-fetch] Fetched ${history.length} records for ${symbol}`);
+
+    // Prepare records for insert
+    const records = history.map(d => ({
+      symbol: symbol.toUpperCase(),
+      date: new Date(d.date),
+      open: parseFloat(d.open) || 0,
+      high: parseFloat(d.high) || 0,
+      low: parseFloat(d.low) || 0,
+      close: parseFloat(d.close) || 0,
+      adjClose: parseFloat(d.adjClose || d.close) || 0,
+      volume: BigInt(Math.round(d.volume || 0)),
+      changePercent: d.changePercent || null
+    }));
+
+    // Batch insert with skipDuplicates
+    const result = await prisma.stockHistory.createMany({
+      data: records,
+      skipDuplicates: true
+    });
+
+    // Calculate date range
+    const dates = records.map(r => r.date).sort((a, b) => a - b);
+    const startDate = dates[0];
+    const endDate = dates[dates.length - 1];
+
+    // Get total record count
+    const count = await prisma.stockHistory.count({
+      where: { symbol: symbol.toUpperCase() }
+    });
+
+    // Update tracker
+    await prisma.stockDataTracker.upsert({
+      where: { symbol: symbol.toUpperCase() },
+      create: {
+        symbol: symbol.toUpperCase(),
+        isActive: true,
+        historyStartDate: startDate,
+        historyEndDate: endDate,
+        historyRecordCount: count,
+        lastHistoryUpdate: new Date(),
+        initialFetchCompleted: new Date(),
+        primaryDataSource: 'yahoo'
+      },
+      update: {
+        historyStartDate: startDate,
+        historyEndDate: endDate,
+        historyRecordCount: count,
+        lastHistoryUpdate: new Date(),
+        initialFetchCompleted: new Date(),
+        errorCount: 0,
+        lastError: null
+      }
+    });
+
+    logger.info(`[stock-initial-fetch] Stored ${result.count} records for ${symbol} (${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]})`);
+
+    // Also fetch and store company profile
+    try {
+      const profile = await unifiedMarketData.fetchCompanyProfile(symbol);
+      if (profile) {
+        await prisma.companyProfile.upsert({
+          where: { symbol: symbol.toUpperCase() },
+          create: {
+            symbol: symbol.toUpperCase(),
+            name: profile.name || symbol,
+            description: profile.description,
+            exchange: profile.exchange,
+            sector: profile.sector,
+            industry: profile.industry,
+            employees: profile.employees,
+            ceo: profile.ceo,
+            website: profile.website
+          },
+          update: {
+            name: profile.name || symbol,
+            description: profile.description,
+            exchange: profile.exchange,
+            sector: profile.sector,
+            industry: profile.industry,
+            employees: profile.employees,
+            ceo: profile.ceo,
+            website: profile.website
+          }
+        });
+        logger.info(`[stock-initial-fetch] Stored company profile for ${symbol}`);
+      }
+    } catch (profileError) {
+      logger.warn(`[stock-initial-fetch] Could not fetch profile for ${symbol}:`, profileError.message);
+    }
+
+    // Also fetch dividend history
+    try {
+      const dividends = await unifiedMarketData.fetchDividends(symbol);
+      if (dividends && dividends.length > 0) {
+        const dividendRecords = dividends.map(d => ({
+          symbol: symbol.toUpperCase(),
+          exDate: new Date(d.exDate || d.date),
+          payDate: d.payDate ? new Date(d.payDate) : null,
+          recordDate: d.recordDate ? new Date(d.recordDate) : null,
+          amount: parseFloat(d.amount || d.dividend) || 0,
+          frequency: d.frequency,
+          type: d.type
+        }));
+
+        await prisma.dividendHistory.createMany({
+          data: dividendRecords,
+          skipDuplicates: true
+        });
+
+        await prisma.stockDataTracker.update({
+          where: { symbol: symbol.toUpperCase() },
+          data: { lastDividendUpdate: new Date() }
+        });
+
+        logger.info(`[stock-initial-fetch] Stored ${dividendRecords.length} dividend records for ${symbol}`);
+      }
+    } catch (divError) {
+      logger.warn(`[stock-initial-fetch] Could not fetch dividends for ${symbol}:`, divError.message);
+    }
+
+    return {
+      symbol,
+      recordsStored: result.count,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0]
+    };
+
+  } catch (error) {
+    logger.error(`[stock-initial-fetch] Failed for ${symbol}:`, error.message);
+
+    // Update tracker with error
+    await prisma.stockDataTracker.upsert({
+      where: { symbol: symbol.toUpperCase() },
+      create: {
+        symbol: symbol.toUpperCase(),
+        isActive: true,
+        errorCount: 1,
+        lastError: error.message,
+        lastErrorAt: new Date()
+      },
+      update: {
+        errorCount: { increment: 1 },
+        lastError: error.message,
+        lastErrorAt: new Date()
+      }
+    });
+
+    throw error;
+  }
+});
+
+// Incremental update job - fetches only new data since last update
+jobQueue.registerWorker('stock-incremental-update', async (data) => {
+  const { prisma } = require('../db/simpleDb');
+  const UnifiedMarketDataService = require('./unifiedMarketData');
+  const unifiedMarketData = new UnifiedMarketDataService();
+  const { symbol } = data;
+
+  logger.info(`[stock-incremental-update] Starting incremental update for ${symbol}`);
+
+  try {
+    // Get the last stored record
+    const lastRecord = await prisma.stockHistory.findFirst({
+      where: { symbol: symbol.toUpperCase() },
+      orderBy: { date: 'desc' }
+    });
+
+    if (!lastRecord) {
+      // No data exists, trigger full fetch instead
+      logger.info(`[stock-incremental-update] No existing data for ${symbol}, triggering full fetch`);
+      await jobQueue.addJob('stock-initial-fetch', { symbol }, { priority: 10 });
+      return { symbol, status: 'redirected_to_initial' };
+    }
+
+    const lastDate = new Date(lastRecord.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if we need to update (last data is more than 1 day old)
+    const daysDiff = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+
+    if (daysDiff < 1) {
+      logger.info(`[stock-incremental-update] ${symbol} is up to date (last: ${lastDate.toISOString().split('T')[0]})`);
+      return { symbol, status: 'up_to_date', lastDate: lastDate.toISOString().split('T')[0] };
+    }
+
+    // Fetch recent data (1 week to be safe)
+    const history = await unifiedMarketData.fetchHistoricalData(symbol, '1w');
+
+    if (!history || history.length === 0) {
+      logger.warn(`[stock-incremental-update] No new data for ${symbol}`);
+      return { symbol, status: 'no_new_data' };
+    }
+
+    // Filter to only new records
+    const newRecords = history.filter(d => new Date(d.date) > lastDate);
+
+    if (newRecords.length === 0) {
+      logger.info(`[stock-incremental-update] No new records for ${symbol}`);
+      return { symbol, status: 'no_new_records' };
+    }
+
+    // Prepare and insert new records
+    const records = newRecords.map(d => ({
+      symbol: symbol.toUpperCase(),
+      date: new Date(d.date),
+      open: parseFloat(d.open) || 0,
+      high: parseFloat(d.high) || 0,
+      low: parseFloat(d.low) || 0,
+      close: parseFloat(d.close) || 0,
+      adjClose: parseFloat(d.adjClose || d.close) || 0,
+      volume: BigInt(Math.round(d.volume || 0)),
+      changePercent: d.changePercent || null
+    }));
+
+    const result = await prisma.stockHistory.createMany({
+      data: records,
+      skipDuplicates: true
+    });
+
+    // Update tracker
+    const latestDate = records.reduce((max, r) => r.date > max ? r.date : max, records[0].date);
+    const count = await prisma.stockHistory.count({
+      where: { symbol: symbol.toUpperCase() }
+    });
+
+    await prisma.stockDataTracker.update({
+      where: { symbol: symbol.toUpperCase() },
+      data: {
+        historyEndDate: latestDate,
+        historyRecordCount: count,
+        lastHistoryUpdate: new Date()
+      }
+    });
+
+    logger.info(`[stock-incremental-update] Added ${result.count} new records for ${symbol}`);
+
+    return {
+      symbol,
+      status: 'updated',
+      newRecords: result.count,
+      latestDate: latestDate.toISOString().split('T')[0]
+    };
+
+  } catch (error) {
+    logger.error(`[stock-incremental-update] Failed for ${symbol}:`, error.message);
+
+    await prisma.stockDataTracker.update({
+      where: { symbol: symbol.toUpperCase() },
+      data: {
+        errorCount: { increment: 1 },
+        lastError: error.message,
+        lastErrorAt: new Date()
+      }
+    }).catch(() => {}); // Ignore update errors
+
+    throw error;
+  }
+});
+
+// Bulk population job - populates data for all existing holdings
+jobQueue.registerWorker('stock-populate-all', async (data) => {
+  const { prisma } = require('../db/simpleDb');
+  const stockDataManager = require('./stockDataManager');
+
+  logger.info('[stock-populate-all] Starting bulk population of stock data');
+
+  const result = await stockDataManager.populateExistingSymbols();
+
+  logger.info(`[stock-populate-all] Completed: ${result.queued} queued out of ${result.total} symbols`);
+
+  return result;
+});
+
 // Cleanup old jobs every hour
 setInterval(() => {
   jobQueue.cleanup();
