@@ -3502,6 +3502,71 @@ app.get('/dashboard-custom', requireAuth, async (req, res) => {
   });
 });
 
+// ===================== MISSING ROUTES =====================
+
+app.get('/options', requireAuth, (req, res) => {
+  res.render('pages/options', { pageTitle: 'Options Tracker' });
+});
+
+app.get('/dividend-safety', requireAuth, (req, res) => {
+  res.render('pages/dividend-safety', { pageTitle: 'Dividend Safety' });
+});
+
+app.get('/screener', requireAuth, (req, res) => {
+  res.render('pages/screener', { pageTitle: 'Advanced Stock Screener' });
+});
+
+app.get('/benchmark', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const metric = (req.query.metric as string) || 'return';
+  const benchmark = await apiFetch(`/community/benchmark?metric=${metric}`, token);
+  const leaderboard = await apiFetch('/community/leaderboard', token);
+  res.render('pages/benchmark', {
+    pageTitle: 'Community Benchmark',
+    benchmark: benchmark.error ? {} : benchmark,
+    leaderboard: leaderboard.error ? {} : leaderboard,
+    metric
+  });
+});
+
+app.get('/institutional-flow', requireAuth, (req, res) => {
+  res.render('pages/institutional-flow', { pageTitle: 'Institutional Flow' });
+});
+
+app.get('/whale-tracker', requireAuth, (req, res) => {
+  res.render('pages/whale-tracker', { pageTitle: 'Whale Tracker' });
+});
+
+app.get('/retirement', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  const portfolioValue = portfolios.length > 0 ? (portfolios[0].totalValue || 100000) : 100000;
+  res.render('pages/retirement', {
+    pageTitle: 'Retirement Planner',
+    portfolioValue
+  });
+});
+
+app.get('/income', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  const selectedPid = req.query.portfolio || (portfolios.length > 0 ? portfolios[0].id : null);
+  let incomeData = null;
+  if (selectedPid) {
+    incomeData = await apiFetch(`/analytics/dividend-analysis?portfolioId=${selectedPid}`, token);
+    if (incomeData.error) incomeData = null;
+  }
+  res.render('pages/income', {
+    pageTitle: 'Income Analysis',
+    portfolios,
+    selectedPid,
+    incomeData,
+    fmt
+  });
+});
+
 // ===================== START SERVER =====================
 
 app.listen(PORT, () => {
