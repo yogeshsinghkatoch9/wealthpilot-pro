@@ -153,7 +153,7 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
   <div class="bloomberg-card p-5">
     <h3 class="font-semibold text-white mb-4"><%= symbol %> Bollinger Bands</h3>
-    <div class="h-64"><canvas id="bbChart"></canvas></div>
+    <div id="tvBBChart" class="h-80"></div>
   </div>
   <div class="bloomberg-card p-5">
     <h3 class="font-semibold text-white mb-4">Price Position in Bands</h3>
@@ -213,70 +213,48 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
 <% } %>
 </div></div></main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
 <script>
 <% if (technicals && chartData.length > 0) { %>
-const chartLabels = <%- JSON.stringify(chartData.slice(-30).map(d => new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))) %>;
-const closePrices = <%- JSON.stringify(chartData.slice(-30).map(d => d.close)) %>;
-const bbUpper = <%= bb.upper || 0 %>;
-const bbMiddle = <%= bb.middle || 0 %>;
-const bbLower = <%= bb.lower || 0 %>;
+// Prepare OHLC data for TradingView
+const ohlcData = <%- JSON.stringify(chartData.slice(-60).map(d => ({
+  time: d.date.split('T')[0],
+  open: d.open,
+  high: d.high,
+  low: d.low,
+  close: d.close,
+  volume: d.volume
+}))) %>;
 
-new Chart(document.getElementById('bbChart'), {
-  type: 'line',
-  data: {
-    labels: chartLabels,
-    datasets: [
-      {
-        label: 'Upper Band',
-        data: Array(chartLabels.length).fill(bbUpper),
-        borderColor: '#ef4444',
-        borderDash: [5,5],
-        fill: false,
-        pointRadius: 0,
-        borderWidth: 1
-      },
-      {
-        label: 'Price',
-        data: closePrices,
-        borderColor: '#0ea5e9',
-        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-        fill: true,
-        borderWidth: 2,
-        pointRadius: 1
-      },
-      {
-        label: 'SMA 20',
-        data: Array(chartLabels.length).fill(bbMiddle),
-        borderColor: '#f59e0b',
-        borderDash: [3,3],
-        fill: false,
-        pointRadius: 0,
-        borderWidth: 1
-      },
-      {
-        label: 'Lower Band',
-        data: Array(chartLabels.length).fill(bbLower),
-        borderColor: '#10b981',
-        borderDash: [5,5],
-        fill: false,
-        pointRadius: 0,
-        borderWidth: 1
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
-    },
-    scales: {
-      y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
-      x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 8 } }
-    }
+// Initialize TradingView chart
+const container = document.getElementById('tvBBChart');
+if (container && typeof TradingViewChart !== 'undefined') {
+  try {
+    const chart = new TradingViewChart(container, {
+      theme: 'dark',
+      height: 320
+    });
+
+    // Add candlestick series
+    chart.addCandlestick(ohlcData);
+
+    // Add Bollinger Bands
+    chart.addBollingerBands(ohlcData, 20, 2);
+
+    // Add volume
+    chart.addVolume(ohlcData);
+
+    // Fit content
+    chart.fitContent();
+  } catch (error) {
+    console.error('TradingView chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
-});
+} else {
+  console.log('TradingView not available');
+}
 <% } else { %>
 console.log('No chart data available');
 <% } %>
