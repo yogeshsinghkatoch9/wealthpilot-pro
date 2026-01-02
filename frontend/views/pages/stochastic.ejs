@@ -2,9 +2,11 @@
 // Safe defaults
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const stochData = typeof technicals !== 'undefined' && technicals ? technicals : {};
-const kValue = stochData.stochK || 50;
-const dValue = stochData.stochD || 50;
-const price = stochData.price || 0;
+// API returns stochastic as object with k, d, signal, series
+const stochObj = stochData.stochastic || {};
+const kValue = typeof stochObj === 'object' ? (stochObj.k || 50) : (stochData.stochK || 50);
+const dValue = typeof stochObj === 'object' ? (stochObj.d || 50) : (stochData.stochD || 50);
+const price = stochData.price?.current || stochData.price || 0;
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
