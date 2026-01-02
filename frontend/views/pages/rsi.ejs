@@ -2,9 +2,11 @@
 // Safe defaults
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const rsiData = typeof technicals !== 'undefined' && technicals ? technicals : {};
-const currentRsi = rsiData.rsi || 50;
-const rsiHistory = rsiData.history || [];
-const price = rsiData.price || 0;
+// API returns rsi as object with value, signal, series
+const rsiObj = rsiData.rsi || {};
+const currentRsi = typeof rsiObj === 'object' ? (rsiObj.value || 50) : (rsiObj || 50);
+const rsiHistory = rsiObj.series || rsiData.history || [];
+const price = rsiData.price?.current || rsiData.price || 0;
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }

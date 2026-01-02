@@ -2,10 +2,12 @@
 // Safe defaults
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const macdData = typeof technicals !== 'undefined' && technicals ? technicals : {};
-const macd = macdData.macd || 0;
-const signal = macdData.signal || 0;
-const histogram = macdData.histogram || 0;
-const price = macdData.price || 0;
+// API returns macd as object with macd, signal, histogram, trend, series
+const macdObj = macdData.macd || {};
+const macd = typeof macdObj === 'object' ? (macdObj.macd || 0) : (macdObj || 0);
+const signal = typeof macdObj === 'object' ? (macdObj.signal || 0) : 0;
+const histogram = typeof macdObj === 'object' ? (macdObj.histogram || 0) : 0;
+const price = macdData.price?.current || macdData.price || 0;
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
