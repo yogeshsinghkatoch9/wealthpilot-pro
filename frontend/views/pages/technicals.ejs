@@ -346,13 +346,14 @@ const trendSignal = getTrendSignal(price, bb.middle);
     <div class="chart-toolbar">
       <div class="flex items-center gap-2 flex-wrap">
         <span class="text-xs text-slate-500 font-medium mr-2">Timeframe:</span>
-        <button class="timeframe-btn" data-tf="1D">1D</button>
-        <button class="timeframe-btn" data-tf="1W">1W</button>
-        <button class="timeframe-btn active" data-tf="1M">1M</button>
-        <button class="timeframe-btn" data-tf="3M">3M</button>
-        <button class="timeframe-btn" data-tf="6M">6M</button>
-        <button class="timeframe-btn" data-tf="1Y">1Y</button>
-        <button class="timeframe-btn" data-tf="5Y">5Y</button>
+        <button class="timeframe-btn" data-days="1">1D</button>
+        <button class="timeframe-btn" data-days="5">5D</button>
+        <button class="timeframe-btn" data-days="7">1W</button>
+        <button class="timeframe-btn active" data-days="30">1M</button>
+        <button class="timeframe-btn" data-days="90">3M</button>
+        <button class="timeframe-btn" data-days="180">6M</button>
+        <button class="timeframe-btn" data-days="365">1Y</button>
+        <button class="timeframe-btn" data-days="1825">5Y</button>
       </div>
 
       <div class="flex items-center gap-2 flex-wrap">
@@ -377,9 +378,7 @@ const trendSignal = getTrendSignal(price, bb.middle);
     </div>
 
     <div class="p-4">
-      <div style="height: 400px;">
-        <canvas id="mainChart"></canvas>
-      </div>
+      <div id="tvMainChart" style="height: 400px;"></div>
     </div>
   </div>
 
@@ -671,6 +670,8 @@ const trendSignal = getTrendSignal(price, bb.middle);
   <% } %>
 </div>
 
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 <% if (technicals) { %>
 // Data from API
@@ -682,124 +683,115 @@ const bbMiddle = <%= bb.middle || 0 %>;
 const bbLower = <%= bb.lower || 0 %>;
 const currentPrice = <%= price || 0 %>;
 
-let mainChart, rsiChart, macdChart, volumeChart;
-let chartData = { labels: [], prices: [], volumes: [] };
+let tvChart = null;
+let candleSeries = null;
+let volumeSeries = null;
+let sma20Series = null;
+let bbUpperSeries = null;
+let bbLowerSeries = null;
+let rsiChart, macdChart, volumeChartSmall;
+let currentDays = 30;
+
+// Create TradingView chart
+function createTvChart() {
+  const container = document.getElementById('tvMainChart');
+  if (!container) return;
+
+  tvChart = LightweightCharts.createChart(container, {
+    width: container.clientWidth,
+    height: 400,
+    layout: { background: { type: 'solid', color: 'transparent' }, textColor: '#94a3b8' },
+    grid: { vertLines: { color: 'rgba(30, 41, 59, 0.5)' }, horzLines: { color: 'rgba(30, 41, 59, 0.5)' } },
+    rightPriceScale: { borderColor: '#334155' },
+    timeScale: { borderColor: '#334155', timeVisible: true, fixLeftEdge: true, fixRightEdge: true },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+  });
+
+  volumeSeries = tvChart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'volume', scaleMargins: { top: 0.85, bottom: 0 } });
+  candleSeries = tvChart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef4444', borderUpColor: '#10b981', borderDownColor: '#ef4444', wickUpColor: '#10b981', wickDownColor: '#ef4444' });
+  sma20Series = tvChart.addLineSeries({ color: '#f59e0b', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+  bbUpperSeries = tvChart.addLineSeries({ color: '#8b5cf6', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+  bbLowerSeries = tvChart.addLineSeries({ color: '#8b5cf6', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+
+  new ResizeObserver(entries => { if (tvChart) tvChart.applyOptions({ width: entries[0].contentRect.width }); }).observe(container);
+}
+
+// Load historical data
+async function loadHistoricalData(days) {
+  if (!tvChart) return;
+
+  let interval = '1d';
+  let isIntraday = false;
+  if (days <= 7) { interval = '15m'; isIntraday = true; }
+
+  try {
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/market/history/${symbol}?days=${days}&interval=${interval}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+    if (!response.ok) throw new Error('Failed to fetch');
+    const data = await response.json();
+    let historyData = data.data || [];
+    if (historyData.length === 0) return;
+
+    // Filter intraday data to requested days
+    if (isIntraday && days <= 5) {
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+      historyData = historyData.filter(d => new Date(d.date) >= cutoff);
+    }
+
+    // Format time for TradingView
+    const formatTime = (dateStr) => isIntraday ? Math.floor(new Date(dateStr).getTime() / 1000) : dateStr.split('T')[0];
+
+    const ohlcData = historyData.map(d => ({ time: formatTime(d.date), open: d.open || d.close, high: d.high || d.close, low: d.low || d.close, close: d.close }));
+    const volumeData = historyData.map(d => ({ time: formatTime(d.date), value: d.volume || 0, color: d.close >= (d.open || d.close) ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)' }));
+
+    candleSeries.setData(ohlcData);
+    volumeSeries.setData(volumeData);
+
+    // Calculate SMA
+    const smaData = [];
+    for (let i = 19; i < historyData.length; i++) {
+      const slice = historyData.slice(i - 19, i + 1);
+      const avg = slice.reduce((sum, d) => sum + d.close, 0) / 20;
+      smaData.push({ time: formatTime(historyData[i].date), value: avg });
+    }
+    if (smaData.length > 0) sma20Series.setData(smaData);
+
+    // Calculate Bollinger Bands
+    const bbUpper = [], bbLower = [];
+    for (let i = 19; i < historyData.length; i++) {
+      const slice = historyData.slice(i - 19, i + 1);
+      const avg = slice.reduce((sum, d) => sum + d.close, 0) / 20;
+      const variance = slice.reduce((sum, d) => sum + Math.pow(d.close - avg, 2), 0) / 20;
+      const std = Math.sqrt(variance);
+      bbUpper.push({ time: formatTime(historyData[i].date), value: avg + std * 2 });
+      bbLower.push({ time: formatTime(historyData[i].date), value: avg - std * 2 });
+    }
+    if (bbUpper.length > 0) { bbUpperSeries.setData(bbUpper); bbLowerSeries.setData(bbLower); }
+
+    // Update stats
+    const prices = historyData.map(d => d.close);
+    const sma50Val = prices.length >= 50 ? prices.slice(-50).reduce((a, b) => a + b) / 50 : null;
+    if (sma50Val) { const el = document.getElementById('sma50-value'); if (el) el.textContent = '$' + sma50Val.toFixed(2); }
+
+    const todayVol = historyData[historyData.length - 1]?.volume || 0;
+    const avgVol = historyData.slice(-20).reduce((sum, d) => sum + (d.volume || 0), 0) / Math.min(20, historyData.length);
+    document.getElementById('today-volume').textContent = (todayVol / 1000000).toFixed(2) + 'M';
+    document.getElementById('avg-volume').textContent = (avgVol / 1000000).toFixed(2) + 'M';
+    document.getElementById('volume-ratio').textContent = avgVol > 0 ? (todayVol / avgVol).toFixed(2) + 'x' : '-';
+
+    renderVolumeChartSmall(historyData);
+    tvChart.timeScale().fitContent();
+  } catch (error) { console.error('Chart error:', error); }
+}
 
 // Fetch historical data and render charts
 async function loadCharts() {
-  try {
-    const token = localStorage.getItem('wealthpilot_token');
-    const response = await fetch(`/api/market/history/${symbol}?days=60`, {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-    });
-
-    if (!response.ok) throw new Error('Failed to fetch data');
-    const data = await response.json();
-
-    if (data.history && data.history.length > 0) {
-      chartData.labels = data.history.map(d => new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
-      chartData.prices = data.history.map(d => d.close);
-      chartData.volumes = data.history.map(d => d.volume || 0);
-
-      // Calculate moving averages from historical data
-      const sma20 = calculateSMA(chartData.prices, 20);
-      const sma50 = calculateSMA(chartData.prices, 50);
-
-      // Update MA display
-      if (sma20) {
-        const el = document.getElementById('ma-sma20');
-        if (el) el.querySelector('.ma-value').textContent = '$' + sma20.toFixed(2);
-      }
-      if (sma50) {
-        const el50 = document.getElementById('sma50-value');
-        if (el50) el50.textContent = '$' + sma50.toFixed(2);
-      }
-
-      // Update volume stats
-      const todayVol = chartData.volumes[chartData.volumes.length - 1];
-      const avgVol = chartData.volumes.slice(-20).reduce((a, b) => a + b, 0) / 20;
-      document.getElementById('today-volume').textContent = (todayVol / 1000000).toFixed(2) + 'M';
-      document.getElementById('avg-volume').textContent = (avgVol / 1000000).toFixed(2) + 'M';
-      document.getElementById('volume-ratio').textContent = (todayVol / avgVol).toFixed(2) + 'x';
-      document.getElementById('volume-ratio').className = 'font-mono ' + (todayVol > avgVol ? 'text-emerald-400' : 'text-red-400');
-
-      renderMainChart(sma20, sma50);
-      renderVolumeChart();
-    }
-  } catch (error) {
-    console.error('Error loading chart data:', error);
-  }
-
-  // Render RSI and MACD from API data
+  createTvChart();
+  await loadHistoricalData(currentDays);
   renderRsiChart();
   renderMacdChart();
-}
-
-function calculateSMA(prices, period) {
-  if (prices.length < period) return null;
-  const slice = prices.slice(-period);
-  return slice.reduce((a, b) => a + b, 0) / period;
-}
-
-function renderMainChart(sma20, sma50) {
-  const ctx = document.getElementById('mainChart');
-  if (!ctx || chartData.labels.length === 0) return;
-
-  mainChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: chartData.labels,
-      datasets: [
-        {
-          label: 'Price',
-          data: chartData.prices,
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          fill: true,
-          tension: 0.2,
-          pointRadius: 0,
-          borderWidth: 2
-        },
-        {
-          label: 'SMA 20',
-          data: Array(chartData.labels.length).fill(sma20 || bbMiddle),
-          borderColor: '#10b981',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          borderDash: [5, 5]
-        },
-        {
-          label: 'Upper BB',
-          data: Array(chartData.labels.length).fill(bbUpper),
-          borderColor: '#8b5cf6',
-          borderWidth: 1,
-          pointRadius: 0,
-          borderDash: [3, 3]
-        },
-        {
-          label: 'Lower BB',
-          data: Array(chartData.labels.length).fill(bbLower),
-          borderColor: '#8b5cf6',
-          borderWidth: 1,
-          pointRadius: 0,
-          borderDash: [3, 3]
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        legend: { display: true, position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true } },
-        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#f1f5f9', bodyColor: '#94a3b8' }
-      },
-      scales: {
-        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 10 } } },
-        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 12 } }
-      }
-    }
-  });
 }
 
 function renderRsiChart() {
@@ -864,41 +856,29 @@ function renderMacdChart() {
   });
 }
 
-function renderVolumeChart() {
+// Small volume chart
+function renderVolumeChartSmall(historyData) {
   const ctx = document.getElementById('volumeChart');
-  if (!ctx || chartData.volumes.length === 0) return;
-
-  const vols = chartData.volumes.slice(-20);
-  const prices = chartData.prices.slice(-20);
-  const labels = chartData.labels.slice(-20);
-
-  volumeChart = new Chart(ctx, {
+  if (!ctx) return;
+  const vols = historyData.slice(-20).map(d => d.volume || 0);
+  const prices = historyData.slice(-20).map(d => d.close);
+  if (volumeChartSmall) volumeChartSmall.destroy();
+  volumeChartSmall = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        data: vols,
-        backgroundColor: prices.map((p, i, arr) => i > 0 && p >= arr[i-1] ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'),
-        borderRadius: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 9 }, callback: v => (v / 1000000).toFixed(1) + 'M' } },
-        x: { display: false }
-      }
-    }
+    data: { labels: Array(vols.length).fill(''), datasets: [{ data: vols, backgroundColor: prices.map((p, i, arr) => i > 0 && p >= arr[i-1] ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'), borderRadius: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 9 }, callback: v => (v / 1000000).toFixed(1) + 'M' } }, x: { display: false } } }
   });
 }
 
 // Timeframe button handlers
 document.querySelectorAll('.timeframe-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
+  btn.addEventListener('click', async function() {
+    const days = parseInt(this.dataset.days);
+    if (days === currentDays || isNaN(days)) return;
+    currentDays = days;
     document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
+    await loadHistoricalData(days);
   });
 });
 
@@ -906,6 +886,11 @@ document.querySelectorAll('.timeframe-btn').forEach(btn => {
 document.querySelectorAll('.indicator-toggle').forEach(btn => {
   btn.addEventListener('click', function() {
     this.classList.toggle('active');
+    const indicator = this.dataset.indicator;
+    const visible = this.classList.contains('active');
+    if (indicator === 'sma' && sma20Series) sma20Series.applyOptions({ visible });
+    if (indicator === 'bb') { if (bbUpperSeries) bbUpperSeries.applyOptions({ visible }); if (bbLowerSeries) bbLowerSeries.applyOptions({ visible }); }
+    if (indicator === 'volume' && volumeSeries) volumeSeries.applyOptions({ visible });
   });
 });
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const { query, param, validationResult } = require('express-validator');
 const MarketDataService = require('../services/marketData');
+const MarketDataServiceInstance = require('../services/marketDataService');
 const UnifiedMarketDataService = require('../services/unifiedMarketData');
 const stockDataManager = require('../services/stockDataManager');
 const jobQueue = require('../services/jobQueue');
@@ -9,8 +10,9 @@ const logger = require('../utils/logger');
 
 const router = express.Router();
 
-// Initialize BOTH services for backward compatibility
-const marketData = new MarketDataService(process.env.ALPHA_VANTAGE_API_KEY);
+// Initialize services
+const marketDataStatic = MarketDataService;
+const marketDataInstance = new MarketDataServiceInstance();
 const unifiedMarketData = new UnifiedMarketDataService();
 
 router.use(optionalAuth);
@@ -235,29 +237,51 @@ router.get('/profile/:symbol', async (req, res) => {
 /**
  * GET /api/market/history/:symbol
  * Uses StockDataManager - DB first, API fallback
- * Automatically stores data for future requests
+ * Supports intraday intervals for short timeframes
  */
 router.get('/history/:symbol', [
-  query('days').optional().isInt({ min: 1, max: 3650 }).toInt()
+  query('days').optional().isInt({ min: 1, max: 3650 }).toInt(),
+  query('interval').optional().isIn(['1m', '5m', '15m', '30m', '1h', '1d'])
 ], async (req, res) => {
   try {
     const symbol = req.params.symbol.toUpperCase();
     const days = parseInt(req.query.days) || 365;
+    const interval = req.query.interval || '1d';
 
-    logger.info(`[API] Fetching history for ${symbol}, days: ${days} via StockDataManager`);
+    logger.info(`[API] Fetching history for ${symbol}, days: ${days}, interval: ${interval}`);
 
-    // Use StockDataManager which checks DB first, then API
-    const history = await stockDataManager.getHistoricalData(symbol, days);
+    let history;
+
+    // For intraday intervals, fetch directly from Yahoo Finance API
+    if (interval !== '1d') {
+      // Map days to Yahoo Finance range format
+      let range = '1mo';
+      if (days <= 1) range = '1d';
+      else if (days <= 5) range = '5d';
+      else if (days <= 30) range = '1mo';
+      else range = '1mo'; // Max for intraday
+
+      history = await marketDataInstance.getHistoricalData(symbol, range, interval);
+    } else {
+      // Use StockDataManager for daily data (DB first, then API)
+      history = await stockDataManager.getHistoricalData(symbol, days);
+
+      // Ensure we only return the requested number of days
+      if (history && history.length > days) {
+        history = history.slice(-days);
+      }
+    }
 
     if (!history || history.length === 0) {
       return res.status(404).json({ error: 'No historical data found for symbol' });
     }
 
-    logger.info(`[API] Successfully retrieved ${history.length} data points for ${symbol}`);
+    logger.info(`[API] Successfully retrieved ${history.length} ${interval} candles for ${symbol}`);
 
     res.json({
       symbol,
       days,
+      interval,
       data: history,
       count: history.length
     });
@@ -284,7 +308,7 @@ router.get('/search', [
     const searchQuery = req.query.q.toUpperCase();
 
     // Try to get live quote directly for the symbol
-    const quote = await marketData.fetchQuote(searchQuery);
+    const quote = await marketDataInstance.fetchQuote(searchQuery);
 
     if (quote) {
       // Return live quote data in expected format
