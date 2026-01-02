@@ -3,12 +3,21 @@
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const ma = typeof movingAverages !== 'undefined' && movingAverages ? movingAverages : {};
 const price = ma.currentPrice || 0;
-const sma = ma.sma || {};
-const ema = ma.ema || {};
+
+// API returns movingAverages as array, convert to object format
+const maArray = ma.movingAverages || [];
+const sma = {};
+const ema = {};
+maArray.forEach(item => {
+  if (item.period) {
+    sma[item.period.toString()] = item.sma;
+    ema[item.period.toString()] = item.ema;
+  }
+});
+
 const signals = ma.signals || {};
 const crossovers = ma.crossovers || [];
-const chartData = ma.chartData || [];
-const fiftyTwoWeekHigh = ma.fiftyTwoWeekHigh || price;
+const fiftyTwoWeekHigh = ma.fiftyTwoWeekHigh || ma.resistance || price;
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
