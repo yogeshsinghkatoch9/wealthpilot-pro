@@ -1518,7 +1518,7 @@ app.get('/technicals', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
   const [technicals, portfolios] = await Promise.all([
-    apiFetch(`/research/technicals/${symbol}`, token),
+    apiFetch(`/technicals/${symbol}`, token),
     apiFetch('/portfolios', token)
   ]);
   const holdings = !portfolios.error && portfolios.length > 0 ? portfolios[0].holdings || [] : [];
@@ -1878,14 +1878,42 @@ app.get('/moving-averages', requireAuth, async (req, res) => {
 app.get('/bollinger-bands', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
-  const technicals = await apiFetch(`/research/technicals/${symbol}`, token);
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
   res.render('pages/bollinger-bands', { pageTitle: 'Bollinger Bands', technicals: technicals.error ? null : technicals, symbol, fmt });
+});
+
+app.get('/rsi', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
+  res.render('pages/rsi', { pageTitle: 'RSI Indicator', technicals: technicals.error ? null : technicals, symbol, fmt });
+});
+
+app.get('/macd', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
+  res.render('pages/macd', { pageTitle: 'MACD Indicator', technicals: technicals.error ? null : technicals, symbol, fmt });
+});
+
+app.get('/stochastic', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
+  res.render('pages/stochastic', { pageTitle: 'Stochastic Oscillator', technicals: technicals.error ? null : technicals, symbol, fmt });
+});
+
+app.get('/cash-conversion', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  const cashConversion = await apiFetch(`/fundamentals/${symbol}/cash-flow`, token);
+  res.render('pages/cash-conversion', { pageTitle: 'Cash Conversion', cashConversion: cashConversion.error ? null : cashConversion, symbol, fmt });
 });
 
 app.get('/adx-indicator', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
-  const technicals = await apiFetch(`/research/technicals/${symbol}`, token);
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
   res.render('pages/adx-indicator', { pageTitle: 'ADX Indicator', technicals: technicals.error ? null : technicals, symbol, fmt });
 });
 
@@ -2160,7 +2188,7 @@ app.get('/calendar', requireAuth, async (req, res) => {
 app.get('/relative-strength', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
-  const technicals = await apiFetch(`/research/technicals/${symbol}`, token);
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
   res.render('pages/relative-strength', { pageTitle: 'Relative Strength', technicals: technicals.error ? null : technicals, symbol, fmt });
 });
 
@@ -2379,7 +2407,7 @@ app.get('/concentration', requireAuth, (req, res) => {
 app.get('/volatility', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const symbol = (req.query.symbol as string) || 'AAPL';
-  const technicals = await apiFetch(`/research/technicals/${symbol}`, token);
+  const technicals = await apiFetch(`/technicals/${symbol}`, token);
   res.render('pages/volatility', { pageTitle: 'Volatility Analysis', technicals: technicals.error ? null : technicals, symbol, fmt });
 });
 
@@ -2462,7 +2490,7 @@ app.get('/research-center', requireAuth, async (req, res) => {
     ] = await Promise.all([
       apiFetch(`/market/quote/${symbol}`, token).catch(() => ({})),
       apiFetch(`/research/profile/${symbol}`, token).catch(() => ({})),
-      apiFetch(`/research/technicals/${symbol}`, token).catch(() => ({})),
+      apiFetch(`/technicals/${symbol}`, token).catch(() => ({})),
       apiFetch(`/research/fundamentals/${symbol}`, token).catch(() => ({})),
       apiFetch(`/research/options/${symbol}`, token).catch(() => ({})),
       apiFetch(`/research/stock/${symbol}/earnings`, token).catch(() => ({})),
