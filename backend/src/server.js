@@ -423,7 +423,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
     // Set token as HTTP-only cookie for browser-based auth
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.USE_HTTPS === 'true',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
