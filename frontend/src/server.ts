@@ -1099,10 +1099,22 @@ app.get('/analytics', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const period = (req.query.period as string) || '1Y';
 
+  // Helper to add timeout to fetch requests
+  const fetchWithTimeout = async (endpoint: string, timeoutMs: number = 5000) => {
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    );
+    try {
+      return await Promise.race([apiFetch(endpoint, token), timeoutPromise]);
+    } catch (e) {
+      return { error: 'Request timeout' };
+    }
+  };
+
   const [performanceData, attributionData, portfoliosData] = await Promise.all([
-    apiFetch(`/analytics/portfolio-performance?period=${period}`, token),
-    apiFetch('/analytics/attribution', token),
-    apiFetch('/portfolios', token)
+    fetchWithTimeout(`/analytics/portfolio-performance?period=${period}`, 8000),
+    fetchWithTimeout('/analytics/attribution', 5000),
+    fetchWithTimeout('/portfolios', 5000)
   ]);
 
   const performance = performanceData.error ? null : performanceData;
@@ -1236,8 +1248,8 @@ app.get('/risk', requireAuth, async (req, res) => {
   const [portfoliosData, riskData] = await Promise.all([
     apiFetch('/portfolios', token),
     selectedPortfolioId
-      ? apiFetch(`/analytics/risk-metrics?portfolioId=${selectedPortfolioId}`, token)
-      : apiFetch('/analytics/risk-metrics', token)
+      ? apiFetch(`/analytics/risk?portfolioId=${selectedPortfolioId}`, token)
+      : apiFetch('/analytics/risk', token)
   ]);
 
   const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
@@ -1411,7 +1423,7 @@ app.get('/tax-lots', requireAuth, async (req, res) => {
 
 app.get('/correlation', requireAuth, async (req, res) => {
   const token = res.locals.token;
-  const correlationData = await apiFetch('/analytics/correlation-matrix', token);
+  const correlationData = await apiFetch('/analytics/correlation', token);
 
   res.render('pages/correlation', {
     pageTitle: 'Correlation Matrix',
