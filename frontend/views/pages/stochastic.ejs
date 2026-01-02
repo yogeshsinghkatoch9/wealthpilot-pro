@@ -181,7 +181,7 @@ const bearishCross = kValue < dValue;
 <!-- Stochastic Chart -->
 <div class="bloomberg-card p-5">
   <h3 class="font-semibold text-amber-400 mb-4">Stochastic Chart</h3>
-  <div class="h-64"><canvas id="stochChart"></canvas></div>
+  <div id="tvStochChart" class="h-80"></div>
 </div>
 
 <!-- Trading Guide -->
@@ -208,72 +208,112 @@ const bearishCross = kValue < dValue;
 </div>
 </div></div></main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
 <script>
-// Generate sample stochastic data
+// Stochastic Chart with TradingView
 const currentK = <%= kValue %>;
 const currentD = <%= dValue %>;
-const labels = [];
-const kData = [];
-const dData = [];
-const now = new Date();
 
-for (let i = 29; i >= 0; i--) {
-  const date = new Date(now);
-  date.setDate(date.getDate() - i);
-  labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-
-  const kVal = Math.max(5, Math.min(95, currentK + (Math.random() - 0.5) * 30));
-  kData.push(kVal);
-  dData.push(kData.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, kData.length));
-}
-
-kData[kData.length - 1] = currentK;
-dData[dData.length - 1] = currentD;
-
-new Chart(document.getElementById('stochChart'), {
-  type: 'line',
-  data: {
-    labels: labels,
-    datasets: [
-      {
-        label: '%K',
-        data: kData,
-        borderColor: '#0ea5e9',
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.4
+const container = document.getElementById('tvStochChart');
+if (container && typeof LightweightCharts !== 'undefined') {
+  try {
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: 320,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#94a3b8',
       },
-      {
-        label: '%D',
-        data: dData,
-        borderColor: '#f59e0b',
-        borderWidth: 2,
-        pointRadius: 0,
-        tension: 0.4,
-        borderDash: [5, 5]
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
-    },
-    scales: {
-      y: {
-        min: 0,
-        max: 100,
-        grid: { color: '#1e293b' },
-        ticks: { color: '#94a3b8' }
+      grid: {
+        vertLines: { color: '#1e293b' },
+        horzLines: { color: '#1e293b' },
       },
-      x: {
-        grid: { display: false },
-        ticks: { color: '#94a3b8', maxTicksLimit: 10 }
-      }
+      rightPriceScale: {
+        borderColor: '#334155',
+        scaleMargins: { top: 0.05, bottom: 0.05 },
+      },
+      timeScale: {
+        borderColor: '#334155',
+        timeVisible: true,
+      },
+    });
+
+    // Add %K line series
+    const kSeries = chart.addLineSeries({
+      color: '#0ea5e9',
+      lineWidth: 2,
+      priceScaleId: 'right',
+    });
+
+    // Add %D line series
+    const dSeries = chart.addLineSeries({
+      color: '#f59e0b',
+      lineWidth: 2,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      priceScaleId: 'right',
+    });
+
+    // Generate stochastic data points
+    const kData = [];
+    const dData = [];
+    const now = new Date();
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      // Generate values using sine wave pattern
+      const kVal = i === 0 ? currentK : Math.max(5, Math.min(95, currentK + Math.sin(i * 0.4) * 15));
+      const dVal = i === 0 ? currentD : Math.max(5, Math.min(95, currentD + Math.sin(i * 0.4 + 0.3) * 12));
+
+      kData.push({ time: dateStr, value: kVal });
+      dData.push({ time: dateStr, value: dVal });
     }
+
+    kSeries.setData(kData);
+    dSeries.setData(dData);
+
+    // Add overbought/oversold lines
+    kSeries.createPriceLine({
+      price: 80,
+      color: '#ef4444',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Overbought',
+    });
+
+    kSeries.createPriceLine({
+      price: 20,
+      color: '#10b981',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Oversold',
+    });
+
+    kSeries.createPriceLine({
+      price: 50,
+      color: '#64748b',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dotted,
+      axisLabelVisible: false,
+    });
+
+    chart.timeScale().fitContent();
+
+    // Handle resize
+    new ResizeObserver(entries => {
+      chart.applyOptions({ width: entries[0].contentRect.width });
+    }).observe(container);
+
+  } catch (error) {
+    console.error('TradingView Stochastic chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
-});
+}
 </script>
 <%- include('../partials/footer') %>

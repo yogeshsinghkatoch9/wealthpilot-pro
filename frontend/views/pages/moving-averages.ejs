@@ -267,101 +267,61 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 <!-- Chart -->
 <div class="bloomberg-card p-5">
   <h3 class="font-semibold text-amber-400 mb-4">Price with Moving Averages</h3>
-  <div class="h-64"><canvas id="maChart"></canvas></div>
+  <div id="tvMAChart" class="h-80"></div>
 </div>
 <% } %>
 </div></div></main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
 <script>
 <% if (movingAverages && chartData.length > 0) { %>
-const chartLabels = <%- JSON.stringify(chartData.slice(-60).map(d => {
-  const date = new Date(d.date);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-})) %>;
-const priceData = <%- JSON.stringify(chartData.slice(-60).map(d => d.close)) %>;
+// Prepare OHLC data for TradingView
+const ohlcData = <%- JSON.stringify(chartData.slice(-90).map(d => ({
+  time: d.date.split('T')[0],
+  open: d.open,
+  high: d.high,
+  low: d.low,
+  close: d.close,
+  volume: d.volume
+}))) %>;
 
-new Chart(document.getElementById('maChart'), {
-  type: 'line',
-  data: {
-    labels: chartLabels,
-    datasets: [
-      {
-        label: 'Price',
-        data: priceData,
-        borderColor: '#0ea5e9',
-        backgroundColor: 'rgba(14, 165, 233, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 0
-      },
-      {
-        label: '50 SMA',
-        data: Array(chartLabels.length).fill(<%= sma['50'] || 0 %>),
-        borderColor: '#f59e0b',
-        borderWidth: 1,
-        fill: false,
-        pointRadius: 0,
-        borderDash: [5, 5]
-      },
-      {
-        label: '200 SMA',
-        data: Array(chartLabels.length).fill(<%= sma['200'] || 0 %>),
-        borderColor: '#8b5cf6',
-        borderWidth: 1,
-        fill: false,
-        pointRadius: 0,
-        borderDash: [5, 5]
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
-    },
-    scales: {
-      y: {
-        grid: { color: '#1e293b' },
-        ticks: { color: '#94a3b8', callback: v => '$' + v.toFixed(0) }
-      },
-      x: {
-        grid: { display: false },
-        ticks: { color: '#94a3b8', maxTicksLimit: 10 }
-      }
-    }
+// Initialize TradingView chart
+const container = document.getElementById('tvMAChart');
+if (container && typeof TradingViewChart !== 'undefined') {
+  try {
+    const chart = new TradingViewChart(container, {
+      theme: 'dark',
+      height: 320
+    });
+
+    // Add candlestick series
+    chart.addCandlestick(ohlcData);
+
+    // Add moving averages
+    chart.addSMA(ohlcData, 20, '#3b82f6');  // Blue - 20 SMA
+    chart.addSMA(ohlcData, 50, '#f59e0b');  // Amber - 50 SMA
+    chart.addSMA(ohlcData, 200, '#8b5cf6'); // Purple - 200 SMA
+
+    // Add volume
+    chart.addVolume(ohlcData);
+
+    // Fit content
+    chart.fitContent();
+  } catch (error) {
+    console.error('TradingView chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
-});
+} else {
+  console.log('TradingView not available');
+}
 <% } else if (movingAverages) { %>
-// No chart data, create simple visualization
-const currentPrice = <%= price %>;
-const sma50 = <%= sma['50'] || 0 %>;
-const sma200 = <%= sma['200'] || 0 %>;
-
-new Chart(document.getElementById('maChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Current Price', '50 SMA', '200 SMA'],
-    datasets: [{
-      data: [currentPrice, sma50, sma200],
-      backgroundColor: ['#0ea5e9', '#f59e0b', '#8b5cf6'],
-      borderRadius: 4
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: {
-        grid: { color: '#1e293b' },
-        ticks: { color: '#94a3b8', callback: v => '$' + v.toFixed(0) }
-      },
-      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-    }
-  }
-});
+// No chart data available
+const container = document.getElementById('tvMAChart');
+if (container) {
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">No historical data available for chart</p>';
+}
 <% } %>
 </script>
 <%- include('../partials/footer') %>
