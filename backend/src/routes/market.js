@@ -239,7 +239,7 @@ router.get('/history/:symbol', [
 ], async (req, res) => {
   try {
     const symbol = req.params.symbol.toUpperCase();
-    const days = parseInt(req.query.days) || 30;
+    const days = parseInt(req.query.days) || 365;
 
     logger.info(`[API] Fetching history for ${symbol}, days: ${days} via unified service`);
 
