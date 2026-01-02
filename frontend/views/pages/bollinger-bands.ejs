@@ -2,10 +2,10 @@
 // Safe defaults for potentially undefined variables
 const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 const t = typeof technicals !== 'undefined' && technicals ? technicals : {};
-const tech = t.technicals || {};
-const bb = tech.bollingerBands || {};
-const price = t.currentPrice || 0;
-const chartData = t.chartData || [];
+// API returns bollinger directly, not nested under technicals
+const bb = t.bollinger || {};
+const price = t.price?.current || 0;
+const chartData = t.dates || [];
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
@@ -217,46 +217,65 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
 <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="/js/tradingview-charts.js"></script>
 <script>
-<% if (technicals && chartData.length > 0) { %>
-// Prepare OHLC data for TradingView
-const ohlcData = <%- JSON.stringify(chartData.slice(-60).map(d => ({
-  time: d.date.split('T')[0],
-  open: d.open,
-  high: d.high,
-  low: d.low,
-  close: d.close,
-  volume: d.volume
-}))) %>;
-
-// Initialize TradingView chart
+// Fetch and render Bollinger Bands chart
+const symbol = '<%= symbol || "AAPL" %>';
 const container = document.getElementById('tvBBChart');
-if (container && typeof TradingViewChart !== 'undefined') {
+
+async function loadBollingerChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
   try {
-    const chart = new TradingViewChart(container, {
-      theme: 'dark',
-      height: 320
+    // Fetch historical data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/market/history/${symbol}?range=6mo`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
 
-    // Add candlestick series
-    chart.addCandlestick(ohlcData);
+    if (!response.ok) throw new Error('Failed to fetch data');
 
-    // Add Bollinger Bands
-    chart.addBollingerBands(ohlcData, 20, 2);
+    const data = await response.json();
+    if (!data || data.length === 0) throw new Error('No data');
 
-    // Add volume
-    chart.addVolume(ohlcData);
+    // Format for TradingView
+    const ohlcData = data.slice(-90).map(d => ({
+      time: d.date.split('T')[0],
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+      volume: d.volume
+    }));
 
-    // Fit content
-    chart.fitContent();
+    // Clear loading message
+    container.innerHTML = '';
+
+    // Initialize TradingView chart
+    if (typeof TradingViewChart !== 'undefined') {
+      const chart = new TradingViewChart(container, {
+        theme: 'dark',
+        height: 320
+      });
+
+      chart.addCandlestick(ohlcData);
+      chart.addBollingerBands(ohlcData, 20, 2);
+      chart.addVolume(ohlcData);
+      chart.fitContent();
+    } else {
+      throw new Error('TradingView not available');
+    }
   } catch (error) {
-    console.error('TradingView chart error:', error);
+    console.error('Chart error:', error);
     container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
   }
-} else {
-  console.log('TradingView not available');
 }
-<% } else { %>
-console.log('No chart data available');
-<% } %>
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadBollingerChart);
+} else {
+  loadBollingerChart();
+}
 </script>
 <%- include('../partials/footer') %>
