@@ -18,6 +18,8 @@ services:
       - DATABASE_URL=${DATABASE_URL:-file:./data/wealthpilot.db}
       - POSTGRES_URL=postgresql://${POSTGRES_USER:-wealthpilot}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-wealthpilot}
       - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
       - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
