@@ -163,8 +163,9 @@ jobs:
             echo "Building frontend..."
             docker-compose -f docker-compose.aws.yml build --no-cache frontend
 
-            # Start backend
+            # Start backend (remove old container first if exists)
             echo "Starting backend..."
+            docker rm -f wealthpilot-backend 2>/dev/null || true
             docker-compose -f docker-compose.aws.yml up -d backend
 
             # Wait for backend to be ready
@@ -178,8 +179,9 @@ jobs:
             echo "Seeding database..."
             docker exec wealthpilot-backend node prisma/seed.js || echo "Seeding done"
 
-            # Start frontend
+            # Start frontend (remove old container first if exists)
             echo "Starting frontend..."
+            docker rm -f wealthpilot-frontend 2>/dev/null || true
             docker-compose -f docker-compose.aws.yml up -d frontend
 
             # Final status
