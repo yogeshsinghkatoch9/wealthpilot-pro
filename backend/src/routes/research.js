@@ -7,6 +7,7 @@ const { authenticate } = require('../middleware/auth');
 
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+const secApiService = require('../services/secApiService');
 
 // Helper function to fetch stock quote
 async function fetchStockQuote(symbol) {
@@ -2020,6 +2021,103 @@ router.get('/insider-txns/:symbol', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Insider transaction data not available' });
   }
 });
+
+// ==================== SEC API ENDPOINTS ====================
+
+// GET /api/research/sec-filings/:symbol - SEC filings from SEC API
+router.get('/sec-filings/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { formType, limit = 20 } = req.query;
+
+    const filings = await secApiService.getFilings(symbol, formType, parseInt(limit));
+
+    res.json({
+      symbol,
+      count: filings.length,
+      filings
+    });
+  } catch (error) {
+    logger.error('Error fetching SEC filings:', error);
+    res.status(500).json({ error: 'SEC filings not available', details: error.message });
+  }
+});
+
+// GET /api/research/sec-insider/:symbol - Insider transactions from SEC API (Form 4)
+router.get('/sec-insider/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { limit = 50 } = req.query;
+
+    const transactions = await secApiService.getInsiderTransactions(symbol, parseInt(limit));
+
+    // Calculate summary statistics
+    const purchases = transactions.filter(t => t.transactionType === 'Purchase');
+    const sales = transactions.filter(t => t.transactionType === 'Sale');
+
+    const summary = {
+      totalTransactions: transactions.length,
+      purchases: purchases.length,
+      sales: sales.length,
+      totalPurchaseValue: purchases.reduce((sum, t) => sum + (t.totalValue || 0), 0),
+      totalSaleValue: sales.reduce((sum, t) => sum + (t.totalValue || 0), 0),
+      netInsiderSentiment: purchases.length > sales.length ? 'bullish' :
+                          sales.length > purchases.length ? 'bearish' : 'neutral'
+    };
+
+    res.json({
+      symbol,
+      summary,
+      transactions
+    });
+  } catch (error) {
+    logger.error('Error fetching SEC insider transactions:', error);
+    res.status(500).json({ error: 'SEC insider data not available', details: error.message });
+  }
+});
+
+// GET /api/research/sec-institutional/:symbol - Institutional holdings (13F)
+router.get('/sec-institutional/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { limit = 20 } = req.query;
+
+    const holdings = await secApiService.getInstitutionalHoldings(symbol, parseInt(limit));
+
+    res.json({
+      symbol,
+      count: holdings.length,
+      filings: holdings
+    });
+  } catch (error) {
+    logger.error('Error fetching institutional holdings:', error);
+    res.status(500).json({ error: 'Institutional holdings not available', details: error.message });
+  }
+});
+
+// GET /api/research/sec-search - Search SEC filings
+router.get('/sec-search', authenticate, async (req, res) => {
+  try {
+    const { q, limit = 20 } = req.query;
+
+    if (!q) {
+      return res.status(400).json({ error: 'Search query (q) is required' });
+    }
+
+    const filings = await secApiService.searchFilings(q, parseInt(limit));
+
+    res.json({
+      query: q,
+      count: filings.length,
+      filings
+    });
+  } catch (error) {
+    logger.error('Error searching SEC filings:', error);
+    res.status(500).json({ error: 'SEC search not available', details: error.message });
+  }
+});
+
+// ==================== END SEC API ENDPOINTS ====================
 
 // GET /api/research/earnings-whispers/:symbol - Earnings whispers
 router.get('/earnings-whispers/:symbol', authenticate, async (req, res) => {
