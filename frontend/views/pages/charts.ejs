@@ -276,11 +276,16 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Stock Char
 
   <!-- Chart -->
   <div class="mt-6 chart-container bg-<%= safeTheme === 'light' ? 'gray-50' : 'gray-900' %> p-6">
-    <div class="h-96" id="chartContainer">
-      <canvas id="priceChart"></canvas>
-    </div>
-    <div class="h-24 mt-4" id="volumeContainer">
-      <canvas id="volumeChart"></canvas>
+    <!-- TradingView Chart Container (Professional Candlestick) -->
+    <div id="tvChartContainer" class="h-[500px] w-full"></div>
+    <!-- Fallback Chart.js Canvas (hidden by default when TradingView loads) -->
+    <div id="chartjsContainer" style="display: none;">
+      <div class="h-96" id="chartContainer">
+        <canvas id="priceChart"></canvas>
+      </div>
+      <div class="h-24 mt-4" id="volumeContainer">
+        <canvas id="volumeChart"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -397,16 +402,23 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Stock Char
   <option value="<%= symbol %>" selected><%= symbol %></option>
 </select>
 
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
+
 <script>
 // Get initial data from server
 const initialSymbol = '<%= symbol %>';
 const initialQuote = <%- quote ? JSON.stringify(quote) : 'null' %>;
+const chartTheme = '<%= safeTheme %>';
 
 let currentSymbol = initialSymbol;
 let currentQuote = initialQuote;
 let historicalData = [];
 let priceChart = null;
 let volumeChart = null;
+let tvChart = null; // TradingView chart instance
+let useTradingView = true; // Use TradingView by default
 let chartType = 'candlestick';
 let indicators = { sma: false, ema: false, bollinger: false, volume: true };
 
@@ -510,6 +522,91 @@ async function loadChart() {
 }
 
 function renderChart(data) {
+  // Check if TradingView is available and we want to use it
+  if (useTradingView && typeof TradingViewChart !== 'undefined' && typeof LightweightCharts !== 'undefined') {
+    renderTradingViewChart(data);
+    return;
+  }
+
+  // Fallback to Chart.js
+  renderChartJS(data);
+}
+
+function renderTradingViewChart(data) {
+  const container = document.getElementById('tvChartContainer');
+  if (!container) return;
+
+  // Clear existing chart
+  if (tvChart) {
+    tvChart.destroy();
+  }
+  container.innerHTML = '';
+
+  // Show TradingView container, hide Chart.js
+  container.style.display = 'block';
+  const chartjsContainer = document.getElementById('chartjsContainer');
+  if (chartjsContainer) chartjsContainer.style.display = 'none';
+
+  try {
+    // Create TradingView chart
+    tvChart = new TradingViewChart(container, {
+      theme: chartTheme,
+      height: 500
+    });
+
+    // Add main series based on chart type
+    if (chartType === 'candlestick') {
+      tvChart.addCandlestick(data);
+    } else if (chartType === 'line') {
+      tvChart.addLine(data);
+    } else {
+      tvChart.addArea(data);
+    }
+
+    // Add volume if enabled
+    if (indicators.volume) {
+      tvChart.addVolume(data);
+    }
+
+    // Add SMA if enabled
+    if (indicators.sma) {
+      tvChart.addSMA(data, 20, '#f59e0b');
+    }
+
+    // Add EMA if enabled
+    if (indicators.ema) {
+      tvChart.addEMA(data, 12, '#8b5cf6');
+    }
+
+    // Add Bollinger Bands if enabled
+    if (indicators.bollinger) {
+      tvChart.addBollingerBands(data, 20, 2);
+    }
+
+    // Fit content to view
+    tvChart.fitContent();
+
+    // Subscribe to crosshair for tooltip
+    tvChart.onCrosshairMove((param) => {
+      if (!param || !param.time || !param.point) return;
+      // Optional: Update price display on crosshair move
+    });
+
+  } catch (error) {
+    console.error('TradingView chart error:', error);
+    // Fall back to Chart.js on error
+    useTradingView = false;
+    renderChartJS(data);
+  }
+}
+
+function renderChartJS(data) {
+  // Show Chart.js container, hide TradingView
+  const tvContainer = document.getElementById('tvChartContainer');
+  if (tvContainer) tvContainer.style.display = 'none';
+  const chartjsContainer = document.getElementById('chartjsContainer');
+  if (chartjsContainer) chartjsContainer.style.display = 'block';
+
   const canvas = document.getElementById('priceChart');
   if (!canvas) return;
 

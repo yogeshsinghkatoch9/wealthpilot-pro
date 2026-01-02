@@ -8,6 +8,7 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const riskAnalysis = require('../services/riskAnalysis');
 const MarketDataService = require('../services/marketDataService');
+const ESGDataProvider = require('../services/esg/esgDataProvider');
 const { getDb } = require('../db');
 const logger = require('../utils/logger');
 
@@ -292,70 +293,125 @@ router.get('/esg', async (req, res) => {
 
 /**
  * GET /api/risk/esg/:symbol
- * Get ESG breakdown for specific symbol
+ * Get ESG breakdown for specific symbol from real ESG data providers
  */
 router.get('/esg/:symbol', async (req, res) => {
   try {
     const { symbol } = req.params;
+    const upperSymbol = symbol.toUpperCase();
 
-    const quote = await marketData.getQuote(symbol.toUpperCase());
+    // Get market quote for basic info
+    const quote = await marketData.getQuote(upperSymbol);
     if (!quote) {
       return res.status(404).json({ error: 'Symbol not found' });
     }
 
-    // Generate ESG scores (in production, from ESG data provider)
-    const holding = {
-      symbol: symbol.toUpperCase(),
-      value: 10000,
-      sector: quote.sector || 'Unknown'
-    };
+    // Fetch real ESG data from provider (Yahoo Finance, Refinitiv, or MSCI)
+    let esgData = null;
+    let dataSource = 'ESG Data Provider';
 
-    const esgScores = riskAnalysis.estimateESGScores ?
-      riskAnalysis.estimateESGScores(holding) :
-      { environmental: 65, social: 60, governance: 70, total: 65 };
+    try {
+      esgData = await ESGDataProvider.getESGData(upperSymbol);
+      dataSource = `${esgData.provider} ESG Data`;
+    } catch (esgError) {
+      logger.warn(`ESG data not available for ${upperSymbol}: ${esgError.message}`);
+      // Fall back to sector-based estimates with clear disclosure
+    }
 
-    const rating = riskAnalysis.getESGRating(esgScores.total);
+    // If real data available, use it
+    if (esgData && esgData.scores) {
+      const rating = ESGDataProvider.getUnifiedRating(esgData.scores.overall);
 
-    // Generate breakdown details
-    const breakdown = {
-      environmental: {
-        score: esgScores.environmental,
-        carbonEmissions: Math.random() > 0.5 ? 'Low' : 'Moderate',
-        energyEfficiency: Math.random() > 0.5 ? 'High' : 'Average',
-        wasteManagement: Math.random() > 0.5 ? 'Good' : 'Fair',
-        waterUsage: Math.random() > 0.5 ? 'Efficient' : 'Average'
-      },
-      social: {
-        score: esgScores.social,
-        laborPractices: Math.random() > 0.5 ? 'Strong' : 'Average',
-        diversityInclusion: Math.random() > 0.5 ? 'Leader' : 'Average',
-        communityEngagement: Math.random() > 0.5 ? 'Active' : 'Moderate',
-        productSafety: 'Compliant'
-      },
-      governance: {
-        score: esgScores.governance,
-        boardIndependence: Math.random() > 0.5 ? 'High' : 'Moderate',
-        executiveCompensation: Math.random() > 0.5 ? 'Aligned' : 'Average',
-        shareholderRights: 'Strong',
-        transparency: Math.random() > 0.5 ? 'Excellent' : 'Good'
-      }
-    };
+      res.json({
+        success: true,
+        symbol: upperSymbol,
+        name: quote.name || symbol,
+        sector: quote.sector || 'Unknown',
+        overallScore: esgData.scores.overall,
+        rating: rating.label,
+        ratingColor: rating.color,
+        breakdown: {
+          environmental: {
+            score: esgData.scores.environmental,
+            details: esgData.environmental || null
+          },
+          social: {
+            score: esgData.scores.social,
+            details: esgData.social || null
+          },
+          governance: {
+            score: esgData.scores.governance,
+            details: esgData.governance || null
+          }
+        },
+        industryComparison: {
+          sectorAverage: esgData.peers?.categoryAvg || null,
+          percentile: esgData.rating?.percentile || null
+        },
+        controversies: esgData.controversies || null,
+        dataSource,
+        lastUpdated: esgData.timestamp
+      });
+    } else {
+      // Sector-based ESG estimates as fallback with transparent disclosure
+      const SECTOR_ESG_ESTIMATES = {
+        'Technology': { e: 62, s: 68, g: 72 },
+        'Information Technology': { e: 62, s: 68, g: 72 },
+        'Healthcare': { e: 55, s: 72, g: 68 },
+        'Health Care': { e: 55, s: 72, g: 68 },
+        'Financials': { e: 58, s: 62, g: 75 },
+        'Financial Services': { e: 58, s: 62, g: 75 },
+        'Consumer Discretionary': { e: 52, s: 58, g: 65 },
+        'Consumer Cyclical': { e: 52, s: 58, g: 65 },
+        'Consumer Staples': { e: 55, s: 60, g: 68 },
+        'Consumer Defensive': { e: 55, s: 60, g: 68 },
+        'Energy': { e: 38, s: 55, g: 62 },
+        'Utilities': { e: 48, s: 60, g: 70 },
+        'Industrials': { e: 50, s: 58, g: 65 },
+        'Materials': { e: 45, s: 55, g: 62 },
+        'Basic Materials': { e: 45, s: 55, g: 62 },
+        'Real Estate': { e: 52, s: 55, g: 68 },
+        'Communication Services': { e: 60, s: 62, g: 70 },
+        'Unknown': { e: 55, s: 58, g: 65 }
+      };
 
-    res.json({
-      success: true,
-      symbol: symbol.toUpperCase(),
-      name: quote.name || symbol,
-      sector: quote.sector || 'Unknown',
-      overallScore: esgScores.total,
-      rating,
-      breakdown,
-      industryComparison: {
-        sectorAverage: 60,
-        percentile: Math.round(50 + (esgScores.total - 60))
-      },
-      controversies: [],
-      dataSource: 'Estimated from sector averages'
-    });
+      const sector = quote.sector || 'Unknown';
+      const sectorScores = SECTOR_ESG_ESTIMATES[sector] || SECTOR_ESG_ESTIMATES['Unknown'];
+      const overallScore = Math.round((sectorScores.e + sectorScores.s + sectorScores.g) / 3);
+      const rating = ESGDataProvider.getUnifiedRating(overallScore);
+
+      res.json({
+        success: true,
+        symbol: upperSymbol,
+        name: quote.name || symbol,
+        sector,
+        overallScore,
+        rating: rating.label,
+        ratingColor: rating.color,
+        breakdown: {
+          environmental: {
+            score: sectorScores.e,
+            details: null
+          },
+          social: {
+            score: sectorScores.s,
+            details: null
+          },
+          governance: {
+            score: sectorScores.g,
+            details: null
+          }
+        },
+        industryComparison: {
+          sectorAverage: overallScore,
+          percentile: null
+        },
+        controversies: null,
+        dataSource: 'Sector Average Estimate (Real-time data unavailable)',
+        lastUpdated: new Date().toISOString(),
+        disclaimer: 'ESG scores are estimated based on sector averages. For accurate ESG data, real-time provider integration is required.'
+      });
+    }
   } catch (error) {
     logger.error('ESG breakdown error:', error);
     res.status(500).json({ error: 'Failed to get ESG breakdown' });
@@ -413,9 +469,8 @@ router.get('/drawdown', async (req, res) => {
       } else if (t.type === 'sell') {
         runningValue -= t.shares * t.price;
       }
-      // Add some market variation
-      const variation = 1 + (Math.random() - 0.5) * 0.02;
-      values.push(Math.max(0, runningValue * variation));
+      // Use actual transaction value without random noise
+      values.push(Math.max(0, runningValue));
     });
 
     // Ensure current value is included
