@@ -258,13 +258,17 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Technical</h3>
           <ul class="megamenu-links">
+            <li><a href="/charts" class="megamenu-link">Charts</a></li>
             <li><a href="/technicals" class="megamenu-link">Technical Analysis</a></li>
-            <li><a href="/fibonacci" class="megamenu-link">Fibonacci</a></li>
+            <li><a href="/moving-averages" class="megamenu-link">Moving Averages</a></li>
+            <li><a href="/rsi" class="megamenu-link">RSI Indicator</a></li>
+            <li><a href="/macd" class="megamenu-link">MACD</a></li>
             <li><a href="/bollinger-bands" class="megamenu-link">Bollinger Bands</a></li>
+            <li><a href="/stochastic" class="megamenu-link">Stochastic</a></li>
+            <li><a href="/adx-indicator" class="megamenu-link">ADX Indicator</a></li>
+            <li><a href="/fibonacci" class="megamenu-link">Fibonacci</a></li>
             <li><a href="/volume-profile" class="megamenu-link">Volume Profile</a></li>
             <li><a href="/momentum-screener" class="megamenu-link">Momentum</a></li>
-            <li><a href="/float-analysis" class="megamenu-link">Float Analysis</a></li>
-            <li><a href="/short-interest" class="megamenu-link">Short Interest</a></li>
           </ul>
         </div>
         <div class="megamenu-column">
