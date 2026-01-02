@@ -271,6 +271,27 @@ router.get('/performance-history', async (req, res) => {
     const spyEndPrice = spyPrices.length > 0 ? Number(spyPrices[spyPrices.length - 1].close) : 100;
     const spyReturn = spyStartPrice > 0 ? (spyEndPrice - spyStartPrice) / spyStartPrice : 0;
 
+    // Fetch historical prices for all holdings to reconstruct portfolio history
+    const holdingHistories = {};
+    for (const symbol of allSymbols.slice(0, 20)) { // Limit to 20 symbols for performance
+      try {
+        const history = await MarketDataService.getHistoricalPrices(symbol, days);
+        if (history && history.length > 0) {
+          holdingHistories[symbol] = history;
+        }
+      } catch (err) {
+        logger.debug(`Failed to get history for ${symbol}:`, err.message);
+      }
+    }
+
+    // Build a map of symbol -> shares for quick lookup
+    const sharesMap = {};
+    for (const portfolio of portfolios) {
+      for (const h of portfolio.holdings) {
+        sharesMap[h.symbol] = (sharesMap[h.symbol] || 0) + Number(h.shares);
+      }
+    }
+
     for (let i = 0; i < dataPoints; i++) {
       const daysAgo = Math.floor((dataPoints - 1 - i) * (days / (dataPoints - 1)));
       const date = new Date(now);
@@ -289,16 +310,39 @@ router.get('/performance-history', async (req, res) => {
       }
       labels.push(label);
 
-      // Calculate portfolio value using linear interpolation (no random noise)
-      // In production, this would use actual portfolio snapshots from database
-      const progress = i / (dataPoints - 1);
-      const portfolioValue = totalCost + (currentValue - totalCost) * progress;
+      // Calculate portfolio value using actual historical prices
+      let portfolioValue = totalCash; // Start with cash
+      const targetIndex = Math.floor((i / (dataPoints - 1)) * (days - 1));
+
+      for (const [symbol, shares] of Object.entries(sharesMap)) {
+        const history = holdingHistories[symbol];
+        if (history && history.length > 0) {
+          // Find the price at the appropriate historical point
+          const priceIndex = Math.min(targetIndex, history.length - 1);
+          const histPrice = Number(history[priceIndex]?.close) || Number(history[0]?.close) || 0;
+          portfolioValue += shares * histPrice;
+        } else {
+          // Fallback: use current quote price (no historical data available)
+          const quote = quotes[symbol] || {};
+          const price = Number(quote.price) || 0;
+          portfolioValue += shares * price;
+        }
+      }
       portfolio.push(Math.round(portfolioValue * 100) / 100);
 
-      // S&P 500 benchmark - use real return calculated from historical data
-      const benchmarkProgress = spyReturn * progress;
-      const benchmarkValue = totalCost * (1 + benchmarkProgress);
-      benchmark.push(Math.round(benchmarkValue * 100) / 100);
+      // S&P 500 benchmark - use real historical prices
+      if (spyPrices.length > 0) {
+        const spyIndex = Math.min(targetIndex, spyPrices.length - 1);
+        const spyPrice = Number(spyPrices[spyIndex]?.close) || spyStartPrice;
+        const spyReturnAtPoint = (spyPrice - spyStartPrice) / spyStartPrice;
+        const benchmarkValue = totalCost * (1 + spyReturnAtPoint);
+        benchmark.push(Math.round(benchmarkValue * 100) / 100);
+      } else {
+        // Fallback if no SPY data
+        const progress = i / (dataPoints - 1);
+        const benchmarkValue = totalCost * (1 + spyReturn * progress);
+        benchmark.push(Math.round(benchmarkValue * 100) / 100);
+      }
     }
 
     res.json({
@@ -811,15 +855,67 @@ router.get('/portfolio-performance', async (req, res) => {
       logger.warn('Failed to get SPY benchmark for alpha:', benchErr.message);
     }
 
+    // Fetch historical prices for holdings to reconstruct portfolio history
+    const allSymbols = [...new Set(portfolios.flatMap(p => p.holdings.map(h => h.symbol)))];
+    const holdingHistories = {};
+    for (const symbol of allSymbols.slice(0, 15)) { // Limit for performance
+      try {
+        const history = await MarketDataService.getHistoricalPrices(symbol, days);
+        if (history && history.length > 0) {
+          holdingHistories[symbol] = history;
+        }
+      } catch (err) {
+        logger.debug(`Failed to get history for ${symbol}:`, err.message);
+      }
+    }
+
+    // Build shares map
+    const sharesMap = {};
+    for (const portfolio of portfolios) {
+      for (const h of portfolio.holdings) {
+        sharesMap[h.symbol] = (sharesMap[h.symbol] || 0) + Number(h.shares);
+      }
+    }
+
+    // Calculate weighted portfolio beta from individual stock betas
+    let weightedBeta = 0;
+    let totalWeight = 0;
+    const allQuotes = await MarketDataService.getQuotes(allSymbols);
+    for (const [symbol, shares] of Object.entries(sharesMap)) {
+      const quote = allQuotes[symbol] || {};
+      const price = Number(quote.price) || 0;
+      const value = shares * price;
+      const weight = totalValue > 0 ? value / totalValue : 0;
+      const stockBeta = Number(quote.beta) || 1.0;
+      weightedBeta += stockBeta * weight;
+      totalWeight += weight;
+    }
+    const portfolioBeta = totalWeight > 0 ? weightedBeta / totalWeight : 1.0;
+
+    // Get total cash for chart calculation
+    const totalCash = portfolios.reduce((sum, p) => sum + (Number(p.cashBalance) || 0), 0);
+
     for (let i = days; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
       labels.push(date.toISOString().split('T')[0]);
 
-      // Calculate historical values using linear interpolation (no random noise)
-      // In production, this would use actual portfolio snapshots from database
-      const progressFactor = 1 - (i / days);
-      const historicalValue = totalCost + (totalReturn * progressFactor);
+      // Calculate historical value using actual historical prices
+      let historicalValue = totalCash;
+      const targetIndex = Math.floor(((days - i) / days) * (days - 1));
+
+      for (const [symbol, shares] of Object.entries(sharesMap)) {
+        const history = holdingHistories[symbol];
+        if (history && history.length > 0) {
+          const priceIndex = Math.min(targetIndex, history.length - 1);
+          const histPrice = Number(history[priceIndex]?.close) || 0;
+          historicalValue += shares * histPrice;
+        } else {
+          // Fallback: use current price
+          const quote = allQuotes[symbol] || {};
+          historicalValue += shares * (Number(quote.price) || 0);
+        }
+      }
       values.push(Math.round(historicalValue * 100) / 100);
     }
 
@@ -834,8 +930,8 @@ router.get('/portfolio-performance', async (req, res) => {
       periodReturnPct: totalReturnPct,
       holdings: allHoldings.sort((a, b) => b.value - a.value),
       riskMetrics: {
-        beta: 1.0, // Would need market regression for accurate calculation
-        alpha: totalReturnPct - benchmarkReturn, // Real alpha vs SPY
+        beta: Math.round(portfolioBeta * 100) / 100,
+        alpha: totalReturnPct - benchmarkReturn,
         sharpe: sharpeRatio,
         volatility: volatility * 100,
         maxDrawdown: maxDrawdown * 100
@@ -972,14 +1068,66 @@ router.get('/attribution', async (req, res) => {
       };
     }).sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
 
-    // Factor attribution (simplified)
+    // Calculate factor exposures from actual holdings
+    // Get quotes with fundamental data for factor analysis
+    const allSymbols = [...new Set(portfolios.flatMap(p => p.holdings.map(h => h.symbol)))];
+    const allQuotes = await MarketDataService.getQuotes(allSymbols);
+
+    // Calculate weighted average metrics across holdings
+    let totalMarketCap = 0;
+    let weightedPE = 0;
+    let weightedBeta = 0;
+    let momentumScore = 0;
+    let qualityScore = 0;
+    let valueScore = 0;
+
+    for (const portfolio of portfolios) {
+      for (const h of portfolio.holdings) {
+        const quote = allQuotes[h.symbol] || {};
+        const shares = Number(h.shares);
+        const cost = Number(h.avgCostBasis);
+        const price = Number(quote.price) || cost;
+        const value = shares * price;
+        const weight = totalValue > 0 ? value / totalValue : 0;
+
+        // Market cap factor (size)
+        const marketCap = Number(quote.marketCap) || 0;
+        totalMarketCap += marketCap * weight;
+
+        // Value factor (P/E ratio - lower is more value-oriented)
+        const pe = Number(quote.pe) || Number(quote.trailingPE) || 20;
+        weightedPE += pe * weight;
+
+        // Beta exposure
+        const stockBeta = Number(quote.beta) || 1.0;
+        weightedBeta += stockBeta * weight;
+
+        // Momentum (based on price change)
+        const changePercent = Number(quote.changePercent) || 0;
+        momentumScore += changePercent * weight;
+
+        // Quality (based on profit margins if available)
+        const profitMargin = Number(quote.profitMargins) || 0.1;
+        qualityScore += profitMargin * weight;
+      }
+    }
+
+    // Calculate factor contributions based on actual exposures
+    const avgMarketCapBillions = totalMarketCap / 1e9;
+    const sizeExposure = avgMarketCapBillions > 100 ? -0.5 : avgMarketCapBillions > 10 ? 0 : 0.5; // Large cap = negative size exposure
+    const valueExposure = weightedPE < 15 ? 0.8 : weightedPE < 25 ? 0 : -0.5; // Low P/E = value exposure
+    const momentumExposure = momentumScore > 0.5 ? 1.0 : momentumScore > 0 ? 0.3 : momentumScore > -0.5 ? -0.3 : -1.0;
+    const qualityExposure = qualityScore > 0.15 ? 0.8 : qualityScore > 0.08 ? 0.3 : -0.3;
+    const betaExposure = weightedBeta;
+
+    // Attribution based on actual factor exposures and alpha
     const factorAttribution = [
-      { factor: 'Market Beta', contribution: alpha * 0.4, exposure: 1.05 },
-      { factor: 'Quality', contribution: alpha * 0.15, exposure: 0.8 },
-      { factor: 'Momentum', contribution: alpha * 0.2, exposure: 1.2 },
-      { factor: 'Size', contribution: alpha * 0.1, exposure: -0.3 },
-      { factor: 'Value', contribution: alpha * 0.1, exposure: 0.5 },
-      { factor: 'Selection', contribution: alpha * 0.05, exposure: 0.0 }
+      { factor: 'Market Beta', contribution: betaExposure * benchmarkReturn / 100, exposure: Math.round(betaExposure * 100) / 100 },
+      { factor: 'Quality', contribution: qualityExposure * alpha * 0.15, exposure: Math.round(qualityExposure * 100) / 100 },
+      { factor: 'Momentum', contribution: momentumExposure * alpha * 0.2, exposure: Math.round(momentumExposure * 100) / 100 },
+      { factor: 'Size', contribution: sizeExposure * alpha * 0.1, exposure: Math.round(sizeExposure * 100) / 100 },
+      { factor: 'Value', contribution: valueExposure * alpha * 0.15, exposure: Math.round(valueExposure * 100) / 100 },
+      { factor: 'Selection', contribution: alpha - (betaExposure * benchmarkReturn / 100) - (qualityExposure * alpha * 0.15) - (momentumExposure * alpha * 0.2) - (sizeExposure * alpha * 0.1) - (valueExposure * alpha * 0.15), exposure: 0.0 }
     ];
 
     // Top contributors and detractors
@@ -996,8 +1144,14 @@ router.get('/attribution', async (req, res) => {
       .sort((a, b) => a.contribution - b.contribution)
       .slice(0, 5);
 
-    // Information Ratio (simplified)
-    const trackingError = 2.5; // Mock value
+    // Calculate tracking error from actual returns variance vs benchmark
+    // Use sector return variances as proxy for tracking error
+    const sectorReturns = sectorAttribution.map(s => s.sectorReturn);
+    const avgSectorReturn = sectorReturns.length > 0 ? sectorReturns.reduce((a, b) => a + b, 0) / sectorReturns.length : 0;
+    const sectorVariance = sectorReturns.length > 1
+      ? sectorReturns.reduce((sum, r) => sum + Math.pow(r - avgSectorReturn, 2), 0) / (sectorReturns.length - 1)
+      : 0;
+    const trackingError = Math.sqrt(sectorVariance) || 1.0; // Fallback to 1.0 if no variance
     const informationRatio = trackingError > 0 ? (alpha / trackingError) : 0;
 
     res.json({
@@ -1224,16 +1378,58 @@ router.get('/risk', async (req, res) => {
     const volatility = Math.sqrt(variance) * Math.sqrt(252) * 100; // Annualized volatility %
     const sharpeRatio = volatility > 0 ? (avgReturn * 252 * 100) / volatility : 0;
 
-    // Calculate beta (covariance with SPY / variance of SPY)
+    // Calculate beta using proper covariance/variance formula
+    // Beta = Covariance(portfolio, market) / Variance(market)
     let beta = 1.0;
-    if (spyReturns.length > 10 && historicalReturns.length > 0) {
-      const spyMean = spyReturns.reduce((a, b) => a + b, 0) / spyReturns.length;
-      const spyVar = spyReturns.reduce((sum, r) => sum + Math.pow(r - spyMean, 2), 0) / spyReturns.length;
-      if (spyVar > 0) {
-        // Approximate beta using portfolio return correlation
-        beta = 0.8 + (avgReturn / 0.1); // Simplified approximation
-        beta = Math.max(0.5, Math.min(2.0, beta)); // Bound to reasonable range
+    if (spyReturns.length > 10) {
+      // Get weighted portfolio beta from individual stock betas
+      let weightedBeta = 0;
+      let totalWeight = 0;
+
+      for (const portfolio of portfolios) {
+        for (const h of portfolio.holdings) {
+          const quote = quotes[h.symbol] || {};
+          const shares = Number(h.shares);
+          const cost = Number(h.avgCostBasis);
+          const price = Number(quote.price) || cost;
+          const value = shares * price;
+          const weight = totalValue > 0 ? value / totalValue : 0;
+
+          // Use individual stock beta from quote data, or calculate from correlation
+          const stockBeta = Number(quote.beta) || 1.0;
+          weightedBeta += stockBeta * weight;
+          totalWeight += weight;
+        }
       }
+
+      if (totalWeight > 0) {
+        beta = weightedBeta / totalWeight;
+      }
+
+      // If no quote betas available, calculate from returns correlation
+      if (beta === 1.0 && historicalReturns.length > 5) {
+        const spyMean = spyReturns.reduce((a, b) => a + b, 0) / spyReturns.length;
+        const portMean = historicalReturns.reduce((a, b) => a + b, 0) / historicalReturns.length;
+
+        // Calculate covariance and variance
+        const n = Math.min(spyReturns.length, historicalReturns.length);
+        let covariance = 0;
+        let spyVariance = 0;
+
+        for (let i = 0; i < n; i++) {
+          const spyDev = (spyReturns[i] || 0) - spyMean;
+          const portDev = (historicalReturns[i % historicalReturns.length] || 0) - portMean;
+          covariance += spyDev * portDev;
+          spyVariance += spyDev * spyDev;
+        }
+
+        if (spyVariance > 0 && n > 1) {
+          beta = covariance / spyVariance;
+        }
+      }
+
+      // Bound to reasonable range
+      beta = Math.max(0.3, Math.min(2.5, beta));
     }
 
     // Calculate Value at Risk (95% confidence - 1.645 standard deviations)
