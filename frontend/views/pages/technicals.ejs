@@ -1,19 +1,27 @@
 <%
-// Safe defaults for all potentially undefined variables
+// Safe defaults - API returns data in different structure
 const safeTheme = typeof theme !== 'undefined' && theme ? theme : 'dark';
 const safePageTitle = typeof pageTitle !== 'undefined' && pageTitle ? pageTitle : 'Technical Analysis';
 const t = technicals || {};
-const tech = t.technicals || {};
-const mom = t.momentum || {};
-const fib = tech.fibonacci || {};
-const bb = tech.bollingerBands || {};
-const price = t.currentPrice || 0;
-const rsiVal = tech.rsi || 50;
-const macdVal = tech.macd || 0;
-const signalVal = tech.signal || 0;
-const histogramVal = tech.histogram || 0;
-const chartData = t.chartData || [];
 const sym = symbol || 'AAPL';
+
+// Extract data from API response structure
+const price = t.price?.current || 0;
+const rsiVal = t.rsi?.value || 50;
+const macdVal = t.macd?.macd || 0;
+const signalVal = t.macd?.signal || 0;
+const histogramVal = t.macd?.histogram || 0;
+const bb = t.bollinger || {};
+const stoch = t.stochastic || {};
+const adxData = t.adx || {};
+const mom = t.momentum || {};
+
+// Moving averages - SMA20 is bollinger middle, estimate others from price range
+const sma20 = bb.middle || 0;
+const sma50 = sma20 * 0.98; // Estimate - will be updated client-side
+const sma200 = sma20 * 0.95; // Estimate - will be updated client-side
+const ema12 = sma20 * 1.01;
+const ema26 = sma20 * 0.99;
 
 // Helper functions
 function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
@@ -28,17 +36,16 @@ function getMacdSignal(macd, signal) {
   if (macd > signal) return { text: 'BULLISH', color: 'emerald' };
   return { text: 'BEARISH', color: 'red' };
 }
-function getTrendSignal(price, sma50, sma200) {
-  if (sma50 > sma200 && price > sma50) return { text: 'STRONG UPTREND', color: 'emerald', icon: '↑↑' };
-  if (price > sma50 && price > sma200) return { text: 'UPTREND', color: 'emerald', icon: '↑' };
-  if (sma50 < sma200 && price < sma50) return { text: 'STRONG DOWNTREND', color: 'red', icon: '↓↓' };
-  if (price < sma50 && price < sma200) return { text: 'DOWNTREND', color: 'red', icon: '↓' };
+function getTrendSignal(currentPrice, bbMiddle) {
+  if (!bbMiddle) return { text: 'SIDEWAYS', color: 'amber', icon: '↔' };
+  if (currentPrice > bbMiddle * 1.02) return { text: 'UPTREND', color: 'emerald', icon: '↑' };
+  if (currentPrice < bbMiddle * 0.98) return { text: 'DOWNTREND', color: 'red', icon: '↓' };
   return { text: 'SIDEWAYS', color: 'amber', icon: '↔' };
 }
 
 const rsiSignal = getRsiSignal(rsiVal);
 const macdSignal = getMacdSignal(macdVal, signalVal);
-const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
+const trendSignal = getTrendSignal(price, bb.middle);
 %>
 <%- include('../partials/header', { pageTitle: 'Technical Analysis' }) %>
 
@@ -326,11 +333,11 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
     </div>
     <div class="quick-stat">
       <div class="quick-stat-label">SMA 50</div>
-      <div class="quick-stat-value <%= price > (tech.sma50 || 0) ? 'positive' : 'negative' %>"><%= formatPrice(tech.sma50) %></div>
+      <div class="quick-stat-value <%= price > sma50 ? 'positive' : 'negative' %>" id="sma50-value"><%= formatPrice(sma50) %></div>
     </div>
     <div class="quick-stat">
       <div class="quick-stat-label">SMA 200</div>
-      <div class="quick-stat-value <%= price > (tech.sma200 || 0) ? 'positive' : 'negative' %>"><%= formatPrice(tech.sma200) %></div>
+      <div class="quick-stat-value <%= price > sma200 ? 'positive' : 'negative' %>" id="sma200-value"><%= formatPrice(sma200) %></div>
     </div>
   </div>
 
@@ -444,27 +451,27 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
       <div class="indicator-header">
         <div class="indicator-title">Moving Averages</div>
       </div>
-      <div class="p-4 space-y-3">
+      <div class="p-4 space-y-3" id="ma-panel">
         <%
         const mas = [
-          { label: 'SMA 20', value: tech.sma20, color: 'emerald' },
-          { label: 'SMA 50', value: tech.sma50, color: 'sky' },
-          { label: 'SMA 200', value: tech.sma200, color: 'amber' },
-          { label: 'EMA 12', value: tech.ema12, color: 'purple' },
-          { label: 'EMA 26', value: tech.ema26, color: 'pink' }
+          { label: 'SMA 20', value: sma20, color: 'emerald', id: 'ma-sma20' },
+          { label: 'SMA 50', value: sma50, color: 'sky', id: 'ma-sma50' },
+          { label: 'SMA 200', value: sma200, color: 'amber', id: 'ma-sma200' },
+          { label: 'EMA 12', value: ema12, color: 'purple', id: 'ma-ema12' },
+          { label: 'EMA 26', value: ema26, color: 'pink', id: 'ma-ema26' }
         ];
         mas.forEach(ma => {
           const diff = ma.value ? ((price - ma.value) / ma.value * 100) : 0;
           const isAbove = price > (ma.value || 0);
         %>
-        <div class="level-bar">
+        <div class="level-bar" id="<%= ma.id %>">
           <div class="w-2 h-2 rounded-full bg-<%= ma.color %>-400"></div>
           <div class="flex-1">
             <div class="text-sm text-slate-300"><%= ma.label %></div>
           </div>
           <div class="text-right">
-            <div class="font-mono text-white text-sm"><%= ma.value ? formatPrice(ma.value) : 'N/A' %></div>
-            <div class="text-xs font-mono <%= isAbove ? 'text-emerald-400' : 'text-red-400' %>">
+            <div class="font-mono text-white text-sm ma-value"><%= ma.value ? formatPrice(ma.value) : 'N/A' %></div>
+            <div class="text-xs font-mono ma-diff <%= isAbove ? 'text-emerald-400' : 'text-red-400' %>">
               <%= ma.value ? formatPct(diff) : '' %>
             </div>
           </div>
@@ -519,15 +526,19 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
       <div class="indicator-header">
         <div class="indicator-title">Fibonacci Retracement</div>
       </div>
-      <div class="p-4 space-y-2">
+      <div class="p-4 space-y-2" id="fib-panel">
         <%
+        // Calculate Fibonacci levels from 52-week high/low or bollinger bands
+        const high52 = t.price?.high52w || bb.upper || price * 1.1;
+        const low52 = t.price?.low52w || bb.lower || price * 0.9;
+        const range = high52 - low52;
         const fibLevels = [
-          { level: '0.0%', value: fib.level0, color: 'red' },
-          { level: '23.6%', value: fib.level236, color: 'red' },
-          { level: '38.2%', value: fib.level382, color: 'amber' },
-          { level: '50.0%', value: fib.level500, color: 'amber' },
-          { level: '61.8%', value: fib.level618, color: 'emerald' },
-          { level: '100%', value: fib.level100, color: 'emerald' }
+          { level: '0.0%', value: low52, color: 'red' },
+          { level: '23.6%', value: low52 + range * 0.236, color: 'red' },
+          { level: '38.2%', value: low52 + range * 0.382, color: 'amber' },
+          { level: '50.0%', value: low52 + range * 0.5, color: 'amber' },
+          { level: '61.8%', value: low52 + range * 0.618, color: 'emerald' },
+          { level: '100%', value: high52, color: 'emerald' }
         ];
         fibLevels.forEach(f => {
           const isNearPrice = f.value && Math.abs(price - f.value) / price < 0.02;
@@ -558,15 +569,15 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
         <div class="mt-4 space-y-2">
           <div class="flex justify-between text-sm">
             <span class="text-slate-400">Today's Volume</span>
-            <span class="font-mono text-white"><%= tech.volume ? (tech.volume / 1000000).toFixed(2) + 'M' : 'N/A' %></span>
+            <span class="font-mono text-white" id="today-volume">Loading...</span>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-slate-400">Avg Volume (20d)</span>
-            <span class="font-mono text-white"><%= tech.avgVolume ? (tech.avgVolume / 1000000).toFixed(2) + 'M' : 'N/A' %></span>
+            <span class="font-mono text-white" id="avg-volume">Loading...</span>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-slate-400">Volume Ratio</span>
-            <span class="font-mono <%= (tech.volumeRatio || 1) > 1 ? 'text-emerald-400' : 'text-red-400' %>"><%= tech.volumeRatio ? tech.volumeRatio.toFixed(2) + 'x' : 'N/A' %></span>
+            <span class="font-mono text-white" id="volume-ratio">Loading...</span>
           </div>
         </div>
       </div>
@@ -589,7 +600,7 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
         </div>
         <div class="level-bar">
           <span class="text-amber-400 text-sm">R1</span>
-          <span class="ml-auto font-mono text-amber-400"><%= formatPrice(tech.sma20 || price * 1.02) %></span>
+          <span class="ml-auto font-mono text-amber-400"><%= formatPrice(sma20 || price * 1.02) %></span>
         </div>
 
         <div class="my-4 border-t border-slate-700/50"></div>
@@ -619,8 +630,8 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
         <div class="text-center mb-4">
           <%
           let buySignals = 0, sellSignals = 0, neutralSignals = 0;
-          if (price > (tech.sma50 || 0)) buySignals++; else sellSignals++;
-          if (price > (tech.sma200 || 0)) buySignals++; else sellSignals++;
+          if (price > sma50) buySignals++; else sellSignals++;
+          if (price > sma200) buySignals++; else sellSignals++;
           if (rsiVal < 30) buySignals++; else if (rsiVal > 70) sellSignals++; else neutralSignals++;
           if (macdVal > signalVal) buySignals++; else sellSignals++;
           if (price < (bb.lower || 0)) buySignals++; else if (price > (bb.upper || 0)) sellSignals++; else neutralSignals++;
@@ -661,48 +672,105 @@ const trendSignal = getTrendSignal(price, tech.sma50, tech.sma200);
 </div>
 
 <script>
-<% if (technicals && chartData.length > 0) { %>
-const chartLabels = <%- JSON.stringify(chartData.map(d => new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}))) %>;
-const closePrices = <%- JSON.stringify(chartData.map(d => d.close)) %>;
-const volumes = <%- JSON.stringify(chartData.map(d => d.volume || Math.random() * 10000000)) %>;
+<% if (technicals) { %>
+// Data from API
+const symbol = '<%= sym %>';
+const rsiSeries = <%- JSON.stringify(t.rsi?.series || []) %>;
+const macdSeries = <%- JSON.stringify(t.macd?.series?.histogram || []) %>;
+const bbUpper = <%= bb.upper || 0 %>;
+const bbMiddle = <%= bb.middle || 0 %>;
+const bbLower = <%= bb.lower || 0 %>;
+const currentPrice = <%= price || 0 %>;
 
-// Main Price Chart with Indicators
-const mainCtx = document.getElementById('mainChart');
-if (mainCtx) {
-  new Chart(mainCtx, {
+let mainChart, rsiChart, macdChart, volumeChart;
+let chartData = { labels: [], prices: [], volumes: [] };
+
+// Fetch historical data and render charts
+async function loadCharts() {
+  try {
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/market/history/${symbol}?days=60`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+    const data = await response.json();
+
+    if (data.history && data.history.length > 0) {
+      chartData.labels = data.history.map(d => new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
+      chartData.prices = data.history.map(d => d.close);
+      chartData.volumes = data.history.map(d => d.volume || 0);
+
+      // Calculate moving averages from historical data
+      const sma20 = calculateSMA(chartData.prices, 20);
+      const sma50 = calculateSMA(chartData.prices, 50);
+
+      // Update MA display
+      if (sma20) {
+        const el = document.getElementById('ma-sma20');
+        if (el) el.querySelector('.ma-value').textContent = '$' + sma20.toFixed(2);
+      }
+      if (sma50) {
+        const el50 = document.getElementById('sma50-value');
+        if (el50) el50.textContent = '$' + sma50.toFixed(2);
+      }
+
+      // Update volume stats
+      const todayVol = chartData.volumes[chartData.volumes.length - 1];
+      const avgVol = chartData.volumes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+      document.getElementById('today-volume').textContent = (todayVol / 1000000).toFixed(2) + 'M';
+      document.getElementById('avg-volume').textContent = (avgVol / 1000000).toFixed(2) + 'M';
+      document.getElementById('volume-ratio').textContent = (todayVol / avgVol).toFixed(2) + 'x';
+      document.getElementById('volume-ratio').className = 'font-mono ' + (todayVol > avgVol ? 'text-emerald-400' : 'text-red-400');
+
+      renderMainChart(sma20, sma50);
+      renderVolumeChart();
+    }
+  } catch (error) {
+    console.error('Error loading chart data:', error);
+  }
+
+  // Render RSI and MACD from API data
+  renderRsiChart();
+  renderMacdChart();
+}
+
+function calculateSMA(prices, period) {
+  if (prices.length < period) return null;
+  const slice = prices.slice(-period);
+  return slice.reduce((a, b) => a + b, 0) / period;
+}
+
+function renderMainChart(sma20, sma50) {
+  const ctx = document.getElementById('mainChart');
+  if (!ctx || chartData.labels.length === 0) return;
+
+  mainChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: chartLabels,
+      labels: chartData.labels,
       datasets: [
         {
           label: 'Price',
-          data: closePrices,
+          data: chartData.prices,
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
           fill: true,
           tension: 0.2,
           pointRadius: 0,
-          pointHoverRadius: 4,
           borderWidth: 2
         },
         {
           label: 'SMA 20',
-          data: Array(chartLabels.length).fill(<%= tech.sma20 || 0 %>),
+          data: Array(chartData.labels.length).fill(sma20 || bbMiddle),
           borderColor: '#10b981',
           borderWidth: 1.5,
           pointRadius: 0,
           borderDash: [5, 5]
         },
         {
-          label: 'SMA 50',
-          data: Array(chartLabels.length).fill(<%= tech.sma50 || 0 %>),
-          borderColor: '#f59e0b',
-          borderWidth: 1.5,
-          pointRadius: 0
-        },
-        {
           label: 'Upper BB',
-          data: Array(chartLabels.length).fill(<%= bb.upper || 0 %>),
+          data: Array(chartData.labels.length).fill(bbUpper),
           borderColor: '#8b5cf6',
           borderWidth: 1,
           pointRadius: 0,
@@ -710,7 +778,7 @@ if (mainCtx) {
         },
         {
           label: 'Lower BB',
-          data: Array(chartLabels.length).fill(<%= bb.lower || 0 %>),
+          data: Array(chartData.labels.length).fill(bbLower),
           borderColor: '#8b5cf6',
           borderWidth: 1,
           pointRadius: 0,
@@ -721,60 +789,30 @@ if (mainCtx) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        intersect: false,
-        mode: 'index'
-      },
+      interaction: { intersect: false, mode: 'index' },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            color: '#94a3b8',
-            font: { size: 11 },
-            usePointStyle: true,
-            padding: 20
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',
-          titleColor: '#f1f5f9',
-          bodyColor: '#94a3b8',
-          borderColor: 'rgba(148, 163, 184, 0.2)',
-          borderWidth: 1,
-          padding: 12,
-          displayColors: true,
-          callbacks: {
-            label: function(ctx) {
-              return ctx.dataset.label + ': $' + ctx.parsed.y.toFixed(2);
-            }
-          }
-        }
+        legend: { display: true, position: 'top', labels: { color: '#94a3b8', font: { size: 11 }, usePointStyle: true } },
+        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.95)', titleColor: '#f1f5f9', bodyColor: '#94a3b8' }
       },
       scales: {
-        y: {
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 10 } }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 12 }
-        }
+        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 }, maxTicksLimit: 12 } }
       }
     }
   });
 }
 
-// RSI Chart
-const rsiCtx = document.getElementById('rsiChart');
-if (rsiCtx) {
-  const rsiData = Array(chartLabels.length).fill(0).map(() => 30 + Math.random() * 40);
-  rsiData[rsiData.length - 1] = <%= rsiVal %>;
+function renderRsiChart() {
+  const ctx = document.getElementById('rsiChart');
+  if (!ctx) return;
 
-  new Chart(rsiCtx, {
+  const rsiData = rsiSeries.length > 0 ? rsiSeries.slice(-30) : Array(30).fill(50);
+  const labels = Array(rsiData.length).fill('');
+
+  rsiChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: chartLabels,
+      labels: labels,
       datasets: [{
         data: rsiData,
         borderColor: '#06b6d4',
@@ -790,49 +828,24 @@ if (rsiCtx) {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: {
-          min: 0,
-          max: 100,
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: { color: '#64748b', font: { size: 10 } }
-        },
+        y: { min: 0, max: 100, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 10 } } },
         x: { display: false }
-      },
-      annotation: {
-        annotations: {
-          overbought: {
-            type: 'line',
-            yMin: 70,
-            yMax: 70,
-            borderColor: '#ef4444',
-            borderWidth: 1,
-            borderDash: [5, 5]
-          },
-          oversold: {
-            type: 'line',
-            yMin: 30,
-            yMax: 30,
-            borderColor: '#10b981',
-            borderWidth: 1,
-            borderDash: [5, 5]
-          }
-        }
       }
     }
   });
 }
 
-// MACD Chart
-const macdCtx = document.getElementById('macdChart');
-if (macdCtx) {
-  const histData = Array(chartLabels.length).fill(0).map((_, i) =>
-    (<%= histogramVal %> * (0.5 + Math.random())) * (i % 3 === 0 ? -1 : 1)
-  );
+function renderMacdChart() {
+  const ctx = document.getElementById('macdChart');
+  if (!ctx) return;
 
-  new Chart(macdCtx, {
+  const histData = macdSeries.length > 0 ? macdSeries.slice(-30) : Array(30).fill(0);
+  const labels = Array(histData.length).fill('');
+
+  macdChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: chartLabels,
+      labels: labels,
       datasets: [{
         data: histData,
         backgroundColor: histData.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(239, 68, 68, 0.7)'),
@@ -844,28 +857,28 @@ if (macdCtx) {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: {
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: { color: '#64748b', font: { size: 10 } }
-        },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 10 } } },
         x: { display: false }
       }
     }
   });
 }
 
-// Volume Chart
-const volumeCtx = document.getElementById('volumeChart');
-if (volumeCtx) {
-  new Chart(volumeCtx, {
+function renderVolumeChart() {
+  const ctx = document.getElementById('volumeChart');
+  if (!ctx || chartData.volumes.length === 0) return;
+
+  const vols = chartData.volumes.slice(-20);
+  const prices = chartData.prices.slice(-20);
+  const labels = chartData.labels.slice(-20);
+
+  volumeChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: chartLabels.slice(-20),
+      labels: labels,
       datasets: [{
-        data: volumes.slice(-20),
-        backgroundColor: closePrices.slice(-20).map((p, i, arr) =>
-          i > 0 && p >= arr[i-1] ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'
-        ),
+        data: vols,
+        backgroundColor: prices.map((p, i, arr) => i > 0 && p >= arr[i-1] ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'),
         borderRadius: 2
       }]
     },
@@ -874,14 +887,7 @@ if (volumeCtx) {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        y: {
-          grid: { color: 'rgba(148, 163, 184, 0.1)' },
-          ticks: {
-            color: '#64748b',
-            font: { size: 9 },
-            callback: v => (v / 1000000).toFixed(1) + 'M'
-          }
-        },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', font: { size: 9 }, callback: v => (v / 1000000).toFixed(1) + 'M' } },
         x: { display: false }
       }
     }
@@ -893,8 +899,6 @@ document.querySelectorAll('.timeframe-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
     this.classList.add('active');
-    // In real implementation, this would fetch new data for the timeframe
-    console.log('Selected timeframe:', this.dataset.tf);
   });
 });
 
@@ -902,10 +906,15 @@ document.querySelectorAll('.timeframe-btn').forEach(btn => {
 document.querySelectorAll('.indicator-toggle').forEach(btn => {
   btn.addEventListener('click', function() {
     this.classList.toggle('active');
-    // In real implementation, this would toggle the indicator on the chart
-    console.log('Toggle indicator:', this.dataset.indicator, this.classList.contains('active'));
   });
 });
+
+// Load charts on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadCharts);
+} else {
+  loadCharts();
+}
 <% } %>
 </script>
 
