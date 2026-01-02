@@ -1,10 +1,10 @@
 <%
 // Safe defaults for potentially undefined variables
-const theme = typeof theme !== 'undefined' ? theme : 'dark';
-const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
-const selectedPid = typeof selectedPid !== 'undefined' ? selectedPid : null;
-const incomeData = typeof incomeData !== 'undefined' ? incomeData : null;
-const fmt = typeof fmt !== 'undefined' ? fmt : { money: (val) => '$' + (val || 0).toFixed(2) };
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+const safePid = typeof selectedPid !== 'undefined' ? selectedPid : null;
+const safeIncomeData = typeof incomeData !== 'undefined' ? incomeData : null;
+const safeFmt = typeof fmt !== 'undefined' ? fmt : { money: (val) => '$' + (val || 0).toFixed(2) };
 %>
 <%- include('../partials/header', { pageTitle: 'Income' }) %>
 

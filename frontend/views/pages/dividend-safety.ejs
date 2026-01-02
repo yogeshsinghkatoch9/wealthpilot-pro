@@ -1,8 +1,8 @@
 <%
 // Safe defaults for potentially undefined variables
-const theme = typeof theme !== 'undefined' ? theme : 'dark';
-const user = typeof user !== 'undefined' ? user : {};
-const pageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend Safety';
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend Safety';
 %>
 <%- include('../partials/header', { pageTitle: 'Dividend Safety' }) %>
 
