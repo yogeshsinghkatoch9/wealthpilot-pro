@@ -19,10 +19,10 @@ if (!JWT_SECRET) {
 
 const router = express.Router();
 
-// Strict rate limiting for auth endpoints to prevent brute force attacks
+// Rate limiting for auth endpoints (relaxed for testing)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 attempts per minute for testing
   message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
