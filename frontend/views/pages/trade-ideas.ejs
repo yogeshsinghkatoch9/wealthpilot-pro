@@ -1,0 +1,172 @@
+<%- include('../partials/header', { pageTitle: 'Trade Ideas' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Trade Ideas</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">AI-generated trade suggestions</p></div>
+<div class="flex gap-2">
+<select class="form-input w-32"><option>All Ideas</option><option>Long</option><option>Short</option></select>
+<button onclick="refreshIdeas()" class="btn-primary">🔄 Refresh</button>
+</div>
+</div>
+
+<!-- Disclaimer -->
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-amber-50 border border-amber-200' : 'bg-amber-500/10 border border-amber-500/20' %>">
+<p class="text-sm <%= theme === 'light' ? 'text-amber-800' : 'text-amber-400' %>">⚠️ <strong>Disclaimer:</strong> These are AI-generated ideas for educational purposes only. Not financial advice. Always do your own research.</p>
+</div>
+
+<!-- Featured Ideas -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5 border-l-4 border-emerald-500">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold">MSFT</div>
+<div>
+<h3 class="font-bold text-lg <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Microsoft</h3>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">$415.20</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-emerald-500 text-white text-sm font-bold">LONG</span>
+</div>
+<div class="space-y-3">
+<div class="grid grid-cols-3 gap-2 text-center">
+<div class="p-2 rounded <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Entry</p><p class="font-bold">$415</p></div>
+<div class="p-2 rounded <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Target</p><p class="font-bold text-emerald-400">$450</p></div>
+<div class="p-2 rounded <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Stop</p><p class="font-bold text-red-400">$395</p></div>
+</div>
+<div class="flex justify-between text-sm">
+<span>Risk/Reward: <span class="text-emerald-400 font-bold">1:1.75</span></span>
+<span>Confidence: <span class="text-emerald-400 font-bold">High</span></span>
+</div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><strong>Thesis:</strong> Strong AI momentum with Copilot adoption. Cloud growth accelerating. Breaking out above resistance.</p>
+<div class="flex gap-2 mt-3">
+<button class="btn-primary btn-sm flex-1">Add to Watchlist</button>
+<button class="btn-ghost btn-sm flex-1">Paper Trade</button>
+</div>
+</div>
+</div>
+
+<div class="card p-5 border-l-4 border-emerald-500">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold">AMZN</div>
+<div>
+<h3 class="font-bold text-lg <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Amazon</h3>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">$185.40</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-emerald-500 text-white text-sm font-bold">LONG</span>
+</div>
+<div class="space-y-3">
+<div class="grid grid-cols-3 gap-2 text-center">
+<div class="p-2 rounded <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Entry</p><p class="font-bold">$185</p></div>
+<div class="p-2 rounded <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Target</p><p class="font-bold text-emerald-400">$210</p></div>
+<div class="p-2 rounded <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Stop</p><p class="font-bold text-red-400">$172</p></div>
+</div>
+<div class="flex justify-between text-sm">
+<span>Risk/Reward: <span class="text-emerald-400 font-bold">1:1.92</span></span>
+<span>Confidence: <span class="text-emerald-400 font-bold">High</span></span>
+</div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><strong>Thesis:</strong> AWS growth re-accelerating. Holiday season strength. Advertising segment momentum.</p>
+<div class="flex gap-2 mt-3">
+<button class="btn-primary btn-sm flex-1">Add to Watchlist</button>
+<button class="btn-ghost btn-sm flex-1">Paper Trade</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- More Ideas Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">All Trade Ideas</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3 text-center">Direction</th>
+<th class="px-4 py-3 text-center">Entry</th>
+<th class="px-4 py-3 text-center">Target</th>
+<th class="px-4 py-3 text-center">Stop</th>
+<th class="px-4 py-3 text-center">R/R</th>
+<th class="px-4 py-3 text-center">Confidence</th>
+<th class="px-4 py-3">Reason</th>
+<th class="px-4 py-3"></th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">CRM</div><span class="font-medium">Salesforce</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">LONG</span></td>
+<td class="px-4 py-3 text-center">$318</td>
+<td class="px-4 py-3 text-center text-emerald-400">$350</td>
+<td class="px-4 py-3 text-center text-red-400">$298</td>
+<td class="px-4 py-3 text-center font-bold">1:1.6</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">●●●○</span></td>
+<td class="px-4 py-3 text-xs">AI integration momentum</td>
+<td class="px-4 py-3"><button class="btn-ghost btn-sm">+</button></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">MA</div><span class="font-medium">Mastercard</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">LONG</span></td>
+<td class="px-4 py-3 text-center">$520</td>
+<td class="px-4 py-3 text-center text-emerald-400">$565</td>
+<td class="px-4 py-3 text-center text-red-400">$495</td>
+<td class="px-4 py-3 text-center font-bold">1:1.8</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">●●●●</span></td>
+<td class="px-4 py-3 text-xs">Holiday spending surge</td>
+<td class="px-4 py-3"><button class="btn-ghost btn-sm">+</button></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">COIN</div><span class="font-medium">Coinbase</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-bold">SHORT</span></td>
+<td class="px-4 py-3 text-center">$285</td>
+<td class="px-4 py-3 text-center text-emerald-400">$245</td>
+<td class="px-4 py-3 text-center text-red-400">$305</td>
+<td class="px-4 py-3 text-center font-bold">1:2.0</td>
+<td class="px-4 py-3 text-center"><span class="text-amber-400">●●○○</span></td>
+<td class="px-4 py-3 text-xs">Crypto volatility risk</td>
+<td class="px-4 py-3"><button class="btn-ghost btn-sm">+</button></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">LLY</div><span class="font-medium">Eli Lilly</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">LONG</span></td>
+<td class="px-4 py-3 text-center">$785</td>
+<td class="px-4 py-3 text-center text-emerald-400">$850</td>
+<td class="px-4 py-3 text-center text-red-400">$745</td>
+<td class="px-4 py-3 text-center font-bold">1:1.6</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">●●●●</span></td>
+<td class="px-4 py-3 text-xs">GLP-1 demand strong</td>
+<td class="px-4 py-3"><button class="btn-ghost btn-sm">+</button></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Idea Performance -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Past Ideas Performance</h3>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="p-4 rounded-lg text-center <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<p class="text-3xl font-bold text-emerald-400">68%</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Win Rate (30 days)</p>
+</div>
+<div class="p-4 rounded-lg text-center <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<p class="text-3xl font-bold text-sky-400">+12.4%</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Winner</p>
+</div>
+<div class="p-4 rounded-lg text-center <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<p class="text-3xl font-bold text-red-400">-6.2%</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Loser</p>
+</div>
+<div class="p-4 rounded-lg text-center <%= theme === 'light' ? 'bg-purple-50' : 'bg-purple-500/10' %>">
+<p class="text-3xl font-bold text-purple-400">1.42</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Profit Factor</p>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script>
+function refreshIdeas() { showToast('Refreshing trade ideas...', 'info'); }
+</script>
+<%- include('../partials/footer') %>

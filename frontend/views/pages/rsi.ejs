@@ -1,0 +1,256 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const rsiData = typeof technicals !== 'undefined' && technicals ? technicals : {};
+// API returns rsi as object with value, signal, series
+const rsiObj = rsiData.rsi || {};
+const currentRsi = typeof rsiObj === 'object' ? (rsiObj.value || 50) : (rsiObj || 50);
+const rsiHistory = rsiObj.series || rsiData.history || [];
+const price = rsiData.price?.current || rsiData.price || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%'; }
+
+// RSI interpretation
+let rsiSignal = 'NEUTRAL';
+let signalColor = 'amber';
+let rsiZone = 'Neutral Zone';
+if (currentRsi >= 70) {
+  rsiSignal = 'OVERBOUGHT';
+  signalColor = 'red';
+  rsiZone = 'Overbought (>70)';
+} else if (currentRsi >= 60) {
+  rsiSignal = 'BULLISH';
+  signalColor = 'emerald';
+  rsiZone = 'Bullish Momentum';
+} else if (currentRsi <= 30) {
+  rsiSignal = 'OVERSOLD';
+  signalColor = 'emerald';
+  rsiZone = 'Oversold (<30)';
+} else if (currentRsi <= 40) {
+  rsiSignal = 'BEARISH';
+  signalColor = 'red';
+  rsiZone = 'Bearish Momentum';
+}
+%>
+<%- include('../partials/header', { pageTitle: 'RSI Indicator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">RSI INDICATOR</h1>
+      <p class="text-slate-400 mt-1">Relative Strength Index Analysis</p>
+    </div>
+    <form method="GET" action="/rsi" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<!-- RSI Overview -->
+<div class="tufte-stat-card">
+  <div class="flex items-center gap-6">
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white"><%= symbol %></h2>
+      <p class="text-slate-600 dark:text-slate-400">Current Price: <span class="font-mono tabular-nums text-slate-900 dark:text-white"><%= formatPrice(price) %></span></p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm text-slate-600 dark:text-slate-400">RSI (14)</p>
+      <p class="text-3xl font-bold font-mono tabular-nums <%= currentRsi >= 70 ? 'negative' : currentRsi <= 30 ? 'positive' : 'text-slate-900 dark:text-white' %>"><%= currentRsi.toFixed(1) %></p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm text-slate-600 dark:text-slate-400">Signal</p>
+      <p class="text-xl font-bold <%= rsiSignal === 'OVERBOUGHT' ? 'negative' : rsiSignal === 'OVERSOLD' ? 'positive' : 'text-slate-900 dark:text-white' %>"><%= rsiSignal %></p>
+    </div>
+  </div>
+</div>
+
+<!-- RSI Gauge -->
+<div class="tufte-stat-card">
+  <h3 class="font-semibold text-slate-900 dark:text-white mb-4">RSI Gauge</h3>
+  <div class="relative h-2 bg-slate-200 dark:bg-slate-700">
+    <div class="absolute top-0 left-0 w-[30%] h-full bg-emerald-100 dark:bg-emerald-900/20"></div>
+    <div class="absolute top-0 right-0 w-[30%] h-full bg-red-100 dark:bg-red-900/20"></div>
+    <div class="absolute top-1/2 -translate-y-1/2 w-2 h-4 bg-slate-900 dark:bg-white transition-all duration-500" style="left: calc(<%= currentRsi %>% - 4px);"></div>
+  </div>
+  <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400 mt-2 font-mono tabular-nums">
+    <span>0</span>
+    <span>30</span>
+    <span>50</span>
+    <span>70</span>
+    <span>100</span>
+  </div>
+</div>
+
+<!-- RSI Zones -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="tufte-stat-card <%= currentRsi <= 30 ? 'border-l-2 border-emerald-600 dark:border-emerald-400' : '' %>">
+    <h4 class="font-semibold text-slate-900 dark:text-white mb-2">Oversold Zone</h4>
+    <p class="text-sm text-slate-600 dark:text-slate-400">RSI below 30 indicates oversold conditions. The asset may be undervalued and due for a bounce.</p>
+    <p class="mt-2 font-mono tabular-nums text-lg <%= currentRsi <= 30 ? 'positive' : 'text-slate-600 dark:text-slate-400' %>">RSI < 30</p>
+  </div>
+
+  <div class="tufte-stat-card <%= currentRsi > 30 && currentRsi < 70 ? 'border-l-2 border-slate-600 dark:border-slate-400' : '' %>">
+    <h4 class="font-semibold text-slate-900 dark:text-white mb-2">Neutral Zone</h4>
+    <p class="text-sm text-slate-600 dark:text-slate-400">RSI between 30-70 indicates neutral momentum. Watch for breakouts above 70 or below 30.</p>
+    <p class="mt-2 font-mono tabular-nums text-lg text-slate-900 dark:text-white">30 < RSI < 70</p>
+  </div>
+
+  <div class="tufte-stat-card <%= currentRsi >= 70 ? 'border-l-2 border-red-600 dark:border-red-400' : '' %>">
+    <h4 class="font-semibold text-slate-900 dark:text-white mb-2">Overbought Zone</h4>
+    <p class="text-sm text-slate-600 dark:text-slate-400">RSI above 70 indicates overbought conditions. The asset may be overvalued and due for a pullback.</p>
+    <p class="mt-2 font-mono tabular-nums text-lg <%= currentRsi >= 70 ? 'negative' : 'text-slate-600 dark:text-slate-400' %>">RSI > 70</p>
+  </div>
+</div>
+
+<!-- RSI Chart -->
+<div class="tufte-stat-card">
+  <h3 class="font-semibold text-slate-900 dark:text-white mb-4">RSI Chart</h3>
+  <div id="tvRsiChart" class="h-80"></div>
+</div>
+
+<!-- Trading Signals -->
+<div class="tufte-stat-card">
+  <h3 class="font-semibold text-slate-900 dark:text-white mb-4">RSI Trading Signals</h3>
+  <div class="space-y-3">
+    <div class="p-3 border-l-2 <%= rsiSignal === 'OVERBOUGHT' ? 'border-red-600 dark:border-red-400' : rsiSignal === 'OVERSOLD' ? 'border-emerald-600 dark:border-emerald-400' : 'border-slate-600 dark:border-slate-400' %>">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-bold <%= rsiSignal === 'OVERBOUGHT' ? 'negative' : rsiSignal === 'OVERSOLD' ? 'positive' : 'text-slate-900 dark:text-white' %>">Current Signal: <%= rsiSignal %></p>
+          <p class="text-xs text-slate-600 dark:text-slate-400"><%= rsiZone %></p>
+        </div>
+        <span class="text-2xl font-mono tabular-nums <%= rsiSignal === 'OVERBOUGHT' ? 'negative' : rsiSignal === 'OVERSOLD' ? 'positive' : 'text-slate-900 dark:text-white' %>"><%= currentRsi.toFixed(1) %></span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="p-3 border border-slate-200 dark:border-slate-700">
+        <p class="text-sm text-slate-600 dark:text-slate-400">Buy Signal</p>
+        <p class="text-slate-900 dark:text-white">RSI crosses above 30 from oversold territory</p>
+      </div>
+      <div class="p-3 border border-slate-200 dark:border-slate-700">
+        <p class="text-sm text-slate-600 dark:text-slate-400">Sell Signal</p>
+        <p class="text-slate-900 dark:text-white">RSI crosses below 70 from overbought territory</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div></div></main>
+
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
+<script>
+// RSI Chart with TradingView - fetch data client-side
+const symbol = '<%= symbol || "AAPL" %>';
+const container = document.getElementById('tvRsiChart');
+
+async function loadRsiChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
+  try {
+    // Fetch technicals data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/technicals/${symbol}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    const rsiSeries = data.rsi?.series || [];
+    const dates = data.dates || [];
+
+    if (rsiSeries.length === 0) throw new Error('No RSI data');
+
+    // Clear loading message
+    container.innerHTML = '';
+
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: 320,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#94a3b8',
+      },
+      grid: {
+        vertLines: { color: '#1e293b' },
+        horzLines: { color: '#1e293b' },
+      },
+      rightPriceScale: {
+        borderColor: '#334155',
+        scaleMargins: { top: 0.05, bottom: 0.05 },
+      },
+      timeScale: {
+        borderColor: '#334155',
+        timeVisible: true,
+      },
+    });
+
+    // Add RSI line series
+    const rsiLine = chart.addLineSeries({
+      color: '#f59e0b',
+      lineWidth: 2,
+      priceScaleId: 'right',
+    });
+
+    // Build RSI data with actual dates
+    const rsiData = rsiSeries.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (rsiSeries.length - i) * 86400000).toISOString().split('T')[0],
+      value: Math.max(0, Math.min(100, value))
+    }));
+    rsiLine.setData(rsiData);
+
+    // Add overbought/oversold lines
+    rsiLine.createPriceLine({
+      price: 70,
+      color: '#ef4444',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Overbought',
+    });
+
+    rsiLine.createPriceLine({
+      price: 30,
+      color: '#10b981',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: 'Oversold',
+    });
+
+    rsiLine.createPriceLine({
+      price: 50,
+      color: '#64748b',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dotted,
+      axisLabelVisible: false,
+    });
+
+    chart.timeScale().fitContent();
+
+    // Handle resize
+    new ResizeObserver(entries => {
+      chart.applyOptions({ width: entries[0].contentRect.width });
+    }).observe(container);
+
+  } catch (error) {
+    console.error('TradingView RSI chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
+  }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadRsiChart);
+} else {
+  loadRsiChart();
+}
+</script>
+<%- include('../partials/footer') %>

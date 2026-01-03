@@ -1,0 +1,565 @@
+/* ============================================================================
+   MOBILE EXPERIENCE ENHANCEMENTS
+   Touch-friendly improvements, bottom sheets, and responsive polish
+   ============================================================================ */
+
+/* Touch-Friendly Tap Targets */
+@media (max-width: 768px) {
+  /* Minimum 44px touch targets */
+  button,
+  a,
+  .btn,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Larger form inputs */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  select,
+  textarea {
+    min-height: 48px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    padding: 12px 16px;
+  }
+
+  /* Table responsiveness */
+  .bloomberg-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bloomberg-table th,
+  .bloomberg-table td {
+    white-space: nowrap;
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+
+  /* Card stacking on mobile */
+  .grid {
+    gap: 12px;
+  }
+
+  /* Reduce padding on mobile */
+  .bloomberg-card {
+    padding: 12px;
+  }
+
+  .bloomberg-card-header {
+    padding: 12px;
+  }
+
+  .bloomberg-card-body {
+    padding: 12px;
+  }
+
+  /* Full-width buttons on mobile */
+  .btn-group {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-group .btn {
+    width: 100%;
+  }
+}
+
+/* ============================================================================
+   BOTTOM SHEET MODAL
+   Swipeable bottom sheet for mobile modals
+   ============================================================================ */
+
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.bottom-sheet-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary, #161b22);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  z-index: 9999;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 90vh;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.bottom-sheet.visible {
+  transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--text-tertiary, #6e7681);
+  border-radius: 2px;
+  margin: 12px auto;
+  cursor: grab;
+}
+
+.bottom-sheet-handle:active {
+  cursor: grabbing;
+}
+
+.bottom-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 12px;
+  border-bottom: 1px solid var(--border-primary, #30363d);
+}
+
+.bottom-sheet-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #f0f6fc);
+  margin: 0;
+}
+
+.bottom-sheet-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-tertiary, #21262d);
+  color: var(--text-secondary, #8b949e);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.bottom-sheet-close:hover {
+  background: var(--bg-hover, #30363d);
+}
+
+.bottom-sheet-content {
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(90vh - 80px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================================================
+   SWIPE GESTURES
+   Visual feedback for swipe actions
+   ============================================================================ */
+
+.swipeable {
+  position: relative;
+  touch-action: pan-y;
+  overflow: hidden;
+}
+
+.swipeable-content {
+  transition: transform 0.3s ease;
+}
+
+.swipeable-action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.swipeable-action-left {
+  left: 0;
+  transform: translateX(-100%);
+  background: var(--success, #3fb950);
+}
+
+.swipeable-action-right {
+  right: 0;
+  transform: translateX(100%);
+  background: var(--danger, #f85149);
+}
+
+.swipeable-action-icon {
+  color: white;
+}
+
+/* ============================================================================
+   PULL TO REFRESH
+   Visual indicator for pull-to-refresh
+   ============================================================================ */
+
+.pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary, #0d1117);
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+  z-index: 9990;
+}
+
+.pull-to-refresh.pulling {
+  transform: translateY(0);
+}
+
+.pull-to-refresh-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--accent-primary, #1a8cff);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pull-to-refresh-text {
+  margin-left: 12px;
+  font-size: 14px;
+  color: var(--text-secondary, #8b949e);
+}
+
+/* ============================================================================
+   MOBILE NAVIGATION
+   Bottom navigation bar for mobile
+   ============================================================================ */
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary, #161b22);
+  border-top: 1px solid var(--border-primary, #30363d);
+  display: none;
+  padding: 8px 0;
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+  z-index: 9000;
+}
+
+@media (max-width: 768px) {
+  .mobile-nav {
+    display: flex;
+    justify-content: space-around;
+  }
+
+  /* Add padding to body for mobile nav */
+  body {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px;
+  color: var(--text-tertiary, #6e7681);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  min-width: 64px;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item.active {
+  color: var(--accent-primary, #1a8cff);
+}
+
+.mobile-nav-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+}
+
+.mobile-nav-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   RESPONSIVE DATA TABLES
+   Cards on mobile, tables on desktop
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .responsive-table {
+    border: none;
+    background: transparent;
+  }
+
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .responsive-table tr {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary, #161b22);
+    border: 1px solid var(--border-primary, #30363d);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-secondary, #21262d);
+  }
+
+  .responsive-table td:last-child {
+    border-bottom: none;
+  }
+
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: 500;
+    color: var(--text-secondary, #8b949e);
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+}
+
+/* ============================================================================
+   FLOATING ACTION BUTTON
+   FAB for primary actions on mobile
+   ============================================================================ */
+
+.fab {
+  position: fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-primary, #1a8cff);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(26, 140, 255, 0.4);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 8000;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(26, 140, 255, 0.5);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .fab {
+    display: flex;
+  }
+}
+
+.fab-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* FAB Menu */
+.fab-menu {
+  position: fixed;
+  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  z-index: 7999;
+}
+
+.fab-menu.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.fab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 8px 8px;
+  background: var(--bg-secondary, #161b22);
+  border: 1px solid var(--border-primary, #30363d);
+  border-radius: 24px;
+  text-decoration: none;
+  color: var(--text-primary, #f0f6fc);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s ease;
+}
+
+.fab-menu-item:hover {
+  background: var(--bg-tertiary, #21262d);
+}
+
+.fab-menu-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-primary, #1a8cff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.fab-menu-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   TOUCH FEEDBACK
+   Visual feedback for touch interactions
+   ============================================================================ */
+
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-feedback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.touch-feedback:active::after {
+  opacity: 1;
+  transform: scale(2);
+}
+
+/* ============================================================================
+   SAFE AREA INSETS
+   Support for notched devices
+   ============================================================================ */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* ============================================================================
+   HAPTIC FEEDBACK HINTS
+   Class to trigger haptic feedback via JS
+   ============================================================================ */
+
+.haptic-light,
+.haptic-medium,
+.haptic-heavy {
+  /* Styles here - haptic feedback is triggered via JS */
+}
+
+/* ============================================================================
+   MOBILE-SPECIFIC CHART INTERACTIONS
+   Better touch support for charts
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .chart-container {
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chart-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .time-periods {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+
+  .period-btn {
+    flex-shrink: 0;
+    min-width: 48px;
+    padding: 10px 16px;
+  }
+}
+
+/* ============================================================================
+   LOADING STATES FOR MOBILE
+   Optimized loading states for mobile
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .skeleton-chart {
+    height: 200px;
+  }
+
+  .skeleton-dashboard-widget > div {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .skeleton-stock-detail > div:last-child {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}

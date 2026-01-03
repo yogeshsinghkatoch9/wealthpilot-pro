@@ -1,0 +1,425 @@
+<%- include('../partials/header', { pageTitle: 'Quick Start' }) %>
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <h1 class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">
+          Welcome to WealthPilot Pro
+        </h1>
+        <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-lg">
+          Let's get your portfolio set up in just a few steps
+        </p>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="mb-12" id="progress-container">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Setup Progress</span>
+          <span class="text-sm font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="progress-text">0%</span>
+        </div>
+        <div class="h-2 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden">
+          <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Steps -->
+      <div class="space-y-6" id="steps-container">
+        <!-- Step 1: Choose Setup Method -->
+        <div class="card p-6" id="step-1">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-blue-400 font-bold">1</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
+                How would you like to set up your portfolio?
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <button onclick="selectMethod('template')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors group" data-method="template">
+                  <svg class="w-8 h-8 text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                  </svg>
+                  <h4 class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Use a Template</h4>
+                  <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Choose from pre-built portfolios</p>
+                </button>
+                
+                <button onclick="selectMethod('import')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors group" data-method="import">
+                  <svg class="w-8 h-8 text-emerald-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                  </svg>
+                  <h4 class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Import CSV</h4>
+                  <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Upload from your broker</p>
+                </button>
+                
+                <button onclick="selectMethod('manual')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors group" data-method="manual">
+                  <svg class="w-8 h-8 text-purple-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                  </svg>
+                  <h4 class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Manual Entry</h4>
+                  <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Add holdings one by one</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Template Selection (hidden by default) -->
+        <div class="card p-6 hidden" id="step-template">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-blue-400 font-bold">2</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
+                Choose a Portfolio Template
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" id="templates-grid">
+                <!-- Templates will be loaded here -->
+              </div>
+              
+              <div class="mt-6" id="template-value-input" style="display: none;">
+                <label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">
+                  Portfolio Value
+                </label>
+                <div class="flex gap-4">
+                  <div class="relative flex-1">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">$</span>
+                    <input type="number" id="portfolio-value" value="100000" min="1000" 
+                      class="w-full pl-8 pr-4 py-3 <%= theme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-900/50 border-slate-600' %> border rounded-lg text-lg font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                  </div>
+                  <button onclick="createFromTemplate()" class="btn-primary px-6">
+                    Create Portfolio
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Import (hidden by default) -->
+        <div class="card p-6 hidden" id="step-import">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-emerald-400 font-bold">2</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
+                Import Your Transactions
+              </h3>
+              
+              <div class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center mt-4" id="drop-zone">
+                <svg class="w-12 h-12 mx-auto text-slate-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-2">
+                  Drag and drop your CSV file here, or
+                </p>
+                <label class="btn-primary cursor-pointer inline-block">
+                  Browse Files
+                  <input type="file" accept=".csv" class="hidden" id="file-input" onchange="handleFileSelect(this)">
+                </label>
+                <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-4">
+                  Supported formats: Fidelity, Schwab, Vanguard, TD Ameritrade, or 
+                  <a href="/api/import/template" class="text-blue-400 hover:underline">download our template</a>
+                </p>
+              </div>
+              
+              <!-- Import preview -->
+              <div id="import-preview" class="hidden mt-6">
+                <h4 class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Import Preview</h4>
+                <div class="<%= theme === 'light' ? 'bg-gray-100' : 'bg-slate-800/50' %> rounded-lg p-4">
+                  <div class="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Rows:</span>
+                      <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> ml-2" id="preview-rows">0</span>
+                    </div>
+                    <div>
+                      <span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Symbols:</span>
+                      <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> ml-2" id="preview-symbols">0</span>
+                    </div>
+                    <div>
+                      <span class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Broker:</span>
+                      <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> ml-2" id="preview-broker">Unknown</span>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="executeImport()" class="btn-primary mt-4">
+                  Import Transactions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: What's Next -->
+        <div class="card p-6 hidden" id="step-complete">
+          <div class="text-center py-8">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
+              You're All Set!
+            </h3>
+            <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-8">
+              Your portfolio has been created. Here's what you can do next:
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+              <a href="/dashboard" class="p-4 rounded-xl <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors">
+                <svg class="w-8 h-8 mx-auto text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Dashboard</span>
+              </a>
+              
+              <a href="/performance" class="p-4 rounded-xl <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors">
+                <svg class="w-8 h-8 mx-auto text-emerald-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+                <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Performance</span>
+              </a>
+              
+              <a href="/alerts" class="p-4 rounded-xl <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors">
+                <svg class="w-8 h-8 mx-auto text-amber-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+                <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Set Alerts</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const API_URL = 'http://localhost:4000/api';
+let selectedMethod = null;
+let selectedTemplate = null;
+let importContent = null;
+
+function selectMethod(method) {
+  selectedMethod = method;
+  
+  // Update button states
+  document.querySelectorAll('[data-method]').forEach(btn => {
+    btn.classList.remove('border-blue-500', 'bg-blue-500/10');
+    btn.classList.add('border-slate-700');
+  });
+  document.querySelector(`[data-method="${method}"]`).classList.add('border-blue-500', 'bg-blue-500/10');
+  
+  // Show appropriate step
+  document.getElementById('step-template').classList.add('hidden');
+  document.getElementById('step-import').classList.add('hidden');
+  
+  if (method === 'template') {
+    document.getElementById('step-template').classList.remove('hidden');
+    loadTemplates();
+  } else if (method === 'import') {
+    document.getElementById('step-import').classList.remove('hidden');
+  } else if (method === 'manual') {
+    window.location.href = '/holdings';
+  }
+  
+  updateProgress(25);
+}
+
+async function loadTemplates() {
+  try {
+    const response = await fetch(`${API_URL}/onboarding/templates`);
+    const templates = await response.json();
+    
+    const grid = document.getElementById('templates-grid');
+    grid.innerHTML = templates.map(t => `
+      <button onclick="selectTemplate('${t.id}')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors" data-template="${t.id}">
+        <h4 class="font-medium text-white mb-1">${t.name}</h4>
+        <p class="text-sm text-slate-400 mb-2">${t.description}</p>
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-1 rounded text-xs ${t.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-400' : t.riskLevel === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}">
+            ${t.riskLevel} Risk
+          </span>
+          <span class="text-xs text-slate-500">${t.holdings.length} holdings</span>
+        </div>
+      </button>
+    `).join('');
+  } catch (err) {
+    console.error('Failed to load templates:', err);
+  }
+}
+
+function selectTemplate(id) {
+  selectedTemplate = id;
+  
+  document.querySelectorAll('[data-template]').forEach(btn => {
+    btn.classList.remove('border-blue-500', 'bg-blue-500/10');
+  });
+  document.querySelector(`[data-template="${id}"]`).classList.add('border-blue-500', 'bg-blue-500/10');
+  
+  document.getElementById('template-value-input').style.display = 'block';
+  updateProgress(50);
+}
+
+async function createFromTemplate() {
+  const value = document.getElementById('portfolio-value').value;
+  
+  try {
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`${API_URL}/onboarding/create-from-template`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        templateId: selectedTemplate,
+        portfolioValue: Number(value)
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      Toast.error(result.error);
+      return;
+    }
+    
+    Toast.success('Portfolio created successfully!');
+    showComplete();
+  } catch (err) {
+    Toast.error('Failed to create portfolio');
+  }
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    importContent = e.target.result;
+    
+    // Analyze the file
+    try {
+      const token = localStorage.getItem('wealthpilot_token');
+      const response = await fetch(`${API_URL}/import/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ content: importContent })
+      });
+      
+      const analysis = await response.json();
+      
+      document.getElementById('preview-rows').textContent = analysis.rowCount;
+      document.getElementById('preview-symbols').textContent = analysis.symbols.length;
+      document.getElementById('preview-broker').textContent = analysis.detectedBroker;
+      document.getElementById('import-preview').classList.remove('hidden');
+      
+      updateProgress(50);
+    } catch (err) {
+      Toast.error('Failed to analyze file');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function executeImport() {
+  try {
+    const token = localStorage.getItem('wealthpilot_token');
+    
+    // First, get or create a portfolio
+    const portfoliosRes = await fetch(`${API_URL}/portfolios`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const portfolios = await portfoliosRes.json();
+    
+    let portfolioId;
+    if (portfolios.length > 0) {
+      portfolioId = portfolios[0].id;
+    } else {
+      // Create a new portfolio
+      const createRes = await fetch(`${API_URL}/portfolios`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: 'My Portfolio', cashBalance: 0 })
+      });
+      const newPortfolio = await createRes.json();
+      portfolioId = newPortfolio.id;
+    }
+    
+    // Import transactions
+    const response = await fetch(`${API_URL}/import/transactions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ 
+        content: importContent,
+        portfolioId
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.error) {
+      Toast.error(result.error);
+      return;
+    }
+    
+    Toast.success(`Imported ${result.imported} transactions!`);
+    showComplete();
+  } catch (err) {
+    Toast.error('Failed to import transactions');
+  }
+}
+
+function showComplete() {
+  document.getElementById('step-1').classList.add('hidden');
+  document.getElementById('step-template').classList.add('hidden');
+  document.getElementById('step-import').classList.add('hidden');
+  document.getElementById('step-complete').classList.remove('hidden');
+  updateProgress(100);
+}
+
+function updateProgress(percent) {
+  document.getElementById('progress-bar').style.width = percent + '%';
+  document.getElementById('progress-text').textContent = percent + '%';
+}
+
+// Drag and drop
+const dropZone = document.getElementById('drop-zone');
+if (dropZone) {
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-blue-500', 'bg-blue-500/10');
+  });
+  
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+  });
+  
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) {
+      document.getElementById('file-input').files = e.dataTransfer.files;
+      handleFileSelect(document.getElementById('file-input'));
+    }
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

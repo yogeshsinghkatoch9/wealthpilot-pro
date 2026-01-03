@@ -1,0 +1,86 @@
+<%- include('../partials/header') %>
+
+<div class="ipo-tracker-page" style="padding: 2rem;">
+  <!-- Hero Header -->
+  <div class="hero-header" style="background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; border: 1px solid #374151;">
+    <div class="container">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+            <svg style="width: 32px; height: 32px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 style="color: #f59e0b; font-size: 2rem; margin: 0; font-weight: 700;">IPO TRACKER</h1>
+            <p style="color: #9ca3af; margin: 0.25rem 0 0 0;">Track upcoming, recent, and filed IPOs</p>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <select id="sector-filter" style="padding: 0.75rem 1rem; background: #1a1f2e; border: 1px solid #374151; border-radius: 8px; color: white; font-size: 0.875rem;">
+            <option value="all">All Sectors</option>
+            <option value="Technology">Technology</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Financial">Financial</option>
+            <option value="Consumer">Consumer</option>
+            <option value="Energy">Energy</option>
+            <option value="Materials">Materials</option>
+          </select>
+          <select id="status-filter" style="padding: 0.75rem 1rem; background: #1a1f2e; border: 1px solid #374151; border-radius: 8px; color: white; font-size: 0.875rem;">
+            <option value="all">All Status</option>
+            <option value="filed">Filed</option>
+            <option value="priced">Priced</option>
+            <option value="upcoming">Upcoming</option>
+          </select>
+          <button id="refresh-btn" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <svg style="width: 16px; height: 16px; display: inline-block; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="container" style="margin-bottom: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+      <div style="background: #1a1f2e; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem;">
+        <p style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">This Week</p>
+        <p id="stat-this-week" style="color: white; font-size: 2rem; font-weight: 700; font-family: 'Monaco', monospace; margin: 0;">-</p>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">IPOs</p>
+      </div>
+
+      <div style="background: #1a1f2e; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem;">
+        <p style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">This Month</p>
+        <p id="stat-this-month" style="color: white; font-size: 2rem; font-weight: 700; font-family: 'Monaco', monospace; margin: 0;">-</p>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">Scheduled</p>
+      </div>
+
+      <div style="background: #1a1f2e; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem;">
+        <p style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">This Quarter</p>
+        <p id="stat-this-quarter" style="color: white; font-size: 2rem; font-weight: 700; font-family: 'Monaco', monospace; margin: 0;">-</p>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">In Pipeline</p>
+      </div>
+
+      <div style="background: #1a1f2e; border: 1px solid #374151; border-radius: 12px; padding: 1.5rem;">
+        <p style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">Total Market Cap</p>
+        <p id="stat-total-market-cap" style="color: #f59e0b; font-size: 2rem; font-weight: 700; font-family: 'Monaco', monospace; margin: 0;">-</p>
+        <p style="color: #6b7280; font-size: 0.875rem; margin-top: 0.5rem;">Est. Value</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div id="ipo-content" style="padding: 2rem 0;">
+      Loading IPO data...
+    </div>
+  </div>
+</div>
+
+<script src="/js/ipo-tracker.js"></script>
+
+<%- include('../partials/footer') %>

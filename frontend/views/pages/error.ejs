@@ -1,0 +1,14 @@
+<%- include('../partials/header', { pageTitle: pageTitle || 'Error' }) %>
+<%
+  // Safe defaults for error variables
+  const errorCode = typeof code !== 'undefined' ? code : (typeof error !== 'undefined' && error && error.status ? error.status : 500);
+  const errorMessage = typeof message !== 'undefined' ? message : (typeof error !== 'undefined' && error && error.message ? error.message : 'An unexpected error occurred');
+%>
+<div class="min-h-screen flex items-center justify-center">
+  <div class="text-center">
+    <h1 class="text-6xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4"><%= errorCode %></h1>
+    <p class="text-xl <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-8"><%= errorMessage %></p>
+    <a href="/" class="btn-primary">Go Home</a>
+  </div>
+</div>
+<%- include('../partials/footer') %>

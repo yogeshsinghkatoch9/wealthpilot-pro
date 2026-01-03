@@ -1,0 +1,89 @@
+<%
+/**
+ * HoldingsTable - Dense data table with inline sparklines
+ * Usage: include('../partials/finance/holdings-table', { holdings: [...] })
+ */
+const tableHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+const tableClassName = typeof className !== 'undefined' ? className : '';
+const onRowClick = typeof rowClickUrl !== 'undefined' ? rowClickUrl : '/stock/';
+const showSparklines = typeof sparklines !== 'undefined' ? sparklines : true;
+
+let totalValue = 0;
+let totalCost = 0;
+tableHoldings.forEach(h => {
+  totalValue += h.value || h.marketValue || 0;
+  totalCost += h.cost || h.costBasis || (h.avgCostBasis || 0) * (h.shares || h.quantity || 0);
+});
+const totalReturn = totalCost > 0 ? ((totalValue - totalCost) / totalCost * 100) : 0;
+%>
+<div class="tufte-holdings-table <%= tableClassName %>">
+  <div class="table-header">
+    <h3 class="table-title">Holdings</h3>
+    <span class="table-count"><%= tableHoldings.length %> positions</span>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th class="text-left">Symbol</th>
+          <th class="text-right">Shares</th>
+          <th class="text-right">Price</th>
+          <th class="text-right">Value</th>
+          <% if (showSparklines) { %>
+          <th class="text-center">52 Week</th>
+          <% } %>
+          <th class="text-right">Return</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% tableHoldings.forEach((holding, index) => {
+          const shares = holding.shares || holding.quantity || 0;
+          const price = holding.price || holding.currentPrice || 0;
+          const value = holding.value || holding.marketValue || (shares * price);
+          const cost = holding.cost || holding.costBasis || (holding.avgCostBasis || 0) * shares;
+          const returnPct = holding.returnPercent || holding.returnPct || (cost > 0 ? ((value - cost) / cost * 100) : 0);
+          const sparkData = holding.priceHistory || holding.history || holding.sparkline || null;
+        %>
+        <tr class="holding-row" onclick="window.location='<%= onRowClick %><%= holding.symbol || holding.ticker %>'">
+          <td>
+            <div class="symbol-cell">
+              <span class="symbol"><%= holding.symbol || holding.ticker %></span>
+              <span class="company-name"><%= holding.name || holding.companyName || '' %></span>
+            </div>
+          </td>
+          <td class="text-right tabular-nums"><%= shares.toLocaleString() %></td>
+          <td class="text-right tabular-nums">$<%= price.toFixed(2) %></td>
+          <td class="text-right tabular-nums font-medium">$<%= value.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></td>
+          <% if (showSparklines) { %>
+          <td class="text-center sparkline-cell">
+            <% if (sparkData && sparkData.length >= 2) { %>
+              <%- include('./sparkline', { data: sparkData, width: 70, height: 24 }) %>
+            <% } else { %>
+              <span class="no-data">-</span>
+            <% } %>
+          </td>
+          <% } %>
+          <td class="text-right tabular-nums return-cell <%= returnPct >= 0 ? 'positive' : 'negative' %>">
+            <%= returnPct >= 0 ? '+' : '' %><%= returnPct.toFixed(2) %>%
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <tfoot>
+        <tr class="totals-row">
+          <td class="font-semibold">Total (<%= tableHoldings.length %>)</td>
+          <td></td>
+          <td></td>
+          <td class="text-right tabular-nums font-semibold">$<%= totalValue.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></td>
+          <% if (showSparklines) { %>
+          <td></td>
+          <% } %>
+          <td class="text-right tabular-nums font-semibold return-cell <%= totalReturn >= 0 ? 'positive' : 'negative' %>">
+            <%= totalReturn >= 0 ? '+' : '' %><%= totalReturn.toFixed(2) %>%
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>

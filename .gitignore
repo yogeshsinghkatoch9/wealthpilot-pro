@@ -1,0 +1,151 @@
+# ===========================================
+# WealthPilot Pro - Git Ignore Configuration
+# ===========================================
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+*.env
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local
+# Allow .env.example templates
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*.js.map
+*.d.ts.map
+!frontend/dist/*.js
+!frontend/dist/*.d.ts
+
+# Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+data/
+backend/data/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+*/.DS_Store
+
+# Test coverage
+coverage/
+
+# Playwright
+frontend/.auth/user.json
+frontend/playwright-report/
+frontend/test-results/
+!frontend/e2e/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+cookies.txt
+
+# Backup files
+*.bak
+*.bak2
+*.backup
+*.original.*
+*.working
+*.orig
+*.old
+*.visualizations
+
+# Test files (keep actual test directories)
+test-*.js
+test-*.sh
+test-*.html
+**/test-data/
+# Keep test directories for CI
+!backend/tests/
+!frontend/__tests__/
+!backend/jest.config.js
+
+# Generated files
+*.pdf
+*.tex
+*.xlsx
+backend/reports/
+backend/exports/
+
+# Documentation (keep code only)
+*.md
+!README.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!SECURITY.md
+*.txt
+docs/
+postman/
+
+# Claude config
+.claude/
+
+# Duplicate folders
+/public/
+
+# Shell scripts (keep infrastructure scripts)
+test-*.sh
+deploy-*.sh
+# Keep setup scripts for SSL
+!scripts/setup-ssl.sh
+!backend/docker-entrypoint.sh
+
+# Python files
+*.py
+*.pyc
+__pycache__/
+requirements.txt
+
+# Seed/demo files
+seed-*.js
+**/seed*.js
+**/demo*.js
+**/create-demo*.js
+
+# Docker dev files
+docker-compose.dev.yml
+
+# Template files (but allow .env.example)
+*.template
+*.sample
+
+# Nginx SSL certificates (keep config)
+nginx/ssl/
+!nginx/nginx.conf
+
+# Migration locks
+*.toml
+
+# Credentials
+backend/config/
+*.credentials.json
+
+# Misc
+.vercel
+.eslintignore

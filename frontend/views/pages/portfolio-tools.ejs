@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> - WealthPilot Pro</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body class="bg-[#0d1117] text-gray-100">
+  <%- include('../partials/navbar') %>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- Page Header -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-amber-400 mb-2">Portfolio Optimization Tools</h1>
+      <p class="text-gray-400">Rebalancing, Tax Loss Harvesting & Dividend Forecasting</p>
+    </div>
+
+    <!-- Portfolio Selector -->
+    <div class="mb-6 bg-[#161b22] border border-gray-700 rounded-lg p-4">
+      <label class="block text-sm font-medium text-gray-300 mb-2">Select Portfolio:</label>
+      <select id="portfolioSelector" class="w-full bg-[#0d1117] border border-gray-600 rounded px-4 py-2 text-white">
+        <option value="all" <%= selectedPortfolio === 'all' ? 'selected' : '' %>>-- Select a Portfolio --</option>
+        <% portfolios.forEach(p => { %>
+          <option value="<%= p.id %>" <%= selectedPortfolio === p.id ? 'selected' : '' %>><%= p.name %></option>
+        <% }); %>
+      </select>
+    </div>
+
+    <!-- Tool Tabs -->
+    <div class="mb-6 border-b border-gray-700">
+      <div class="flex space-x-4">
+        <button class="tool-tab <%= selectedTool === 'all' ? 'active' : '' %>" data-tool="all">
+          All Tools Overview
+        </button>
+        <button class="tool-tab <%= selectedTool === 'rebalancing' ? 'active' : '' %>" data-tool="rebalancing">
+          Portfolio Rebalancing
+        </button>
+        <button class="tool-tab <%= selectedTool === 'tax-loss' ? 'active' : '' %>" data-tool="tax-loss">
+          Tax Loss Harvesting
+        </button>
+        <button class="tool-tab <%= selectedTool === 'dividends' ? 'active' : '' %>" data-tool="dividends">
+          Dividend Forecasting
+        </button>
+      </div>
+    </div>
+
+    <!-- Tool Content -->
+    <% if (!selectedPortfolio || selectedPortfolio === 'all') { %>
+      <!-- No Portfolio Selected -->
+      <div class="bg-[#161b22] border border-gray-700 rounded-lg p-8 text-center">
+        <div class="text-6xl mb-4">📊</div>
+        <h2 class="text-2xl font-bold text-amber-400 mb-2">Select a Portfolio</h2>
+        <p class="text-gray-400">Choose a portfolio above to access optimization tools</p>
+      </div>
+    <% } else if (!toolData) { %>
+      <!-- Loading State -->
+      <div class="bg-[#161b22] border border-gray-700 rounded-lg p-8 text-center">
+        <div class="animate-spin text-4xl mb-4">⏳</div>
+        <p class="text-gray-400">Loading data...</p>
+      </div>
+    <% } else { %>
+      <!-- Tool Data Display -->
+      
+      <% if (selectedTool === 'all') { %>
+        <!-- All Tools Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <!-- Rebalancing Card -->
+          <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-400 mb-4">Rebalancing</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Required Trades:</span>
+                <span class="text-white font-bold"><%= toolData.summary?.rebalancingTrades || 0 %></span>
+              </div>
+              <button onclick="window.location.href='/portfolio-tools?portfolio=<%= selectedPortfolio %>&tool=rebalancing'" 
+                      class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">
+                View Details
+              </button>
+            </div>
+          </div>
+
+          <!-- Tax Loss Harvesting Card -->
+          <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-400 mb-4">Tax Loss Harvesting</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Opportunities:</span>
+                <span class="text-white font-bold"><%= toolData.summary?.taxLossOpportunities || 0 %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Tax Savings:</span>
+                <span class="text-green-400 font-bold"><%= fmt.money(toolData.summary?.estimatedTaxSavings || 0) %></span>
+              </div>
+              <button onclick="window.location.href='/portfolio-tools?portfolio=<%= selectedPortfolio %>&tool=tax-loss'" 
+                      class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">
+                View Details
+              </button>
+            </div>
+          </div>
+
+          <!-- Dividend Forecasting Card -->
+          <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-400 mb-4">Dividend Income</h3>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-400">Annual Income:</span>
+                <span class="text-green-400 font-bold"><%= fmt.money(toolData.summary?.annualDividendIncome || 0) %></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400">Portfolio Yield:</span>
+                <span class="text-white font-bold"><%= toolData.summary?.portfolioDividendYield || 0 %>%</span>
+              </div>
+              <button onclick="window.location.href='/portfolio-tools?portfolio=<%= selectedPortfolio %>&tool=dividends'" 
+                      class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">
+                View Details
+              </button>
+            </div>
+          </div>
+        </div>
+      <% } else if (selectedTool === 'rebalancing') { %>
+        <!-- Rebalancing Tool -->
+        <div class="space-y-6">
+          <!-- Summary Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Total Value</div>
+              <div class="text-2xl font-bold text-white"><%= fmt.compact(toolData.totalValue || 0) %></div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Required Trades</div>
+              <div class="text-2xl font-bold text-amber-400"><%= toolData.metrics?.totalTrades || 0 %></div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Turnover</div>
+              <div class="text-2xl font-bold text-white"><%= toolData.metrics?.turnoverPercent || 0 %>%</div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Est. Costs</div>
+              <div class="text-2xl font-bold text-red-400"><%= fmt.money(toolData.transactionCosts?.totalCost || 0) %></div>
+            </div>
+          </div>
+
+          <!-- Recommended Trades -->
+          <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-400 mb-4">Recommended Trades</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-gray-700">
+                    <th class="text-left py-2 px-4 text-gray-400">Symbol</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Action</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Shares</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Value</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Current Weight</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Target Weight</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Difference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% (toolData.recommendedTrades || []).forEach(trade => { %>
+                    <tr class="border-b border-gray-800 hover:bg-gray-800">
+                      <td class="py-3 px-4 font-mono text-white"><%= trade.symbol %></td>
+                      <td class="py-3 px-4 text-right">
+                        <% if (trade.action === 'buy') { %>
+                          <span class="text-green-400 font-bold">BUY</span>
+                        <% } else if (trade.action === 'sell') { %>
+                          <span class="text-red-400 font-bold">SELL</span>
+                        <% } else { %>
+                          <span class="text-gray-500">HOLD</span>
+                        <% } %>
+                      </td>
+                      <td class="py-3 px-4 text-right text-white"><%= trade.shares ? fmt.number(trade.shares) : '-' %></td>
+                      <td class="py-3 px-4 text-right text-white"><%= trade.value ? fmt.money(trade.value) : '-' %></td>
+                      <td class="py-3 px-4 text-right text-gray-300"><%= trade.currentWeight %>%</td>
+                      <td class="py-3 px-4 text-right text-gray-300"><%= trade.targetWeight %>%</td>
+                      <td class="py-3 px-4 text-right <%= parseFloat(trade.diff) > 0 ? 'text-green-400' : parseFloat(trade.diff) < 0 ? 'text-red-400' : 'text-gray-500' %>">
+                        <%= trade.diff %>%
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      <% } else if (selectedTool === 'tax-loss') { %>
+        <!-- Tax Loss Harvesting Tool -->
+        <div class="space-y-6">
+          <!-- Summary -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Total Opportunities</div>
+              <div class="text-2xl font-bold text-white"><%= toolData.summary?.totalOpportunities || 0 %></div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Potential Loss to Harvest</div>
+              <div class="text-2xl font-bold text-red-400"><%= fmt.money(toolData.summary?.totalPotentialLoss || 0) %></div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Estimated Tax Benefit</div>
+              <div class="text-2xl font-bold text-green-400"><%= fmt.money(toolData.summary?.estimatedTaxBenefit || 0) %></div>
+            </div>
+          </div>
+
+          <!-- Opportunities Table -->
+          <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-400 mb-4">Loss Harvesting Opportunities</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-gray-700">
+                    <th class="text-left py-2 px-4 text-gray-400">Symbol</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Loss %</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Unrealized Loss</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Tax Benefit (30%)</th>
+                    <th class="text-center py-2 px-4 text-gray-400">Wash Sale Risk</th>
+                    <th class="text-center py-2 px-4 text-gray-400">Priority</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% (toolData.opportunities || []).forEach(opp => { %>
+                    <tr class="border-b border-gray-800 hover:bg-gray-800">
+                      <td class="py-3 px-4 font-mono text-white"><%= opp.symbol %></td>
+                      <td class="py-3 px-4 text-right text-red-400 font-bold">-<%= opp.lossPercent %>%</td>
+                      <td class="py-3 px-4 text-right text-red-400"><%= fmt.money(opp.unrealizedLoss) %></td>
+                      <td class="py-3 px-4 text-right text-green-400"><%= fmt.money(opp.taxBenefit) %></td>
+                      <td class="py-3 px-4 text-center">
+                        <% if (opp.washSaleRisk) { %>
+                          <span class="text-red-400">⚠️ Yes</span>
+                        <% } else { %>
+                          <span class="text-green-400">✓ No</span>
+                        <% } %>
+                      </td>
+                      <td class="py-3 px-4 text-center">
+                        <% if (opp.recommendation.priority === 'high') { %>
+                          <span class="bg-red-600 text-white px-2 py-1 rounded text-xs">HIGH</span>
+                        <% } else if (opp.recommendation.priority === 'medium') { %>
+                          <span class="bg-amber-600 text-white px-2 py-1 rounded text-xs">MEDIUM</span>
+                        <% } else { %>
+                          <span class="bg-gray-600 text-white px-2 py-1 rounded text-xs">LOW</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      <% } else if (selectedTool === 'dividends') { %>
+        <!-- Dividend Forecasting Tool -->
+        <div class="space-y-6">
+          <!-- Summary -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Annual Income</div>
+              <div class="text-2xl font-bold text-green-400"><%= fmt.money(toolData.summary?.totalAnnualIncome || 0) %></div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Monthly Average</div>
+              <div class="text-2xl font-bold text-white"><%= fmt.money(toolData.summary?.avgMonthlyIncome || 0) %></div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Portfolio Yield</div>
+              <div class="text-2xl font-bold text-amber-400"><%= toolData.summary?.portfolioYield || 0 %>%</div>
+            </div>
+            <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
+              <div class="text-sm text-gray-400 mb-1">Dividend Stocks</div>
+              <div class="text-2xl font-bold text-white"><%= toolData.metrics?.dividendPayingStocks || 0 %></div>
+            </div>
+          </div>
+
+          <!-- Holdings Table -->
+          <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
+            <h3 class="text-xl font-bold text-amber-400 mb-4">Dividend Forecasts by Holding</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-gray-700">
+                    <th class="text-left py-2 px-4 text-gray-400">Symbol</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Shares</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Current Yield</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Annual Income</th>
+                    <th class="text-right py-2 px-4 text-gray-400">Growth Rate</th>
+                    <th class="text-center py-2 px-4 text-gray-400">Frequency</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% (toolData.forecasts || []).forEach(f => { %>
+                    <tr class="border-b border-gray-800 hover:bg-gray-800">
+                      <td class="py-3 px-4 font-mono text-white"><%= f.symbol %></td>
+                      <td class="py-3 px-4 text-right text-gray-300"><%= fmt.number(f.shares) %></td>
+                      <td class="py-3 px-4 text-right text-white"><%= f.currentYield %>%</td>
+                      <td class="py-3 px-4 text-right text-green-400 font-bold"><%= fmt.money(f.projectedAnnualIncome) %></td>
+                      <td class="py-3 px-4 text-right <%= parseFloat(f.dividendGrowthRate) > 0 ? 'text-green-400' : 'text-gray-500' %>">
+                        <%= f.dividendGrowthRate %>%
+                      </td>
+                      <td class="py-3 px-4 text-center text-gray-300 capitalize"><%= f.paymentFrequency %></td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      <% } %>
+
+    <% } %>
+  </div>
+
+  <style>
+    .tool-tab {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      color: #9ca3af;
+      transition: all 0.2s;
+    }
+    .tool-tab:hover {
+      color: #f59e0b;
+      border-bottom-color: #f59e0b50;
+    }
+    .tool-tab.active {
+      color: #f59e0b;
+      border-bottom-color: #f59e0b;
+      font-weight: bold;
+    }
+  </style>
+
+  <script>
+    // Portfolio selector
+    document.getElementById('portfolioSelector').addEventListener('change', function() {
+      const portfolio = this.value;
+      const tool = new URLSearchParams(window.location.search).get('tool') || 'all';
+      window.location.href = `/portfolio-tools?portfolio=${portfolio}&tool=${tool}`;
+    });
+
+    // Tool tabs
+    document.querySelectorAll('.tool-tab').forEach(tab => {
+      tab.addEventListener('click', function() {
+        const tool = this.dataset.tool;
+        const portfolio = new URLSearchParams(window.location.search).get('portfolio') || 'all';
+        window.location.href = `/portfolio-tools?portfolio=${portfolio}&tool=${tool}`;
+      });
+    });
+  </script>
+</body>
+</html>

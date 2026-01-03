@@ -1,0 +1,362 @@
+<%- include('../partials/header', { pageTitle: 'Advanced Portfolio Analytics' }) %>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Bloomberg-Style Header Bar with Portfolio Selector -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-bloomberg-amber">Advanced Analytics</h1>
+        <div class="flex items-center gap-4">
+          <!-- Portfolio Selector -->
+          <select id="portfolio-selector"
+                  onchange="window.location.href = '/?tab=<%= selectedTab %>&portfolio=' + this.value"
+                  class="bg-bloomberg-dark border border-bloomberg-border text-white text-sm rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-bloomberg-amber font-mono">
+            <option value="all" <%= selectedPortfolio === 'all' ? 'selected' : '' %>>All Portfolios Combined</option>
+            <% if (portfolios && portfolios.length > 0) { %>
+              <% portfolios.forEach(portfolio => { %>
+                <option value="<%= portfolio.id %>" <%= selectedPortfolio === portfolio.id ? 'selected' : '' %>>
+                  <%= portfolio.name %>
+                </option>
+              <% }) %>
+            <% } %>
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="status-live" id="ws-status">CONNECTING</span>
+        <span class="text-xs text-slate-500 font-mono last-update-time">Last Update: <%= new Date().toLocaleTimeString() %></span>
+
+        <!-- Quick Actions Toolbar -->
+        <div class="flex items-center gap-2 border-l border-bloomberg-border pl-3">
+          <!-- Export All Button -->
+          <button onclick="exportAllChartsAsPDF()"
+                  class="bloomberg-btn bloomberg-btn-ghost"
+                  title="Export all charts (Ctrl/⌘+E)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+          </button>
+
+          <!-- Refresh Button -->
+          <button onclick="location.reload()"
+                  class="bloomberg-btn bloomberg-btn-ghost"
+                  title="Refresh data (Ctrl/⌘+R)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </button>
+
+          <!-- Help Button -->
+          <button onclick="document.getElementById('shortcuts-help').style.display='block'"
+                  class="bloomberg-btn bloomberg-btn-ghost"
+                  title="Keyboard shortcuts (?)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </button>
+
+          <!-- Full Screen Button -->
+          <button onclick="toggleFullScreen()"
+                  class="bloomberg-btn bloomberg-btn-ghost"
+                  title="Toggle fullscreen (F11)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          }
+        }
+      }
+
+      // Fullscreen keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'F11') {
+          e.preventDefault();
+          toggleFullScreen();
+        }
+      });
+    </script>
+
+    <!-- Tab Navigation -->
+    <div class="bg-bloomberg-surface border border-bloomberg-border rounded-md overflow-hidden">
+      <div class="flex border-b border-bloomberg-border overflow-x-auto">
+        <a href="/?tab=performance&portfolio=<%= selectedPortfolio %>"
+           class="tab-item <%= selectedTab === 'performance' ? 'active' : '' %>">
+          <div class="px-6 py-3 text-sm font-semibold uppercase tracking-wider whitespace-nowrap">
+            Performance (4)
+          </div>
+        </a>
+        <a href="/?tab=risk&portfolio=<%= selectedPortfolio %>"
+           class="tab-item <%= selectedTab === 'risk' ? 'active' : '' %>">
+          <div class="px-6 py-3 text-sm font-semibold uppercase tracking-wider whitespace-nowrap">
+            Risk (5)
+          </div>
+        </a>
+        <a href="/?tab=attribution&portfolio=<%= selectedPortfolio %>"
+           class="tab-item <%= selectedTab === 'attribution' ? 'active' : '' %>">
+          <div class="px-6 py-3 text-sm font-semibold uppercase tracking-wider whitespace-nowrap">
+            Attribution (4)
+          </div>
+        </a>
+        <a href="/?tab=construction&portfolio=<%= selectedPortfolio %>"
+           class="tab-item <%= selectedTab === 'construction' ? 'active' : '' %>">
+          <div class="px-6 py-3 text-sm font-semibold uppercase tracking-wider whitespace-nowrap">
+            Construction (4)
+          </div>
+        </a>
+        <a href="/?tab=specialized&portfolio=<%= selectedPortfolio %>"
+           class="tab-item <%= selectedTab === 'specialized' ? 'active' : '' %>">
+          <div class="px-6 py-3 text-sm font-semibold uppercase tracking-wider whitespace-nowrap">
+            Specialized (3)
+          </div>
+        </a>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="p-6">
+        <% if (selectedTab === 'performance') { %>
+          <%- include('../partials/tabs/performance-tab', { data: tabData, fmt: fmt }) %>
+        <% } else if (selectedTab === 'risk') { %>
+          <%- include('../partials/tabs/risk-tab', { data: tabData, fmt: fmt }) %>
+        <% } else if (selectedTab === 'attribution') { %>
+          <%- include('../partials/tabs/attribution-tab', { data: tabData, fmt: fmt }) %>
+        <% } else if (selectedTab === 'construction') { %>
+          <%- include('../partials/tabs/construction-tab', { data: tabData, fmt: fmt }) %>
+        <% } else if (selectedTab === 'specialized') { %>
+          <%- include('../partials/tabs/specialized-tab', { data: tabData, fmt: fmt }) %>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<style>
+/* Tab Styling */
+.tab-item {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-item:hover {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.tab-item.active {
+  background-color: rgba(245, 158, 11, 0.15);
+  border-bottom-color: #f59e0b;
+}
+
+.tab-item.active div {
+  color: #f59e0b;
+}
+
+.tab-item:not(.active) div {
+  color: #94a3b8;
+}
+
+/* Status Indicator */
+.status-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  letter-spacing: 0.05em;
+}
+
+.status-live::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+</style>
+
+<!-- Include Chart.js and Plugins -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-boxplot@4.2.4/dist/chartjs-chart-boxplot.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
+<!-- Include Enhanced Advanced Dashboard JavaScript -->
+<script src="/js/advanced-dashboard-enhanced.js"></script>
+
+<!-- Keyboard Shortcuts Help -->
+<div id="shortcuts-help" class="shortcuts-panel" style="display: none;">
+  <div class="shortcuts-content">
+    <h3 class="text-bloomberg-amber text-sm font-bold mb-3 uppercase tracking-wide">Keyboard Shortcuts</h3>
+    <div class="shortcuts-list space-y-2 text-xs font-mono">
+      <div class="flex justify-between">
+        <span class="text-slate-400">Refresh Data</span>
+        <kbd class="kbd">Ctrl/⌘ + R</kbd>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">Export All Charts</span>
+        <kbd class="kbd">Ctrl/⌘ + E</kbd>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">Show This Help</span>
+        <kbd class="kbd">?</kbd>
+      </div>
+    </div>
+    <button onclick="document.getElementById('shortcuts-help').style.display='none'"
+            class="mt-4 w-full bloomberg-btn bloomberg-btn-ghost text-xs">
+      Close
+    </button>
+  </div>
+</div>
+
+<script>
+  // Show shortcuts help with ? key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+      const panel = document.getElementById('shortcuts-help');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+  });
+</script>
+
+<style>
+  .shortcuts-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    min-width: 280px;
+  }
+
+  .shortcuts-list {
+    color: #fff;
+  }
+
+  .kbd {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #f59e0b;
+  }
+
+  /* Chart container wrapper */
+  .chart-container {
+    position: relative;
+  }
+
+  /* Loading skeleton for charts */
+  .chart-skeleton {
+    background: linear-gradient(90deg, #161b22 25%, #1f2937 50%, #161b22 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s ease-in-out infinite;
+    border-radius: 8px;
+  }
+
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Smooth tab transitions */
+  .tab-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Responsive improvements */
+  @media (max-width: 768px) {
+    .grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .tab-item div {
+      padding: 12px 16px !important;
+      font-size: 11px !important;
+    }
+
+    .shortcuts-panel {
+      left: 20px;
+      right: 20px;
+    }
+  }
+
+  /* Animated chart entries */
+  canvas {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Improved scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0d1117;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #484f58;
+  }
+
+  /* Hover effects for cards */
+  .bg-bloomberg-dark {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .bg-bloomberg-dark:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+  }
+
+  /* Better table hover */
+  tr:hover {
+    background: rgba(245, 158, 11, 0.05) !important;
+  }
+</style>
+
+<%- include('../partials/footer') %>

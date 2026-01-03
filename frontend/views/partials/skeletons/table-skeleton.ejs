@@ -1,0 +1,23 @@
+<!-- Table Skeleton -->
+<div class="skeleton-card">
+  <div class="skeleton-card-header">
+    <div class="skeleton skeleton-line skeleton-w-1-4"></div>
+    <div class="skeleton skeleton-rect" style="width: 120px; height: 36px;"></div>
+  </div>
+  <div class="skeleton-table">
+    <!-- Header -->
+    <div class="skeleton-table-row skeleton-table-header">
+      <% for(let i = 0; i < 6; i++) { %>
+        <div class="skeleton skeleton-line-sm"></div>
+      <% } %>
+    </div>
+    <!-- Rows -->
+    <% for(let i = 0; i < 8; i++) { %>
+      <div class="skeleton-table-row">
+        <% for(let j = 0; j < 6; j++) { %>
+          <div class="skeleton skeleton-line"></div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>

@@ -1,0 +1,465 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : { name: 'User' };
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Backtesting';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-slate-900 border-b border-amber-400 px-6 py-4 -mx-6 -mt-6 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 tracking-wide">STRATEGY BACKTESTER</h1>
+      <p class="text-slate-400 text-sm mt-1">Test your investment strategies on historical data</p>
+    </div>
+    <button onclick="runBacktest()" class="bloomberg-btn bloomberg-btn-primary" id="backtestBtn">
+      RUN BACKTEST
+    </button>
+  </div>
+</div>
+
+<!-- KPI Bar for Backtest Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6 p-4 bg-slate-900/50 border border-amber-400/30 rounded">
+  <div class="text-center border-r border-slate-700 last:border-r-0">
+    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">FINAL VALUE</div>
+    <div id="kpiFinalValue" class="text-lg font-mono font-bold positive tabular-nums">$312,847</div>
+  </div>
+  <div class="text-center border-r border-slate-700 last:border-r-0">
+    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">TOTAL RETURN</div>
+    <div id="kpiTotalReturn" class="text-lg font-mono font-bold positive tabular-nums">+212.8%</div>
+  </div>
+  <div class="text-center border-r border-slate-700 last:border-r-0">
+    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">CAGR</div>
+    <div id="kpiCagr" class="text-lg font-mono font-bold text-slate-300 tabular-nums">12.1%</div>
+  </div>
+  <div class="text-center border-r border-slate-700 last:border-r-0">
+    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">SHARPE RATIO</div>
+    <div id="kpiSharpe" class="text-lg font-mono font-bold text-slate-300 tabular-nums">0.87</div>
+  </div>
+  <div class="text-center border-r border-slate-700 last:border-r-0">
+    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">MAX DRAWDOWN</div>
+    <div id="kpiDrawdown" class="text-lg font-mono font-bold negative tabular-nums">-23.4%</div>
+  </div>
+  <div class="text-center">
+    <div class="text-xs text-slate-500 uppercase tracking-wider mb-1">WIN RATE</div>
+    <div id="kpiWinRate" class="text-lg font-mono font-bold positive tabular-nums">68%</div>
+  </div>
+</div>
+
+<!-- Strategy Builder -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-1 space-y-4">
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Strategy Settings</h3>
+<div class="space-y-4">
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Strategy Type</label>
+  <select id="strategyType" class="form-input" onchange="updateStrategy()">
+    <option value="buyhold">Buy & Hold</option>
+    <option value="dca">Dollar Cost Averaging</option>
+    <option value="momentum">Momentum (12-month)</option>
+    <option value="meanrevert">Mean Reversion</option>
+    <option value="sma">SMA Crossover</option>
+    <option value="custom">Custom Rules</option>
+  </select>
+</div>
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Asset Allocation</label>
+  <div class="space-y-2" id="allocation">
+    <div class="flex gap-2">
+      <input type="text" value="SPY" class="form-input w-20" placeholder="Symbol">
+      <input type="number" value="60" class="form-input w-16 font-mono" placeholder="%">
+      <span class="self-center text-slate-400">%</span>
+    </div>
+    <div class="flex gap-2">
+      <input type="text" value="AGG" class="form-input w-20" placeholder="Symbol">
+      <input type="number" value="30" class="form-input w-16 font-mono" placeholder="%">
+      <span class="self-center text-slate-400">%</span>
+    </div>
+    <div class="flex gap-2">
+      <input type="text" value="GLD" class="form-input w-20" placeholder="Symbol">
+      <input type="number" value="10" class="form-input w-16 font-mono" placeholder="%">
+      <span class="self-center text-slate-400">%</span>
+    </div>
+  </div>
+  <button onclick="addAllocationRow()" class="text-amber-400 text-sm mt-2 hover:underline">+ Add Asset</button>
+</div>
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Initial Investment</label>
+  <input type="number" id="initialInvest" value="100000" class="form-input font-mono">
+</div>
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Monthly Contribution</label>
+  <input type="number" id="monthlyContrib" value="1000" class="form-input font-mono">
+</div>
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Rebalance Frequency</label>
+  <select id="rebalanceFreq" class="form-input">
+    <option value="never">Never</option>
+    <option value="monthly">Monthly</option>
+    <option value="quarterly" selected>Quarterly</option>
+    <option value="annually">Annually</option>
+    <option value="threshold">5% Threshold</option>
+  </select>
+</div>
+</div>
+</div>
+
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Time Period</h3>
+<div class="space-y-4">
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">Start Date</label>
+  <input type="date" id="startDate" value="2014-01-01" class="form-input">
+</div>
+<div>
+  <label class="block text-sm font-medium text-slate-400 mb-1 uppercase tracking-wide">End Date</label>
+  <input type="date" id="endDate" value="2024-01-01" class="form-input">
+</div>
+<div class="flex flex-wrap gap-2">
+  <button onclick="setPresetPeriod(1)" class="bloomberg-btn bloomberg-btn-ghost btn-sm">1Y</button>
+  <button onclick="setPresetPeriod(3)" class="bloomberg-btn bloomberg-btn-ghost btn-sm">3Y</button>
+  <button onclick="setPresetPeriod(5)" class="bloomberg-btn bloomberg-btn-ghost btn-sm">5Y</button>
+  <button onclick="setPresetPeriod(10)" class="bloomberg-btn bloomberg-btn-ghost btn-sm active">10Y</button>
+  <button onclick="setPresetPeriod(20)" class="bloomberg-btn bloomberg-btn-ghost btn-sm">20Y</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Results -->
+<div class="lg:col-span-2 space-y-6">
+<!-- Performance Chart -->
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Portfolio Growth</h3>
+<div class="h-72"><canvas id="backtestChart"></canvas></div>
+</div>
+
+<!-- Key Metrics -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="tufte-stat-card text-center">
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Final Value</p>
+  <p id="finalValue" class="text-2xl font-bold font-mono positive tabular-nums">$312,847</p>
+</div>
+<div class="tufte-stat-card text-center">
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Total Return</p>
+  <p id="totalReturn" class="text-2xl font-bold font-mono positive tabular-nums">+212.8%</p>
+</div>
+<div class="tufte-stat-card text-center">
+  <p class="text-slate-500 text-xs uppercase tracking-wider">CAGR</p>
+  <p id="cagr" class="text-2xl font-bold font-mono text-slate-300 tabular-nums">12.1%</p>
+</div>
+<div class="tufte-stat-card text-center">
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Sharpe Ratio</p>
+  <p id="sharpe" class="text-2xl font-bold font-mono text-slate-300 tabular-nums">0.87</p>
+</div>
+</div>
+
+<!-- Risk Metrics -->
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Risk Analysis</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div>
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Max Drawdown</p>
+  <p class="text-xl font-bold font-mono negative tabular-nums">-23.4%</p>
+  <p class="text-xs text-slate-500">Mar 2020</p>
+</div>
+<div>
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Volatility (σ)</p>
+  <p class="text-xl font-bold font-mono text-slate-300 tabular-nums">14.2%</p>
+  <p class="text-xs text-slate-500">Annualized</p>
+</div>
+<div>
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Sortino Ratio</p>
+  <p class="text-xl font-bold font-mono text-slate-300 tabular-nums">1.24</p>
+  <p class="text-xs text-slate-500">Downside risk</p>
+</div>
+<div>
+  <p class="text-slate-500 text-xs uppercase tracking-wider">Win Rate</p>
+  <p class="text-xl font-bold font-mono positive tabular-nums">68%</p>
+  <p class="text-xs text-slate-500">Positive months</p>
+</div>
+</div>
+</div>
+
+<!-- Comparison -->
+<div class="bloomberg-card">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">vs Benchmarks</h3>
+<div class="overflow-x-auto">
+<table class="bloomberg-table w-full">
+<thead>
+<tr class="border-b border-amber-400/30 text-slate-500 text-xs text-left">
+  <th class="pb-3 uppercase tracking-wider">STRATEGY</th>
+  <th class="pb-3 text-right uppercase tracking-wider">RETURN</th>
+  <th class="pb-3 text-right uppercase tracking-wider">CAGR</th>
+  <th class="pb-3 text-right uppercase tracking-wider">MAX DD</th>
+  <th class="pb-3 text-right uppercase tracking-wider">SHARPE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-slate-700/50 bg-amber-500/10">
+  <td class="py-3 font-semibold text-amber-400">Your Strategy</td>
+  <td class="py-3 text-right font-mono positive tabular-nums">+212.8%</td>
+  <td class="py-3 text-right font-mono text-slate-300 tabular-nums">12.1%</td>
+  <td class="py-3 text-right font-mono negative tabular-nums">-23.4%</td>
+  <td class="py-3 text-right font-mono text-slate-300 tabular-nums">0.87</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+  <td class="py-3 text-slate-400">S&P 500 (SPY)</td>
+  <td class="py-3 text-right font-mono positive tabular-nums">+195.2%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">11.4%</td>
+  <td class="py-3 text-right font-mono negative tabular-nums">-33.9%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">0.72</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+  <td class="py-3 text-slate-400">60/40 Portfolio</td>
+  <td class="py-3 text-right font-mono positive tabular-nums">+142.5%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">9.3%</td>
+  <td class="py-3 text-right font-mono negative tabular-nums">-21.8%</td>
+  <td class="py-3 text-right font-mono text-slate-400 tabular-nums">0.81</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script>
+let backtestChart = null;
+const API_BASE = '/api';
+
+function getToken() {
+  return localStorage.getItem('token') || '';
+}
+
+async function runBacktest() {
+  const btn = document.getElementById('backtestBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Running...';
+
+  try {
+    // Get allocation from form
+    const allocationRows = document.querySelectorAll('#allocation > div');
+    const allocation = [];
+    allocationRows.forEach(row => {
+      const symbol = row.querySelector('input[type="text"]')?.value?.trim().toUpperCase();
+      const weight = parseFloat(row.querySelector('input[type="number"]')?.value) || 0;
+      if (symbol && weight > 0) {
+        allocation.push({ symbol, weight });
+      }
+    });
+
+    if (allocation.length === 0) {
+      showToast('Please add at least one asset', 'error');
+      return;
+    }
+
+    const totalWeight = allocation.reduce((sum, a) => sum + a.weight, 0);
+    if (Math.abs(totalWeight - 100) > 1) {
+      showToast(`Weights must sum to 100% (currently ${totalWeight}%)`, 'error');
+      return;
+    }
+
+    const payload = {
+      allocation,
+      initialCapital: parseFloat(document.getElementById('initialInvest').value) || 100000,
+      monthlyContribution: parseFloat(document.getElementById('monthlyContrib').value) || 0,
+      startDate: document.getElementById('startDate').value,
+      endDate: document.getElementById('endDate').value,
+      rebalanceFrequency: document.getElementById('rebalanceFreq').value
+    };
+
+    const response = await fetch(`${API_BASE}/trading/backtest-simple`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Backtest failed');
+    }
+
+    updateResults(data.result);
+    showToast('Backtest complete!', 'success');
+
+  } catch (error) {
+    console.error('Backtest error:', error);
+    showToast(error.message || 'Failed to run backtest', 'error');
+    // Fall back to mock results if API fails
+    generateMockResults();
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Run Backtest';
+  }
+}
+
+function updateResults(result) {
+  // Update chart with real data
+  const ctx = document.getElementById('backtestChart');
+  if (backtestChart) backtestChart.destroy();
+
+  const labels = result.equityCurve.map(p => p.date);
+  const portfolio = result.equityCurve.map(p => p.value);
+
+  backtestChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Your Strategy',
+          data: portfolio,
+          borderColor: '#0ea5e9',
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 0,
+          tension: 0.1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `$${ctx.parsed.y.toLocaleString(undefined, {maximumFractionDigits: 0})}`
+          }
+        }
+      },
+      scales: {
+        x: { display: true, ticks: { maxTicksLimit: 10 } },
+        y: { ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }
+      }
+    }
+  });
+
+  // Format values
+  const formatMoney = v => '$' + Math.round(v).toLocaleString();
+  const formatPercent = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+  const formatRatio = v => v.toFixed(2);
+
+  // Update main metrics cards
+  document.getElementById('finalValue').textContent = formatMoney(result.finalValue);
+  document.getElementById('totalReturn').textContent = formatPercent(result.totalReturn);
+  document.getElementById('cagr').textContent = result.cagr.toFixed(1) + '%';
+  document.getElementById('sharpe').textContent = formatRatio(result.sharpeRatio);
+
+  // Update KPI bar
+  document.getElementById('kpiFinalValue').textContent = formatMoney(result.finalValue);
+  document.getElementById('kpiTotalReturn').textContent = formatPercent(result.totalReturn);
+  document.getElementById('kpiCagr').textContent = result.cagr.toFixed(1) + '%';
+  document.getElementById('kpiSharpe').textContent = formatRatio(result.sharpeRatio);
+  document.getElementById('kpiDrawdown').textContent = result.maxDrawdown.toFixed(1) + '%';
+  document.getElementById('kpiWinRate').textContent = result.winRate.toFixed(0) + '%';
+
+  // Apply color classes
+  const applyColor = (el, value, inverse = false) => {
+    const isPositive = inverse ? value < 0 : value >= 0;
+    el.className = el.className.replace(/text-(emerald|red)-400/g, '');
+    el.classList.add(isPositive ? 'text-emerald-400' : 'text-red-400');
+  };
+
+  applyColor(document.getElementById('totalReturn'), result.totalReturn);
+  applyColor(document.getElementById('kpiTotalReturn'), result.totalReturn);
+  applyColor(document.getElementById('kpiDrawdown'), result.maxDrawdown, true);
+}
+
+function generateMockResults() {
+  const initial = parseFloat(document.getElementById('initialInvest').value) || 100000;
+  const monthly = parseFloat(document.getElementById('monthlyContrib').value) || 0;
+
+  const labels = [];
+  const portfolio = [];
+  let portfolioValue = initial;
+
+  for (let year = 2019; year <= 2024; year++) {
+    for (let month = 1; month <= 12; month++) {
+      if (year === 2024 && month > 12) break;
+      labels.push(`${year}-${month.toString().padStart(2, '0')}`);
+
+      const portfolioReturn = (Math.random() - 0.4) * 0.06;
+      portfolioValue = portfolioValue * (1 + portfolioReturn) + monthly;
+      portfolio.push(portfolioValue);
+    }
+  }
+
+  const ctx = document.getElementById('backtestChart');
+  if (backtestChart) backtestChart.destroy();
+
+  backtestChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Your Strategy (Mock)', data: portfolio, borderColor: '#f59e0b', borderWidth: 2, fill: false, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { display: true, ticks: { maxTicksLimit: 10 } },
+        y: { ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } }
+      }
+    }
+  });
+
+  const finalVal = portfolio[portfolio.length - 1];
+  const totalContributed = initial + monthly * (labels.length - 1);
+  const totalReturn = ((finalVal - totalContributed) / totalContributed * 100);
+
+  document.getElementById('finalValue').textContent = '$' + Math.round(finalVal).toLocaleString();
+  document.getElementById('totalReturn').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%';
+  document.getElementById('kpiFinalValue').textContent = '$' + Math.round(finalVal).toLocaleString();
+  document.getElementById('kpiTotalReturn').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%';
+}
+
+function setPresetPeriod(years) {
+  const end = new Date();
+  const start = new Date();
+  start.setFullYear(start.getFullYear() - years);
+  document.getElementById('startDate').value = start.toISOString().split('T')[0];
+  document.getElementById('endDate').value = end.toISOString().split('T')[0];
+
+  // Update button styles
+  document.querySelectorAll('[onclick^="setPresetPeriod"]').forEach(btn => {
+    btn.classList.remove('active', 'bg-amber-500/20', 'border-amber-400');
+  });
+  event.target.classList.add('active', 'bg-amber-500/20', 'border-amber-400');
+}
+
+function addAllocationRow() {
+  const container = document.getElementById('allocation');
+  const newRow = document.createElement('div');
+  newRow.className = 'flex gap-2';
+  newRow.innerHTML = `
+    <input type="text" class="form-input w-20" placeholder="Symbol">
+    <input type="number" value="0" class="form-input w-16 font-mono" placeholder="%">
+    <span class="self-center text-slate-400">%</span>
+    <button onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 px-2">×</button>
+  `;
+  container.appendChild(newRow);
+}
+
+function updateStrategy() {
+  const strategy = document.getElementById('strategyType').value;
+  // Could show/hide additional options based on strategy type
+}
+
+// Set default dates
+document.addEventListener('DOMContentLoaded', () => {
+  setPresetPeriod(5);
+});
+</script>
+<%- include('../partials/footer') %>

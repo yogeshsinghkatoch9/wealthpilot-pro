@@ -1,0 +1,443 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const report = typeof yearEndReport !== 'undefined' ? yearEndReport : {};
+const taxYear = report.taxYear || new Date().getFullYear();
+const realizedGains = report.realizedGains || 0;
+const realizedLosses = report.realizedLosses || 0;
+const netGainLoss = report.netGainLoss || 0;
+const unrealizedOpportunities = report.unrealizedOpportunities || [];
+const harvestHistory = report.harvestHistory || [];
+const carryforward = report.carryforward || { totalBalance: 0, byYear: [] };
+const taxImpact = report.estimatedTaxImpact || {};
+const recommendations = report.recommendations || [];
+
+// Helper functions
+function formatMoney(val) {
+  return '$' + Math.abs(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatPercent(val) {
+  return (val || 0).toFixed(2) + '%';
+}
+
+function formatDate(date) {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Tax Year-End Report' }) %>
+
+<style>
+  .report-section {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .report-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .summary-banner {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 51, 234, 0.1) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gain-card {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .loss-card {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .net-card {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .tax-card {
+    background: rgba(147, 51, 234, 0.1);
+    border: 1px solid rgba(147, 51, 234, 0.3);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .breakdown-row:last-child {
+    border-bottom: none;
+  }
+
+  .harvest-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+
+  .harvest-entry:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .carryforward-year {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .export-btn.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+  }
+
+  .export-btn.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  }
+
+  .export-btn.secondary {
+    background: rgba(0, 0, 0, 0.3);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .export-btn.secondary:hover {
+    background: rgba(0, 0, 0, 0.5);
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+
+  .recommendation-card {
+    padding: 16px 20px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 10px;
+    border-left: 4px solid #10b981;
+  }
+
+  .recommendation-card.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+    border-left-color: #f59e0b;
+  }
+
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white !important; color: black !important; }
+    .report-section { border: 1px solid #ccc !important; background: white !important; }
+  }
+</style>
+
+<main class="flex-1 overflow-y-auto bg-slate-900 p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-white flex items-center gap-3">
+          <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Tax Year-End Report <%= taxYear %>
+        </h1>
+        <p class="text-slate-400 mt-1">Comprehensive summary of your tax-loss harvesting activity</p>
+      </div>
+      <div class="flex items-center gap-3 no-print">
+        <button onclick="window.print()" class="export-btn secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+          </svg>
+          Print
+        </button>
+        <button onclick="exportPDF()" class="export-btn primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Banner -->
+    <div class="summary-banner">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="gain-card text-center">
+          <div class="text-sm font-medium text-emerald-400 mb-2">Realized Gains</div>
+          <div class="text-3xl font-bold text-emerald-400"><%= formatMoney(realizedGains) %></div>
+          <div class="text-xs text-slate-400 mt-1">Year-to-date</div>
+        </div>
+        <div class="loss-card text-center">
+          <div class="text-sm font-medium text-red-400 mb-2">Realized Losses</div>
+          <div class="text-3xl font-bold text-red-400"><%= formatMoney(realizedLosses) %></div>
+          <div class="text-xs text-slate-400 mt-1">Tax-loss harvested</div>
+        </div>
+        <div class="net-card text-center">
+          <div class="text-sm font-medium text-amber-400 mb-2">Net Gain/Loss</div>
+          <div class="text-3xl font-bold <%= netGainLoss >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+            <%= netGainLoss >= 0 ? '' : '-' %><%= formatMoney(netGainLoss) %>
+          </div>
+          <div class="text-xs text-slate-400 mt-1">Taxable amount</div>
+        </div>
+        <div class="tax-card text-center">
+          <div class="text-sm font-medium text-purple-400 mb-2">Est. Tax Savings</div>
+          <div class="text-3xl font-bold text-purple-400"><%= formatMoney(taxImpact.potentialSavings || 0) %></div>
+          <div class="text-xs text-slate-400 mt-1">From harvesting</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left Column -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Breakdown Section -->
+        <div class="report-section">
+          <div class="report-section-header">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              Tax Breakdown
+            </h2>
+          </div>
+          <div class="p-5 space-y-4">
+            <div class="breakdown-row">
+              <span class="text-slate-400">Short-Term Gains (Ordinary Income Rate)</span>
+              <span class="text-emerald-400 font-semibold font-mono"><%= formatMoney(report.shortTermGains || 0) %></span>
+            </div>
+            <div class="breakdown-row">
+              <span class="text-slate-400">Long-Term Gains (Capital Gains Rate)</span>
+              <span class="text-emerald-400 font-semibold font-mono"><%= formatMoney(report.longTermGains || 0) %></span>
+            </div>
+            <div class="breakdown-row">
+              <span class="text-slate-400">Short-Term Losses</span>
+              <span class="text-red-400 font-semibold font-mono">-<%= formatMoney(report.shortTermLosses || 0) %></span>
+            </div>
+            <div class="breakdown-row">
+              <span class="text-slate-400">Long-Term Losses</span>
+              <span class="text-red-400 font-semibold font-mono">-<%= formatMoney(report.longTermLosses || 0) %></span>
+            </div>
+            <div class="breakdown-row bg-slate-800/50 rounded-lg px-4 -mx-4">
+              <span class="text-white font-semibold">Net Taxable Gain/Loss</span>
+              <span class="<%= netGainLoss >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-bold font-mono text-lg">
+                <%= netGainLoss >= 0 ? '' : '-' %><%= formatMoney(netGainLoss) %>
+              </span>
+            </div>
+            <% if (netGainLoss < 0) { %>
+            <div class="breakdown-row">
+              <span class="text-slate-400">Deductible Against Income (Max $3,000)</span>
+              <span class="text-amber-400 font-semibold font-mono">-<%= formatMoney(Math.min(Math.abs(netGainLoss), 3000)) %></span>
+            </div>
+            <% if (Math.abs(netGainLoss) > 3000) { %>
+            <div class="breakdown-row">
+              <span class="text-slate-400">Carryforward to Next Year</span>
+              <span class="text-blue-400 font-semibold font-mono"><%= formatMoney(Math.abs(netGainLoss) - 3000) %></span>
+            </div>
+            <% } %>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Harvest History -->
+        <div class="report-section">
+          <div class="report-section-header">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Harvest History (<%= taxYear %>)
+            </h2>
+          </div>
+          <div class="p-5 space-y-3">
+            <% if (harvestHistory.length === 0) { %>
+            <div class="text-center py-8 text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+              </svg>
+              <p>No harvests executed this year</p>
+              <a href="/tax-opportunities" class="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block">View opportunities</a>
+            </div>
+            <% } else { %>
+            <% harvestHistory.forEach(h => { %>
+            <div class="harvest-entry">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-red-500/15 border border-red-500/30 rounded-lg">
+                  <span class="font-mono font-bold text-red-400 text-sm"><%= h.symbol %></span>
+                </div>
+                <div>
+                  <div class="text-white font-medium"><%= h.shares_sold %> shares sold</div>
+                  <div class="text-slate-400 text-sm"><%= formatDate(h.executed_at) %></div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-red-400 font-semibold font-mono">-<%= formatMoney(h.realized_loss) %></div>
+                <div class="text-emerald-400 text-sm">Saved <%= formatMoney(h.tax_savings) %></div>
+              </div>
+            </div>
+            <% }); %>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="space-y-6">
+        <!-- Carryforward -->
+        <div class="report-section">
+          <div class="report-section-header">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+              Loss Carryforward
+            </h2>
+          </div>
+          <div class="p-5">
+            <div class="text-center mb-6">
+              <div class="text-4xl font-bold text-blue-400 font-mono"><%= formatMoney(carryforward.totalBalance) %></div>
+              <div class="text-sm text-slate-400 mt-1">Total available balance</div>
+            </div>
+            <% if (carryforward.byYear && carryforward.byYear.length > 0) { %>
+            <div class="space-y-2">
+              <% carryforward.byYear.forEach(cf => { %>
+              <div class="carryforward-year">
+                <span class="text-slate-300 font-medium"><%= cf.tax_year %></span>
+                <span class="text-blue-400 font-mono font-semibold"><%= formatMoney(cf.remaining_balance) %></span>
+              </div>
+              <% }); %>
+            </div>
+            <% } else { %>
+            <div class="text-center text-slate-500 py-4">
+              <p class="text-sm">No carryforward balance</p>
+            </div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div class="report-section">
+          <div class="report-section-header">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+              Recommendations
+            </h2>
+          </div>
+          <div class="p-5 space-y-3">
+            <% if (recommendations.length === 0) { %>
+            <div class="text-center py-4 text-slate-500">
+              <p class="text-sm">No specific recommendations at this time</p>
+            </div>
+            <% } else { %>
+            <% recommendations.forEach(rec => { %>
+            <div class="recommendation-card <%= rec.priority === 'high' ? '' : 'warning' %>">
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 mt-0.5">
+                  <% if (rec.priority === 'high') { %>
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <% } else { %>
+                  <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  <% } %>
+                </div>
+                <div>
+                  <div class="text-white text-sm font-medium"><%= rec.message %></div>
+                </div>
+              </div>
+            </div>
+            <% }); %>
+            <% } %>
+
+            <!-- Unrealized Opportunities -->
+            <% if (unrealizedOpportunities.length > 0) { %>
+            <div class="mt-6 pt-4 border-t border-slate-700">
+              <h3 class="text-sm font-semibold text-slate-400 mb-3">Remaining Opportunities</h3>
+              <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                <div class="text-2xl font-bold text-amber-400 font-mono">
+                  <%= formatMoney(unrealizedOpportunities.reduce((sum, o) => sum + (o.unrealizedLoss || 0), 0)) %>
+                </div>
+                <div class="text-sm text-slate-400 mt-1">in <%= unrealizedOpportunities.length %> positions</div>
+                <a href="/tax-opportunities" class="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-flex items-center gap-1">
+                  View all
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-center">
+      <p class="text-slate-500 text-xs">
+        This report is for informational purposes only and does not constitute tax advice.
+        Please consult with a qualified tax professional for advice specific to your situation.
+      </p>
+    </div>
+  </div>
+</main>
+
+<script>
+function exportPDF() {
+  // Simple PDF export using print
+  window.print();
+}
+
+// Load any additional data if needed
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[Tax Year-End] Report loaded for year <%= taxYear %>');
+});
+</script>
+
+<%- include('../partials/footer') %>

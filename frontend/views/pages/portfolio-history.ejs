@@ -1,0 +1,192 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio History' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Portfolio History</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Historical snapshots & changes over time</p></div>
+<div class="flex gap-2">
+<select class="form-input w-32">
+<option>Last 30 Days</option>
+<option selected>Last 90 Days</option>
+<option>Last Year</option>
+<option>All Time</option>
+</select>
+</div>
+</div>
+
+<!-- Portfolio Value Over Time -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Value History</h3>
+<div class="h-72"><canvas id="valueChart"></canvas></div>
+</div>
+
+<!-- Key Milestones -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Starting Value (90d)</p>
+<p class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$248,420</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Sep 12, 2024</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Current Value</p>
+<p class="text-2xl font-bold text-emerald-400">$276,847</p>
+<p class="text-xs text-emerald-400">+$28,427 (+11.4%)</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">All-Time High</p>
+<p class="text-2xl font-bold text-emerald-400">$284,520</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Nov 24, 2024</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Max Drawdown</p>
+<p class="text-2xl font-bold text-red-400">-8.4%</p>
+<p class="text-xs text-red-400">Oct 15-28</p>
+</div>
+</div>
+
+<!-- Holdings Changes -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings Changes (90 Days)</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Date</th>
+<th class="px-4 py-3">Action</th>
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3 text-center">Shares</th>
+<th class="px-4 py-3 text-center">Price</th>
+<th class="px-4 py-3 text-center">Total</th>
+<th class="px-4 py-3 text-center">Current P/L</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3">Dec 5</td>
+<td class="px-4 py-3"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+<td class="px-4 py-3 font-medium">NVDA</td>
+<td class="px-4 py-3 text-center">10</td>
+<td class="px-4 py-3 text-center">$468.50</td>
+<td class="px-4 py-3 text-center">$4,685</td>
+<td class="px-4 py-3 text-center text-emerald-400">+$165 (+3.5%)</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3">Nov 28</td>
+<td class="px-4 py-3"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs font-bold">SELL</span></td>
+<td class="px-4 py-3 font-medium">DIS</td>
+<td class="px-4 py-3 text-center">25</td>
+<td class="px-4 py-3 text-center">$118.20</td>
+<td class="px-4 py-3 text-center">$2,955</td>
+<td class="px-4 py-3 text-center text-emerald-400">+$420 realized</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3">Nov 15</td>
+<td class="px-4 py-3"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+<td class="px-4 py-3 font-medium">MSFT</td>
+<td class="px-4 py-3 text-center">15</td>
+<td class="px-4 py-3 text-center">$408.00</td>
+<td class="px-4 py-3 text-center">$6,120</td>
+<td class="px-4 py-3 text-center text-emerald-400">+$105 (+1.7%)</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3">Oct 22</td>
+<td class="px-4 py-3"><span class="px-2 py-1 rounded bg-purple-500/20 text-purple-400 text-xs font-bold">DIV</span></td>
+<td class="px-4 py-3 font-medium">AAPL</td>
+<td class="px-4 py-3 text-center">—</td>
+<td class="px-4 py-3 text-center">$0.24/sh</td>
+<td class="px-4 py-3 text-center">$48.00</td>
+<td class="px-4 py-3 text-center <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Reinvested</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3">Oct 10</td>
+<td class="px-4 py-3"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+<td class="px-4 py-3 font-medium">GOOGL</td>
+<td class="px-4 py-3 text-center">20</td>
+<td class="px-4 py-3 text-center">$164.50</td>
+<td class="px-4 py-3 text-center">$3,290</td>
+<td class="px-4 py-3 text-center text-emerald-400">+$70 (+2.1%)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Allocation Over Time -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Sector Allocation History</h3>
+<div class="h-48"><canvas id="allocationChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Monthly Returns</h3>
+<div class="grid grid-cols-4 gap-2">
+<div class="p-3 rounded-lg text-center <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Sep</p><p class="font-bold text-emerald-400">+3.2%</p></div>
+<div class="p-3 rounded-lg text-center <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Oct</p><p class="font-bold text-red-400">-2.1%</p></div>
+<div class="p-3 rounded-lg text-center <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Nov</p><p class="font-bold text-emerald-400">+6.8%</p></div>
+<div class="p-3 rounded-lg text-center <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Dec</p><p class="font-bold text-emerald-400">+2.4%</p></div>
+</div>
+<div class="mt-4 p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<div class="flex justify-between mb-2"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Total Contributions</span><span class="font-bold text-emerald-400">+$14,095</span></div>
+<div class="flex justify-between mb-2"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Total Withdrawals</span><span class="font-bold text-red-400">-$2,955</span></div>
+<div class="flex justify-between border-t pt-2 <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Investment Gain</span><span class="font-bold text-emerald-400">+$17,287</span></div>
+</div>
+</div>
+</div>
+
+<!-- Snapshots -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">📸 Saved Snapshots</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-lg border <%= theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700' %>">
+<div class="flex justify-between items-start mb-2">
+<span class="font-bold">End of Q3 2024</span>
+<span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Sep 30</span>
+</div>
+<p class="text-xl font-bold text-emerald-400">$258,420</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">15 holdings • YTD +18.4%</p>
+<button class="btn-ghost btn-sm w-full mt-2">View Details</button>
+</div>
+<div class="p-4 rounded-lg border <%= theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-800 border-slate-700' %>">
+<div class="flex justify-between items-start mb-2">
+<span class="font-bold">Pre-Rebalance</span>
+<span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Nov 1</span>
+</div>
+<p class="text-xl font-bold">$262,840</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">18 holdings • YTD +20.2%</p>
+<button class="btn-ghost btn-sm w-full mt-2">View Details</button>
+</div>
+<div class="p-4 rounded-lg border-2 border-sky-500 <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<div class="flex justify-between items-start mb-2">
+<span class="font-bold text-sky-400">Current</span>
+<span class="text-xs text-sky-400">Dec 10</span>
+</div>
+<p class="text-xl font-bold text-emerald-400">$276,847</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">16 holdings • YTD +24.8%</p>
+<button class="btn-primary btn-sm w-full mt-2">Save Snapshot</button>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('valueChart'), {
+  type: 'line',
+  data: {
+    labels: ['Sep 12','Sep 26','Oct 10','Oct 24','Nov 7','Nov 21','Dec 5','Dec 10'],
+    datasets: [{ data: [248420,254800,249200,242800,258400,278200,274500,276847], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('allocationChart'), {
+  type: 'line',
+  data: {
+    labels: ['Sep','Oct','Nov','Dec'],
+    datasets: [
+      { label: 'Tech', data: [42,44,46,48], borderColor: '#8b5cf6', fill: false },
+      { label: 'Healthcare', data: [18,18,16,15], borderColor: '#10b981', fill: false },
+      { label: 'Finance', data: [15,14,14,13], borderColor: '#f59e0b', fill: false }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+<%- include('../partials/footer') %>

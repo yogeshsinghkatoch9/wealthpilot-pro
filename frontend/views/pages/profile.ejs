@@ -1,0 +1,255 @@
+<%- include('../partials/header', { pageTitle: 'Profile' }) %>
+<%
+  const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+  const safeUser = typeof user !== 'undefined' && user ? user : {
+    email: 'user@example.com',
+    firstName: '',
+    lastName: '',
+    plan: 'free',
+    currency: 'USD',
+    timezone: 'America/New_York'
+  };
+%>
+<main class="p-4 lg:p-6">
+  <div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Profile Settings</h1>
+        <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">Manage your account settings and preferences</p>
+      </div>
+    </div>
+
+    <!-- Profile Overview Card -->
+    <div class="card p-6">
+      <div class="flex items-center gap-6">
+        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-sky-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+          <%= safeUser.firstName ? safeUser.firstName.charAt(0).toUpperCase() : safeUser.email.charAt(0).toUpperCase() %>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-xl font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+            <%= safeUser.firstName && safeUser.lastName ? safeUser.firstName + ' ' + safeUser.lastName : safeUser.email.split('@')[0] %>
+          </h2>
+          <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= safeUser.email %></p>
+          <div class="flex items-center gap-4 mt-2">
+            <span class="px-2 py-1 text-xs font-semibold rounded-full <%= safeUser.plan === 'pro' ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-500/20 text-slate-400' %>">
+              <%= (safeUser.plan || 'Free').toUpperCase() %> PLAN
+            </span>
+            <span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">
+              Member since <%= safeUser.createdAt ? new Date(safeUser.createdAt).toLocaleDateString() : 'N/A' %>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Form -->
+    <form id="profile-form" class="space-y-6">
+      <!-- Personal Information -->
+      <div class="card p-6">
+        <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Personal Information</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">First Name</label>
+            <input type="text" name="firstName" value="<%= safeUser.firstName || '' %>" class="form-input" placeholder="John">
+          </div>
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Last Name</label>
+            <input type="text" name="lastName" value="<%= safeUser.lastName || '' %>" class="form-input" placeholder="Doe">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Email</label>
+            <input type="email" name="email" value="<%= safeUser.email %>" class="form-input" disabled>
+            <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-1">Contact support to change your email</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="card p-6">
+        <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Preferences</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Currency</label>
+            <select name="currency" class="form-input">
+              <option value="USD" <%= safeUser.currency === 'USD' ? 'selected' : '' %>>USD - US Dollar</option>
+              <option value="EUR" <%= safeUser.currency === 'EUR' ? 'selected' : '' %>>EUR - Euro</option>
+              <option value="GBP" <%= safeUser.currency === 'GBP' ? 'selected' : '' %>>GBP - British Pound</option>
+              <option value="JPY" <%= safeUser.currency === 'JPY' ? 'selected' : '' %>>JPY - Japanese Yen</option>
+              <option value="CAD" <%= safeUser.currency === 'CAD' ? 'selected' : '' %>>CAD - Canadian Dollar</option>
+              <option value="AUD" <%= safeUser.currency === 'AUD' ? 'selected' : '' %>>AUD - Australian Dollar</option>
+              <option value="INR" <%= safeUser.currency === 'INR' ? 'selected' : '' %>>INR - Indian Rupee</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Timezone</label>
+            <select name="timezone" class="form-input">
+              <option value="America/New_York" <%= safeUser.timezone === 'America/New_York' ? 'selected' : '' %>>Eastern Time (ET)</option>
+              <option value="America/Chicago" <%= safeUser.timezone === 'America/Chicago' ? 'selected' : '' %>>Central Time (CT)</option>
+              <option value="America/Denver" <%= safeUser.timezone === 'America/Denver' ? 'selected' : '' %>>Mountain Time (MT)</option>
+              <option value="America/Los_Angeles" <%= safeUser.timezone === 'America/Los_Angeles' ? 'selected' : '' %>>Pacific Time (PT)</option>
+              <option value="Europe/London" <%= safeUser.timezone === 'Europe/London' ? 'selected' : '' %>>London (GMT)</option>
+              <option value="Europe/Paris" <%= safeUser.timezone === 'Europe/Paris' ? 'selected' : '' %>>Paris (CET)</option>
+              <option value="Asia/Tokyo" <%= safeUser.timezone === 'Asia/Tokyo' ? 'selected' : '' %>>Tokyo (JST)</option>
+              <option value="Asia/Kolkata" <%= safeUser.timezone === 'Asia/Kolkata' ? 'selected' : '' %>>India (IST)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div class="flex justify-end">
+        <button type="submit" class="btn-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Save Changes
+        </button>
+      </div>
+    </form>
+
+    <!-- Change Password -->
+    <div class="card p-6">
+      <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Change Password</h3>
+      <form id="password-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Current Password</label>
+          <input type="password" name="currentPassword" class="form-input" placeholder="Enter current password" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">New Password</label>
+          <input type="password" name="newPassword" class="form-input" placeholder="Enter new password" required minlength="8">
+          <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-1">Minimum 8 characters</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Confirm New Password</label>
+          <input type="password" name="confirmPassword" class="form-input" placeholder="Confirm new password" required>
+        </div>
+        <button type="submit" class="btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          Update Password
+        </button>
+      </form>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card p-6 border-red-500/30">
+      <h3 class="text-lg font-semibold text-red-400 mb-2">Danger Zone</h3>
+      <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-4">Once you delete your account, there is no going back. Please be certain.</p>
+      <button type="button" onclick="confirmDeleteAccount()" class="btn-danger">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Delete Account
+      </button>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// Profile Update
+document.getElementById('profile-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const formData = new FormData(this);
+  const data = {
+    firstName: formData.get('firstName'),
+    lastName: formData.get('lastName'),
+    currency: formData.get('currency'),
+    timezone: formData.get('timezone')
+  };
+
+  try {
+    const res = await fetch('/api/users/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+      showToast('Profile updated successfully', 'success');
+    } else {
+      const error = await res.json();
+      showToast(error.error || 'Failed to update profile', 'error');
+    }
+  } catch (err) {
+    showToast('Error updating profile', 'error');
+  }
+});
+
+// Password Change
+document.getElementById('password-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const formData = new FormData(this);
+  const currentPassword = formData.get('currentPassword');
+  const newPassword = formData.get('newPassword');
+  const confirmPassword = formData.get('confirmPassword');
+
+  if (newPassword !== confirmPassword) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+
+  if (newPassword.length < 8) {
+    showToast('Password must be at least 8 characters', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/password', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+
+    if (res.ok) {
+      showToast('Password updated successfully', 'success');
+      this.reset();
+    } else {
+      const error = await res.json();
+      showToast(error.error || 'Failed to update password', 'error');
+    }
+  } catch (err) {
+    showToast('Error updating password', 'error');
+  }
+});
+
+// Delete Account
+function confirmDeleteAccount() {
+  if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    if (confirm('This will permanently delete all your data including portfolios, transactions, and watchlists. Type "DELETE" to confirm.')) {
+      const confirmation = prompt('Type DELETE to confirm:');
+      if (confirmation === 'DELETE') {
+        deleteAccount();
+      }
+    }
+  }
+}
+
+async function deleteAccount() {
+  try {
+    const res = await fetch('/api/users/me', {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      showToast('Account deleted', 'success');
+      setTimeout(() => {
+        window.location.href = '/logout';
+      }, 1500);
+    } else {
+      const error = await res.json();
+      showToast(error.error || 'Failed to delete account', 'error');
+    }
+  } catch (err) {
+    showToast('Error deleting account', 'error');
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

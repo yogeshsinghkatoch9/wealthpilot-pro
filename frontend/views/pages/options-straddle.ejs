@@ -1,0 +1,436 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const str = straddles || {};
+const quote = str.quote || {};
+const price = quote.price || str.currentPrice || 0;
+const atmStraddle = str.atmStraddle || {};
+const strangle = str.strangle || {};
+const ivMetrics = str.ivMetrics || {};
+const earnings = str.earnings || {};
+const earningsHistory = str.earningsHistory || [];
+const opportunities = str.opportunities || [];
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(1) + '%'; }
+function formatPctSigned(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%'; }
+function formatVol(v) { return (v * 100 || 0).toFixed(1) + '%'; }
+
+// ATM Straddle values
+const atmStrike = atmStraddle.strike || Math.round(price / 5) * 5;
+const atmCall = atmStraddle.call || {};
+const atmPut = atmStraddle.put || {};
+const atmCallPrice = atmCall.price || atmCall.ask || 0;
+const atmPutPrice = atmPut.price || atmPut.ask || 0;
+const totalPremium = atmStraddle.totalPremium || (atmCallPrice + atmPutPrice);
+const impliedMove = atmStraddle.impliedMove || (price > 0 ? (totalPremium / price) * 100 : 0);
+const upperBreakeven = atmStrike + totalPremium;
+const lowerBreakeven = atmStrike - totalPremium;
+
+// Strangle values
+const strangleCallStrike = strangle.callStrike || atmStrike + 10;
+const stranglePutStrike = strangle.putStrike || atmStrike - 10;
+const strangleCall = strangle.call || {};
+const stranglePut = strangle.put || {};
+const strangleCallPrice = strangleCall.price || strangleCall.ask || 0;
+const stranglePutPrice = stranglePut.price || stranglePut.ask || 0;
+const stranglePremium = strangle.totalPremium || (strangleCallPrice + stranglePutPrice);
+const strangleUpperBE = strangleCallStrike + stranglePremium;
+const strangleLowerBE = stranglePutStrike - stranglePremium;
+
+// IV metrics
+const iv30d = ivMetrics.iv30d || str.iv30d || 0;
+const ivRank = ivMetrics.ivRank || str.ivRank || 0;
+const avgEarningsMove = earnings.avgMove || 0;
+const daysToEarnings = earnings.daysTo || 0;
+const earningsDate = earnings.date || '';
+
+// Calculate historical stats
+const positiveCount = earningsHistory.filter(e => e.move > 0).length;
+const positiveRate = earningsHistory.length > 0 ? (positiveCount / earningsHistory.length) * 100 : 50;
+%>
+<%- include('../partials/header', { pageTitle: 'Options Straddles' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">OPTIONS STRADDLES</h1>
+      <p class="text-slate-400">Straddle & strangle analysis for volatility plays</p>
+    </div>
+    <form method="GET" action="/options-straddle" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<% if (!straddles) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No straddle data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if options are available.</p>
+</div>
+<% } else { %>
+
+<!-- Stock & Options Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-purple-900/20 to-amber-900/20">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+      <p class="text-slate-400">Current: <span class="font-mono"><%= formatPrice(price) %></span> • Options Volatility Analysis</p>
+    </div>
+    <% if (daysToEarnings > 0) { %>
+    <div class="text-right">
+      <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold"><%= daysToEarnings %> Days to Earnings</span>
+    </div>
+    <% } %>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">ATM Straddle</p>
+      <p class="text-2xl font-bold text-purple-400 font-mono"><%= formatPrice(totalPremium) %></p>
+      <p class="text-xs text-slate-500">total premium</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Implied Move</p>
+      <p class="text-2xl font-bold text-amber-400 font-mono">±<%= formatPct(impliedMove) %></p>
+      <p class="text-xs text-slate-500">breakeven range</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">IV (30D)</p>
+      <p class="text-3xl font-bold text-sky-400 font-mono"><%= formatPct(iv30d) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">IV Rank</p>
+      <p class="text-2xl font-bold text-<%= ivRank > 50 ? 'amber' : 'emerald' %>-400 font-mono"><%= formatPct(ivRank) %></p>
+      <p class="text-xs text-slate-500"><%= ivRank > 70 ? 'elevated' : ivRank > 30 ? 'normal' : 'low' %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Avg Earnings Move</p>
+      <p class="text-2xl font-bold text-white font-mono">±<%= formatPct(avgEarningsMove) %></p>
+      <p class="text-xs text-slate-500">historical</p>
+    </div>
+  </div>
+</div>
+
+<!-- Straddle & Strangle Details -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- ATM Straddle -->
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">ATM STRADDLE ($<%= atmStrike %> Strike)</h3>
+    <div class="space-y-4">
+      <div class="flex justify-between items-center p-3 rounded-lg bg-emerald-500/10">
+        <div>
+          <p class="font-bold text-emerald-400 font-mono">$<%= atmStrike %> Call</p>
+          <p class="text-xs text-slate-400"><%= atmStraddle.expiration || 'Nearest Expiry' %></p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold font-mono"><%= formatPrice(atmCallPrice) %></p>
+          <p class="text-xs font-mono text-slate-400">Δ <%= (atmCall.delta || 0.50).toFixed(2) %> • IV <%= formatVol(atmCall.iv || iv30d/100) %></p>
+        </div>
+      </div>
+      <div class="flex justify-between items-center p-3 rounded-lg bg-red-500/10">
+        <div>
+          <p class="font-bold text-red-400 font-mono">$<%= atmStrike %> Put</p>
+          <p class="text-xs text-slate-400"><%= atmStraddle.expiration || 'Nearest Expiry' %></p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold font-mono"><%= formatPrice(atmPutPrice) %></p>
+          <p class="text-xs font-mono text-slate-400">Δ <%= (atmPut.delta || -0.50).toFixed(2) %> • IV <%= formatVol(atmPut.iv || iv30d/100) %></p>
+        </div>
+      </div>
+      <div class="border-t border-slate-700 pt-3 space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-slate-400">Total Premium</span><span class="font-bold text-purple-400 font-mono"><%= formatPrice(totalPremium) %></span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Upper Breakeven</span><span class="font-bold text-emerald-400 font-mono"><%= formatPrice(upperBreakeven) %> (<%= formatPctSigned((upperBreakeven - price) / price * 100) %>)</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Lower Breakeven</span><span class="font-bold text-red-400 font-mono"><%= formatPrice(lowerBreakeven) %> (<%= formatPctSigned((lowerBreakeven - price) / price * 100) %>)</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Max Loss</span><span class="font-bold text-red-400 font-mono"><%= formatPrice(totalPremium * 100) %> (at $<%= atmStrike %>)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strangle -->
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">STRANGLE ($<%= stranglePutStrike %>/$<%= strangleCallStrike %>)</h3>
+    <div class="space-y-4">
+      <div class="flex justify-between items-center p-3 rounded-lg bg-emerald-500/10">
+        <div>
+          <p class="font-bold text-emerald-400 font-mono">$<%= strangleCallStrike %> Call (OTM)</p>
+          <p class="text-xs text-slate-400"><%= strangle.expiration || 'Nearest Expiry' %></p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold font-mono"><%= formatPrice(strangleCallPrice) %></p>
+          <p class="text-xs font-mono text-slate-400">Δ <%= (strangleCall.delta || 0.30).toFixed(2) %> • IV <%= formatVol(strangleCall.iv || iv30d/100 * 1.1) %></p>
+        </div>
+      </div>
+      <div class="flex justify-between items-center p-3 rounded-lg bg-red-500/10">
+        <div>
+          <p class="font-bold text-red-400 font-mono">$<%= stranglePutStrike %> Put (OTM)</p>
+          <p class="text-xs text-slate-400"><%= strangle.expiration || 'Nearest Expiry' %></p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold font-mono"><%= formatPrice(stranglePutPrice) %></p>
+          <p class="text-xs font-mono text-slate-400">Δ <%= (stranglePut.delta || -0.25).toFixed(2) %> • IV <%= formatVol(stranglePut.iv || iv30d/100 * 1.05) %></p>
+        </div>
+      </div>
+      <div class="border-t border-slate-700 pt-3 space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-slate-400">Total Premium</span><span class="font-bold text-purple-400 font-mono"><%= formatPrice(stranglePremium) %></span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Upper Breakeven</span><span class="font-bold text-emerald-400 font-mono"><%= formatPrice(strangleUpperBE) %> (<%= formatPctSigned((strangleUpperBE - price) / price * 100) %>)</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Lower Breakeven</span><span class="font-bold text-red-400 font-mono"><%= formatPrice(strangleLowerBE) %> (<%= formatPctSigned((strangleLowerBE - price) / price * 100) %>)</span></div>
+        <div class="flex justify-between"><span class="text-slate-400">Max Loss</span><span class="font-bold text-red-400 font-mono"><%= formatPrice(stranglePremium * 100) %> (between strikes)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Strategy Comparison -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Strategy Comparison</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-slate-400 border-b border-slate-700">
+          <th class="p-3">Strategy</th>
+          <th class="p-3 text-center">Cost</th>
+          <th class="p-3 text-center">Breakeven Range</th>
+          <th class="p-3 text-center">Max Loss</th>
+          <th class="p-3 text-center">Best For</th>
+        </tr>
+      </thead>
+      <tbody class="font-mono">
+        <tr class="border-b border-slate-700/50">
+          <td class="p-3 font-bold text-purple-400">ATM Straddle</td>
+          <td class="p-3 text-center"><%= formatPrice(totalPremium) %></td>
+          <td class="p-3 text-center"><%= formatPrice(lowerBreakeven) %> - <%= formatPrice(upperBreakeven) %></td>
+          <td class="p-3 text-center text-red-400"><%= formatPrice(totalPremium * 100) %></td>
+          <td class="p-3 text-center text-xs text-slate-400">Big moves expected</td>
+        </tr>
+        <tr>
+          <td class="p-3 font-bold text-sky-400">OTM Strangle</td>
+          <td class="p-3 text-center"><%= formatPrice(stranglePremium) %></td>
+          <td class="p-3 text-center"><%= formatPrice(strangleLowerBE) %> - <%= formatPrice(strangleUpperBE) %></td>
+          <td class="p-3 text-center text-red-400"><%= formatPrice(stranglePremium * 100) %></td>
+          <td class="p-3 text-center text-xs text-slate-400">Lower cost exposure</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (earningsHistory.length > 0) { %>
+<!-- Earnings History -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Historical Earnings Moves</h3>
+  <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
+    <% earningsHistory.slice(0, 8).forEach(e => { %>
+    <div class="p-3 rounded-lg text-center bg-<%= e.move >= 0 ? 'emerald' : 'red' %>-500/10">
+      <p class="text-xs text-slate-400"><%= e.quarter || e.date %></p>
+      <p class="font-bold text-<%= e.move >= 0 ? 'emerald' : 'red' %>-400"><%= formatPctSigned(e.move) %></p>
+    </div>
+    <% }); %>
+  </div>
+  <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+    <div>
+      <p class="text-sm text-slate-400">Avg Move</p>
+      <p class="font-bold">±<%= formatPct(avgEarningsMove) %></p>
+    </div>
+    <div>
+      <p class="text-sm text-slate-400">Implied vs Actual</p>
+      <%
+        const ivVsActual = impliedMove - avgEarningsMove;
+        const ivEdge = ivVsActual > 2 ? 'Overpriced' : ivVsActual < -2 ? 'Underpriced' : 'Fair';
+      %>
+      <p class="font-bold text-<%= ivVsActual > 2 ? 'red' : ivVsActual < -2 ? 'emerald' : 'amber' %>-400"><%= ivEdge %></p>
+    </div>
+    <div>
+      <p class="text-sm text-slate-400">Direction</p>
+      <p class="font-bold text-<%= positiveRate >= 50 ? 'emerald' : 'red' %>-400"><%= formatPct(positiveRate) %> positive</p>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<% if (opportunities.length > 0) { %>
+<!-- Straddle Opportunities -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-slate-700">
+    <h3 class="font-semibold text-white">Straddle Opportunities (Upcoming Earnings)</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800 text-slate-400 text-left">
+          <th class="px-4 py-3">Stock</th>
+          <th class="px-4 py-3 text-center">Earnings</th>
+          <th class="px-4 py-3 text-center">Price</th>
+          <th class="px-4 py-3 text-center">Straddle Cost</th>
+          <th class="px-4 py-3 text-center">Implied Move</th>
+          <th class="px-4 py-3 text-center">Avg Actual</th>
+          <th class="px-4 py-3 text-center">Edge</th>
+        </tr>
+      </thead>
+      <tbody class="font-mono">
+        <% opportunities.forEach(opp => {
+          const edge = opp.impliedMove - opp.avgActual;
+          const edgeType = edge > 2 ? 'Seller' : edge < -2 ? 'Buyer' : 'Neutral';
+          const edgeColor = edge > 2 ? 'red' : edge < -2 ? 'emerald' : 'amber';
+        %>
+        <tr class="border-b border-slate-700/50">
+          <td class="px-4 py-3 font-bold"><%= opp.symbol %></td>
+          <td class="px-4 py-3 text-center text-amber-400"><%= opp.earningsDate %></td>
+          <td class="px-4 py-3 text-center"><%= formatPrice(opp.price) %></td>
+          <td class="px-4 py-3 text-center"><%= formatPrice(opp.straddleCost) %></td>
+          <td class="px-4 py-3 text-center font-bold">±<%= formatPct(opp.impliedMove) %></td>
+          <td class="px-4 py-3 text-center">±<%= formatPct(opp.avgActual) %></td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2 py-1 rounded bg-<%= edgeColor %>-500/20 text-<%= edgeColor %>-400 text-xs"><%= edgeType %> Edge</span>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+
+<!-- P&L Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Straddle P&L Profile</h3>
+  <div class="h-56"><canvas id="pnlChart"></canvas></div>
+  <div class="flex justify-center gap-6 mt-4 text-sm">
+    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-purple-500"></span>ATM Straddle</span>
+    <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-500"></span>OTM Strangle</span>
+  </div>
+</div>
+
+<!-- Trading Signals -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="bloomberg-card p-4">
+    <h4 class="font-bold text-purple-400 mb-2">IV Assessment</h4>
+    <%
+      let ivSignal = 'Neutral';
+      let ivSignalColor = 'amber';
+      if (ivRank > 70) {
+        ivSignal = 'Consider Selling';
+        ivSignalColor = 'emerald';
+      } else if (ivRank < 30) {
+        ivSignal = 'Consider Buying';
+        ivSignalColor = 'purple';
+      }
+    %>
+    <p class="text-2xl font-bold text-<%= ivSignalColor %>-400"><%= ivSignal %></p>
+    <p class="text-xs text-slate-400 mt-1">IV Rank at <%= formatPct(ivRank) %></p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <h4 class="font-bold text-sky-400 mb-2">Implied vs Historical</h4>
+    <%
+      const impliedDiff = impliedMove - avgEarningsMove;
+      let impliedSignal = 'Fair Value';
+      let impliedColor = 'amber';
+      if (impliedDiff > 3) {
+        impliedSignal = 'Premium Seller Edge';
+        impliedColor = 'emerald';
+      } else if (impliedDiff < -3) {
+        impliedSignal = 'Premium Buyer Edge';
+        impliedColor = 'purple';
+      }
+    %>
+    <p class="text-xl font-bold text-<%= impliedColor %>-400"><%= impliedSignal %></p>
+    <p class="text-xs text-slate-400 mt-1">Implied: ±<%= formatPct(impliedMove) %> | Actual: ±<%= formatPct(avgEarningsMove) %></p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <h4 class="font-bold text-amber-400 mb-2">Strategy Suggestion</h4>
+    <%
+      let suggestion = 'Iron Butterfly';
+      let suggColor = 'amber';
+      if (ivRank > 60 && impliedDiff > 2) {
+        suggestion = 'Short Straddle/Strangle';
+        suggColor = 'emerald';
+      } else if (ivRank < 40 && impliedDiff < 0) {
+        suggestion = 'Long Straddle/Strangle';
+        suggColor = 'purple';
+      }
+    %>
+    <p class="text-xl font-bold text-<%= suggColor %>-400"><%= suggestion %></p>
+    <p class="text-xs text-slate-400 mt-1">Based on IV and historical analysis</p>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (straddles) { %>
+const strike = <%= atmStrike %>;
+const straddlePremium = <%= totalPremium %>;
+const stranglePremium = <%= stranglePremium %>;
+const callStrike = <%= strangleCallStrike %>;
+const putStrike = <%= stranglePutStrike %>;
+
+// Generate price points
+const priceRange = strike * 0.3;
+const prices = [];
+const straddlePnL = [];
+const stranglePnL = [];
+
+for (let p = strike - priceRange; p <= strike + priceRange; p += priceRange / 10) {
+  prices.push('$' + p.toFixed(0));
+
+  // Straddle P&L
+  const straddleProfit = Math.max(p - strike, 0) + Math.max(strike - p, 0) - straddlePremium;
+  straddlePnL.push((straddleProfit * 100).toFixed(0));
+
+  // Strangle P&L
+  const strangleProfit = Math.max(p - callStrike, 0) + Math.max(putStrike - p, 0) - stranglePremium;
+  stranglePnL.push((strangleProfit * 100).toFixed(0));
+}
+
+new Chart(document.getElementById('pnlChart'), {
+  type: 'line',
+  data: {
+    labels: prices,
+    datasets: [
+      {
+        label: 'Straddle P&L',
+        data: straddlePnL,
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139,92,246,0.1)',
+        fill: true,
+        tension: 0.3
+      },
+      {
+        label: 'Strangle P&L',
+        data: stranglePnL,
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14,165,233,0.1)',
+        fill: false,
+        tension: 0.3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#94a3b8',
+          callback: v => '$' + v
+        },
+        title: { display: true, text: 'P&L ($)', color: '#94a3b8' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

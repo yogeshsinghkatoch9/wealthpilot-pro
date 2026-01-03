@@ -1,0 +1,251 @@
+##############################################
+# WealthPilot Pro - Prometheus Alert Rules
+# Critical monitoring alerts
+##############################################
+
+groups:
+  # ===========================================
+  # Application Health Alerts
+  # ===========================================
+  - name: application
+    rules:
+      - alert: BackendDown
+        expr: up{job="wealthpilot-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend API is down"
+          description: "WealthPilot backend has been unreachable for more than 1 minute."
+
+      - alert: FrontendDown
+        expr: up{job="wealthpilot-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Frontend is down"
+          description: "WealthPilot frontend has been unreachable for more than 1 minute."
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, http_request_duration_seconds_bucket{job="wealthpilot-backend"}) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API response time"
+          description: "95th percentile response time is above 2 seconds."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "More than 5% of requests are resulting in 5xx errors."
+
+      - alert: CriticalErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical error rate"
+          description: "More than 10% of requests are resulting in 5xx errors."
+
+  # ===========================================
+  # Database Alerts
+  # ===========================================
+  - name: database
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been unreachable for more than 1 minute."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_activity_count / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connection pool near limit"
+          description: "PostgreSQL is using more than 80% of available connections."
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_statements_seconds_total[5m]) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "Database queries are taking longer than expected."
+
+      - alert: PostgreSQLDeadlocks
+        expr: increase(pg_stat_database_deadlocks[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL deadlock detected"
+          description: "A deadlock has been detected in the database."
+
+      - alert: DatabaseDiskSpaceLow
+        expr: pg_database_size_bytes / (1024 * 1024 * 1024) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database size exceeding 10GB"
+          description: "PostgreSQL database size is growing large."
+
+  # ===========================================
+  # Redis Alerts
+  # ===========================================
+  - name: redis
+    rules:
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been unreachable for more than 1 minute."
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis is using more than 85% of configured max memory."
+
+      - alert: RedisKeyEviction
+        expr: rate(redis_evicted_keys_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis key eviction detected"
+          description: "Redis is evicting keys due to memory pressure."
+
+  # ===========================================
+  # Infrastructure Alerts
+  # ===========================================
+  - name: infrastructure
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage has been above 80% for more than 10 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage has been above 85% for more than 5 minutes."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space running low"
+          description: "Less than 15% disk space remaining."
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space critical"
+          description: "Less than 5% disk space remaining."
+
+  # ===========================================
+  # Business Logic Alerts
+  # ===========================================
+  - name: business
+    rules:
+      - alert: MarketDataStale
+        expr: time() - wealthpilot_market_data_last_update_timestamp > 300
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Market data is stale"
+          description: "Market data has not been updated in more than 5 minutes."
+
+      - alert: HighAlertQueueSize
+        expr: wealthpilot_alert_queue_size > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alert queue growing"
+          description: "The price alert queue has more than 1000 pending items."
+
+      - alert: EmailServiceDown
+        expr: wealthpilot_email_service_up == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Email service unavailable"
+          description: "Email notifications are not being sent."
+
+      - alert: WebSocketConnectionsHigh
+        expr: wealthpilot_websocket_connections > 5000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High WebSocket connections"
+          description: "More than 5000 concurrent WebSocket connections."
+
+  # ===========================================
+  # Security Alerts
+  # ===========================================
+  - name: security
+    rules:
+      - alert: HighAuthFailures
+        expr: rate(wealthpilot_auth_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "More than 10 auth failures per second detected."
+
+      - alert: RateLimitExceeded
+        expr: rate(wealthpilot_rate_limit_exceeded_total[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limiting triggered frequently"
+          description: "Rate limits are being exceeded frequently."
+
+      - alert: SuspiciousActivity
+        expr: rate(wealthpilot_suspicious_requests_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Potential security threat - unusual request patterns."

@@ -1,0 +1,303 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+const safePid = typeof selectedPid !== 'undefined' ? selectedPid : null;
+const safeIncomeData = typeof incomeData !== 'undefined' ? incomeData : null;
+const safeFmt = typeof fmt !== 'undefined' ? fmt : { money: (val) => '$' + (val || 0).toFixed(2) };
+%>
+<%- include('../partials/header', { pageTitle: 'Income' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b border-amber-400/20 px-6 py-3">
+  <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <h1 class="text-xl font-bold text-amber-400 tracking-wide">INCOME ANALYSIS</h1>
+      <span class="text-slate-500 text-sm">|</span>
+      <span class="text-slate-400 text-sm font-mono">DIVIDEND PROJECTIONS</span>
+    </div>
+    <form method="GET" class="flex items-center gap-2">
+      <label class="text-slate-400 text-xs uppercase tracking-wide">Portfolio:</label>
+      <select name="portfolio" onchange="this.form.submit()" class="bg-slate-900 border border-slate-700 text-white px-3 py-1.5 rounded text-sm font-mono focus:outline-none focus:border-amber-400 transition-colors">
+        <% if (portfolios.length === 0) { %>
+          <option value="">No portfolios</option>
+        <% } else { %>
+          <% portfolios.forEach(p => { %>
+            <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name || 'Unnamed Portfolio' %></option>
+          <% }) %>
+        <% } %>
+      </select>
+    </form>
+  </div>
+</div>
+
+<main class="p-6 bg-black min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <% if (incomeData) { %>
+      <!-- KPI Bar -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Annual Income -->
+        <div class="tufte-stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Annual Income</span>
+          </div>
+          <div class="text-2xl font-bold font-mono tabular-nums positive">
+            <%= fmt.money(incomeData.annual_income || 0) %>
+          </div>
+          <div class="text-xs text-slate-500 font-mono mt-1">TTM</div>
+        </div>
+
+        <!-- Monthly Average -->
+        <div class="tufte-stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Monthly Avg</span>
+          </div>
+          <div class="text-2xl font-bold font-mono tabular-nums positive">
+            <%= fmt.money(incomeData.monthly_average || 0) %>
+          </div>
+          <div class="text-xs text-slate-500 font-mono mt-1">Per Month</div>
+        </div>
+
+        <!-- Yield on Cost -->
+        <div class="tufte-stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Yield on Cost</span>
+          </div>
+          <div class="text-2xl font-bold font-mono tabular-nums text-amber-400">
+            <%= (incomeData.yield_on_cost || 0).toFixed(2) %>%
+          </div>
+          <div class="text-xs text-slate-500 font-mono mt-1">YoC</div>
+        </div>
+
+        <!-- Top Payers Count -->
+        <div class="tufte-stat-card">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-slate-500 text-xs uppercase tracking-wider font-mono">Top Payers</span>
+          </div>
+          <div class="text-2xl font-bold font-mono tabular-nums text-cyan-400">
+            <%= incomeData.top_payers ? incomeData.top_payers.length : 0 %>
+          </div>
+          <div class="text-xs text-slate-500 font-mono mt-1">Holdings</div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Monthly Income Chart -->
+        <div class="bloomberg-card">
+          <div class="border-b border-slate-800 px-4 py-3">
+            <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Monthly Income Distribution</h3>
+          </div>
+          <div class="p-4">
+            <div class="h-72">
+              <canvas id="monthlyChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5-Year Projection Chart -->
+        <div class="bloomberg-card">
+          <div class="border-b border-slate-800 px-4 py-3">
+            <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">5-Year Income Projection</h3>
+          </div>
+          <div class="p-4">
+            <div class="h-72">
+              <canvas id="projectionChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Payers Table -->
+      <div class="bloomberg-card">
+        <div class="border-b border-slate-800 px-4 py-3">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Top Income Contributors</h3>
+        </div>
+        <div class="p-4">
+          <table class="bloomberg-table">
+            <thead>
+              <tr>
+                <th class="text-left">SYMBOL</th>
+                <th class="text-right">ANNUAL INCOME</th>
+                <th class="text-right">YIELD</th>
+                <th class="text-right">% OF TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (incomeData.top_payers && incomeData.top_payers.length > 0) { %>
+                <% incomeData.top_payers.forEach((p, i) => { %>
+                  <tr>
+                    <td>
+                      <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-400 text-xs font-bold">
+                          <%= (p.symbol || '??').slice(0, 2) %>
+                        </div>
+                        <span class="text-white font-mono font-medium"><%= p.symbol || 'N/A' %></span>
+                      </div>
+                    </td>
+                    <td class="text-right">
+                      <span class="positive font-mono font-bold tabular-nums"><%= fmt.money(p.annual || 0) %></span>
+                      <span class="text-slate-500 text-xs font-mono ml-1">/yr</span>
+                    </td>
+                    <td class="text-right">
+                      <span class="text-cyan-400 font-mono font-medium tabular-nums"><%= (p.yield || 0).toFixed(2) %>%</span>
+                    </td>
+                    <td class="text-right">
+                      <span class="text-slate-300 font-mono tabular-nums"><%= (p.pct_of_income || 0).toFixed(1) %>%</span>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="4" class="text-center text-slate-500 py-8">
+                    No income data available
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Chart Scripts -->
+      <script>
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Monthly Income Chart
+        new Chart(document.getElementById('monthlyChart'), {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [{
+              label: 'Income',
+              data: <%- JSON.stringify(incomeData.monthly_breakdown || []) %>,
+              backgroundColor: '#10b981',
+              borderRadius: 0,
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#fbbf24',
+                bodyColor: '#10b981',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                  label: function(context) {
+                    return '$' + context.parsed.y.toFixed(2);
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  color: '#64748b',
+                  font: { family: 'monospace', size: 10 }
+                },
+                border: { color: '#334155' }
+              },
+              y: {
+                grid: { color: '#1e293b' },
+                ticks: {
+                  color: '#64748b',
+                  font: { family: 'monospace', size: 10 },
+                  callback: function(value) {
+                    return '$' + value.toFixed(0);
+                  }
+                },
+                border: { color: '#334155' }
+              }
+            }
+          }
+        });
+
+        // 5-Year Projection Chart
+        new Chart(document.getElementById('projectionChart'), {
+          type: 'line',
+          data: {
+            labels: <%- JSON.stringify((incomeData.projections || []).map(p => 'Year ' + (p.year || 0))) %>,
+            datasets: [{
+              label: 'Projected',
+              data: <%- JSON.stringify((incomeData.projections || []).map(p => p.income || 0)) %>,
+              borderColor: '#fbbf24',
+              backgroundColor: 'rgba(251, 191, 36, 0.1)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointBackgroundColor: '#fbbf24',
+              pointBorderColor: '#0f172a',
+              pointBorderWidth: 2,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#0f172a',
+                titleColor: '#fbbf24',
+                bodyColor: '#10b981',
+                borderColor: '#334155',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                  label: function(context) {
+                    return '$' + context.parsed.y.toFixed(2);
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  color: '#64748b',
+                  font: { family: 'monospace', size: 10 }
+                },
+                border: { color: '#334155' }
+              },
+              y: {
+                grid: { color: '#1e293b' },
+                ticks: {
+                  color: '#64748b',
+                  font: { family: 'monospace', size: 10 },
+                  callback: function(value) {
+                    return '$' + value.toFixed(0);
+                  }
+                },
+                border: { color: '#334155' }
+              }
+            }
+          }
+        });
+      </script>
+
+    <% } else { %>
+      <!-- No Data State -->
+      <div class="bloomberg-card">
+        <div class="p-12 text-center">
+          <div class="text-slate-600 text-6xl mb-4">■</div>
+          <p class="text-slate-400 font-mono text-sm uppercase tracking-wide">No Portfolio Selected</p>
+          <p class="text-slate-600 text-xs mt-2">Select a portfolio from the dropdown above</p>
+        </div>
+      </div>
+    <% } %>
+
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

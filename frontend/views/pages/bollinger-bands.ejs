@@ -1,0 +1,281 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const t = typeof technicals !== 'undefined' && technicals ? technicals : {};
+// API returns bollinger directly, not nested under technicals
+const bb = t.bollinger || {};
+const price = t.price?.current || 0;
+const chartData = t.dates || [];
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(2) + '%'; }
+
+// Calculate %B (position within bands)
+const bandWidth = bb.upper && bb.lower ? ((bb.upper - bb.lower) / bb.middle * 100) : 0;
+const percentB = bb.upper && bb.lower ? ((price - bb.lower) / (bb.upper - bb.lower)) : 0.5;
+
+// Determine signal
+function getBBSignal(pctB) {
+  if (pctB > 1) return { text: 'OVERBOUGHT', color: 'red' };
+  if (pctB < 0) return { text: 'OVERSOLD', color: 'emerald' };
+  if (pctB > 0.8) return { text: 'UPPER ZONE', color: 'amber' };
+  if (pctB < 0.2) return { text: 'LOWER ZONE', color: 'sky' };
+  return { text: 'NEUTRAL', color: 'slate' };
+}
+
+function getSqueezeStatus(width) {
+  if (width < 8) return { text: 'SQUEEZE', color: 'amber' };
+  if (width > 20) return { text: 'HIGH VOL', color: 'red' };
+  return { text: 'NORMAL', color: 'slate' };
+}
+
+const bbSignal = getBBSignal(percentB);
+const squeezeStatus = getSqueezeStatus(bandWidth);
+%>
+<%- include('../partials/header', { pageTitle: 'Bollinger Bands' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+  <h1 class="text-2xl font-bold text-amber-400">BOLLINGER BANDS</h1>
+  <p class="text-slate-400">Volatility bands & squeeze detection</p>
+</div>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <form method="GET" action="/bollinger-bands" class="flex gap-2">
+    <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-24 font-mono uppercase">
+    <button type="submit" class="bloomberg-btn">Analyze</button>
+  </form>
+</div>
+
+<% if (!technicals) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No Bollinger Band data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if the market is open.</p>
+</div>
+<% } else { %>
+
+<!-- Stock Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-purple-900/20 to-sky-900/20">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+      <p class="text-slate-400">Current: <span class="font-mono"><%= formatPrice(price) %></span> - BB(20,2)</p>
+    </div>
+    <div class="px-4 py-2 rounded bg-<%= bbSignal.color %>-500/20">
+      <span class="text-<%= bbSignal.color %>-400 font-bold"><%= bbSignal.text %></span>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Upper Band</p>
+      <p class="text-2xl font-bold font-mono text-red-400"><%= formatPrice(bb.upper) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Middle (SMA20)</p>
+      <p class="text-2xl font-bold font-mono text-sky-400"><%= formatPrice(bb.middle) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Lower Band</p>
+      <p class="text-2xl font-bold font-mono text-emerald-400"><%= formatPrice(bb.lower) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Band Width</p>
+      <p class="text-2xl font-bold font-mono text-purple-400"><%= formatPct(bandWidth) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">%B Position</p>
+      <p class="text-2xl font-bold font-mono text-amber-400"><%= percentB.toFixed(2) %></p>
+      <p class="text-xs text-slate-400"><%= percentB > 0.5 ? 'Upper half' : 'Lower half' %></p>
+    </div>
+  </div>
+</div>
+
+<!-- BB Position Analysis -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Bollinger Band Position</h3>
+  <div class="relative h-12 rounded-full bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500 mb-4">
+    <div class="absolute top-0 left-0 w-full h-full flex justify-between items-center px-4 text-xs font-bold text-white">
+      <span>Oversold</span>
+      <span>Neutral</span>
+      <span>Overbought</span>
+    </div>
+    <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-sky-500 shadow-lg" style="left: <%= Math.min(Math.max(percentB * 100, 2), 98) %>%"></div>
+  </div>
+  <div class="grid grid-cols-3 gap-4 text-center text-sm">
+    <div>
+      <p class="font-bold font-mono text-red-400"><%= formatPrice(bb.lower) %></p>
+      <p class="text-xs text-slate-400">Lower Band (-2)</p>
+    </div>
+    <div>
+      <p class="font-bold font-mono text-sky-400"><%= formatPrice(bb.middle) %></p>
+      <p class="text-xs text-slate-400">Middle (20 SMA)</p>
+    </div>
+    <div>
+      <p class="font-bold font-mono text-emerald-400"><%= formatPrice(bb.upper) %></p>
+      <p class="text-xs text-slate-400">Upper Band (+2)</p>
+    </div>
+  </div>
+</div>
+
+<!-- Analysis Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="bloomberg-card p-4">
+    <p class="text-sm text-slate-400">Distance to Upper</p>
+    <p class="text-2xl font-bold font-mono <%= price < bb.upper ? 'text-emerald-400' : 'text-red-400' %>">
+      <%= bb.upper ? (((bb.upper - price) / price) * 100).toFixed(2) + '%' : 'N/A' %>
+    </p>
+    <p class="text-xs text-slate-400 mt-1"><%= bb.upper ? formatPrice(bb.upper - price) + ' away' : '' %></p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <p class="text-sm text-slate-400">Distance to Lower</p>
+    <p class="text-2xl font-bold font-mono <%= price > bb.lower ? 'text-emerald-400' : 'text-red-400' %>">
+      <%= bb.lower ? (((price - bb.lower) / price) * 100).toFixed(2) + '%' : 'N/A' %>
+    </p>
+    <p class="text-xs text-slate-400 mt-1"><%= bb.lower ? formatPrice(price - bb.lower) + ' away' : '' %></p>
+  </div>
+  <div class="bloomberg-card p-4">
+    <p class="text-sm text-slate-400">Price vs SMA20</p>
+    <p class="text-2xl font-bold font-mono <%= price > bb.middle ? 'text-emerald-400' : 'text-red-400' %>">
+      <%= bb.middle ? ((price - bb.middle) / bb.middle * 100).toFixed(2) + '%' : 'N/A' %>
+    </p>
+    <p class="text-xs text-slate-400 mt-1"><%= price > bb.middle ? 'Above' : 'Below' %> middle band</p>
+  </div>
+  <div class="bloomberg-card p-4 bg-<%= squeezeStatus.color %>-500/10 border border-<%= squeezeStatus.color %>-400/30">
+    <p class="text-sm text-slate-400">Volatility Status</p>
+    <p class="text-2xl font-bold font-mono text-<%= squeezeStatus.color %>-400"><%= squeezeStatus.text %></p>
+    <p class="text-xs text-slate-400 mt-1">Band Width: <%= formatPct(bandWidth) %></p>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4"><%= symbol %> Bollinger Bands</h3>
+    <div id="tvBBChart" class="h-80"></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Price Position in Bands</h3>
+    <div class="space-y-4">
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Upper Band</span>
+          <span class="text-red-400 font-mono"><%= formatPrice(bb.upper) %></span>
+        </div>
+        <div class="h-2 bg-slate-700 rounded-full">
+          <div class="h-2 bg-red-400 rounded-full" style="width: 100%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-amber-400 font-bold">Current Price</span>
+          <span class="text-amber-400 font-mono font-bold"><%= formatPrice(price) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full">
+          <div class="h-3 bg-amber-400 rounded-full" style="width: <%= Math.min(Math.max(percentB * 100, 5), 100) %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Middle (SMA20)</span>
+          <span class="text-sky-400 font-mono"><%= formatPrice(bb.middle) %></span>
+        </div>
+        <div class="h-2 bg-slate-700 rounded-full">
+          <div class="h-2 bg-sky-400 rounded-full" style="width: 50%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Lower Band</span>
+          <span class="text-emerald-400 font-mono"><%= formatPrice(bb.lower) %></span>
+        </div>
+        <div class="h-2 bg-slate-700 rounded-full">
+          <div class="h-2 bg-emerald-400 rounded-full" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+    <p class="text-sm text-slate-400 mt-4">
+      <% if (percentB > 1) { %>
+        Price is <strong class="text-red-400">above</strong> the upper band - potential reversal or breakout.
+      <% } else if (percentB < 0) { %>
+        Price is <strong class="text-emerald-400">below</strong> the lower band - potential bounce or breakdown.
+      <% } else if (percentB > 0.8) { %>
+        Price is in the <strong class="text-amber-400">upper zone</strong> - watch for resistance.
+      <% } else if (percentB < 0.2) { %>
+        Price is in the <strong class="text-sky-400">lower zone</strong> - watch for support.
+      <% } else { %>
+        Price is in the <strong class="text-slate-300">neutral zone</strong> between bands.
+      <% } %>
+    </p>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
+<script>
+// Fetch and render Bollinger Bands chart
+const symbol = '<%= symbol || "AAPL" %>';
+const container = document.getElementById('tvBBChart');
+
+async function loadBollingerChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
+  try {
+    // Fetch historical data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/market/history/${symbol}?range=6mo`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    if (!data || data.length === 0) throw new Error('No data');
+
+    // Format for TradingView
+    const ohlcData = data.slice(-90).map(d => ({
+      time: d.date.split('T')[0],
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+      volume: d.volume
+    }));
+
+    // Clear loading message
+    container.innerHTML = '';
+
+    // Initialize TradingView chart
+    if (typeof TradingViewChart !== 'undefined') {
+      const chart = new TradingViewChart(container, {
+        theme: 'dark',
+        height: 320
+      });
+
+      chart.addCandlestick(ohlcData);
+      chart.addBollingerBands(ohlcData, 20, 2);
+      chart.addVolume(ohlcData);
+      chart.fitContent();
+    } else {
+      throw new Error('TradingView not available');
+    }
+  } catch (error) {
+    console.error('Chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
+  }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadBollingerChart);
+} else {
+  loadBollingerChart();
+}
+</script>
+<%- include('../partials/footer') %>

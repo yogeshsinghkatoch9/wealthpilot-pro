@@ -1,0 +1,252 @@
+<%- include('../partials/header', { pageTitle: 'Tax Documents' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Tax Documents</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Generate IRS-ready tax forms for your investments</p></div>
+<div class="flex gap-2">
+<select id="taxYear" class="form-input w-32" onchange="updateTaxYear()">
+<option value="2024" selected>2024</option>
+<option value="2023">2023</option>
+<option value="2022">2022</option>
+</select>
+</div>
+</div>
+
+<!-- Tax Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Total Realized Gains</p>
+<p class="text-2xl font-bold text-emerald-400">$12,847</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">From 23 transactions</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Short-Term Gains</p>
+<p class="text-2xl font-bold text-amber-400">$4,215</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Taxed as income</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Long-Term Gains</p>
+<p class="text-2xl font-bold text-emerald-400">$9,632</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">15% tax rate</p>
+</div>
+<div class="card p-4">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Harvested Losses</p>
+<p class="text-2xl font-bold text-red-400">-$1,000</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Offsets gains</p>
+</div>
+</div>
+
+<!-- Document Generator -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Generate Tax Forms</h3>
+<div class="space-y-4">
+
+<div class="p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 bg-gray-50' : 'border-slate-700 bg-slate-800' %>">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center flex-shrink-0">
+<span class="text-white font-bold text-sm">8949</span>
+</div>
+<div class="flex-1">
+<h4 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Form 8949</h4>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Sales and Dispositions of Capital Assets</p>
+<div class="flex gap-2">
+<button onclick="generateForm('8949')" class="btn-primary btn-sm">Generate PDF</button>
+<button onclick="previewForm('8949')" class="btn-ghost btn-sm">Preview</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 bg-gray-50' : 'border-slate-700 bg-slate-800' %>">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+<span class="text-white font-bold text-sm">D</span>
+</div>
+<div class="flex-1">
+<h4 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Schedule D</h4>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Capital Gains and Losses Summary</p>
+<div class="flex gap-2">
+<button onclick="generateForm('scheduleD')" class="btn-primary btn-sm">Generate PDF</button>
+<button onclick="previewForm('scheduleD')" class="btn-ghost btn-sm">Preview</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 bg-gray-50' : 'border-slate-700 bg-slate-800' %>">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
+<span class="text-white font-bold text-sm">DIV</span>
+</div>
+<div class="flex-1">
+<h4 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Dividend Summary</h4>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">Qualified & Ordinary Dividends Report</p>
+<div class="flex gap-2">
+<button onclick="generateForm('dividend')" class="btn-primary btn-sm">Generate PDF</button>
+<button onclick="previewForm('dividend')" class="btn-ghost btn-sm">Preview</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="p-4 rounded-lg border-2 <%= theme === 'light' ? 'border-gray-200 bg-gray-50' : 'border-slate-700 bg-slate-800' %>">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center flex-shrink-0">
+<span class="text-white font-bold text-sm">ALL</span>
+</div>
+<div class="flex-1">
+<h4 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Complete Tax Package</h4>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">All forms in one ZIP download</p>
+<div class="flex gap-2">
+<button onclick="generateForm('all')" class="btn-primary btn-sm">Download All</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Tax Lot Details -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Tax Lot Method</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Cost Basis Method</label>
+<select class="form-input">
+<option value="fifo" selected>FIFO (First In, First Out)</option>
+<option value="lifo">LIFO (Last In, First Out)</option>
+<option value="hifo">HIFO (Highest Cost First)</option>
+<option value="specific">Specific Lot ID</option>
+<option value="avgcost">Average Cost</option>
+</select>
+</div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">HIFO typically minimizes taxes by selling highest-cost shares first. Consult a tax professional for your specific situation.</p>
+</div>
+</div>
+</div>
+
+<!-- Form 8949 Preview -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Form 8949 Preview - Part I (Short-Term)</h3>
+<span class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Held ≤ 1 Year</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-200 text-gray-500' : 'border-slate-700 text-slate-400' %> text-left">
+<th class="pb-3">(a) Description</th>
+<th class="pb-3">(b) Date Acquired</th>
+<th class="pb-3">(c) Date Sold</th>
+<th class="pb-3 text-right">(d) Proceeds</th>
+<th class="pb-3 text-right">(e) Cost Basis</th>
+<th class="pb-3 text-right">(h) Gain/Loss</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">50 sh TSLA</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">03/15/2024</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">08/22/2024</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$12,500</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$10,250</td>
+<td class="py-3 text-right text-emerald-400">$2,250</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">100 sh AMD</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">05/02/2024</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">09/18/2024</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$15,800</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$13,200</td>
+<td class="py-3 text-right text-emerald-400">$2,600</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">75 sh INTC</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">06/10/2024</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">11/05/2024</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$2,100</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$2,550</td>
+<td class="py-3 text-right text-red-400">-$450</td>
+</tr>
+<tr class="font-semibold <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" colspan="3">Short-Term Totals</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$30,400</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$26,000</td>
+<td class="py-3 text-right text-emerald-400">$4,400</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Form 8949 Preview - Part II (Long-Term)</h3>
+<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Held > 1 Year</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-200 text-gray-500' : 'border-slate-700 text-slate-400' %> text-left">
+<th class="pb-3">(a) Description</th>
+<th class="pb-3">(b) Date Acquired</th>
+<th class="pb-3">(c) Date Sold</th>
+<th class="pb-3 text-right">(d) Proceeds</th>
+<th class="pb-3 text-right">(e) Cost Basis</th>
+<th class="pb-3 text-right">(h) Gain/Loss</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">100 sh AAPL</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">01/15/2022</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">03/20/2024</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$18,500</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$12,800</td>
+<td class="py-3 text-right text-emerald-400">$5,700</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">50 sh MSFT</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">06/01/2021</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">07/15/2024</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$21,000</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$13,250</td>
+<td class="py-3 text-right text-emerald-400">$7,750</td>
+</tr>
+<tr class="font-semibold <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" colspan="3">Long-Term Totals</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$39,500</td>
+<td class="py-3 text-right <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$26,050</td>
+<td class="py-3 text-right text-emerald-400">$13,450</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Disclaimer -->
+<div class="card p-4 border-l-4 border-amber-500">
+<div class="flex gap-3">
+<svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm"><strong class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Disclaimer:</strong> These forms are for informational purposes only. Please verify all data with your broker statements and consult a qualified tax professional before filing. WealthPilot is not a tax advisor.</p>
+</div>
+</div>
+</div></div></main>
+
+<script>
+function generateForm(type) {
+  const names = { '8949': 'Form 8949', 'scheduleD': 'Schedule D', 'dividend': 'Dividend Summary', 'all': 'Tax Package' };
+  showToast(`Generating ${names[type]}...`, 'info');
+  setTimeout(() => showToast(`${names[type]} downloaded!`, 'success'), 1500);
+}
+
+function previewForm(type) {
+  showToast('Opening preview...', 'info');
+}
+
+function updateTaxYear() {
+  const year = document.getElementById('taxYear').value;
+  showToast(`Loading ${year} tax data...`, 'info');
+}
+</script>
+<%- include('../partials/footer') %>

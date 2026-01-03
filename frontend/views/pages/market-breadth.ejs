@@ -1,0 +1,689 @@
+<%- include('../partials/header', { pageTitle: 'Market Breadth & Internals' }) %>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-white">Market Breadth & Internals</h1>
+        <div class="flex items-center gap-4 text-sm font-mono">
+          <select id="indexSelector" class="bg-bloomberg-elevated border border-bloomberg-border text-white px-3 py-1 rounded text-sm">
+            <option value="SPY">S&P 500 (SPY)</option>
+            <option value="QQQ">NASDAQ 100 (QQQ)</option>
+            <option value="IWM">Russell 2000 (IWM)</option>
+            <option value="DIA">Dow Jones (DIA)</option>
+          </select>
+          <span class="text-slate-400">Last Updated:</span>
+          <span id="lastUpdate" class="text-slate-300"><%= new Date().toLocaleTimeString() %></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <input
+            type="text"
+            id="stockSearch"
+            placeholder="Search stocks..."
+            class="bg-bloomberg-elevated border border-bloomberg-border text-white px-3 py-1.5 rounded text-sm w-48 focus:outline-none focus:border-amber-500"
+          />
+          <button onclick="searchStock()" class="absolute right-1 top-1/2 -translate-y-1/2 text-amber-400 hover:text-amber-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+        <span class="status-live" id="ws-status">UPDATING...</span>
+        <button onclick="refreshAllData()" class="bloomberg-btn bloomberg-btn-ghost" id="refreshBtn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          REFRESH
+        </button>
+      </div>
+    </div>
+
+    <!-- Stock Search Results Modal -->
+    <div id="searchModal" class="fixed inset-0 bg-black/80 hidden z-50" onclick="closeSearchModal()">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden" onclick="event.stopPropagation()">
+          <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+            <h3 class="text-lg font-semibold text-white">Stock Search Results</h3>
+            <button onclick="closeSearchModal()" class="text-slate-400 hover:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div id="searchResults" class="p-4 overflow-y-auto max-h-96">
+            <!-- Results will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market Health Score -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">📊 Market Health Score</span>
+        <span id="healthScoreValue" class="text-2xl font-mono font-bold text-amber-400">--</span>
+      </div>
+      <div class="bloomberg-card-body">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Health Score Gauge -->
+          <div class="col-span-1 flex flex-col items-center justify-center bg-bloomberg-elevated rounded p-4">
+            <div class="health-score-container relative w-32 h-32">
+              <svg class="transform -rotate-90" width="128" height="128">
+                <circle cx="64" cy="64" r="56" fill="none" stroke="#30363d" stroke-width="8"/>
+                <circle id="healthCircle" cx="64" cy="64" r="56" fill="none" stroke="#f59e0b" stroke-width="8"
+                  stroke-dasharray="352" stroke-dashoffset="352" stroke-linecap="round"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div id="healthScore" class="text-3xl font-bold font-mono text-white">50</div>
+                  <div class="text-xs text-slate-500">HEALTH</div>
+                </div>
+              </div>
+            </div>
+            <div id="overallSignal" class="mt-4 px-4 py-2 rounded text-sm font-bold bg-slate-700 text-white">
+              NEUTRAL
+            </div>
+          </div>
+
+          <!-- Component Scores -->
+          <div class="col-span-3 grid grid-cols-3 gap-4">
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="text-xs text-slate-500 uppercase mb-2">Advance/Decline</div>
+              <div id="adSignal" class="text-lg font-bold text-white mb-1">--</div>
+              <div class="text-sm font-mono">
+                <span class="positive tabular-nums" id="advancingCount">--</span>
+                <span class="text-slate-500"> / </span>
+                <span class="negative tabular-nums" id="decliningCount">--</span>
+              </div>
+              <div class="text-xs text-slate-500 mt-1">A/D Line: <span id="adLineValue" class="text-white tabular-nums">--</span></div>
+            </div>
+
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="text-xs text-slate-500 uppercase mb-2">MA Breadth</div>
+              <div id="maSignal" class="text-lg font-bold text-white mb-1">--</div>
+              <div class="text-sm font-mono">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Above 200MA:</span>
+                  <span id="ma200Pct" class="text-white">--%</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">Above 50MA:</span>
+                  <span id="ma50Pct" class="text-white">--%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="text-xs text-slate-500 uppercase mb-2">Highs - Lows</div>
+              <div id="hlSignal" class="text-lg font-bold text-white mb-1">--</div>
+              <div class="text-sm font-mono">
+                <div class="flex justify-between">
+                  <span class="text-emerald-400">52w Highs:</span>
+                  <span id="newHighs" class="text-white">--</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-red-400">52w Lows:</span>
+                  <span id="newLows" class="text-white">--</span>
+                </div>
+              </div>
+              <div class="text-xs text-slate-500 mt-1">HL Index: <span id="hlIndex" class="text-white">--</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid: Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      <!-- A/D Line Chart -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Advance/Decline Line</span>
+          <div class="flex items-center gap-2">
+            <button onclick="changeADTimeframe('1M')" class="timeframe-btn active" data-timeframe="1M">1M</button>
+            <button onclick="changeADTimeframe('3M')" class="timeframe-btn" data-timeframe="3M">3M</button>
+            <button onclick="changeADTimeframe('6M')" class="timeframe-btn" data-timeframe="6M">6M</button>
+            <button onclick="changeADTimeframe('1Y')" class="timeframe-btn" data-timeframe="1Y">1Y</button>
+            <button onclick="changeADTimeframe('5Y')" class="timeframe-btn" data-timeframe="5Y">5Y</button>
+          </div>
+        </div>
+        <div class="bloomberg-card-body">
+          <canvas id="adLineChart" height="250"></canvas>
+        </div>
+      </div>
+
+      <!-- Percent Above MAs -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">% Stocks Above Moving Averages</span>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-slate-400">20-Day MA</span>
+                <span id="ma20Value" class="text-xl font-mono font-bold text-blue-400">--%</span>
+              </div>
+              <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div id="ma20Bar" class="h-full bg-blue-400" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-slate-400">50-Day MA</span>
+                <span id="ma50Value" class="text-xl font-mono font-bold text-green-400">--%</span>
+              </div>
+              <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div id="ma50Bar" class="h-full bg-green-400" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-slate-400">100-Day MA</span>
+                <span id="ma100Value" class="text-xl font-mono font-bold text-purple-400">--%</span>
+              </div>
+              <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div id="ma100Bar" class="h-full bg-purple-400" style="width: 0%"></div>
+              </div>
+            </div>
+            <div class="bg-bloomberg-elevated rounded p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-slate-400">200-Day MA</span>
+                <span id="ma200Value" class="text-xl font-mono font-bold text-amber-400">--%</span>
+              </div>
+              <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div id="ma200Bar" class="h-full bg-amber-400" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Highs - New Lows -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">New Highs - New Lows (52-Week)</span>
+        </div>
+        <div class="bloomberg-card-body">
+          <canvas id="highsLowsChart" height="250"></canvas>
+        </div>
+      </div>
+
+      <!-- Market Statistics -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Market Statistics</span>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-bloomberg-elevated rounded p-3">
+              <div class="text-xs text-slate-500 uppercase">A/D Ratio</div>
+              <div id="adRatio" class="text-2xl font-mono font-bold text-white">--</div>
+            </div>
+            <div class="bg-bloomberg-elevated rounded p-3">
+              <div class="text-xs text-slate-500 uppercase">Net Advances</div>
+              <div id="netAdvances" class="text-2xl font-mono font-bold text-white">--</div>
+            </div>
+            <div class="bg-bloomberg-elevated rounded p-3">
+              <div class="text-xs text-slate-500 uppercase">HL Ratio</div>
+              <div id="hlRatio" class="text-2xl font-mono font-bold text-white">--</div>
+            </div>
+            <div class="bg-bloomberg-elevated rounded p-3">
+              <div class="text-xs text-slate-500 uppercase">Total Issues</div>
+              <div id="totalIssues" class="text-2xl font-mono font-bold text-white">--</div>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-bloomberg-elevated rounded">
+            <div class="text-xs text-slate-500 uppercase mb-2">Provider Status</div>
+            <div id="providerStatus" class="space-y-1 text-xs font-mono">
+              <div>Loading provider status...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<script src="/js/market-breadth-dashboard.js?v=<%= Date.now() %>"></script>
+
+<style>
+/* ==================== ADVANCED UI/UX ENHANCEMENTS ==================== */
+
+/* Advanced Timeframe Buttons with Glassmorphism */
+.timeframe-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.4));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+.timeframe-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.timeframe-btn:hover::before {
+  left: 100%;
+}
+
+.timeframe-btn:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3), 0 4px 6px -2px rgba(245, 158, 11, 0.2);
+}
+
+.timeframe-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: #f59e0b;
+  color: white;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), 0 10px 15px -3px rgba(245, 158, 11, 0.4);
+  transform: translateY(-1px);
+}
+
+.timeframe-btn:active {
+  transform: translateY(0);
+}
+
+/* Advanced Status Indicator with Pulse Animation */
+.status-live {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 1rem;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.1));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 0.5rem;
+  color: #22c55e;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
+}
+
+.status-live::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.75rem;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #22c55e;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-offline {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 1rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 0.5rem;
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+/* Enhanced Bloomberg Cards with Glassmorphism */
+.bloomberg-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.3));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.4),
+    0 4px 6px -2px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bloomberg-card:hover {
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.5),
+    0 10px 10px -5px rgba(0, 0, 0, 0.4),
+    0 0 30px rgba(245, 158, 11, 0.1),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.bloomberg-card-header {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bloomberg-card-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f59e0b;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.bloomberg-card-body {
+  padding: 1rem;
+}
+
+/* Enhanced Index Selector Dropdown */
+#indexSelector {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.6));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+#indexSelector:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+}
+
+#indexSelector:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+#indexSelector option {
+  background: #1e293b;
+  color: white;
+  padding: 0.5rem;
+}
+
+/* Enhanced Stock Search Input */
+#stockSearch {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.6));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: white;
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+#stockSearch:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+#stockSearch:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.7));
+}
+
+#stockSearch::placeholder {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+/* Enhanced Health Score Circle with Gradient Glow */
+#healthCircle {
+  filter: drop-shadow(0 0 10px currentColor);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#healthScore, #healthScoreValue {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.health-score-container {
+  position: relative;
+}
+
+.health-score-container::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.2), transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.health-score-container:hover::before {
+  opacity: 1;
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Enhanced Stat Cards */
+.bg-bloomberg-elevated {
+  background: linear-gradient(135deg, rgba(51, 65, 85, 0.4), rgba(30, 41, 59, 0.3));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bg-bloomberg-elevated:hover {
+  background: linear-gradient(135deg, rgba(51, 65, 85, 0.6), rgba(30, 41, 59, 0.5));
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Enhanced Buttons */
+.bloomberg-btn {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.4));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.bloomberg-btn:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+  transform: translateY(-2px);
+}
+
+.bloomberg-btn:active {
+  transform: translateY(0);
+}
+
+.bloomberg-btn svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bloomberg-btn:hover svg {
+  transform: rotate(180deg);
+}
+
+/* Loading Skeleton Animation */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(51, 65, 85, 0.4) 0%,
+    rgba(71, 85, 105, 0.6) 50%,
+    rgba(51, 65, 85, 0.4) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 0.5rem;
+}
+
+/* Smooth Chart Transitions */
+canvas {
+  transition: opacity 0.3s ease-in-out;
+}
+
+canvas.updating {
+  opacity: 0.5;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header Enhancement */
+.bg-bloomberg-surface {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.5));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal Enhancement */
+#searchModal {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#searchModal > div > div {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.9));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Progress Bars Enhancement */
+.h-2 {
+  position: relative;
+  overflow: hidden;
+}
+
+.h-2 > div {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.h-2 > div::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite linear;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+  .bloomberg-card {
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  }
+
+  .timeframe-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.625rem;
+  }
+}
+</style>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,270 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeBonds = bonds || [];
+const safeTotals = totals || {};
+const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
+const safeTheme = theme || 'dark';
+const totalFaceValue = safeTotals.totalFaceValue || 0;
+const totalPurchasePrice = safeTotals.totalPurchasePrice || 0;
+const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
+%>
+
+<%- include('../partials/header', { pageTitle: 'Bond Portfolio' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-amber-400 tracking-wide">BOND PORTFOLIO</h1>
+      <p class="text-slate-400 text-sm mt-1">FIXED INCOME INVESTMENTS</p>
+    </div>
+    <button onclick="openAddModal()" class="bloomberg-btn bloomberg-btn-primary">
+      <span class="text-lg mr-1">+</span> ADD BOND
+    </button>
+  </div>
+</div>
+
+<!-- KPI Bar -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+  <div class="tufte-stat-card">
+    <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Face Value</p>
+    <p class="text-2xl font-bold text-white tabular-nums"><%= safeFmt.money(totalFaceValue) %></p>
+    <p class="text-xs text-slate-400 mt-1 tabular-nums"><%= safeBonds.length %> bonds</p>
+  </div>
+
+  <div class="tufte-stat-card">
+    <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Purchase Price</p>
+    <p class="text-2xl font-bold text-white tabular-nums"><%= safeFmt.money(totalPurchasePrice) %></p>
+    <% const priceDiff = totalFaceValue - totalPurchasePrice; %>
+    <p class="text-xs <%= priceDiff >= 0 ? 'positive' : 'negative' %> mt-1 tabular-nums">
+      <%= priceDiff >= 0 ? '+' : '' %><%= safeFmt.money(priceDiff) %> at maturity
+    </p>
+  </div>
+
+  <div class="tufte-stat-card">
+    <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Annual Income</p>
+    <p class="text-2xl font-bold positive tabular-nums"><%= safeFmt.money(totalAnnualIncome) %></p>
+    <% const avgYield = totalPurchasePrice > 0 ? (totalAnnualIncome / totalPurchasePrice * 100) : 0; %>
+    <p class="text-xs text-slate-400 mt-1 tabular-nums">Avg Yield: <%= avgYield.toFixed(2) %>%</p>
+  </div>
+
+  <div class="tufte-stat-card">
+    <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Avg Duration</p>
+    <%
+    const now = new Date();
+    const avgDuration = safeBonds.length > 0 ?
+      safeBonds.reduce((sum, b) => {
+        const maturity = new Date(b.maturity_date);
+        return sum + Math.max(0, (maturity - now) / (1000 * 60 * 60 * 24 * 365));
+      }, 0) / safeBonds.length : 0;
+    %>
+    <p class="text-2xl font-bold text-sky-400 tabular-nums"><%= avgDuration.toFixed(1) %> <span class="text-sm">YRS</span></p>
+    <p class="text-xs text-slate-400 mt-1">to maturity</p>
+  </div>
+
+  <div class="tufte-stat-card">
+    <p class="text-slate-500 text-xs uppercase tracking-wider mb-2">Portfolio Yield</p>
+    <p class="text-2xl font-bold positive tabular-nums"><%= avgYield.toFixed(2) %><span class="text-sm">%</span></p>
+    <p class="text-xs text-slate-400 mt-1">weighted average</p>
+  </div>
+</div>
+
+<!-- Holdings Table -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-700">
+    <h3 class="font-semibold text-amber-400 uppercase tracking-wider text-sm">Holdings</h3>
+  </div>
+
+  <% if (safeBonds.length === 0) { %>
+  <div class="p-12 text-center">
+    <h4 class="text-lg font-semibold text-white mb-2">NO BONDS</h4>
+    <p class="text-slate-400 mb-4">Add bonds to track your fixed income portfolio</p>
+    <button onclick="openAddModal()" class="bloomberg-btn bloomberg-btn-primary">ADD BOND</button>
+  </div>
+  <% } else { %>
+
+  <table class="bloomberg-table w-full text-sm">
+    <thead>
+      <tr class="bg-slate-800/50 text-slate-400 text-left border-b border-slate-700">
+        <th class="px-4 py-3 uppercase tracking-wider text-xs">BOND</th>
+        <th class="px-4 py-3 uppercase tracking-wider text-xs">TYPE</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wider text-xs">FACE VALUE</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wider text-xs">COUPON</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wider text-xs">ANNUAL INCOME</th>
+        <th class="px-4 py-3 text-right uppercase tracking-wider text-xs">YTM</th>
+        <th class="px-4 py-3 uppercase tracking-wider text-xs">MATURITY</th>
+        <th class="px-4 py-3 uppercase tracking-wider text-xs text-center">ACTIONS</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% safeBonds.forEach(b => {
+        const safeB = b || {};
+        const annualIncome = (safeB.face_value || 0) * (safeB.coupon_rate || 0) / 100;
+        const ytm = safeB.purchase_price > 0 ? (annualIncome / safeB.purchase_price * 100) : 0;
+        const maturityDate = new Date(safeB.maturity_date);
+        const yearsToMaturity = Math.max(0, (maturityDate - new Date()) / (1000 * 60 * 60 * 24 * 365));
+        const bondType = safeB.bond_type || 'other';
+        const bondName = safeB.name || 'Unknown Bond';
+        const issuer = safeB.issuer || 'Unknown Issuer';
+      %>
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+        <td class="px-4 py-4">
+          <div>
+            <p class="font-medium text-white"><%= bondName %></p>
+            <p class="text-xs text-slate-500 uppercase tracking-wide"><%= issuer %></p>
+          </div>
+        </td>
+
+        <td class="px-4 py-4">
+          <span class="px-2 py-1 rounded text-xs font-semibold uppercase tracking-wide <%=
+            bondType === 'treasury' ? 'bg-emerald-500/20 text-emerald-400' :
+            bondType === 'corporate' ? 'bg-sky-500/20 text-sky-400' :
+            bondType === 'municipal' ? 'bg-purple-500/20 text-purple-400' :
+            'bg-amber-500/20 text-amber-400'
+          %>">
+            <%= bondType.charAt(0).toUpperCase() + bondType.slice(1) %>
+          </span>
+        </td>
+
+        <td class="px-4 py-4 text-right text-white font-medium tabular-nums">
+          <%= safeFmt.money(safeB.face_value || 0) %>
+        </td>
+
+        <td class="px-4 py-4 text-right text-slate-300 tabular-nums">
+          <%= (safeB.coupon_rate || 0).toFixed(2) %>%
+        </td>
+
+        <td class="px-4 py-4 text-right positive tabular-nums">
+          <%= safeFmt.money(annualIncome) %>
+        </td>
+
+        <td class="px-4 py-4 text-right positive tabular-nums">
+          <%= ytm.toFixed(2) %>%
+        </td>
+
+        <td class="px-4 py-4">
+          <p class="text-white tabular-nums text-sm"><%= maturityDate.toLocaleDateString() %></p>
+          <p class="text-xs text-slate-500 tabular-nums"><%= yearsToMaturity.toFixed(1) %> years</p>
+        </td>
+
+        <td class="px-4 py-4 text-center">
+          <button onclick="deleteBond('<%= safeB.id %>')" class="negative hover:text-red-300 transition-colors">
+            Delete
+          </button>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <% } %>
+</div>
+
+</div></div></main>
+
+<!-- Add Bond Modal -->
+<div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bloomberg-card p-6 w-full max-w-lg mx-4">
+    <div class="border-b border-amber-400/30 pb-3 mb-5">
+      <h3 class="text-xl font-bold text-amber-400 uppercase tracking-wide">Add Bond</h3>
+    </div>
+
+    <form id="addForm" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Bond Name</label>
+          <input type="text" name="name" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400" placeholder="US Treasury 10Y" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Issuer</label>
+          <input type="text" name="issuer" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400" placeholder="US Government">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Type</label>
+          <select name="bondType" class="form-input bg-slate-800/50 border-slate-600 text-white focus:border-amber-400">
+            <option value="treasury">Treasury</option>
+            <option value="corporate">Corporate</option>
+            <option value="municipal">Municipal</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Face Value</label>
+          <input type="number" name="faceValue" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400 font-mono" placeholder="10000" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Purchase Price</label>
+          <input type="number" name="purchasePrice" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400 font-mono" placeholder="9800" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Coupon Rate (%)</label>
+          <input type="number" step="0.01" name="couponRate" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400 font-mono" placeholder="4.5" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Maturity Date</label>
+          <input type="date" name="maturityDate" class="form-input bg-slate-800/50 border-slate-600 text-white focus:border-amber-400 font-mono" required>
+        </div>
+      </div>
+    </form>
+
+    <div class="flex gap-3 mt-6 pt-4 border-t border-slate-700">
+      <button onclick="closeAddModal()" class="bloomberg-btn bloomberg-btn-ghost flex-1">CANCEL</button>
+      <button onclick="submitAdd()" class="bloomberg-btn bloomberg-btn-primary flex-1">ADD BOND</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openAddModal() {
+  document.getElementById('addModal').classList.remove('hidden');
+  document.getElementById('addModal').classList.add('flex');
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').classList.add('hidden');
+  document.getElementById('addModal').classList.remove('flex');
+}
+
+async function submitAdd() {
+  const form = document.getElementById('addForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  try {
+    const res = await fetch('/api/bonds', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showToast('Bond added!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to add', 'error');
+    }
+  } catch (e) {
+    showToast('Error adding bond', 'error');
+  }
+  closeAddModal();
+}
+
+async function deleteBond(id) {
+  if (!confirm('Delete this bond?')) return;
+  try {
+    const res = await fetch('/api/bonds/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Deleted!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error deleting', 'error');
+  }
+}
+</script>
+<%- include('../partials/footer') %>

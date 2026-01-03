@@ -1,0 +1,50 @@
+<%
+/**
+ * Sparkline - Word-sized inline chart for showing trends
+ * Usage: include('../partials/finance/sparkline', { data: [1,2,3,4], width: 80, height: 24 })
+ */
+const sparkData = typeof data !== 'undefined' ? data : [];
+const sparkWidth = typeof width !== 'undefined' ? width : 80;
+const sparkHeight = typeof height !== 'undefined' ? height : 24;
+const sparkColor = typeof color !== 'undefined' ? color : '#6b7280';
+const showMinMax = typeof minmax !== 'undefined' ? minmax : true;
+const showEndpoint = typeof endpoint !== 'undefined' ? endpoint : true;
+
+if (sparkData && sparkData.length >= 2) {
+  const min = Math.min(...sparkData);
+  const max = Math.max(...sparkData);
+  const range = max - min || 1;
+  const isPositive = sparkData[sparkData.length - 1] >= sparkData[0];
+
+  const scaleY = (val) => sparkHeight - 3 - ((val - min) / range) * (sparkHeight - 6);
+  const scaleX = (i) => 3 + (i / (sparkData.length - 1)) * (sparkWidth - 6);
+
+  const points = sparkData.map((val, i) => `${scaleX(i).toFixed(1)},${scaleY(val).toFixed(1)}`).join(' ');
+  const minIndex = sparkData.indexOf(min);
+  const maxIndex = sparkData.indexOf(max);
+%>
+<svg width="<%= sparkWidth %>" height="<%= sparkHeight %>" class="inline-block align-middle sparkline-svg">
+  <polyline
+    points="<%= points %>"
+    fill="none"
+    stroke="<%= sparkColor %>"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <% if (showMinMax) { %>
+  <circle cx="<%= scaleX(minIndex).toFixed(1) %>" cy="<%= scaleY(min).toFixed(1) %>" r="2" fill="#dc2626" opacity="0.7" />
+  <circle cx="<%= scaleX(maxIndex).toFixed(1) %>" cy="<%= scaleY(max).toFixed(1) %>" r="2" fill="#2563eb" opacity="0.7" />
+  <% } %>
+  <% if (showEndpoint) { %>
+  <circle
+    cx="<%= scaleX(sparkData.length - 1).toFixed(1) %>"
+    cy="<%= scaleY(sparkData[sparkData.length - 1]).toFixed(1) %>"
+    r="3"
+    fill="<%= isPositive ? '#166534' : '#991b1b' %>"
+  />
+  <% } %>
+</svg>
+<% } else { %>
+<span class="text-gray-400 text-xs">-</span>
+<% } %>

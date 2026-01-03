@@ -1,0 +1,114 @@
+<%- include('../partials/header', { pageTitle: 'Help & Documentation' }) %>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-white mb-2">Help & Documentation</h1>
+        <p class="text-slate-400">Find answers and learn how to use WealthPilot Pro</p>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="bloomberg-card">
+      <div class="border-b border-slate-700 pb-3 mb-6">
+        <h3 class="text-lg font-mono font-semibold text-amber-400">QUICK START</h3>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <% if (overview.quickLinks) { %>
+          <% overview.quickLinks.forEach(link => { %>
+            <a href="<%= link.url %>" class="flex flex-col items-center p-4 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-amber-500 transition-colors">
+              <span class="text-3xl mb-2"><%= link.icon %></span>
+              <span class="text-sm font-mono text-slate-300 text-center"><%= link.label %></span>
+            </a>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="bloomberg-card">
+      <div class="border-b border-slate-700 pb-3 mb-6">
+        <h3 class="text-lg font-mono font-semibold text-amber-400">BROWSE BY CATEGORY</h3>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% if (overview.categories) { %>
+          <% overview.categories.forEach(category => { %>
+            <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-amber-500 transition-colors cursor-pointer"
+                 onclick="window.location='/help?category=<%= category.id %>'">
+              <div class="flex items-start gap-3">
+                <span class="text-2xl"><%= category.icon %></span>
+                <div class="flex-1">
+                  <h4 class="font-mono font-semibold text-white mb-1"><%= category.name %></h4>
+                  <p class="text-sm text-slate-400"><%= category.description %></p>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Featured Articles -->
+    <div class="bloomberg-card">
+      <div class="border-b border-slate-700 pb-3 mb-6">
+        <h3 class="text-lg font-mono font-semibold text-amber-400">FEATURED ARTICLES</h3>
+      </div>
+      <div class="space-y-3">
+        <% if (overview.featuredArticles) { %>
+          <% overview.featuredArticles.forEach(article => { %>
+            <a href="/help/article/<%= article.slug %>" 
+               class="block p-4 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-amber-500 transition-colors">
+              <h4 class="font-mono font-semibold text-white mb-2"><%= article.title %></h4>
+              <p class="text-sm text-slate-400 mb-2"><%= article.summary %></p>
+              <div class="flex gap-2">
+                <% article.tags.forEach(tag => { %>
+                  <span class="px-2 py-1 text-xs font-mono bg-slate-800 text-slate-400 rounded"><%= tag %></span>
+                <% }); %>
+              </div>
+            </a>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- FAQs -->
+    <div class="bloomberg-card">
+      <div class="border-b border-slate-700 pb-3 mb-6">
+        <h3 class="text-lg font-mono font-semibold text-amber-400">FREQUENTLY ASKED QUESTIONS</h3>
+      </div>
+      <div class="space-y-3">
+        <% if (faqs && faqs.length > 0) { %>
+          <% faqs.slice(0, 8).forEach(faq => { %>
+            <div class="border border-slate-700 rounded-lg overflow-hidden">
+              <button class="w-full p-4 text-left bg-slate-900/30 hover:bg-slate-900/50 transition-colors flex items-center justify-between"
+                      onclick="this.nextElementSibling.classList.toggle('hidden')">
+                <span class="font-mono text-white"><%= faq.question %></span>
+                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+              <div class="hidden p-4 bg-slate-900/20 border-t border-slate-700">
+                <p class="text-sm text-slate-300 font-mono"><%= faq.answer %></p>
+              </div>
+            </div>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Contact Support -->
+    <div class="bloomberg-card border-2 border-amber-500/30 bg-amber-500/10">
+      <div class="p-6 text-center">
+        <h3 class="text-lg font-mono font-semibold text-amber-400 mb-2">STILL NEED HELP?</h3>
+        <p class="text-slate-300 font-mono mb-4">Our support team is here to assist you</p>
+        <a href="mailto:support@wealthpilot.com" class="bloomberg-btn bloomberg-btn-primary">
+          CONTACT SUPPORT
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<%- include('../partials/footer') %>

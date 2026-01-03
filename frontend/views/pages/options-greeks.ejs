@@ -1,0 +1,338 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const g = greeks || {};
+const calls = g.calls || [];
+const puts = g.puts || [];
+const quote = g.quote || {};
+const price = quote.price || g.currentPrice || 0;
+const ivRank = g.ivRank || 0;
+const hv = g.historicalVolatility || 0;
+const avgIV = g.avgImpliedVolatility || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(1) + '%'; }
+function formatGreek(v, decimals) { return (v || 0).toFixed(decimals || 3); }
+
+// Sort and filter around ATM
+const allStrikes = [...new Set([...calls.map(c => c.strike), ...puts.map(p => p.strike)])].sort((a, b) => a - b);
+const atmIndex = allStrikes.findIndex(s => s >= price);
+const displayStrikes = allStrikes.slice(Math.max(0, atmIndex - 3), atmIndex + 4);
+
+// Build maps for quick lookup
+const callMap = {};
+calls.forEach(c => { callMap[c.strike] = c; });
+const putMap = {};
+puts.forEach(p => { putMap[p.strike] = p; });
+
+// Calculate aggregate Greeks
+let totalDelta = 0, totalGamma = 0, totalTheta = 0, totalVega = 0;
+calls.forEach(c => {
+  totalDelta += c.delta || 0;
+  totalGamma += c.gamma || 0;
+  totalTheta += c.theta || 0;
+  totalVega += c.vega || 0;
+});
+%>
+<%- include('../partials/header', { pageTitle: 'Options Greeks' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">OPTIONS GREEKS</h1>
+      <p class="text-slate-400 mt-1">Delta, Gamma, Theta, Vega analysis</p>
+    </div>
+    <form method="GET" action="/options-greeks" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">Analyze</button>
+    </form>
+  </div>
+</div>
+
+<% if (!greeks || (!calls.length && !puts.length)) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No Greeks data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if options are available.</p>
+</div>
+<% } else { %>
+
+<!-- Stock Info -->
+<div class="bloomberg-card p-5">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+      <p class="text-slate-400 font-mono">Current: <%= formatPrice(price) %> • IV Rank: <%= formatPct(ivRank) %> • HV: <%= formatPct(hv) %></p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Implied Vol (30D)</p>
+      <p class="text-2xl font-bold text-purple-400 tabular-nums"><%= formatPct(avgIV * 100) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">IV Percentile</p>
+      <p class="text-2xl font-bold text-sky-400 tabular-nums"><%= formatPct(ivRank) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Historical Vol</p>
+      <p class="text-2xl font-bold text-white tabular-nums"><%= formatPct(hv) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">IV vs HV</p>
+      <p class="text-2xl font-bold <%= avgIV * 100 > hv ? 'text-amber-400' : 'text-emerald-400' %>">
+        <%= avgIV * 100 > hv ? 'Premium' : 'Discount' %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Greeks Legend -->
+<div class="bloomberg-card p-4">
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">Δ</div>
+      <div><p class="font-medium">Delta</p><p class="text-xs text-slate-400">Price sensitivity</p></div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold">Γ</div>
+      <div><p class="font-medium">Gamma</p><p class="text-xs text-slate-400">Delta change rate</p></div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">Θ</div>
+      <div><p class="font-medium">Theta</p><p class="text-xs text-slate-400">Time decay/day</p></div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">V</div>
+      <div><p class="font-medium">Vega</p><p class="text-xs text-slate-400">IV sensitivity</p></div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded bg-red-500/20 flex items-center justify-center text-red-400 font-bold">ρ</div>
+      <div><p class="font-medium">Rho</p><p class="text-xs text-slate-400">Rate sensitivity</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Calls Chain -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-slate-700">
+    <h3 class="font-semibold text-emerald-400">CALLS - Greeks Analysis</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800 text-slate-400 text-left">
+          <th class="px-4 py-3 text-center">Strike</th>
+          <th class="px-4 py-3 text-center">Bid</th>
+          <th class="px-4 py-3 text-center">Ask</th>
+          <th class="px-4 py-3 text-center">Delta Δ</th>
+          <th class="px-4 py-3 text-center">Gamma Γ</th>
+          <th class="px-4 py-3 text-center">Theta Θ</th>
+          <th class="px-4 py-3 text-center">Vega V</th>
+          <th class="px-4 py-3 text-center">IV</th>
+        </tr>
+      </thead>
+      <tbody class="text-white">
+        <% displayStrikes.forEach(strike => {
+          const call = callMap[strike] || {};
+          const isITM = strike < price;
+          const isATM = Math.abs(strike - price) < price * 0.02;
+          const rowClass = isATM ? 'bg-sky-500/10' : (isITM ? 'bg-emerald-500/5' : '');
+        %>
+        <tr class="border-b border-slate-700/50 <%= rowClass %>">
+          <td class="px-4 py-3 text-center font-bold font-mono <%= isATM ? 'text-sky-400' : '' %>">
+            $<%= strike %><%= isATM ? ' ATM' : '' %>
+          </td>
+          <td class="px-4 py-3 text-center tabular-nums"><%= call.bid ? formatPrice(call.bid) : '-' %></td>
+          <td class="px-4 py-3 text-center tabular-nums"><%= call.ask ? formatPrice(call.ask) : '-' %></td>
+          <td class="px-4 py-3 text-center text-emerald-400 font-bold tabular-nums"><%= call.delta ? formatGreek(call.delta, 2) : '-' %></td>
+          <td class="px-4 py-3 text-center text-sky-400 tabular-nums"><%= call.gamma ? formatGreek(call.gamma, 3) : '-' %></td>
+          <td class="px-4 py-3 text-center text-red-400 tabular-nums"><%= call.theta ? formatGreek(call.theta, 2) : '-' %></td>
+          <td class="px-4 py-3 text-center text-amber-400 tabular-nums"><%= call.vega ? formatGreek(call.vega, 2) : '-' %></td>
+          <td class="px-4 py-3 text-center tabular-nums"><%= call.impliedVolatility ? formatPct(call.impliedVolatility * 100) : '-' %></td>
+        </tr>
+        <% }); %>
+
+        <% if (displayStrikes.length === 0) { %>
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-slate-400">No call options data available</td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Puts Chain -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-slate-700">
+    <h3 class="font-semibold text-red-400">PUTS - Greeks Analysis</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800 text-slate-400 text-left">
+          <th class="px-4 py-3 text-center">Strike</th>
+          <th class="px-4 py-3 text-center">Bid</th>
+          <th class="px-4 py-3 text-center">Ask</th>
+          <th class="px-4 py-3 text-center">Delta Δ</th>
+          <th class="px-4 py-3 text-center">Gamma Γ</th>
+          <th class="px-4 py-3 text-center">Theta Θ</th>
+          <th class="px-4 py-3 text-center">Vega V</th>
+          <th class="px-4 py-3 text-center">IV</th>
+        </tr>
+      </thead>
+      <tbody class="text-white">
+        <% displayStrikes.forEach(strike => {
+          const put = putMap[strike] || {};
+          const isITM = strike > price;
+          const isATM = Math.abs(strike - price) < price * 0.02;
+          const rowClass = isATM ? 'bg-sky-500/10' : (isITM ? 'bg-red-500/5' : '');
+        %>
+        <tr class="border-b border-slate-700/50 <%= rowClass %>">
+          <td class="px-4 py-3 text-center font-bold font-mono <%= isATM ? 'text-sky-400' : '' %>">
+            $<%= strike %><%= isATM ? ' ATM' : '' %>
+          </td>
+          <td class="px-4 py-3 text-center tabular-nums"><%= put.bid ? formatPrice(put.bid) : '-' %></td>
+          <td class="px-4 py-3 text-center tabular-nums"><%= put.ask ? formatPrice(put.ask) : '-' %></td>
+          <td class="px-4 py-3 text-center text-red-400 font-bold tabular-nums"><%= put.delta ? formatGreek(put.delta, 2) : '-' %></td>
+          <td class="px-4 py-3 text-center text-sky-400 tabular-nums"><%= put.gamma ? formatGreek(put.gamma, 3) : '-' %></td>
+          <td class="px-4 py-3 text-center text-red-400 tabular-nums"><%= put.theta ? formatGreek(put.theta, 2) : '-' %></td>
+          <td class="px-4 py-3 text-center text-amber-400 tabular-nums"><%= put.vega ? formatGreek(put.vega, 2) : '-' %></td>
+          <td class="px-4 py-3 text-center tabular-nums"><%= put.impliedVolatility ? formatPct(put.impliedVolatility * 100) : '-' %></td>
+        </tr>
+        <% }); %>
+
+        <% if (displayStrikes.length === 0) { %>
+        <tr>
+          <td colspan="8" class="px-4 py-8 text-center text-slate-400">No put options data available</td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Greeks Explanation -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-2xl font-bold text-emerald-400">Δ</span>
+      <h4 class="font-bold text-white">Delta</h4>
+    </div>
+    <p class="text-sm text-slate-400">Measures price sensitivity. Call deltas range from 0 to 1, puts from -1 to 0. ATM options have ~0.50 delta.</p>
+    <div class="mt-2 p-2 bg-slate-800 rounded">
+      <p class="text-xs text-slate-400">If delta = 0.50:</p>
+      <p class="text-sm text-white">$1 stock move → $0.50 option change</p>
+    </div>
+  </div>
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-2xl font-bold text-sky-400">Γ</span>
+      <h4 class="font-bold text-white">Gamma</h4>
+    </div>
+    <p class="text-sm text-slate-400">Rate of delta change. Highest at ATM strikes. Important for managing delta risk.</p>
+    <div class="mt-2 p-2 bg-slate-800 rounded">
+      <p class="text-xs text-slate-400">If gamma = 0.05:</p>
+      <p class="text-sm text-white">$1 stock move → delta changes by 0.05</p>
+    </div>
+  </div>
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-2xl font-bold text-purple-400">Θ</span>
+      <h4 class="font-bold text-white">Theta</h4>
+    </div>
+    <p class="text-sm text-slate-400">Time decay per day. Always negative for long options. Accelerates near expiration.</p>
+    <div class="mt-2 p-2 bg-slate-800 rounded">
+      <p class="text-xs text-slate-400">If theta = -0.10:</p>
+      <p class="text-sm text-white">Option loses $0.10 per day</p>
+    </div>
+  </div>
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-2xl font-bold text-amber-400">V</span>
+      <h4 class="font-bold text-white">Vega</h4>
+    </div>
+    <p class="text-sm text-slate-400">IV sensitivity. Measures option value change for 1% IV change.</p>
+    <div class="mt-2 p-2 bg-slate-800 rounded">
+      <p class="text-xs text-slate-400">If vega = 0.15:</p>
+      <p class="text-sm text-white">1% IV change → $0.15 option change</p>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Delta by Strike</h3>
+    <div class="h-48"><canvas id="deltaChart"></canvas></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Implied Volatility Smile</h3>
+    <div class="h-48"><canvas id="ivChart"></canvas></div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (greeks && (calls.length || puts.length)) { %>
+const strikes = <%- JSON.stringify(displayStrikes) %>;
+const callDeltas = strikes.map(s => {
+  const call = <%- JSON.stringify(callMap) %>[s];
+  return call ? call.delta || 0 : 0;
+});
+const putDeltas = strikes.map(s => {
+  const put = <%- JSON.stringify(putMap) %>[s];
+  return put ? put.delta || 0 : 0;
+});
+const ivData = strikes.map(s => {
+  const call = <%- JSON.stringify(callMap) %>[s];
+  return call ? (call.impliedVolatility || 0) * 100 : 0;
+});
+
+new Chart(document.getElementById('deltaChart'), {
+  type: 'line',
+  data: {
+    labels: strikes.map(s => '$' + s),
+    datasets: [
+      { label: 'Call Delta', data: callDeltas, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+      { label: 'Put Delta', data: putDeltas, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3 }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
+    scales: {
+      y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8' } },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('ivChart'), {
+  type: 'line',
+  data: {
+    labels: strikes.map(s => '$' + s),
+    datasets: [{ label: 'IV %', data: ivData, borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.3 }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8', callback: v => v.toFixed(0) + '%' }
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

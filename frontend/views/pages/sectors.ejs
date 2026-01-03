@@ -1,0 +1,371 @@
+<%
+  // Safe defaults for undefined variables
+  const safeSectors = sectors || {};
+  const sectorsList = safeSectors.sectors || [];
+  const concentration = safeSectors.concentration || {};
+  const safeTheme = theme || 'dark';
+  const safeFmt = fmt || { compact: (val) => val };
+%>
+<%- include('../partials/header', { pageTitle: 'Sector Analysis' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="bloomberg-header-title">SECTOR ANALYSIS</div>
+      <div class="text-xs text-slate-400">Portfolio allocation and sector performance breakdown</div>
+    </div>
+    <button onclick="refreshSectors()" class="bloomberg-btn bloomberg-btn-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      REFRESH
+    </button>
+  </div>
+</div>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <% if (sectorsList.length > 0) { %>
+      <%
+        const totalSectors = sectorsList.length;
+        const largestSector = sectorsList[0] || { sector: 'N/A', weight: 0 };
+        const bestPerformer = sectorsList.reduce((a, b) => (a.performance || 0) > (b.performance || 0) ? a : b, {sector: 'N/A', performance: 0});
+        const worstPerformer = sectorsList.reduce((a, b) => (a.performance || 0) < (b.performance || 0) ? a : b, {sector: 'N/A', performance: 0});
+        const avgPerformance = sectorsList.reduce((sum, s) => sum + (s.performance || 0), 0) / (sectorsList.length || 1);
+        const hhiScore = concentration.hhi || 0;
+      %>
+
+      <!-- KPI Summary Bar -->
+      <div class="bloomberg-kpi-bar">
+        <div class="bloomberg-kpi-item">
+          <div class="bloomberg-kpi-label">TOTAL SECTORS</div>
+          <div class="bloomberg-kpi-value"><%= totalSectors %></div>
+        </div>
+
+        <div class="bloomberg-kpi-item">
+          <div class="bloomberg-kpi-label">LARGEST SECTOR</div>
+          <div class="bloomberg-kpi-value text-sky-400"><%= largestSector.sector %></div>
+          <div class="bloomberg-kpi-sublabel font-mono"><%= (largestSector.weight || 0).toFixed(1) %>%</div>
+        </div>
+
+        <div class="bloomberg-kpi-item">
+          <div class="bloomberg-kpi-label">BEST PERFORMER</div>
+          <div class="bloomberg-kpi-value text-emerald-400"><%= bestPerformer.sector %></div>
+          <div class="bloomberg-kpi-sublabel font-mono text-emerald-400">+<%= (bestPerformer.performance || 0).toFixed(2) %>%</div>
+        </div>
+
+        <div class="bloomberg-kpi-item">
+          <div class="bloomberg-kpi-label">WORST PERFORMER</div>
+          <div class="bloomberg-kpi-value text-red-400"><%= worstPerformer.sector %></div>
+          <div class="bloomberg-kpi-sublabel font-mono text-red-400"><%= (worstPerformer.performance || 0) >= 0 ? '+' : '' %><%= (worstPerformer.performance || 0).toFixed(2) %>%</div>
+        </div>
+
+        <div class="bloomberg-kpi-item">
+          <div class="bloomberg-kpi-label">AVG PERFORMANCE</div>
+          <div class="bloomberg-kpi-value font-mono <%= avgPerformance >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+            <%= avgPerformance >= 0 ? '+' : '' %><%= avgPerformance.toFixed(2) %>%
+          </div>
+        </div>
+
+        <div class="bloomberg-kpi-item">
+          <div class="bloomberg-kpi-label">CONCENTRATION</div>
+          <div class="bloomberg-kpi-value font-mono <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-amber-400' : 'text-emerald-400' %>">
+            <%= hhiScore ? hhiScore.toFixed(0) : 'N/A' %>
+          </div>
+          <div class="bloomberg-kpi-sublabel <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-amber-400' : 'text-emerald-400' %>">
+            <%= hhiScore > 2500 ? 'High' : hhiScore > 1500 ? 'Moderate' : 'Diversified' %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Sector Allocation Chart -->
+        <div class="bloomberg-card">
+          <div class="bloomberg-card-header">
+            <h3 class="bloomberg-card-title">SECTOR ALLOCATION</h3>
+          </div>
+          <div class="bloomberg-card-body">
+            <div class="h-72">
+              <canvas id="sectorPieChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sector Performance Chart -->
+        <div class="bloomberg-card">
+          <div class="bloomberg-card-header">
+            <h3 class="bloomberg-card-title">SECTOR PERFORMANCE</h3>
+          </div>
+          <div class="bloomberg-card-body">
+            <div class="h-72">
+              <canvas id="sectorBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Sector Table -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <h3 class="bloomberg-card-title">SECTOR BREAKDOWN</h3>
+        </div>
+        <div class="bloomberg-card-body p-0">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-700 text-slate-400 text-left">
+                  <th class="px-6 py-3 font-semibold uppercase text-xs">Sector</th>
+                  <th class="px-6 py-3 font-semibold uppercase text-xs text-right">Weight</th>
+                  <th class="px-6 py-3 font-semibold uppercase text-xs text-right">Value</th>
+                  <th class="px-6 py-3 font-semibold uppercase text-xs text-right">Performance</th>
+                  <th class="px-6 py-3 font-semibold uppercase text-xs text-right">Holdings</th>
+                  <th class="px-6 py-3 font-semibold uppercase text-xs">Allocation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% sectorsList.forEach((sector, idx) => {
+                  const perfClass = (sector.performance || 0) >= 10 ? 'bg-emerald-900/10' :
+                                   (sector.performance || 0) >= 5 ? 'bg-emerald-900/5' :
+                                   (sector.performance || 0) >= 0 ? '' :
+                                   (sector.performance || 0) >= -5 ? 'bg-orange-900/5' : 'bg-red-900/10';
+                  const isLarge = (sector.weight || 0) > 15;
+                %>
+                <tr class="border-b border-slate-800/50 hover:bg-slate-800/50 transition-all duration-200 <%= perfClass %> group">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: <%= ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6'][idx % 11] %>"></span>
+                      <span class="text-white font-medium"><%= sector.sector %></span>
+                      <% if (isLarge) { %>
+                        <span class="text-xs px-2 py-0.5 bg-slate-700/50 text-slate-300 rounded">Major</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <span class="text-white font-semibold font-mono"><%= (sector.weight || 0).toFixed(1) %>%</span>
+                  </td>
+                  <td class="px-6 py-4 text-right text-slate-200 font-mono">
+                    <%= safeFmt.compact(sector.value || 0) %>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <span class="font-semibold font-mono <%= (sector.performance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                      <%= (sector.performance || 0) >= 0 ? '+' : '' %><%= (sector.performance || 0).toFixed(2) %>%
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <span class="text-slate-300 font-mono">
+                      <%= sector.holdings || 0 %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 w-40">
+                    <div class="relative">
+                      <div class="h-2 rounded-full bg-slate-700/50 overflow-hidden">
+                        <div class="h-2 rounded-full transition-all duration-500"
+                             style="width: <%= Math.min(sector.weight || 0, 100) %>%;
+                                    background-color: <%= ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6'][idx % 11] %>">
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Holdings by Sector -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <h3 class="bloomberg-card-title">TOP HOLDINGS BY SECTOR</h3>
+        </div>
+        <div class="bloomberg-card-body">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <% sectorsList.slice(0, 6).forEach((sector, idx) => { %>
+            <div class="p-4 rounded-lg bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all duration-200">
+              <div class="flex items-center justify-between mb-3 pb-3 border-b border-slate-700">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full" style="background-color: <%= ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'][idx % 6] %>"></span>
+                  <h4 class="font-semibold text-white uppercase text-sm"><%= sector.sector %></h4>
+                </div>
+                <span class="text-xs text-slate-400 font-mono"><%= (sector.weight || 0).toFixed(1) %>%</span>
+              </div>
+              <% if (sector.topHoldings && sector.topHoldings.length > 0) { %>
+              <div class="space-y-2">
+                <% sector.topHoldings.slice(0, 3).forEach((holding, hIdx) => { %>
+                <div class="flex justify-between items-center text-sm hover:bg-slate-700/30 px-2 py-1 rounded transition-colors">
+                  <span class="text-slate-300 font-mono"><%= holding.symbol %></span>
+                  <span class="text-white font-mono font-semibold"><%= (holding.weight || 0).toFixed(2) %>%</span>
+                </div>
+                <% }) %>
+              </div>
+              <% if (sector.holdings > 3) { %>
+              <div class="mt-2 pt-2 border-t border-slate-700/50">
+                <span class="text-xs text-slate-500">+<%= sector.holdings - 3 %> more</span>
+              </div>
+              <% } %>
+              <% } else { %>
+              <div class="py-4 text-center">
+                <p class="text-sm text-slate-500">No holdings data</p>
+              </div>
+              <% } %>
+            </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+
+    <% } else { %>
+      <!-- No Data State -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-body p-12 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
+            <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white mb-2 uppercase">NO SECTOR DATA</h3>
+          <p class="text-slate-400 mb-4">Add holdings to your portfolio to see sector analysis</p>
+          <a href="/portfolios" class="bloomberg-btn">ADD HOLDINGS</a>
+        </div>
+      </div>
+    <% } %>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function refreshSectors() {
+  showToast('Refreshing sector data...', 'info');
+  setTimeout(() => location.reload(), 500);
+}
+
+<% if (sectorsList.length > 0) { %>
+const sectorData = <%- JSON.stringify(sectorsList) %>;
+const sectorColors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6'];
+
+// Sector Allocation Pie Chart
+const pieColors = [
+  '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+  '#14b8a6', '#a855f7', '#22c55e', '#eab308', '#f43f5e',
+  '#d946ef', '#0284c7', '#65a30d', '#ea580c', '#4f46e5'
+];
+
+new Chart(document.getElementById('sectorPieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: sectorData.map(s => s.sector),
+    datasets: [{
+      data: sectorData.map(s => s.weight || 0),
+      backgroundColor: pieColors.slice(0, sectorData.length),
+      borderColor: '#1e293b',
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          color: '#cbd5e1',
+          padding: 12,
+          font: { size: 11, family: 'monospace' },
+          generateLabels: function(chart) {
+            const data = chart.data;
+            return data.labels.map((label, i) => ({
+              text: label + ' (' + (data.datasets[0].data[i] || 0).toFixed(1) + '%)',
+              fillStyle: data.datasets[0].backgroundColor[i],
+              hidden: false,
+              index: i
+            }));
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: '#1e293b',
+        titleColor: '#f1f5f9',
+        bodyColor: '#cbd5e1',
+        borderColor: '#334155',
+        borderWidth: 1,
+        padding: 12,
+        bodyFont: { family: 'monospace' },
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed || 0;
+            return context.label + ': ' + value.toFixed(1) + '%';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Sector Performance Bar Chart
+new Chart(document.getElementById('sectorBarChart'), {
+  type: 'bar',
+  data: {
+    labels: sectorData.map(s => s.sector),
+    datasets: [{
+      label: 'Performance',
+      data: sectorData.map(s => s.performance || 0),
+      backgroundColor: sectorData.map(s => (s.performance || 0) >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+      borderColor: sectorData.map(s => (s.performance || 0) >= 0 ? '#10b981' : '#ef4444'),
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1e293b',
+        titleColor: '#f1f5f9',
+        bodyColor: '#cbd5e1',
+        borderColor: '#334155',
+        borderWidth: 1,
+        padding: 12,
+        bodyFont: { family: 'monospace' },
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed.x;
+            return 'Performance: ' + (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: {
+          color: '#334155',
+          drawBorder: false
+        },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: 'monospace' },
+          callback: v => (v >= 0 ? '+' : '') + v + '%'
+        }
+      },
+      y: {
+        grid: { display: false },
+        ticks: {
+          color: '#e2e8f0',
+          font: { family: 'monospace', size: 10 }
+        }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

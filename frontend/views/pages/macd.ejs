@@ -1,0 +1,271 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const macdData = typeof technicals !== 'undefined' && technicals ? technicals : {};
+// API returns macd as object with macd, signal, histogram, trend, series
+const macdObj = macdData.macd || {};
+const macd = typeof macdObj === 'object' ? (macdObj.macd || 0) : (macdObj || 0);
+const signal = typeof macdObj === 'object' ? (macdObj.signal || 0) : 0;
+const histogram = typeof macdObj === 'object' ? (macdObj.histogram || 0) : 0;
+const price = macdData.price?.current || macdData.price || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatNum(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(4); }
+
+// MACD interpretation
+let macdSignal = 'NEUTRAL';
+let signalColor = 'amber';
+if (macd > signal && histogram > 0) {
+  macdSignal = 'BULLISH';
+  signalColor = 'emerald';
+} else if (macd < signal && histogram < 0) {
+  macdSignal = 'BEARISH';
+  signalColor = 'red';
+}
+
+// Crossover detection
+const bullishCross = macd > signal && histogram > 0;
+const bearishCross = macd < signal && histogram < 0;
+%>
+<%- include('../partials/header', { pageTitle: 'MACD Indicator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">MACD INDICATOR</h1>
+      <p class="text-slate-400 mt-1">Moving Average Convergence Divergence</p>
+    </div>
+    <form method="GET" action="/macd" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<!-- MACD Overview -->
+<div class="tufte-stat-card">
+  <div class="flex items-center gap-6 flex-wrap">
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white"><%= symbol %></h2>
+      <p class="text-slate-600 dark:text-slate-400">Current Price: <span class="font-mono tabular-nums text-slate-900 dark:text-white"><%= formatPrice(price) %></span></p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm text-slate-600 dark:text-slate-400">Signal</p>
+      <p class="text-xl font-bold <%= macdSignal === 'BULLISH' ? 'positive' : macdSignal === 'BEARISH' ? 'negative' : 'text-slate-900 dark:text-white' %>"><%= macdSignal %></p>
+    </div>
+  </div>
+</div>
+
+<!-- MACD Values -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="tufte-stat-card">
+    <div class="mb-3">
+      <p class="text-sm text-slate-600 dark:text-slate-400">MACD Line</p>
+      <p class="text-2xl font-mono tabular-nums font-bold <%= macd >= 0 ? 'positive' : 'negative' %>"><%= formatNum(macd) %></p>
+    </div>
+    <p class="text-xs text-slate-600 dark:text-slate-400">12-period EMA minus 26-period EMA</p>
+  </div>
+
+  <div class="tufte-stat-card">
+    <div class="mb-3">
+      <p class="text-sm text-slate-600 dark:text-slate-400">Signal Line</p>
+      <p class="text-2xl font-mono tabular-nums font-bold text-slate-900 dark:text-white"><%= formatNum(signal) %></p>
+    </div>
+    <p class="text-xs text-slate-600 dark:text-slate-400">9-period EMA of MACD line</p>
+  </div>
+
+  <div class="tufte-stat-card">
+    <div class="mb-3">
+      <p class="text-sm text-slate-600 dark:text-slate-400">Histogram</p>
+      <p class="text-2xl font-mono tabular-nums font-bold <%= histogram >= 0 ? 'positive' : 'negative' %>"><%= formatNum(histogram) %></p>
+    </div>
+    <p class="text-xs text-slate-600 dark:text-slate-400">MACD minus Signal line</p>
+  </div>
+</div>
+
+<!-- Crossover Status -->
+<div class="tufte-stat-card">
+  <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Crossover Analysis</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 border-l-2 <%= bullishCross ? 'border-emerald-600 dark:border-emerald-400' : 'border-slate-300 dark:border-slate-600' %>">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-bold <%= bullishCross ? 'positive' : 'text-slate-600 dark:text-slate-400' %>">Bullish Cross</p>
+          <p class="text-xs text-slate-600 dark:text-slate-400">MACD crosses above Signal line</p>
+        </div>
+        <span class="text-sm font-bold <%= bullishCross ? 'positive' : 'text-slate-600 dark:text-slate-400' %>">
+          <%= bullishCross ? 'ACTIVE' : 'INACTIVE' %>
+        </span>
+      </div>
+    </div>
+
+    <div class="p-4 border-l-2 <%= bearishCross ? 'border-red-600 dark:border-red-400' : 'border-slate-300 dark:border-slate-600' %>">
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-bold <%= bearishCross ? 'negative' : 'text-slate-600 dark:text-slate-400' %>">Bearish Cross</p>
+          <p class="text-xs text-slate-600 dark:text-slate-400">MACD crosses below Signal line</p>
+        </div>
+        <span class="text-sm font-bold <%= bearishCross ? 'negative' : 'text-slate-600 dark:text-slate-400' %>">
+          <%= bearishCross ? 'ACTIVE' : 'INACTIVE' %>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MACD Chart -->
+<div class="tufte-stat-card">
+  <h3 class="font-semibold text-slate-900 dark:text-white mb-4">MACD Chart</h3>
+  <div id="tvMacdChart" class="h-80"></div>
+</div>
+
+<!-- Trading Signals -->
+<div class="tufte-stat-card">
+  <h3 class="font-semibold text-slate-900 dark:text-white mb-4">MACD Trading Signals</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 border border-slate-200 dark:border-slate-700">
+      <h4 class="font-bold text-slate-900 dark:text-white mb-2">Buy Signals</h4>
+      <ul class="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+        <li>MACD line crosses above signal line</li>
+        <li>Histogram turns positive</li>
+        <li>MACD crosses above zero line</li>
+        <li>Bullish divergence with price</li>
+      </ul>
+    </div>
+    <div class="p-4 border border-slate-200 dark:border-slate-700">
+      <h4 class="font-bold text-slate-900 dark:text-white mb-2">Sell Signals</h4>
+      <ul class="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+        <li>MACD line crosses below signal line</li>
+        <li>Histogram turns negative</li>
+        <li>MACD crosses below zero line</li>
+        <li>Bearish divergence with price</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div></div></main>
+
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
+<script>
+// MACD Chart with TradingView - fetch data client-side
+const symbol = '<%= symbol || "AAPL" %>';
+const container = document.getElementById('tvMacdChart');
+
+async function loadMacdChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
+  try {
+    // Fetch technicals data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/technicals/${symbol}`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const data = await response.json();
+    const macdSeries = data.macd?.series || {};
+    const dates = data.dates || [];
+
+    if (!macdSeries.macd || macdSeries.macd.length === 0) throw new Error('No MACD data');
+
+    // Clear loading message
+    container.innerHTML = '';
+
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: 320,
+      layout: {
+        background: { type: 'solid', color: 'transparent' },
+        textColor: '#94a3b8',
+      },
+      grid: {
+        vertLines: { color: '#1e293b' },
+        horzLines: { color: '#1e293b' },
+      },
+      rightPriceScale: {
+        borderColor: '#334155',
+      },
+      timeScale: {
+        borderColor: '#334155',
+        timeVisible: true,
+      },
+    });
+
+    // Add histogram series
+    const histogramChart = chart.addHistogramSeries({
+      priceScaleId: 'right',
+    });
+
+    // Add MACD line series
+    const macdLine = chart.addLineSeries({
+      color: '#0ea5e9',
+      lineWidth: 2,
+      priceScaleId: 'right',
+    });
+
+    // Add Signal line series
+    const signalLine = chart.addLineSeries({
+      color: '#f59e0b',
+      lineWidth: 2,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+      priceScaleId: 'right',
+    });
+
+    // Build data with actual dates
+    const macdData = macdSeries.macd.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (macdSeries.macd.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
+
+    const signalData = macdSeries.signal.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (macdSeries.signal.length - i) * 86400000).toISOString().split('T')[0],
+      value: value
+    }));
+
+    const histogramData = macdSeries.histogram.map((value, i) => ({
+      time: dates[i] || new Date(Date.now() - (macdSeries.histogram.length - i) * 86400000).toISOString().split('T')[0],
+      value: value,
+      color: value >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+    }));
+
+    histogramChart.setData(histogramData);
+    macdLine.setData(macdData);
+    signalLine.setData(signalData);
+
+    // Add zero line
+    macdLine.createPriceLine({
+      price: 0,
+      color: '#64748b',
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dotted,
+      axisLabelVisible: false,
+    });
+
+    chart.timeScale().fitContent();
+
+    // Handle resize
+    new ResizeObserver(entries => {
+      chart.applyOptions({ width: entries[0].contentRect.width });
+    }).observe(container);
+
+  } catch (error) {
+    console.error('TradingView MACD chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
+  }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMacdChart);
+} else {
+  loadMacdChart();
+}
+</script>
+<%- include('../partials/footer') %>

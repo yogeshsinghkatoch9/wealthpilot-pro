@@ -1,0 +1,282 @@
+<%
+// Safe defaults for all potentially undefined variables
+const sym = symbol || 'AAPL';
+const tab = activeTab || 'chart';
+const q = quote || {};
+const prof = profile || {};
+const fundamentals = typeof fundamentalData !== 'undefined' ? fundamentalData : {};
+const ratings = typeof analystRatings !== 'undefined' ? analystRatings : {};
+const insiders = typeof insiderData !== 'undefined' ? insiderData : [];
+const institutional = typeof institutionalHoldings !== 'undefined' ? institutionalHoldings : [];
+const news = typeof newsData !== 'undefined' ? newsData : [];
+const tech = typeof technicals !== 'undefined' ? technicals : {};
+const moneyFlow = typeof moneyFlowData !== 'undefined' ? moneyFlowData : {};
+const tradeOverview = typeof tradeData !== 'undefined' ? tradeData : {};
+const priceData = typeof priceHistory !== 'undefined' ? priceHistory : [];
+
+// Formatter helper
+const format = fmt || {
+  money: (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  pct: (v) => { const safeV = v || 0; return (safeV >= 0 ? '+' : '') + safeV.toFixed(2) + '%'; },
+  number: (v) => (v || 0).toLocaleString()
+};
+%>
+<%- include('../partials/header', { pageTitle: pageTitle || 'Research Center' }) %>
+
+<main class="p-4 md:p-6 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white">Research Center</h1>
+        <p class="text-slate-400 text-sm">Comprehensive stock analysis for <%= sym %></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <input type="text" id="symbolSearch" value="<%= sym %>" placeholder="Enter symbol..."
+          class="w-40 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <button onclick="searchSymbol()" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Header -->
+  <div class="glass-card-elevated p-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center">
+          <span class="text-2xl font-bold text-white"><%= sym.substring(0, 2) %></span>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-white"><%= prof.companyName || sym %></h2>
+          <p class="text-slate-400 text-sm"><%= prof.exchange || 'NASDAQ' %> | <%= prof.sector || 'Technology' %></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="text-right">
+          <div class="text-2xl font-bold text-white"><%= format.money(q.price || q.c || 0) %></div>
+          <div class="<%= (q.changePercent || q.dp || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+            <%= format.pct(q.changePercent || q.dp || 0) %> Today
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="addToWatchlist('<%= sym %>')" class="btn-glass">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+            </svg>
+          </button>
+          <a href="/stock/<%= sym %>" class="btn-primary">Full Analysis</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex overflow-x-auto gap-1 p-1 bg-slate-800/50 rounded-lg">
+    <a href="/research-center?symbol=<%= sym %>&tab=chart" class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors <%= tab === 'chart' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700' %>">Chart</a>
+    <a href="/research-center?symbol=<%= sym %>&tab=fundamentals" class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors <%= tab === 'fundamentals' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700' %>">Fundamentals</a>
+    <a href="/research-center?symbol=<%= sym %>&tab=technicals" class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors <%= tab === 'technicals' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700' %>">Technicals</a>
+    <a href="/research-center?symbol=<%= sym %>&tab=analysts" class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors <%= tab === 'analysts' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700' %>">Analysts</a>
+    <a href="/research-center?symbol=<%= sym %>&tab=ownership" class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors <%= tab === 'ownership' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700' %>">Ownership</a>
+    <a href="/research-center?symbol=<%= sym %>&tab=news" class="px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors <%= tab === 'news' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-700' %>">News</a>
+  </div>
+
+  <!-- Tab Content -->
+  <% if (tab === 'chart') { %>
+  <!-- Chart Tab -->
+  <div class="glass-card-elevated p-6">
+    <div class="h-96 flex items-center justify-center" id="chartContainer">
+      <div class="text-center">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center">
+          <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+          </svg>
+        </div>
+        <p class="text-slate-400">Loading chart data...</p>
+      </div>
+    </div>
+  </div>
+
+  <% } else if (tab === 'fundamentals') { %>
+  <!-- Fundamentals Tab -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Market Cap</div>
+      <div class="text-lg font-bold text-white"><%= format.money(prof.mktCap || fundamentals.marketCap || 0) %></div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">P/E Ratio</div>
+      <div class="text-lg font-bold text-white"><%= (fundamentals.pe || prof.pe || 0).toFixed(2) %></div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">EPS (TTM)</div>
+      <div class="text-lg font-bold text-white"><%= format.money(fundamentals.eps || 0) %></div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">Dividend Yield</div>
+      <div class="text-lg font-bold text-emerald-400"><%= format.pct(fundamentals.dividendYield || 0) %></div>
+    </div>
+  </div>
+
+  <% } else if (tab === 'technicals') { %>
+  <!-- Technicals Tab -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">RSI (14)</div>
+      <div class="text-lg font-bold <%= (tech.rsi || 50) > 70 ? 'text-red-400' : (tech.rsi || 50) < 30 ? 'text-emerald-400' : 'text-white' %>">
+        <%= (tech.rsi || 50).toFixed(1) %>
+      </div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">50-Day SMA</div>
+      <div class="text-lg font-bold text-white"><%= format.money(tech.sma50 || 0) %></div>
+    </div>
+    <div class="glass-card p-4">
+      <div class="text-slate-400 text-xs uppercase tracking-wider mb-1">200-Day SMA</div>
+      <div class="text-lg font-bold text-white"><%= format.money(tech.sma200 || 0) %></div>
+    </div>
+  </div>
+
+  <% } else if (tab === 'analysts') { %>
+  <!-- Analysts Tab -->
+  <div class="glass-card-elevated p-6">
+    <h3 class="text-white font-semibold mb-4">Analyst Ratings</h3>
+    <div class="grid grid-cols-5 gap-4 mb-6">
+      <div class="text-center p-3 rounded-lg bg-emerald-500/20">
+        <div class="text-2xl font-bold text-emerald-400"><%= ratings.strongBuy || 0 %></div>
+        <div class="text-xs text-slate-400">Strong Buy</div>
+      </div>
+      <div class="text-center p-3 rounded-lg bg-emerald-500/10">
+        <div class="text-2xl font-bold text-emerald-300"><%= ratings.buy || 0 %></div>
+        <div class="text-xs text-slate-400">Buy</div>
+      </div>
+      <div class="text-center p-3 rounded-lg bg-amber-500/20">
+        <div class="text-2xl font-bold text-amber-400"><%= ratings.hold || 0 %></div>
+        <div class="text-xs text-slate-400">Hold</div>
+      </div>
+      <div class="text-center p-3 rounded-lg bg-red-500/10">
+        <div class="text-2xl font-bold text-red-300"><%= ratings.sell || 0 %></div>
+        <div class="text-xs text-slate-400">Sell</div>
+      </div>
+      <div class="text-center p-3 rounded-lg bg-red-500/20">
+        <div class="text-2xl font-bold text-red-400"><%= ratings.strongSell || 0 %></div>
+        <div class="text-xs text-slate-400">Strong Sell</div>
+      </div>
+    </div>
+    <div class="text-center">
+      <div class="text-slate-400">Target Price</div>
+      <div class="text-2xl font-bold text-white"><%= format.money(ratings.targetPrice || 0) %></div>
+    </div>
+  </div>
+
+  <% } else if (tab === 'ownership') { %>
+  <!-- Ownership Tab -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="glass-card-elevated p-6">
+      <h3 class="text-white font-semibold mb-4">Institutional Holdings</h3>
+      <% if (institutional.length === 0) { %>
+      <p class="text-slate-400 text-center py-4">No institutional data available</p>
+      <% } else { %>
+      <div class="space-y-3">
+        <% institutional.slice(0, 5).forEach(holder => { %>
+        <div class="flex items-center justify-between p-2 rounded bg-slate-800/50">
+          <span class="text-white text-sm"><%= holder.holder %></span>
+          <span class="text-slate-400 text-sm"><%= format.number(holder.shares) %> shares</span>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+    <div class="glass-card-elevated p-6">
+      <h3 class="text-white font-semibold mb-4">Insider Transactions</h3>
+      <% if (insiders.length === 0) { %>
+      <p class="text-slate-400 text-center py-4">No recent insider transactions</p>
+      <% } else { %>
+      <div class="space-y-3">
+        <% insiders.slice(0, 5).forEach(insider => { %>
+        <div class="flex items-center justify-between p-2 rounded bg-slate-800/50">
+          <div>
+            <div class="text-white text-sm"><%= insider.name %></div>
+            <div class="text-slate-500 text-xs"><%= insider.title %></div>
+          </div>
+          <span class="<%= insider.transactionType === 'Buy' ? 'text-emerald-400' : 'text-red-400' %> text-sm">
+            <%= insider.transactionType %>
+          </span>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <% } else if (tab === 'news') { %>
+  <!-- News Tab -->
+  <div class="glass-card-elevated">
+    <div class="p-4 border-b border-slate-700/50">
+      <h3 class="text-white font-semibold">Latest News</h3>
+    </div>
+    <div class="divide-y divide-slate-700/50">
+      <% if (news.length === 0) { %>
+      <div class="p-6 text-center text-slate-400">No recent news available</div>
+      <% } else { %>
+      <% news.slice(0, 10).forEach(item => { %>
+      <a href="<%= item.url %>" target="_blank" class="block p-4 hover:bg-slate-800/50 transition-colors">
+        <h4 class="text-white font-medium mb-1"><%= item.headline || item.title %></h4>
+        <p class="text-slate-400 text-sm line-clamp-2"><%= item.summary || item.description %></p>
+        <div class="flex items-center gap-2 mt-2 text-xs text-slate-500">
+          <span><%= item.source %></span>
+          <span>&bull;</span>
+          <span><%= new Date(item.datetime || item.publishedDate).toLocaleDateString() %></span>
+        </div>
+      </a>
+      <% }); %>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+</main>
+
+<script>
+const token = localStorage.getItem('token');
+
+function searchSymbol() {
+  const symbol = document.getElementById('symbolSearch').value.toUpperCase();
+  if (symbol) {
+    window.location.href = `/research-center?symbol=${symbol}`;
+  }
+}
+
+document.getElementById('symbolSearch').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') searchSymbol();
+});
+
+async function addToWatchlist(symbol) {
+  try {
+    const response = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ symbol })
+    });
+    if (response.ok) {
+      alert(`${symbol} added to watchlist!`);
+    }
+  } catch (error) {
+    console.error('Error adding to watchlist:', error);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

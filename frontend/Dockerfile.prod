@@ -1,0 +1,83 @@
+##############################################
+# WealthPilot Pro - Frontend Production Dockerfile
+# Multi-stage build for optimized production image
+##############################################
+
+# ==========================================
+# Stage 1: Dependencies
+# ==========================================
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies
+RUN npm ci && npm cache clean --force
+
+# ==========================================
+# Stage 2: Builder
+# ==========================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package*.json ./
+
+# Copy source code
+COPY . .
+
+# Build arguments
+ARG NODE_ENV=production
+ARG API_URL=http://localhost:4000
+
+ENV NODE_ENV=${NODE_ENV}
+ENV API_URL=${API_URL}
+
+# Build TypeScript
+RUN npm run build
+
+# ==========================================
+# Stage 3: Production
+# ==========================================
+FROM node:20-alpine AS production
+
+# Set environment
+ENV NODE_ENV=production
+ENV PORT=3000
+
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 wealthpilot && \
+    chown -R wealthpilot:nodejs /app
+
+# Install runtime dependencies
+RUN apk add --no-cache curl tini
+
+# Copy necessary files (dist/ contains compiled TypeScript)
+COPY --from=builder --chown=wealthpilot:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=wealthpilot:nodejs /app/package*.json ./
+COPY --from=builder --chown=wealthpilot:nodejs /app/dist ./dist
+COPY --from=builder --chown=wealthpilot:nodejs /app/views ./views
+COPY --from=builder --chown=wealthpilot:nodejs /app/public ./public
+
+# Switch to non-root user
+USER wealthpilot
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Use tini as init system
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Start application
+CMD ["node", "dist/server.js"]

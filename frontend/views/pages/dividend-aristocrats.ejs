@@ -1,0 +1,187 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safeAristocrats = typeof aristocrats !== 'undefined' ? aristocrats : [];
+const safePortfolioAristocrats = typeof portfolioAristocrats !== 'undefined' ? portfolioAristocrats : [];
+%>
+<%- include('../partials/header', { pageTitle: 'Dividend Aristocrats' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+<div><h1 class="text-2xl font-bold text-amber-400">DIVIDEND ARISTOCRATS</h1><p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">S&P 500 companies with 25+ years of dividend growth</p></div>
+<div class="flex gap-2">
+<select class="form-input w-36"><option selected>All Aristocrats</option><option>My Holdings</option><option>Yield > 3%</option></select>
+<select class="form-input w-28"><option selected>Streak</option><option>Yield</option><option>Growth</option></select>
+</div>
+</div>
+
+<!-- Portfolio Aristocrats Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r <%= safeTheme === 'light' ? 'from-amber-50 to-emerald-50' : 'from-amber-900/20 to-emerald-900/20' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">YOUR DIVIDEND ARISTOCRATS</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">ARISTOCRATS OWNED</p>
+<p class="text-3xl font-bold text-amber-400 font-mono">6</p>
+<p class="text-xs">of 16 holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">AVG STREAK</p>
+<p class="text-3xl font-bold text-emerald-400 font-mono">42</p>
+<p class="text-xs text-emerald-400">years</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">AVG YIELD</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> font-mono">2.8%</p>
+<p class="text-xs">portfolio aristocrats</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">ARISTOCRAT WEIGHT</p>
+<p class="text-3xl font-bold text-sky-400 font-mono">34.2%</p>
+<p class="text-xs">of portfolio</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">ANNUAL INCOME</p>
+<p class="text-3xl font-bold text-emerald-400 font-mono">$2,840</p>
+<p class="text-xs text-emerald-400">from aristocrats</p>
+</div>
+</div>
+</div>
+
+<!-- My Aristocrats -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">YOUR ARISTOCRAT HOLDINGS</h3>
+</div>
+<table class="bloomberg-table w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">STOCK</th>
+<th class="px-4 py-3 text-center">STREAK</th>
+<th class="px-4 py-3 text-center">YIELD</th>
+<th class="px-4 py-3 text-center">5Y CAGR</th>
+<th class="px-4 py-3 text-center">PAYOUT RATIO</th>
+<th class="px-4 py-3 text-center">YOUR SHARES</th>
+<th class="px-4 py-3 text-center">ANNUAL INCOME</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div><div><span class="font-medium">Johnson & Johnson</span><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Healthcare</p></div></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold font-mono">62 yrs</span></td>
+<td class="px-4 py-3 text-center font-bold font-mono">2.94%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">5.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">44%</td>
+<td class="px-4 py-3 text-center font-mono">85</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">$396</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">KO</div><div><span class="font-medium">Coca-Cola</span><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Consumer Staples</p></div></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold font-mono">61 yrs</span></td>
+<td class="px-4 py-3 text-center font-bold font-mono">3.12%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">3.4%</td>
+<td class="px-4 py-3 text-center text-amber-400 font-mono">72%</td>
+<td class="px-4 py-3 text-center font-mono">120</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">$221</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">PG</div><div><span class="font-medium">Procter & Gamble</span><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Consumer Staples</p></div></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold font-mono">68 yrs</span></td>
+<td class="px-4 py-3 text-center font-bold font-mono">2.48%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">6.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">62%</td>
+<td class="px-4 py-3 text-center font-mono">65</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">$256</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- All Aristocrats -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">ALL S&P 500 DIVIDEND ARISTOCRATS (67 COMPANIES)</h3>
+</div>
+<table class="bloomberg-table w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">STOCK</th>
+<th class="px-4 py-3 text-center">STREAK</th>
+<th class="px-4 py-3 text-center">YIELD</th>
+<th class="px-4 py-3 text-center">5Y CAGR</th>
+<th class="px-4 py-3 text-center">PAYOUT</th>
+<th class="px-4 py-3 text-center">YTD</th>
+<th class="px-4 py-3 text-center">OWNED</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-medium">AWR</span> <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">American States Water</span></td>
+<td class="px-4 py-3 text-center text-amber-400 font-bold font-mono">69</td>
+<td class="px-4 py-3 text-center font-mono">2.24%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">8.4%</td>
+<td class="px-4 py-3 text-center font-mono">58%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+12.4%</td>
+<td class="px-4 py-3 text-center"><span class="text-slate-400">—</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-medium">DOV</span> <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Dover Corp</span></td>
+<td class="px-4 py-3 text-center text-amber-400 font-bold font-mono">68</td>
+<td class="px-4 py-3 text-center font-mono">1.18%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">6.8%</td>
+<td class="px-4 py-3 text-center font-mono">24%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+18.2%</td>
+<td class="px-4 py-3 text-center"><span class="text-slate-400">—</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %> <%= safeTheme === 'light' ? 'bg-emerald-50/50' : 'bg-emerald-500/5' %>">
+<td class="px-4 py-3"><span class="font-medium">PG</span> <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Procter & Gamble</span></td>
+<td class="px-4 py-3 text-center text-amber-400 font-bold font-mono">68</td>
+<td class="px-4 py-3 text-center font-mono">2.48%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">6.2%</td>
+<td class="px-4 py-3 text-center font-mono">62%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+8.4%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">✓</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-medium">GPC</span> <span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Genuine Parts</span></td>
+<td class="px-4 py-3 text-center text-amber-400 font-bold font-mono">67</td>
+<td class="px-4 py-3 text-center font-mono">2.84%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">5.4%</td>
+<td class="px-4 py-3 text-center font-mono">48%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-4.2%</td>
+<td class="px-4 py-3 text-center"><span class="text-slate-400">—</span></td>
+</tr>
+</tbody>
+</table>
+<div class="p-3 text-center <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<button class="bloomberg-btn text-sm">View all 67 Aristocrats →</button>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Aristocrats by Sector</h3>
+<div class="h-48"><canvas id="sectorChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Yield vs Growth</h3>
+<div class="h-48"><canvas id="scatterChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('sectorChart'), {
+  type: 'doughnut',
+  data: { labels: ['Industrials','Consumer Staples','Materials','Financials','Healthcare','Other'], datasets: [{ data: [14,12,10,9,8,14], backgroundColor: ['#8b5cf6','#10b981','#f59e0b','#0ea5e9','#ef4444','#94a3b8'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('scatterChart'), {
+  type: 'scatter',
+  data: { datasets: [{ label: 'Aristocrats', data: [{x:2.9,y:5.8},{x:3.1,y:3.4},{x:2.5,y:6.2},{x:1.2,y:8.4},{x:2.8,y:5.4}], backgroundColor: '#f59e0b', pointRadius: 8 }] },
+  options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Yield %' } }, y: { title: { display: true, text: '5Y CAGR %' } } } }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,520 @@
+<%- include('../partials/header') %>
+
+<main class="p-4 lg:p-6 min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-4">
+
+    <!-- Hero Header with Glassmorphism -->
+    <div class="relative overflow-hidden glass-card p-5">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-amber-500/20 to-red-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl"></div>
+
+      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-red-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-bold text-white">Price Alerts</h1>
+              <span class="badge badge-live">LIVE</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Monitor your holdings and get notified when prices hit your targets</p>
+          </div>
+        </div>
+        <button id="create-alert-btn" class="btn-gradient flex items-center gap-2 px-5 py-2.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Create Alert
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Stats Cards - Glassmorphism -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Active Alerts</div>
+        <div class="stat-card-value positive" id="stat-active">0</div>
+      </div>
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Triggered Today</div>
+        <div class="stat-card-value" style="color: #f59e0b;" id="stat-triggered">0</div>
+      </div>
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Total Alerts</div>
+        <div class="stat-card-value" style="color: #3b82f6;" id="stat-total">0</div>
+      </div>
+      <div class="stat-card group">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="stat-card-label">Symbols Watched</div>
+        <div class="stat-card-value" style="background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;" id="stat-symbols">0</div>
+      </div>
+    </div>
+
+    <!-- Alert Tabs - Glassmorphism -->
+    <div class="glass-card overflow-hidden">
+      <div class="flex gap-1 p-2 border-b border-white/10">
+        <button class="alert-tab active px-6 py-2.5 rounded-lg font-semibold transition-all" data-tab="active">
+          Active Alerts
+        </button>
+        <button class="alert-tab px-6 py-2.5 rounded-lg font-semibold transition-all" data-tab="triggered">
+          Triggered Alerts
+        </button>
+      </div>
+
+      <!-- Active Alerts Table -->
+      <div id="tab-active" class="alert-tab-content p-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
+          <h2 class="text-lg font-semibold text-white">Active Alerts</h2>
+          <div class="flex gap-2">
+            <input type="text" id="search-alerts" placeholder="Search symbols..."
+                   class="form-input text-sm px-4 py-2 w-48">
+            <select id="filter-condition" class="form-input text-sm px-4 py-2">
+              <option value="">All Conditions</option>
+              <option value="above">Above</option>
+              <option value="below">Below</option>
+              <option value="equals">Equals</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="active-alerts-container">
+          <div class="glass-card-elevated p-12 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+              </svg>
+            </div>
+            <p class="text-white font-semibold">No active alerts</p>
+            <p class="text-sm text-slate-400 mt-2">Create your first alert to get started</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Triggered Alerts Table -->
+      <div id="tab-triggered" class="alert-tab-content hidden p-4">
+        <h2 class="text-lg font-semibold text-white mb-4">Triggered Alerts</h2>
+        <div id="triggered-alerts-container">
+          <div class="glass-card-elevated p-12 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+              <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <p class="text-white font-semibold">No triggered alerts</p>
+            <p class="text-sm text-slate-400 mt-2">Alerts will appear here when triggered</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Create Alert Modal -->
+<div id="create-alert-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-lg p-8 max-w-md w-full mx-4 animate-slide-up">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-amber-500">Create Price Alert</h2>
+      <button id="close-modal" class="text-gray-400 hover:text-gray-200">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <form id="create-alert-form" class="space-y-4">
+
+      <!-- Stock Search with Autocomplete -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Search Stock</label>
+        <div class="relative">
+          <input type="text" id="alert-search"
+                 placeholder="Search by symbol or company name..."
+                 autocomplete="off"
+                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white focus:border-amber-500 focus:outline-none">
+          <div id="alert-search-results" class="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl max-h-60 overflow-y-auto hidden">
+            <!-- Search results will appear here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Symbol Input (now readonly) -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Symbol</label>
+        <input type="text" id="alert-symbol" name="symbol" required readonly
+               placeholder="Select from search above"
+               class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white focus:border-amber-500 focus:outline-none uppercase"
+               pattern="[A-Z]{1,10}"
+               title="Enter a valid stock symbol">
+      </div>
+
+      <!-- Condition Select -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Condition</label>
+        <select id="alert-condition" name="condition" required
+                class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white focus:border-amber-500 focus:outline-none">
+          <option value="">Select condition...</option>
+          <option value="above">Price goes above</option>
+          <option value="below">Price goes below</option>
+          <option value="equals">Price equals (±$0.01)</option>
+        </select>
+      </div>
+
+      <!-- Target Price Input -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Target Price</label>
+        <div class="relative">
+          <span class="absolute left-3 top-3 text-gray-500">$</span>
+          <input type="number" id="alert-price" name="targetPrice" required
+                 placeholder="0.00"
+                 step="0.01"
+                 min="0"
+                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 pl-7 text-white font-mono focus:border-amber-500 focus:outline-none">
+        </div>
+      </div>
+
+      <!-- Message Input (Optional) -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Message (Optional)</label>
+        <textarea id="alert-message" name="message" rows="2"
+                  placeholder="e.g., Time to sell, Buy opportunity, etc."
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white focus:border-amber-500 focus:outline-none resize-none"></textarea>
+      </div>
+
+      <!-- Current Price Display -->
+      <div id="current-price-display" class="hidden bg-gray-800 border border-gray-700 rounded p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-400">Current Price:</span>
+          <span class="font-mono font-bold text-white" id="current-price-value">--</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 pt-4">
+        <button type="button" id="cancel-alert" 
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+          Cancel
+        </button>
+        <button type="submit" 
+                class="flex-1 bg-amber-500 hover:bg-amber-600 text-black px-6 py-3 rounded-lg font-semibold transition-all">
+          Create Alert
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Alert Notification Toast -->
+<div id="alert-toast" class="fixed top-20 right-6 bg-amber-500 text-black px-6 py-4 rounded-lg shadow-lg hidden z-50 animate-slide-down max-w-md">
+  <div class="flex items-start gap-3">
+    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+    </svg>
+    <div class="flex-1">
+      <div class="font-bold mb-1" id="toast-title">Alert Triggered!</div>
+      <div class="text-sm" id="toast-message">Message</div>
+    </div>
+    <button id="close-toast" class="text-black hover:text-gray-700">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Edit Alert Modal -->
+<div id="edit-alert-modal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-lg p-8 max-w-md w-full mx-4 animate-slide-up">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-amber-500">Edit Alert</h2>
+      <button id="close-edit-modal" class="text-gray-400 hover:text-gray-200">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <form id="edit-alert-form" class="space-y-4">
+      <input type="hidden" id="edit-alert-id" name="id">
+
+      <div class="bg-gray-800 border border-amber-500/30 rounded-lg p-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded bg-amber-500 flex items-center justify-center text-black text-lg font-bold" id="edit-alert-icon">
+            --
+          </div>
+          <div>
+            <h4 class="text-white font-bold text-lg" id="edit-alert-symbol-display">--</h4>
+            <p class="text-gray-400 text-sm">Current Price: <span id="edit-alert-current-price" class="font-mono">--</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Condition</label>
+        <select id="edit-alert-condition" name="condition" required
+                class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white focus:border-amber-500 focus:outline-none">
+          <option value="above">Price goes above</option>
+          <option value="below">Price goes below</option>
+          <option value="equals">Price equals (±$0.01)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Target Price</label>
+        <div class="relative">
+          <span class="absolute left-3 top-3 text-gray-500">$</span>
+          <input type="number" id="edit-alert-price" name="targetPrice" required
+                 step="0.01" min="0"
+                 class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 pl-7 text-white font-mono focus:border-amber-500 focus:outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Message (Optional)</label>
+        <textarea id="edit-alert-message" name="message" rows="2"
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-white focus:border-amber-500 focus:outline-none resize-none"></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <button type="button" id="cancel-edit-alert"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-all">
+          Cancel
+        </button>
+        <button type="submit"
+                class="flex-1 bg-amber-500 hover:bg-amber-600 text-black px-6 py-3 rounded-lg font-semibold transition-all">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/alerts.js"></script>
+<script>
+// Stock search enhancement for alerts
+const FINNHUB_TOKEN = 'd4tm751r01qnn6llpesgd4tm751r01qnn6llpet0';
+let alertSearchTimeout = null;
+
+// Add search input listener after DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('alert-search');
+  const resultsDiv = document.getElementById('alert-search-results');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+      const query = e.target.value;
+      clearTimeout(alertSearchTimeout);
+
+      if (!query || query.length < 1) {
+        resultsDiv.classList.add('hidden');
+        return;
+      }
+
+      alertSearchTimeout = setTimeout(() => searchAlertStocks(query), 300);
+    });
+  }
+
+  // Close search results when clicking outside
+  document.addEventListener('click', function(e) {
+    if (resultsDiv && !resultsDiv.contains(e.target) && e.target !== searchInput) {
+      resultsDiv.classList.add('hidden');
+    }
+  });
+
+  // Edit modal controls
+  const closeEditBtn = document.getElementById('close-edit-modal');
+  const cancelEditBtn = document.getElementById('cancel-edit-alert');
+  const editForm = document.getElementById('edit-alert-form');
+
+  if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditModal);
+  if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
+  if (editForm) editForm.addEventListener('submit', handleEditAlert);
+});
+
+async function searchAlertStocks(query) {
+  const resultsDiv = document.getElementById('alert-search-results');
+
+  try {
+    resultsDiv.innerHTML = '<div class="p-3 text-gray-400 text-sm">Searching...</div>';
+    resultsDiv.classList.remove('hidden');
+
+    const response = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${FINNHUB_TOKEN}`);
+    const data = await response.json();
+
+    if (!data.result || data.result.length === 0) {
+      resultsDiv.innerHTML = '<div class="p-3 text-gray-400 text-sm">No results found</div>';
+      return;
+    }
+
+    const stocks = data.result.filter(item =>
+      item.type === 'Common Stock' || item.type === 'ETF' || item.type === 'ADR'
+    ).slice(0, 8);
+
+    if (stocks.length === 0) {
+      resultsDiv.innerHTML = '<div class="p-3 text-gray-400 text-sm">No stocks found</div>';
+      return;
+    }
+
+    resultsDiv.innerHTML = stocks.map(stock => `
+      <div class="p-3 hover:bg-gray-700 cursor-pointer border-b border-gray-700 last:border-0 transition-colors"
+           onclick="selectAlertStock('${stock.symbol}', '${stock.description.replace(/'/g, "\\'")}')">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-amber-500 font-bold">${stock.symbol}</span>
+            <span class="text-gray-500 text-xs ml-2">${stock.type}</span>
+          </div>
+        </div>
+        <p class="text-gray-300 text-sm truncate">${stock.description}</p>
+      </div>
+    `).join('');
+
+  } catch (error) {
+    console.error('Search error:', error);
+    resultsDiv.innerHTML = '<div class="p-3 text-red-400 text-sm">Search failed. Try again.</div>';
+  }
+}
+
+async function selectAlertStock(symbol, name) {
+  document.getElementById('alert-symbol').value = symbol;
+  document.getElementById('alert-search').value = `${symbol} - ${name}`;
+  document.getElementById('alert-search-results').classList.add('hidden');
+
+  // Fetch and show current price
+  try {
+    const response = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_TOKEN}`);
+    const data = await response.json();
+
+    if (data.c && data.c > 0) {
+      const priceDisplay = document.getElementById('current-price-display');
+      priceDisplay.classList.remove('hidden');
+      document.getElementById('current-price-value').textContent = `$${data.c.toFixed(2)}`;
+    }
+  } catch (error) {
+    console.error('Failed to fetch price:', error);
+  }
+}
+
+// Edit alert functions
+function openEditAlertModal(id, symbol, condition, targetPrice, message, currentPrice) {
+  document.getElementById('edit-alert-id').value = id;
+  document.getElementById('edit-alert-icon').textContent = symbol.slice(0, 2);
+  document.getElementById('edit-alert-symbol-display').textContent = symbol;
+  document.getElementById('edit-alert-current-price').textContent = currentPrice > 0 ? `$${currentPrice.toFixed(2)}` : '--';
+  document.getElementById('edit-alert-condition').value = condition;
+  document.getElementById('edit-alert-price').value = targetPrice;
+  document.getElementById('edit-alert-message').value = message || '';
+
+  document.getElementById('edit-alert-modal').classList.remove('hidden');
+  document.getElementById('edit-alert-modal').classList.add('flex');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-alert-modal').classList.add('hidden');
+  document.getElementById('edit-alert-modal').classList.remove('flex');
+}
+
+async function handleEditAlert(e) {
+  e.preventDefault();
+
+  const id = document.getElementById('edit-alert-id').value;
+  const condition = document.getElementById('edit-alert-condition').value;
+  const targetPrice = parseFloat(document.getElementById('edit-alert-price').value);
+  const message = document.getElementById('edit-alert-message').value;
+
+  try {
+    const token = localStorage.getItem('wealthpilot_token') || '';
+    const response = await fetch(`/api/alerts/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ condition, targetPrice, message })
+    });
+
+    if (response.ok) {
+      if (typeof showToast === 'function') {
+        showToast('Alert updated successfully', 'success');
+      }
+      closeEditModal();
+      if (window.alertsManager) {
+        window.alertsManager.loadAlerts();
+      }
+    } else {
+      const error = await response.json();
+      alert('Error: ' + (error.error || 'Failed to update alert'));
+    }
+  } catch (err) {
+    console.error('Edit alert error:', err);
+    alert('Failed to update alert');
+  }
+
+  return false;
+}
+</script>
+
+<style>
+  .alert-tab {
+    color: #94a3b8;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+  .alert-tab:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .alert-tab.active {
+    color: white;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  /* Modal Glassmorphism Override */
+  #create-alert-modal > div,
+  #edit-alert-modal > div {
+    background: rgba(21, 28, 37, 0.98);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+  }
+</style>
+
+<%- include('../partials/footer') %>

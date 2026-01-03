@@ -1,0 +1,36 @@
+<%
+/**
+ * BenchmarkComparison - Shows performance vs market benchmark
+ * Usage: include('../partials/finance/benchmark-comparison', {
+ *   portfolioReturn: 12.4,
+ *   benchmarkReturn: 18.2,
+ *   benchmarkName: 'S&P 500',
+ *   period: 'YTD'
+ * })
+ */
+const portReturn = typeof portfolioReturn !== 'undefined' ? portfolioReturn : 0;
+const benchReturn = typeof benchmarkReturn !== 'undefined' ? benchmarkReturn : 0;
+const benchName = typeof benchmarkName !== 'undefined' ? benchmarkName : 'S&P 500';
+const timePeriod = typeof period !== 'undefined' ? period : 'YTD';
+const compClassName = typeof className !== 'undefined' ? className : '';
+
+const diff = portReturn - benchReturn;
+const isOutperforming = diff >= 0;
+%>
+<div class="tufte-benchmark-comparison <%= compClassName %>">
+  <span class="benchmark-period"><%= timePeriod %> Performance:</span>
+
+  <span class="portfolio-return tabular-nums <%= portReturn >= 0 ? 'positive' : 'negative' %>">
+    <%= portReturn >= 0 ? '+' : '' %><%= portReturn.toFixed(1) %>%
+  </span>
+
+  <span class="vs-text">vs</span>
+
+  <span class="benchmark-return tabular-nums">
+    <%= benchReturn >= 0 ? '+' : '' %><%= benchReturn.toFixed(1) %>% <%= benchName %>
+  </span>
+
+  <span class="performance-badge <%= isOutperforming ? 'outperforming' : 'underperforming' %>">
+    <%= isOutperforming ? 'Outperforming' : 'Underperforming' %> by <%= Math.abs(diff).toFixed(1) %>%
+  </span>
+</div>

@@ -1,0 +1,221 @@
+<%- include('../partials/header', { pageTitle: 'Stock Comparison' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Stock Comparison</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Compare stocks side by side</p></div>
+</div>
+
+<!-- Stock Selection -->
+<div class="card p-5">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div>
+<label class="text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1 block">Stock 1</label>
+<div class="flex gap-2">
+<input type="text" value="AAPL" class="form-input flex-1 font-mono">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div>
+</div>
+</div>
+<div>
+<label class="text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1 block">Stock 2</label>
+<div class="flex gap-2">
+<input type="text" value="MSFT" class="form-input flex-1 font-mono">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div>
+</div>
+</div>
+<div>
+<label class="text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1 block">Stock 3</label>
+<div class="flex gap-2">
+<input type="text" value="GOOGL" class="form-input flex-1 font-mono">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">GOOGL</div>
+</div>
+</div>
+<div>
+<label class="text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1 block">Stock 4</label>
+<div class="flex gap-2">
+<input type="text" value="NVDA" class="form-input flex-1 font-mono">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div>
+</div>
+</div>
+</div>
+<button onclick="compare()" class="btn-primary mt-4">Compare Stocks</button>
+</div>
+
+<!-- Price Chart -->
+<div class="card p-5">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Price Performance (1 Year, Normalized)</h3>
+<div class="flex gap-2">
+<button class="btn-ghost btn-sm">1M</button>
+<button class="btn-ghost btn-sm">3M</button>
+<button class="btn-ghost btn-sm">6M</button>
+<button class="btn-primary btn-sm">1Y</button>
+<button class="btn-ghost btn-sm">5Y</button>
+</div>
+</div>
+<div class="h-72"><canvas id="priceChart"></canvas></div>
+<div class="flex justify-center gap-6 mt-4 flex-wrap">
+<span class="flex items-center gap-2 text-sm"><span class="w-3 h-3 rounded-full bg-sky-500"></span>AAPL +32.4%</span>
+<span class="flex items-center gap-2 text-sm"><span class="w-3 h-3 rounded-full bg-emerald-500"></span>MSFT +28.1%</span>
+<span class="flex items-center gap-2 text-sm"><span class="w-3 h-3 rounded-full bg-amber-500"></span>GOOGL +24.8%</span>
+<span class="flex items-center gap-2 text-sm"><span class="w-3 h-3 rounded-full bg-purple-500"></span>NVDA +142.6%</span>
+</div>
+</div>
+
+<!-- Comparison Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Key Metrics Comparison</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Metric</th>
+<th class="px-4 py-3 text-center"><span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-sky-500"></span>AAPL</span></th>
+<th class="px-4 py-3 text-center"><span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500"></span>MSFT</span></th>
+<th class="px-4 py-3 text-center"><span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-500"></span>GOOGL</span></th>
+<th class="px-4 py-3 text-center"><span class="inline-flex items-center gap-1"><span class="w-3 h-3 rounded bg-purple-500"></span>NVDA</span></th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Price</td>
+<td class="px-4 py-3 text-center">$189.50</td>
+<td class="px-4 py-3 text-center">$415.20</td>
+<td class="px-4 py-3 text-center">$174.80</td>
+<td class="px-4 py-3 text-center">$485.20</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Market Cap</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$2.94T</td>
+<td class="px-4 py-3 text-center">$3.08T</td>
+<td class="px-4 py-3 text-center">$2.14T</td>
+<td class="px-4 py-3 text-center">$1.19T</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">P/E Ratio</td>
+<td class="px-4 py-3 text-center">29.4</td>
+<td class="px-4 py-3 text-center">35.8</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">23.2</td>
+<td class="px-4 py-3 text-center">62.4</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Revenue (TTM)</td>
+<td class="px-4 py-3 text-center">$383B</td>
+<td class="px-4 py-3 text-center">$227B</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$307B</td>
+<td class="px-4 py-3 text-center">$60B</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Revenue Growth</td>
+<td class="px-4 py-3 text-center">-2.8%</td>
+<td class="px-4 py-3 text-center">+7.1%</td>
+<td class="px-4 py-3 text-center">+8.4%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">+122%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Profit Margin</td>
+<td class="px-4 py-3 text-center">25.3%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">36.7%</td>
+<td class="px-4 py-3 text-center">24.0%</td>
+<td class="px-4 py-3 text-center">55.0%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Dividend Yield</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">0.52%</td>
+<td class="px-4 py-3 text-center">0.74%</td>
+<td class="px-4 py-3 text-center">-</td>
+<td class="px-4 py-3 text-center">0.03%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">52W High</td>
+<td class="px-4 py-3 text-center">$199.62</td>
+<td class="px-4 py-3 text-center">$420.82</td>
+<td class="px-4 py-3 text-center">$180.40</td>
+<td class="px-4 py-3 text-center">$505.48</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">52W Low</td>
+<td class="px-4 py-3 text-center">$143.90</td>
+<td class="px-4 py-3 text-center">$309.45</td>
+<td class="px-4 py-3 text-center">$115.83</td>
+<td class="px-4 py-3 text-center">$222.97</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Beta</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">1.28</td>
+<td class="px-4 py-3 text-center">0.89</td>
+<td class="px-4 py-3 text-center">1.05</td>
+<td class="px-4 py-3 text-center">1.72</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Analyst Rating</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">BUY</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">STRONG BUY</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">BUY</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs">STRONG BUY</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Radar Chart -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Strengths Comparison</h3>
+<div class="h-64"><canvas id="radarChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Quick Summary</h3>
+<div class="space-y-3">
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %> border-l-4 border-sky-500">
+<p class="font-bold text-sky-500">AAPL - Best for Value</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Strong cash position, consistent buybacks, ecosystem lock-in</p>
+</div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %> border-l-4 border-emerald-500">
+<p class="font-bold text-emerald-500">MSFT - Best for Stability</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Highest profit margin, cloud growth, enterprise dominance</p>
+</div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-amber-50' : 'bg-amber-500/10' %> border-l-4 border-amber-500">
+<p class="font-bold text-amber-500">GOOGL - Best P/E Value</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Lowest valuation, AI potential, ad market recovery</p>
+</div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-purple-50' : 'bg-purple-500/10' %> border-l-4 border-purple-500">
+<p class="font-bold text-purple-500">NVDA - Best for Growth</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Highest growth, AI chip leader, data center boom</p>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function compare() { showToast('Comparing stocks...', 'info'); }
+
+new Chart(document.getElementById('priceChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [
+      { label: 'AAPL', data: [100,104,108,105,112,118,122,120,116,124,128,132], borderColor: '#0ea5e9', tension: 0.3 },
+      { label: 'MSFT', data: [100,106,112,108,114,118,120,122,118,120,124,128], borderColor: '#10b981', tension: 0.3 },
+      { label: 'GOOGL', data: [100,98,105,102,108,112,118,116,112,118,122,125], borderColor: '#f59e0b', tension: 0.3 },
+      { label: 'NVDA', data: [100,115,135,140,165,180,195,210,200,220,235,243], borderColor: '#8b5cf6', tension: 0.3 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Growth','Value','Profitability','Momentum','Stability'],
+    datasets: [
+      { label: 'AAPL', data: [65,80,75,70,85], borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.1)' },
+      { label: 'MSFT', data: [70,75,90,65,90], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)' },
+      { label: 'NVDA', data: [95,40,85,95,50], borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.1)' }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true, max: 100 } } }
+});
+</script>
+<%- include('../partials/footer') %>

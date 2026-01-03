@@ -1,0 +1,701 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Options Tracker' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">OPTIONS TRACKER</h1>
+<p class="text-slate-400">Track options positions and calculate Greeks</p>
+</div>
+<div class="flex gap-2">
+<button onclick="openOptionsCalculator()" class="bloomberg-btn-secondary">
+<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+</svg>
+Calculator
+</button>
+<button onclick="openAddPositionModal()" class="bloomberg-btn-primary">
+<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+</svg>
+Add Position
+</button>
+</div>
+</div>
+</div>
+
+<!-- Portfolio Greeks Summary -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="tufte-stat-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Delta (Δ)</p>
+<p class="text-xl font-bold tabular-nums" id="portfolio-delta">--</p>
+<p class="text-xs text-slate-400">Directional exposure</p>
+</div>
+<div class="tufte-stat-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Gamma (Γ)</p>
+<p class="text-xl font-bold tabular-nums text-purple-400" id="portfolio-gamma">--</p>
+<p class="text-xs text-slate-400">Delta sensitivity</p>
+</div>
+<div class="tufte-stat-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Theta (Θ)</p>
+<p class="text-xl font-bold tabular-nums" id="portfolio-theta">--</p>
+<p class="text-xs text-slate-400">Time decay/day</p>
+</div>
+<div class="tufte-stat-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Vega (ν)</p>
+<p class="text-xl font-bold tabular-nums text-sky-400" id="portfolio-vega">--</p>
+<p class="text-xs text-slate-400">Vol sensitivity</p>
+</div>
+<div class="tufte-stat-card p-4 text-center">
+<p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Total P&L</p>
+<p class="text-xl font-bold tabular-nums" id="portfolio-pnl">--</p>
+<p class="text-xs text-slate-400">All positions</p>
+</div>
+</div>
+
+<!-- Open Positions -->
+<div class="bloomberg-card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wider">Open Positions</h3>
+<button onclick="loadPositions()" class="bloomberg-btn-secondary btn-sm">
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+  </svg>
+  Refresh
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full" id="positions-table">
+<thead>
+<tr class="border-b border-amber-400/30 text-slate-400 text-sm text-left">
+  <th class="pb-3 uppercase tracking-wider">Symbol</th>
+  <th class="pb-3 uppercase tracking-wider">Type</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Strike</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Expiry</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Qty</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Avg Cost</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Current</th>
+  <th class="pb-3 text-right uppercase tracking-wider">P&L</th>
+  <th class="pb-3 text-right uppercase tracking-wider">Delta</th>
+  <th class="pb-3 text-right uppercase tracking-wider">IV</th>
+  <th class="pb-3"></th>
+</tr>
+</thead>
+<tbody id="positions-body">
+<tr>
+  <td colspan="11" class="py-8 text-center text-slate-400">
+    <div class="flex flex-col items-center gap-2">
+      <svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+      </svg>
+      <p>No options positions yet</p>
+      <button onclick="openAddPositionModal()" class="bloomberg-btn-primary btn-sm mt-2">Add Your First Position</button>
+    </div>
+  </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Options Chain Section -->
+<div class="bloomberg-card p-5">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wider">Options Chain</h3>
+<div class="flex gap-3">
+  <div class="flex items-center gap-2">
+    <label class="text-slate-400 text-sm">Symbol:</label>
+    <input type="text" id="chain-symbol" value="AAPL" class="form-input w-24 uppercase" placeholder="AAPL">
+  </div>
+  <div class="flex items-center gap-2">
+    <label class="text-slate-400 text-sm">Expiration:</label>
+    <select id="chain-expiry" class="form-input w-auto">
+      <option value="">Loading...</option>
+    </select>
+  </div>
+  <button onclick="loadOptionsChain()" class="bloomberg-btn-primary btn-sm">Load Chain</button>
+</div>
+</div>
+
+<div id="chain-info" class="mb-4 p-3 bg-slate-800/50 rounded-lg hidden">
+<div class="flex flex-wrap gap-6 text-sm">
+  <div><span class="text-slate-400">Stock Price:</span> <span id="chain-stock-price" class="font-medium text-white">--</span></div>
+  <div><span class="text-slate-400">Change:</span> <span id="chain-stock-change" class="font-medium">--</span></div>
+  <div><span class="text-slate-400">Days to Expiry:</span> <span id="chain-dte" class="font-medium text-white">--</span></div>
+  <div><span class="text-slate-400">Data Source:</span> <span id="chain-source" class="font-medium text-emerald-400">--</span></div>
+</div>
+</div>
+
+<div class="grid grid-cols-2 gap-4" id="options-chain-container">
+<!-- Calls -->
+<div>
+<h4 class="text-sm font-medium text-emerald-400 mb-2 text-center uppercase tracking-wider">Calls</h4>
+<div class="overflow-x-auto">
+<table class="w-full text-sm" id="calls-table">
+<thead>
+<tr class="text-slate-400 text-xs">
+  <th class="pb-2">Bid</th><th class="pb-2">Ask</th><th class="pb-2">Last</th><th class="pb-2 font-bold">Strike</th><th class="pb-2">Delta</th><th class="pb-2">IV</th><th class="pb-2">Vol</th>
+</tr>
+</thead>
+<tbody id="calls-body">
+<tr><td colspan="7" class="py-4 text-center text-slate-500">Enter a symbol and click Load Chain</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Puts -->
+<div>
+<h4 class="text-sm font-medium text-red-400 mb-2 text-center uppercase tracking-wider">Puts</h4>
+<div class="overflow-x-auto">
+<table class="w-full text-sm" id="puts-table">
+<thead>
+<tr class="text-slate-400 text-xs">
+  <th class="pb-2">IV</th><th class="pb-2">Delta</th><th class="pb-2 font-bold">Strike</th><th class="pb-2">Last</th><th class="pb-2">Bid</th><th class="pb-2">Ask</th><th class="pb-2">Vol</th>
+</tr>
+</thead>
+<tbody id="puts-body">
+<tr><td colspan="7" class="py-4 text-center text-slate-500">Enter a symbol and click Load Chain</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<!-- P&L Chart & Expiration Calendar -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">P&L by Underlying Price</h3>
+<div class="h-64"><canvas id="plChart"></canvas></div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Upcoming Expirations</h3>
+<div class="space-y-3" id="expirations-list">
+  <p class="text-slate-400 text-center py-4">Add positions to see expiration calendar</p>
+</div>
+</div>
+</div>
+
+<!-- Add Position Modal -->
+<div id="add-position-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-md">
+<div class="flex items-center justify-between p-4 border-b border-slate-700">
+  <h3 class="text-lg font-semibold text-white">Add Options Position</h3>
+  <button onclick="closeAddPositionModal()" class="text-slate-400 hover:text-white">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+</div>
+<form id="add-position-form" class="p-4 space-y-4">
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Symbol</label>
+      <input type="text" name="symbol" required class="form-input w-full uppercase" placeholder="AAPL">
+    </div>
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Type</label>
+      <select name="optionType" required class="form-input w-full">
+        <option value="call">Call</option>
+        <option value="put">Put</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Strike Price</label>
+      <input type="number" name="strike" step="0.5" required class="form-input w-full" placeholder="150.00">
+    </div>
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Expiration Date</label>
+      <input type="date" name="expirationDate" required class="form-input w-full">
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Quantity (+ long, - short)</label>
+      <input type="number" name="quantity" required class="form-input w-full" placeholder="5">
+    </div>
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Average Cost</label>
+      <input type="number" name="avgCost" step="0.01" required class="form-input w-full" placeholder="3.50">
+    </div>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-400 mb-1">Implied Volatility (%)</label>
+    <input type="number" name="impliedVolatility" step="0.1" class="form-input w-full" placeholder="30" value="30">
+  </div>
+  <button type="submit" class="bloomberg-btn-primary w-full">Add Position</button>
+</form>
+</div>
+</div>
+
+<!-- Options Calculator Modal -->
+<div id="calculator-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+<div class="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-lg">
+<div class="flex items-center justify-between p-4 border-b border-slate-700">
+  <h3 class="text-lg font-semibold text-white">Options Calculator</h3>
+  <button onclick="closeCalculator()" class="text-slate-400 hover:text-white">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+</div>
+<form id="calculator-form" class="p-4 space-y-4">
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Option Type</label>
+      <select name="type" class="form-input w-full">
+        <option value="call">Call</option>
+        <option value="put">Put</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Stock Price</label>
+      <input type="number" name="stockPrice" step="0.01" required class="form-input w-full" placeholder="150.00">
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Strike Price</label>
+      <input type="number" name="strike" step="0.5" required class="form-input w-full" placeholder="155.00">
+    </div>
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Days to Expiry</label>
+      <input type="number" name="daysToExpiry" required class="form-input w-full" placeholder="30">
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Volatility (%)</label>
+      <input type="number" name="volatility" step="0.1" required class="form-input w-full" placeholder="30" value="30">
+    </div>
+    <div>
+      <label class="block text-sm text-slate-400 mb-1">Risk-Free Rate (%)</label>
+      <input type="number" name="riskFreeRate" step="0.01" class="form-input w-full" placeholder="5" value="5">
+    </div>
+  </div>
+  <button type="submit" class="bloomberg-btn-primary w-full">Calculate</button>
+</form>
+
+<div id="calculator-results" class="p-4 border-t border-slate-700 hidden">
+  <h4 class="text-sm font-medium text-amber-400 mb-3 uppercase">Results</h4>
+  <div class="grid grid-cols-2 gap-4 text-sm">
+    <div class="bg-slate-700/50 rounded-lg p-3">
+      <p class="text-slate-400">Option Price</p>
+      <p class="text-xl font-bold text-white" id="calc-price">--</p>
+    </div>
+    <div class="bg-slate-700/50 rounded-lg p-3">
+      <p class="text-slate-400">Break-Even</p>
+      <p class="text-xl font-bold text-white" id="calc-breakeven">--</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-5 gap-2 mt-4">
+    <div class="text-center">
+      <p class="text-slate-400 text-xs">Delta</p>
+      <p class="font-medium text-white" id="calc-delta">--</p>
+    </div>
+    <div class="text-center">
+      <p class="text-slate-400 text-xs">Gamma</p>
+      <p class="font-medium text-white" id="calc-gamma">--</p>
+    </div>
+    <div class="text-center">
+      <p class="text-slate-400 text-xs">Theta</p>
+      <p class="font-medium text-white" id="calc-theta">--</p>
+    </div>
+    <div class="text-center">
+      <p class="text-slate-400 text-xs">Vega</p>
+      <p class="font-medium text-white" id="calc-vega">--</p>
+    </div>
+    <div class="text-center">
+      <p class="text-slate-400 text-xs">Rho</p>
+      <p class="font-medium text-white" id="calc-rho">--</p>
+    </div>
+  </div>
+  <div class="mt-4 p-3 bg-slate-700/30 rounded-lg">
+    <h5 class="text-xs text-amber-400 mb-2 uppercase">Probabilities</h5>
+    <div class="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p class="text-slate-400">Prob ITM (Call)</p>
+        <p class="font-medium text-emerald-400" id="calc-prob-call">--</p>
+      </div>
+      <div>
+        <p class="text-slate-400">Prob ITM (Put)</p>
+        <p class="font-medium text-red-400" id="calc-prob-put">--</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+</div></div></main>
+
+<script>
+let plChart;
+let currentStockPrice = 0;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+  loadPositions();
+  initPLChart();
+  loadExpirations('AAPL');
+});
+
+// Load user positions
+async function loadPositions() {
+  try {
+    const response = await fetch('/api/options/positions', {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load positions');
+
+    const data = await response.json();
+    renderPositions(data);
+    updatePortfolioGreeks(data.portfolioGreeks, data.totalPnL);
+  } catch (error) {
+    console.error('Error loading positions:', error);
+  }
+}
+
+function renderPositions(data) {
+  const tbody = document.getElementById('positions-body');
+
+  if (!data.positions || data.positions.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="py-8 text-center text-slate-400">
+          <div class="flex flex-col items-center gap-2">
+            <svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            <p>No options positions yet</p>
+            <button onclick="openAddPositionModal()" class="bloomberg-btn-primary btn-sm mt-2">Add Your First Position</button>
+          </div>
+        </td>
+      </tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.positions.map(pos => {
+    const pnlClass = pos.pnl >= 0 ? 'positive' : 'negative';
+    const deltaClass = pos.greeks?.delta >= 0 ? 'positive' : 'negative';
+    const typeClass = pos.option_type === 'call' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400';
+    const expiryDate = new Date(pos.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const isNearExpiry = pos.daysToExpiry <= 7;
+
+    return `
+      <tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+        <td class="py-3 font-semibold text-white">${pos.symbol}</td>
+        <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${typeClass}">${pos.option_type.toUpperCase()}</span></td>
+        <td class="py-3 text-right text-slate-300 font-mono">$${pos.strike}</td>
+        <td class="py-3 text-right ${isNearExpiry ? 'text-amber-400' : 'text-slate-300'} font-mono">${expiryDate}</td>
+        <td class="py-3 text-right text-white font-medium font-mono">${pos.quantity > 0 ? '+' : ''}${pos.quantity}</td>
+        <td class="py-3 text-right text-slate-300 font-mono">$${pos.avg_cost?.toFixed(2)}</td>
+        <td class="py-3 text-right text-white font-medium font-mono">$${pos.currentOptionPrice?.toFixed(2) || '--'}</td>
+        <td class="py-3 text-right font-medium tabular-nums ${pnlClass}">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl?.toFixed(0) || '--'}</td>
+        <td class="py-3 text-right tabular-nums ${deltaClass}">${pos.greeks?.delta?.toFixed(2) || '--'}</td>
+        <td class="py-3 text-right text-slate-300 font-mono">${pos.implied_volatility}%</td>
+        <td class="py-3 text-right">
+          <button onclick="closePosition('${pos.id}')" class="bloomberg-btn-secondary btn-sm">Close</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function updatePortfolioGreeks(greeks, totalPnL) {
+  if (greeks) {
+    document.getElementById('portfolio-delta').textContent = (greeks.delta >= 0 ? '+' : '') + greeks.delta.toFixed(1);
+    document.getElementById('portfolio-delta').className = `text-xl font-bold tabular-nums ${greeks.delta >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+    document.getElementById('portfolio-gamma').textContent = '+' + greeks.gamma.toFixed(2);
+    document.getElementById('portfolio-theta').textContent = '$' + greeks.theta.toFixed(0) + '/day';
+    document.getElementById('portfolio-theta').className = `text-xl font-bold tabular-nums ${greeks.theta >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+    document.getElementById('portfolio-vega').textContent = '$' + greeks.vega.toFixed(0);
+  }
+
+  if (totalPnL !== undefined) {
+    document.getElementById('portfolio-pnl').textContent = (totalPnL >= 0 ? '+' : '') + '$' + totalPnL.toFixed(0);
+    document.getElementById('portfolio-pnl').className = `text-xl font-bold tabular-nums ${totalPnL >= 0 ? 'positive' : 'negative'}`;
+  }
+}
+
+// Load expiration dates for symbol
+async function loadExpirations(symbol) {
+  try {
+    const response = await fetch(`/api/options/${symbol}/expirations`, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load expirations');
+
+    const data = await response.json();
+    const select = document.getElementById('chain-expiry');
+
+    select.innerHTML = data.expirations.slice(0, 12).map(exp =>
+      `<option value="${exp.timestamp}">${exp.date} (${exp.daysToExpiry}d)</option>`
+    ).join('');
+
+    currentStockPrice = data.stockPrice;
+  } catch (error) {
+    console.error('Error loading expirations:', error);
+    document.getElementById('chain-expiry').innerHTML = '<option value="">Error loading</option>';
+  }
+}
+
+// Load options chain
+async function loadOptionsChain() {
+  const symbol = document.getElementById('chain-symbol').value.toUpperCase();
+  const expiration = document.getElementById('chain-expiry').value;
+
+  if (!symbol) {
+    showToast('Please enter a symbol', 'error');
+    return;
+  }
+
+  try {
+    showToast('Loading options chain...', 'info');
+
+    // First load expirations if symbol changed
+    await loadExpirations(symbol);
+
+    const url = expiration
+      ? `/api/options/${symbol}/chain?expiration=${expiration}`
+      : `/api/options/${symbol}/chain`;
+
+    const response = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${getToken()}` }
+    });
+
+    if (!response.ok) throw new Error('Failed to load chain');
+
+    const data = await response.json();
+    renderOptionsChain(data);
+    showToast('Options chain loaded', 'success');
+  } catch (error) {
+    console.error('Error loading chain:', error);
+    showToast('Failed to load options chain', 'error');
+  }
+}
+
+function renderOptionsChain(data) {
+  // Update info bar
+  document.getElementById('chain-info').classList.remove('hidden');
+  document.getElementById('chain-stock-price').textContent = '$' + data.stockPrice?.toFixed(2);
+
+  const changeEl = document.getElementById('chain-stock-change');
+  if (data.stockChange !== undefined) {
+    const changePercent = data.stockChangePercent?.toFixed(2) || '0.00';
+    changeEl.textContent = `${data.stockChange >= 0 ? '+' : ''}${data.stockChange?.toFixed(2)} (${changePercent}%)`;
+    changeEl.className = `font-medium ${data.stockChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+  }
+
+  document.getElementById('chain-dte').textContent = data.daysToExpiry + ' days';
+  document.getElementById('chain-source').textContent = data.source === 'yahoo_finance' ? 'Live Data' : 'Calculated';
+  document.getElementById('chain-source').className = `font-medium ${data.source === 'yahoo_finance' ? 'text-emerald-400' : 'text-amber-400'}`;
+
+  currentStockPrice = data.stockPrice;
+
+  // Render calls
+  const callsBody = document.getElementById('calls-body');
+  if (data.calls && data.calls.length > 0) {
+    callsBody.innerHTML = data.calls.map(opt => {
+      const isATM = Math.abs(opt.strike - data.stockPrice) < (data.stockPrice * 0.02);
+      const isITM = opt.strike < data.stockPrice;
+      const bgClass = isATM ? 'bg-sky-500/10' : isITM ? 'bg-emerald-500/5' : '';
+
+      return `
+        <tr class="border-t border-slate-800 ${bgClass} hover:bg-slate-700/30 cursor-pointer" onclick="selectOption('call', ${opt.strike}, ${data.stockPrice})">
+          <td class="py-1.5 text-center text-emerald-400">${opt.bid?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center text-slate-300">${opt.ask?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center text-white">${opt.lastPrice?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center font-medium text-white">$${opt.strike}</td>
+          <td class="py-1.5 text-center text-slate-300">${opt.delta?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center text-slate-300">${opt.impliedVolatility?.toFixed(0) || '--'}%</td>
+          <td class="py-1.5 text-center text-slate-400">${opt.volume?.toLocaleString() || '--'}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  // Render puts
+  const putsBody = document.getElementById('puts-body');
+  if (data.puts && data.puts.length > 0) {
+    putsBody.innerHTML = data.puts.map(opt => {
+      const isATM = Math.abs(opt.strike - data.stockPrice) < (data.stockPrice * 0.02);
+      const isITM = opt.strike > data.stockPrice;
+      const bgClass = isATM ? 'bg-sky-500/10' : isITM ? 'bg-red-500/5' : '';
+
+      return `
+        <tr class="border-t border-slate-800 ${bgClass} hover:bg-slate-700/30 cursor-pointer" onclick="selectOption('put', ${opt.strike}, ${data.stockPrice})">
+          <td class="py-1.5 text-center text-slate-300">${opt.impliedVolatility?.toFixed(0) || '--'}%</td>
+          <td class="py-1.5 text-center text-slate-300">${opt.delta?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center font-medium text-white">$${opt.strike}</td>
+          <td class="py-1.5 text-center text-white">${opt.lastPrice?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center text-red-400">${opt.bid?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center text-slate-300">${opt.ask?.toFixed(2) || '--'}</td>
+          <td class="py-1.5 text-center text-slate-400">${opt.volume?.toLocaleString() || '--'}</td>
+        </tr>`;
+    }).join('');
+  }
+}
+
+function selectOption(type, strike, stockPrice) {
+  // Pre-fill the add position form
+  openAddPositionModal();
+  const form = document.getElementById('add-position-form');
+  form.elements['symbol'].value = document.getElementById('chain-symbol').value;
+  form.elements['optionType'].value = type;
+  form.elements['strike'].value = strike;
+}
+
+// Modal handlers
+function openAddPositionModal() {
+  document.getElementById('add-position-modal').classList.remove('hidden');
+}
+
+function closeAddPositionModal() {
+  document.getElementById('add-position-modal').classList.add('hidden');
+}
+
+function openOptionsCalculator() {
+  document.getElementById('calculator-modal').classList.remove('hidden');
+}
+
+function closeCalculator() {
+  document.getElementById('calculator-modal').classList.add('hidden');
+}
+
+// Form handlers
+document.getElementById('add-position-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  try {
+    const response = await fetch('/api/options/positions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(Object.fromEntries(formData))
+    });
+
+    if (!response.ok) throw new Error('Failed to add position');
+
+    showToast('Position added successfully', 'success');
+    closeAddPositionModal();
+    e.target.reset();
+    loadPositions();
+  } catch (error) {
+    showToast('Failed to add position', 'error');
+  }
+});
+
+document.getElementById('calculator-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  try {
+    const response = await fetch('/api/options/calculate', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(Object.fromEntries(formData))
+    });
+
+    if (!response.ok) throw new Error('Calculation failed');
+
+    const data = await response.json();
+    displayCalculatorResults(data);
+  } catch (error) {
+    showToast('Calculation failed', 'error');
+  }
+});
+
+function displayCalculatorResults(data) {
+  document.getElementById('calculator-results').classList.remove('hidden');
+  document.getElementById('calc-price').textContent = '$' + data.optionPrice;
+  document.getElementById('calc-breakeven').textContent = '$' + data.breakEven;
+  document.getElementById('calc-delta').textContent = data.greeks.delta;
+  document.getElementById('calc-gamma').textContent = data.greeks.gamma;
+  document.getElementById('calc-theta').textContent = '$' + data.greeks.theta;
+  document.getElementById('calc-vega').textContent = '$' + data.greeks.vega;
+  document.getElementById('calc-rho').textContent = '$' + data.greeks.rho;
+  document.getElementById('calc-prob-call').textContent = data.probabilities.probCallITM + '%';
+  document.getElementById('calc-prob-put').textContent = data.probabilities.probPutITM + '%';
+}
+
+async function closePosition(id) {
+  if (!confirm('Are you sure you want to close this position?')) return;
+
+  try {
+    const response = await fetch(`/api/options/positions/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ closePrice: 0 })
+    });
+
+    if (!response.ok) throw new Error('Failed to close position');
+
+    showToast('Position closed', 'success');
+    loadPositions();
+  } catch (error) {
+    showToast('Failed to close position', 'error');
+  }
+}
+
+// P&L Chart
+function initPLChart() {
+  const ctx = document.getElementById('plChart');
+  if (!ctx) return;
+
+  plChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'P&L',
+        data: [],
+        borderColor: '#0ea5e9',
+        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { grid: { color: '#334155' } },
+        y: { grid: { color: '#334155' }, ticks: { callback: v => '$' + v } }
+      }
+    }
+  });
+}
+
+function getToken() {
+  return document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] || localStorage.getItem('token') || '';
+}
+
+// Symbol input change handler
+document.getElementById('chain-symbol').addEventListener('change', function() {
+  loadExpirations(this.value.toUpperCase());
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,60 @@
+<%
+/**
+ * StatCard - Clean metric card with optional sparkline and benchmark
+ * Usage: include('../partials/finance/stat-card', {
+ *   label: 'Total Value',
+ *   value: '$847,293',
+ *   change: 12.4,
+ *   changeLabel: 'YTD',
+ *   sparklineData: [1,2,3,4],
+ *   benchmark: 18.2,
+ *   benchmarkLabel: 'S&P 500'
+ * })
+ */
+const cardLabel = typeof label !== 'undefined' ? label : '';
+const cardValue = typeof value !== 'undefined' ? value : '';
+const cardChange = typeof change !== 'undefined' ? change : null;
+const cardChangeLabel = typeof changeLabel !== 'undefined' ? changeLabel : '';
+const cardSparkline = typeof sparklineData !== 'undefined' ? sparklineData : null;
+const cardBenchmark = typeof benchmark !== 'undefined' ? benchmark : null;
+const cardBenchmarkLabel = typeof benchmarkLabel !== 'undefined' ? benchmarkLabel : 'S&P 500';
+const cardClassName = typeof className !== 'undefined' ? className : '';
+
+const isPositive = cardChange !== null && cardChange >= 0;
+const diff = cardBenchmark !== null && cardChange !== null ? cardChange - cardBenchmark : null;
+%>
+<div class="tufte-stat-card <%= cardClassName %>">
+  <div class="stat-label"><%= cardLabel %></div>
+
+  <div class="stat-value-row">
+    <span class="stat-value tabular-nums"><%= cardValue %></span>
+    <% if (cardChange !== null) { %>
+    <span class="stat-change <%= isPositive ? 'positive' : 'negative' %>">
+      <%= isPositive ? '+' : '' %><%= typeof cardChange === 'number' ? cardChange.toFixed(1) : cardChange %>%
+    </span>
+    <% } %>
+    <% if (cardChangeLabel) { %>
+    <span class="stat-change-label"><%= cardChangeLabel %></span>
+    <% } %>
+  </div>
+
+  <% if (cardSparkline && cardSparkline.length >= 2) { %>
+  <div class="stat-sparkline">
+    <%- include('./sparkline', { data: cardSparkline, width: 140, height: 32 }) %>
+  </div>
+  <% } %>
+
+  <% if (cardBenchmark !== null) { %>
+  <div class="stat-benchmark">
+    <span class="benchmark-label">vs <%= cardBenchmarkLabel %>:</span>
+    <span class="benchmark-value tabular-nums">
+      <%= cardBenchmark >= 0 ? '+' : '' %><%= cardBenchmark.toFixed(1) %>%
+    </span>
+    <% if (diff !== null) { %>
+    <span class="benchmark-diff <%= diff >= 0 ? 'positive' : 'negative' %>">
+      <%= diff >= 0 ? '+' : '' %><%= Math.abs(diff).toFixed(1) %>%
+    </span>
+    <% } %>
+  </div>
+  <% } %>
+</div>

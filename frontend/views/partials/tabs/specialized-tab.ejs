@@ -1,0 +1,362 @@
+<%
+  const alternatives = data.alternatives || null;
+  const esg = data.esg || null;
+  const clientReporting = data.clientReporting || null;
+%>
+
+<!-- Specialized Tab Content -->
+<div class="space-y-6">
+
+  <!-- ========== ANALYSIS 18: Performance Attribution for Alternatives ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        18. Alternatives Performance Attribution
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">PRIVATE EQUITY / RE / HEDGE FUNDS</span>
+    </div>
+
+    <% if (alternatives && !alternatives.error) { %>
+      <!-- IRR & MOIC Metrics -->
+      <div class="grid grid-cols-5 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Total IRR</div>
+          <div class="text-2xl font-bold <%= alternatives.totalIRR >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= alternatives.totalIRR >= 0 ? '+' : '' %><%= (alternatives.totalIRR || 0).toFixed(1) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">MOIC</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (alternatives.moic || 0).toFixed(2) %>x
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">DPI</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (alternatives.dpi || 0).toFixed(2) %>x
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">RVPI</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (alternatives.rvpi || 0).toFixed(2) %>x
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">TVPI</div>
+          <div class="text-2xl font-bold text-bloomberg-amber font-mono">
+            <%= (alternatives.tvpi || 0).toFixed(2) %>x
+          </div>
+        </div>
+      </div>
+
+      <!-- IRR by Asset Class Table -->
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full text-sm">
+          <thead class="bg-bloomberg-surface border-b border-bloomberg-border">
+            <tr>
+              <th class="px-4 py-3 text-left text-slate-400 font-semibold">Asset Class</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Committed</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Invested</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Realized</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Unrealized</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">IRR</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">MOIC</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono">
+            <% if (alternatives.byAssetClass && alternatives.byAssetClass.length > 0) { %>
+              <% alternatives.byAssetClass.forEach(assetClass => { %>
+                <tr class="border-b border-slate-800 hover:bg-slate-900/50">
+                  <td class="px-4 py-3 text-white"><%= assetClass.name %></td>
+                  <td class="px-4 py-3 text-right text-white"><%= fmt.money(assetClass.committed) %></td>
+                  <td class="px-4 py-3 text-right text-white"><%= fmt.money(assetClass.invested) %></td>
+                  <td class="px-4 py-3 text-right text-emerald-400"><%= fmt.money(assetClass.realized) %></td>
+                  <td class="px-4 py-3 text-right text-slate-300"><%= fmt.money(assetClass.unrealized) %></td>
+                  <td class="px-4 py-3 text-right <%= assetClass.irr >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                    <%= assetClass.irr.toFixed(1) %>%
+                  </td>
+                  <td class="px-4 py-3 text-right text-bloomberg-amber">
+                    <%= assetClass.moic.toFixed(2) %>x
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                  No alternatives investments found
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- J-Curve Waterfall Chart -->
+      <div class="h-96">
+        <canvas id="alternatives-waterfall-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No alternatives data available. Requires private equity, real estate, or hedge fund positions.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 19: ESG / Sustainability Exposure ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        19. ESG / Sustainability Exposure
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">ENVIRONMENTAL | SOCIAL | GOVERNANCE</span>
+    </div>
+
+    <% if (esg && !esg.error) { %>
+      <!-- ESG Summary Scores -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Overall ESG</div>
+          <div class="text-3xl font-bold <%= esg.esgScore >= 70 ? 'text-emerald-400' : esg.esgScore >= 40 ? 'text-bloomberg-amber' : 'text-red-400' %> font-mono">
+            <%= (esg.esgScore || 0).toFixed(0) %>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            <%= esg.esgScore >= 70 ? 'Leader' : esg.esgScore >= 40 ? 'Average' : 'Laggard' %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Environmental</div>
+          <div class="text-2xl font-bold text-emerald-400 font-mono">
+            <%= (esg.environmentScore || 0).toFixed(0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Social</div>
+          <div class="text-2xl font-bold text-blue-400 font-mono">
+            <%= (esg.socialScore || 0).toFixed(0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Governance</div>
+          <div class="text-2xl font-bold text-purple-400 font-mono">
+            <%= (esg.governanceScore || 0).toFixed(0) %>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESG Radar Chart -->
+      <div class="grid grid-cols-2 gap-6 mb-6">
+        <div class="h-80">
+          <canvas id="esg-radar-chart"></canvas>
+        </div>
+        <div class="h-80">
+          <!-- Carbon Footprint -->
+          <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-6 h-full flex flex-col">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">Carbon Footprint</h3>
+            <div class="flex-1 flex flex-col justify-center">
+              <div class="text-center mb-6">
+                <div class="text-5xl font-bold text-emerald-400 font-mono">
+                  <%= (esg.carbonFootprint || 0).toFixed(0) %>
+                </div>
+                <div class="text-sm text-slate-500 mt-2">Tons CO₂e / $M Invested</div>
+              </div>
+              <canvas id="carbon-footprint-bar"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESG Breakdown by Holding -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-bloomberg-surface border-b border-bloomberg-border">
+            <tr>
+              <th class="px-4 py-3 text-left text-slate-400 font-semibold">Symbol</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Weight</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">ESG Score</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">E</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">S</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">G</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Carbon</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono">
+            <% if (esg.holdings && esg.holdings.length > 0) { %>
+              <% esg.holdings.slice(0, 10).forEach(holding => { %>
+                <tr class="border-b border-slate-800 hover:bg-slate-900/50">
+                  <td class="px-4 py-3 text-white"><%= holding.symbol %></td>
+                  <td class="px-4 py-3 text-right text-slate-300">
+                    <%= (holding.weight * 100).toFixed(2) %>%
+                  </td>
+                  <td class="px-4 py-3 text-right <%= holding.esgScore >= 70 ? 'text-emerald-400' : holding.esgScore >= 40 ? 'text-bloomberg-amber' : 'text-red-400' %>">
+                    <%= holding.esgScore.toFixed(0) %>
+                  </td>
+                  <td class="px-4 py-3 text-right text-emerald-400"><%= holding.environmentScore.toFixed(0) %></td>
+                  <td class="px-4 py-3 text-right text-blue-400"><%= holding.socialScore.toFixed(0) %></td>
+                  <td class="px-4 py-3 text-right text-purple-400"><%= holding.governanceScore.toFixed(0) %></td>
+                  <td class="px-4 py-3 text-right text-slate-300">
+                    <%= (holding.carbonFootprint || 0).toFixed(0) %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No ESG data available. Requires ESG ratings for holdings.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 20: Client/Product Performance Reporting ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        20. Client Performance Reporting
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">EXECUTIVE SUMMARY</span>
+    </div>
+
+    <% if (clientReporting && !clientReporting.error) { %>
+      <!-- Executive KPIs -->
+      <div class="grid grid-cols-6 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">AUM</div>
+          <div class="text-xl font-bold text-white font-mono">
+            <%= fmt.compact(clientReporting.aum || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">MTD Return</div>
+          <div class="text-xl font-bold <%= clientReporting.mtdReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= clientReporting.mtdReturn >= 0 ? '+' : '' %><%= (clientReporting.mtdReturn || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">QTD Return</div>
+          <div class="text-xl font-bold <%= clientReporting.qtdReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= clientReporting.qtdReturn >= 0 ? '+' : '' %><%= (clientReporting.qtdReturn || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">YTD Return</div>
+          <div class="text-xl font-bold <%= clientReporting.ytdReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= clientReporting.ytdReturn >= 0 ? '+' : '' %><%= (clientReporting.ytdReturn || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">ITD Return</div>
+          <div class="text-xl font-bold <%= clientReporting.itdReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= clientReporting.itdReturn >= 0 ? '+' : '' %><%= (clientReporting.itdReturn || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Sharpe Ratio</div>
+          <div class="text-xl font-bold text-bloomberg-amber font-mono">
+            <%= (clientReporting.sharpeRatio || 0).toFixed(2) %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance vs Benchmark Chart -->
+      <div class="h-80 mb-6">
+        <canvas id="client-performance-chart"></canvas>
+      </div>
+
+      <!-- Monthly Returns Table -->
+      <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4 mb-6">
+        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Monthly Returns (%)</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs font-mono">
+            <thead>
+              <tr>
+                <th class="px-2 py-2 text-left text-slate-500"></th>
+                <th class="px-2 py-2 text-center text-slate-400">Jan</th>
+                <th class="px-2 py-2 text-center text-slate-400">Feb</th>
+                <th class="px-2 py-2 text-center text-slate-400">Mar</th>
+                <th class="px-2 py-2 text-center text-slate-400">Apr</th>
+                <th class="px-2 py-2 text-center text-slate-400">May</th>
+                <th class="px-2 py-2 text-center text-slate-400">Jun</th>
+                <th class="px-2 py-2 text-center text-slate-400">Jul</th>
+                <th class="px-2 py-2 text-center text-slate-400">Aug</th>
+                <th class="px-2 py-2 text-center text-slate-400">Sep</th>
+                <th class="px-2 py-2 text-center text-slate-400">Oct</th>
+                <th class="px-2 py-2 text-center text-slate-400">Nov</th>
+                <th class="px-2 py-2 text-center text-slate-400">Dec</th>
+                <th class="px-2 py-2 text-center text-bloomberg-amber font-semibold">YTD</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (clientReporting.monthlyReturns && clientReporting.monthlyReturns.length > 0) { %>
+                <% clientReporting.monthlyReturns.forEach(yearData => { %>
+                  <tr class="border-t border-slate-800">
+                    <td class="px-2 py-2 text-slate-400 font-semibold"><%= yearData.year %></td>
+                    <% yearData.months.forEach(monthReturn => { %>
+                      <%
+                        let cellClass = 'text-slate-600';
+                        if (monthReturn !== null) {
+                          cellClass = monthReturn >= 0 ? 'text-emerald-400' : 'text-red-400';
+                        }
+                      %>
+                      <td class="px-2 py-2 text-center <%= cellClass %>">
+                        <%= monthReturn !== null ? (monthReturn >= 0 ? '+' : '') + monthReturn.toFixed(2) : '-' %>
+                      </td>
+                    <% }) %>
+                    <td class="px-2 py-2 text-center <%= yearData.ytd >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-semibold">
+                      <%= yearData.ytd >= 0 ? '+' : '' %><%= yearData.ytd.toFixed(2) %>
+                    </td>
+                  </tr>
+                <% }) %>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Risk Metrics Summary -->
+      <div class="grid grid-cols-4 gap-4">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Volatility</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (clientReporting.volatility || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Max Drawdown</div>
+          <div class="text-lg font-bold text-red-400 font-mono">
+            -<%= (clientReporting.maxDrawdown || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Correlation vs SPY</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (clientReporting.correlation || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Beta</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (clientReporting.beta || 0).toFixed(2) %>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No client reporting data available. Requires historical performance data.
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+  // Store chart data for later initialization
+  window.specializedTabData = {
+    alternatives: <%- JSON.stringify(alternatives) %>,
+    esg: <%- JSON.stringify(esg) %>,
+    clientReporting: <%- JSON.stringify(clientReporting) %>
+  };
+</script>

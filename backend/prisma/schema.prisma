@@ -1,0 +1,1094 @@
+// Prisma Schema for WealthPilot Pro
+// PostgreSQL for AWS RDS
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER & AUTH ==============
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  phone         String?
+  avatarUrl     String?   @map("avatar_url")
+  timezone      String    @default("America/New_York")
+  currency      String    @default("USD")
+  theme         String    @default("dark")
+  isActive      Boolean   @default(true) @map("is_active")
+  isVerified    Boolean   @default(false) @map("is_verified")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  plan          String    @default("free")
+  planExpiresAt DateTime? @map("plan_expires_at")
+
+  // Two-Factor Authentication
+  twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorSecret  String?  @map("two_factor_secret")
+  twoFactorPending Boolean  @default(false) @map("two_factor_pending")
+  backupCodes      String?  @map("backup_codes")
+
+  portfolios    Portfolio[]
+  watchlists    Watchlist[]
+  alerts        Alert[]
+  transactions  Transaction[]
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  settings      UserSettings?
+  notifications Notification[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  token        String   @unique
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  keyHash     String    @unique
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+}
+
+model Webhook {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  url            String
+  secret         String
+  events         String    // JSON array of event types
+  description    String?
+  headers        String?   // JSON object of custom headers
+  isActive       Boolean   @default(true) @map("is_active")
+  disabledReason String?   @map("disabled_reason")
+  disabledAt     DateTime? @map("disabled_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  deliveries     WebhookDelivery[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id          String   @id @default(uuid())
+  webhookId   String   @map("webhook_id")
+  deliveryId  String   @map("delivery_id")
+  eventType   String   @map("event_type")
+  status      String   // success, failed
+  statusCode  Int?     @map("status_code")
+  attempt     Int      @default(0)
+  error       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([deliveryId])
+  @@map("webhook_deliveries")
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  type      String   @default("email_verification") // email_verification, password_reset
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([email])
+  @@map("verification_tokens")
+}
+
+model UserSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(false)
+  alertsEnabled         Boolean  @default(true)
+  dividendAlerts        Boolean  @default(true)
+  earningsAlerts        Boolean  @default(true)
+  priceAlerts           Boolean  @default(true)
+  weeklyReport          Boolean  @default(true)
+  monthlyReport         Boolean  @default(true)
+  defaultPortfolioId    String?
+  dashboardLayout       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============== PORTFOLIO ==============
+
+model Portfolio {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  name          String
+  description   String?
+  currency      String    @default("USD")
+  benchmark     String    @default("SPY")
+  isDefault     Boolean   @default(false) @map("is_default")
+  isPublic      Boolean   @default(false) @map("is_public")
+  cashBalance   Float     @default(0) @map("cash_balance")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings      Holding[]
+  transactions  Transaction[]
+  snapshots     PortfolioSnapshot[]
+  sectorAllocations PortfolioSectorAllocation[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("portfolios")
+}
+
+model Holding {
+  id            String    @id @default(uuid())
+  portfolioId   String    @map("portfolio_id")
+  symbol        String
+  shares        Float
+  avgCostBasis  Float     @map("avg_cost_basis")
+  sector        String?
+  assetType     String    @default("stock") @map("asset_type")
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  taxLots       TaxLot[]
+
+  @@unique([portfolioId, symbol])
+  @@index([portfolioId])
+  @@index([symbol])
+  @@map("holdings")
+}
+
+model TaxLot {
+  id            String    @id @default(uuid())
+  holdingId     String    @map("holding_id")
+  shares        Float
+  costBasis     Float     @map("cost_basis")
+  purchaseDate  DateTime  @map("purchase_date")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  holding       Holding   @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@index([holdingId])
+  @@map("tax_lots")
+}
+
+model Transaction {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  portfolioId   String    @map("portfolio_id")
+  symbol        String
+  type          String
+  shares        Float?
+  price         Float?
+  amount        Float
+  fees          Float     @default(0)
+  notes         String?
+  executedAt    DateTime  @map("executed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@index([userId])
+  @@index([symbol])
+  @@index([executedAt])
+  @@map("transactions")
+}
+
+model PortfolioSnapshot {
+  id            String    @id @default(uuid())
+  portfolioId   String
+  totalValue    Float
+  cashBalance   Float
+  dayGain       Float
+  dayGainPct    Float
+  totalGain     Float
+  totalGainPct  Float
+  holdings      String
+  snapshotDate  DateTime
+  createdAt     DateTime  @default(now())
+
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, snapshotDate])
+  @@index([portfolioId])
+  @@index([snapshotDate])
+}
+
+// ============== PORTFOLIO SHARING ==============
+
+model PortfolioShare {
+  id              String    @id @default(uuid())
+  portfolioId     String    @unique @map("portfolio_id")
+  shareToken      String    @unique @map("share_token")
+  isPublic        Boolean   @default(false) @map("is_public")
+  expiresAt       DateTime? @map("expires_at")
+  allowedFields   String    @default("[\"holdings\",\"performance\",\"allocation\"]") @map("allowed_fields")
+  showValues      Boolean   @default(true) @map("show_values")
+  showQuantities  Boolean   @default(true) @map("show_quantities")
+  viewCount       Int       @default(0) @map("view_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([shareToken])
+  @@index([portfolioId])
+  @@map("portfolio_shares")
+}
+
+model ShareEvent {
+  id              String    @id @default(uuid())
+  portfolioId     String    @map("portfolio_id")
+  eventType       String    @map("event_type")
+  eventData       String?   @map("event_data")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([portfolioId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("share_events")
+}
+
+// ============== WATCHLIST ==============
+
+model Watchlist {
+  id            String    @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         WatchlistItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model WatchlistItem {
+  id            String    @id @default(uuid())
+  watchlistId   String    @map("watchlist_id")
+  symbol        String
+  targetPrice   Float?    @map("target_price")
+  notes         String?
+  addedAt       DateTime  @default(now()) @map("added_at")
+  watchlist     Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, symbol])
+  @@index([watchlistId])
+  @@map("watchlist_items")
+}
+
+// ============== ALERTS ==============
+
+model Alert {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  symbol        String?
+  type          String
+  condition     String
+  message       String?
+  isActive      Boolean   @default(true) @map("is_active")
+  isTriggered   Boolean   @default(false) @map("is_triggered")
+  triggeredAt   DateTime? @map("triggered_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive])
+  @@map("alerts")
+}
+
+// ============== NOTIFICATIONS ==============
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   // alert, dividend, earnings, price_target, system
+  title     String
+  message   String
+  data      String?  // JSON string for additional data
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============== STOCK DATA TRACKING ==============
+
+model StockDataTracker {
+  symbol              String    @id
+  isActive            Boolean   @default(true) @map("is_active")
+
+  // Historical data tracking
+  historyStartDate    DateTime? @map("history_start_date")
+  historyEndDate      DateTime? @map("history_end_date")
+  historyRecordCount  Int       @default(0) @map("history_record_count")
+
+  // Update timestamps
+  lastQuoteUpdate     DateTime? @map("last_quote_update")
+  lastHistoryUpdate   DateTime? @map("last_history_update")
+  lastDividendUpdate  DateTime? @map("last_dividend_update")
+  lastEarningsUpdate  DateTime? @map("last_earnings_update")
+  lastProfileUpdate   DateTime? @map("last_profile_update")
+  lastFinancialsUpdate DateTime? @map("last_financials_update")
+
+  // Initial fetch tracking
+  initialFetchStarted DateTime? @map("initial_fetch_started")
+  initialFetchCompleted DateTime? @map("initial_fetch_completed")
+
+  // Error tracking
+  errorCount          Int       @default(0) @map("error_count")
+  lastError           String?   @map("last_error")
+  lastErrorAt         DateTime? @map("last_error_at")
+
+  // Source tracking
+  primaryDataSource   String?   @map("primary_data_source") // yahoo, finnhub, fmp, etc.
+
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([lastHistoryUpdate])
+  @@index([initialFetchCompleted])
+  @@map("stock_data_tracker")
+}
+
+// ============== MARKET DATA CACHE ==============
+
+model StockQuote {
+  symbol            String    @id
+  name              String?
+  exchange          String?
+  sector            String?
+  industry          String?
+  price             Float
+  previousClose     Float?    @map("previous_close")
+  open              Float?    @map("open_price")
+  high              Float?
+  low               Float?
+  volume            BigInt?
+  marketCap         BigInt?   @map("market_cap")
+  peRatio           Float?    @map("pe_ratio")
+  dividend          Float?
+  dividendYield     Float?    @map("dividend_yield")
+  beta              Float?
+  week52High        Float?    @map("week_52_high")
+  week52Low         Float?    @map("week_52_low")
+  change            Float?    @map("change_amount")
+  changePercent     Float?    @map("change_percent")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("stock_quotes")
+}
+
+model StockHistory {
+  id            String    @id @default(uuid())
+  symbol        String
+  date          DateTime  @db.Date
+  open          Float
+  high          Float
+  low           Float
+  close         Float
+  adjClose      Float     @map("adj_close")
+  volume        BigInt    // Changed to BigInt to handle large volumes like SPY
+
+  // Optional additional data
+  vwap          Float?    // Volume-weighted average price
+  changePercent Float?    @map("change_percent")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+  @@index([symbol, date(sort: Desc)]) // For efficient recent data queries
+  @@map("stock_history")
+}
+
+model DividendHistory {
+  id            String    @id @default(uuid())
+  symbol        String
+  exDate        DateTime
+  payDate       DateTime?
+  recordDate    DateTime?
+  amount        Float
+  frequency     String?
+  type          String?
+
+  @@unique([symbol, exDate])
+  @@index([symbol])
+  @@index([exDate])
+}
+
+model EarningsCalendar {
+  id              String    @id @default(uuid())
+  symbol          String
+  reportDate      DateTime
+  fiscalQuarter   String?
+  fiscalYear      Int?
+  epsEstimate     Float?
+  epsActual       Float?
+  revenueEstimate Float?
+  revenueActual   Float?
+  surprise        Float?
+  timing          String?
+
+  @@unique([symbol, reportDate])
+  @@index([symbol])
+  @@index([reportDate])
+}
+
+// ============== FUNDAMENTALS ==============
+
+model CompanyProfile {
+  id                String    @id @default(uuid())
+  symbol            String    @unique
+  name              String
+  description       String?
+  exchange          String?
+  sector            String?
+  industry          String?
+  employees         Int?
+  ceo               String?
+  headquarters      String?
+  website           String?
+  ipoDate           DateTime?
+  updatedAt         DateTime  @updatedAt
+
+  @@index([symbol])
+  @@index([sector])
+}
+
+model FinancialStatement {
+  id                String    @id @default(uuid())
+  symbol            String
+  period            String
+  fiscalDate        DateTime
+  reportedDate      DateTime?
+  revenue           Float?
+  costOfRevenue     Float?
+  grossProfit       Float?
+  operatingExpenses Float?
+  operatingIncome   Float?
+  netIncome         Float?
+  eps               Float?
+  epsDiluted        Float?
+  totalAssets       Float?
+  totalLiabilities  Float?
+  totalEquity       Float?
+  cash              Float?
+  totalDebt         Float?
+  operatingCashFlow Float?
+  capitalExpenditure Float?
+  freeCashFlow      Float?
+  dividendsPaid     Float?
+  grossMargin       Float?
+  operatingMargin   Float?
+  netMargin         Float?
+  roe               Float?
+  roa               Float?
+  currentRatio      Float?
+  debtToEquity      Float?
+  createdAt         DateTime  @default(now())
+
+  @@unique([symbol, period, fiscalDate])
+  @@index([symbol])
+  @@index([fiscalDate])
+}
+
+// ============== ANALYTICS ==============
+
+model InsiderTransaction {
+  id                String    @id @default(uuid())
+  symbol            String
+  filingDate        DateTime
+  transactionDate   DateTime?
+  ownerName         String
+  ownerTitle        String?
+  transactionType   String
+  shares            Float
+  pricePerShare     Float?
+  totalValue        Float?
+  sharesOwned       Float?
+
+  @@index([symbol])
+  @@index([filingDate])
+}
+
+model InstitutionalHolding {
+  id                String    @id @default(uuid())
+  symbol            String
+  holderName        String
+  shares            Float
+  value             Float
+  percentOwned      Float?
+  changeShares      Float?
+  changePercent     Float?
+  reportDate        DateTime
+
+  @@unique([symbol, holderName, reportDate])
+  @@index([symbol])
+  @@index([reportDate])
+}
+
+model AnalystRating {
+  id                String    @id @default(uuid())
+  symbol            String
+  firm              String
+  analyst           String?
+  rating            String
+  priceTarget       Float?
+  previousRating    String?
+  previousTarget    Float?
+  date              DateTime
+
+  @@index([symbol])
+  @@index([date])
+}
+
+// ============== NEWS ==============
+
+model NewsArticle {
+  id                String    @id @default(uuid())
+  symbol            String?
+  title             String
+  summary           String?
+  source            String
+  url               String
+  imageUrl          String?
+  sentiment         String?
+  sentimentScore    Float?
+  publishedAt       DateTime
+  createdAt         DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([publishedAt])
+}
+
+// ============== ADVANCED ANALYTICS ==============
+
+model BenchmarkHistory {
+  id            String    @id @default(uuid())
+  symbol        String    // SPY, QQQ, DIA, etc.
+  date          DateTime
+  close         Float
+  adjustedClose Float
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+}
+
+model FactorReturns {
+  id          String    @id @default(uuid())
+  date        DateTime  @unique
+  mktRf       Float     // Market - Risk Free
+  smb         Float     // Small Minus Big
+  hml         Float     // High Minus Low
+  rmw         Float     // Robust Minus Weak
+  cma         Float     // Conservative Minus Aggressive
+  mom         Float     // Momentum
+  rf          Float     // Risk Free Rate
+
+  @@index([date])
+}
+
+model ESGScores {
+  id                String    @id @default(uuid())
+  symbol            String
+  date              DateTime
+  esgScore          Float     // Overall ESG score (0-100)
+  environmentScore  Float     // Environmental score
+  socialScore       Float     // Social score
+  governanceScore   Float     // Governance score
+  carbonFootprint   Float?    // Metric tons CO2e per $M invested
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+}
+
+model LiquidityMetrics {
+  id              String    @id @default(uuid())
+  symbol          String
+  date            DateTime
+  bidAskSpread    Float     // Absolute spread
+  bidAskSpreadPct Float     // Percentage spread
+  avgDailyVolume  Int       // Average daily volume
+  avgDollarVolume Float     // Average dollar volume
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+}
+
+// ============== SENTIMENT ANALYSIS ==============
+
+model SentimentData {
+  id                String    @id @default(uuid())
+  symbol            String
+  date              DateTime
+  overallScore      Float     // Overall sentiment score (0-100)
+  overallSentiment  String    // BULLISH, BEARISH, NEUTRAL
+  socialMediaScore  Float     // Social media sentiment (0-100)
+  newsScore         Float     // News sentiment (0-100)
+  analystScore      Float     // Analyst sentiment (0-100)
+  mentionVolume     Int       // Total mentions across all platforms
+  correlationScore  Float?    // Correlation with price movement
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+  @@index([overallScore])
+}
+
+model SocialMediaMention {
+  id            String    @id @default(uuid())
+  symbol        String
+  platform      String    // twitter, reddit, stocktwits, yahoo_finance
+  content       String?   // Mention text (optional)
+  sentiment     String    // positive, negative, neutral, bullish, bearish
+  sentimentScore Float    // Numerical sentiment score
+  author        String?   // Username/author
+  mentions      Int       @default(1)
+  likes         Int?      // Engagement metrics
+  retweets      Int?
+  publishedAt   DateTime
+  createdAt     DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([platform])
+  @@index([publishedAt])
+  @@index([sentiment])
+}
+
+model TrendingTopic {
+  id            String    @id @default(uuid())
+  symbol        String
+  topic         String    // Hashtag or topic name
+  mentionCount  Int       // Number of mentions
+  sentiment     String    // Overall sentiment for this topic
+  trendingScore Float     // Trending score/velocity
+  date          DateTime
+  createdAt     DateTime  @default(now())
+
+  @@unique([symbol, topic, date])
+  @@index([symbol])
+  @@index([date])
+  @@index([trendingScore])
+}
+
+model SentimentHistory {
+  id            String    @id @default(uuid())
+  symbol        String
+  timestamp     DateTime
+  score         Float     // Sentiment score at this timestamp
+  volume        Int       // Mention volume at this timestamp
+  source        String    // social_media, news, analyst
+
+  @@index([symbol])
+  @@index([timestamp])
+  @@index([source])
+}
+
+// ============== SECTOR ANALYSIS ==============
+
+model SectorData {
+  id                    String    @id @default(uuid())
+  sectorName            String    @unique
+  sectorCode            String    @unique
+  description           String?
+  currentPrice          Float?
+  change                Float?
+  changePercent         Float?
+  volume                Int?
+  marketCap             Float?
+  peRatio               Float?
+  dividendYield         Float?
+  week52High            Float?
+  week52Low             Float?
+  ytdReturn             Float?
+  oneMonthReturn        Float?
+  threeMonthReturn      Float?
+  oneYearReturn         Float?
+  volatility            Float?
+  beta                  Float?
+  sharpeRatio           Float?
+  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime  @default(now())
+
+  @@index([sectorName])
+  @@index([sectorCode])
+}
+
+model SectorPerformance {
+  id                String    @id @default(uuid())
+  sectorName        String
+  sectorCode        String
+  date              DateTime
+  open              Float
+  high              Float
+  low               Float
+  close             Float
+  volume            Int?
+  returnPct         Float?
+  relativeStrength  Float?
+  momentumScore     Float?
+  createdAt         DateTime  @default(now())
+
+  @@unique([sectorCode, date])
+  @@index([sectorCode])
+  @@index([sectorName])
+  @@index([date])
+}
+
+model PortfolioSectorAllocation {
+  id              String    @id @default(uuid())
+  portfolioId     String
+  sectorName      String
+  sectorCode      String?
+  totalValue      Float
+  percentAlloc    Float
+  numHoldings     Int
+  avgCostBasis    Float?
+  currentReturn   Float?
+  returnPct       Float?
+  weight          Float?
+  date            DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  portfolio       Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, sectorName, date])
+  @@index([portfolioId])
+  @@index([sectorName])
+  @@index([date])
+}
+
+model SectorRotation {
+  id              String    @id @default(uuid())
+  fromSector      String
+  toSector        String
+  date            DateTime
+  flowAmount      Float
+  flowPercent     Float
+  reason          String?
+  createdAt       DateTime  @default(now())
+
+  @@index([date])
+  @@index([fromSector])
+  @@index([toSector])
+}
+
+// ============== AI SERVICES ==============
+
+model AIChatSession {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String?
+  messages  String   @default("[]") // JSON string of messages
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_chat_sessions")
+}
+
+model AIReport {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  portfolioId  String    @map("portfolio_id")
+  reportType   String    @map("report_type")
+  status       String    @default("pending")
+  filePath     String?   @map("file_path")
+  metadata     String?   // JSON string for additional metadata
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([portfolioId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("ai_reports")
+}
+
+model AIUsage {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  provider     String   // claude or openai
+  model        String   // model name
+  inputTokens  Int      @map("input_tokens")
+  outputTokens Int      @map("output_tokens")
+  cost         Float?   // estimated cost in USD
+  endpoint     String   // which endpoint was called
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([provider])
+  @@index([createdAt])
+  @@map("ai_usage")
+}
+
+// ============== PAPER TRADING ==============
+
+model PaperTradingAccount {
+  id             String           @id @default(uuid())
+  userId         String           @unique @map("user_id")
+  cashBalance    Float            @default(100000) @map("cash_balance")
+  initialBalance Float            @default(100000) @map("initial_balance")
+  totalTrades    Int              @default(0) @map("total_trades")
+  winningTrades  Int              @default(0) @map("winning_trades")
+  losingTrades   Int              @default(0) @map("losing_trades")
+  totalPnl       Float            @default(0) @map("total_pnl")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  positions      PaperPosition[]
+  orders         PaperOrder[]
+
+  @@index([userId])
+  @@map("paper_trading_accounts")
+}
+
+model PaperPosition {
+  id        String               @id @default(uuid())
+  accountId String               @map("account_id")
+  symbol    String
+  quantity  Float
+  avgCost   Float                @map("avg_cost")
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+
+  account   PaperTradingAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, symbol])
+  @@index([accountId])
+  @@index([symbol])
+  @@map("paper_positions")
+}
+
+model PaperOrder {
+  id              String               @id @default(uuid())
+  accountId       String               @map("account_id")
+  symbol          String
+  side            String               // buy, sell
+  quantity        Float
+  orderType       String               @default("market") @map("order_type") // market, limit, stop, stop_limit
+  limitPrice      Float?               @map("limit_price")
+  stopPrice       Float?               @map("stop_price")
+  timeInForce     String               @default("day") @map("time_in_force") // day, gtc, ioc, fok
+  status          String               @default("pending") // pending, filled, partial, cancelled, rejected
+  submittedPrice  Float?               @map("submitted_price")
+  filledPrice     Float?               @map("filled_price")
+  filledQuantity  Float?               @map("filled_quantity")
+  filledAt        DateTime?            @map("filled_at")
+  commission      Float                @default(0)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  account         PaperTradingAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([symbol])
+  @@index([status])
+  @@index([createdAt])
+  @@map("paper_orders")
+}
+
+// ============== BROKER INTEGRATIONS ==============
+
+model BrokerConnection {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  brokerType      String    @map("broker_type") // alpaca, ibkr, td_ameritrade, etc.
+  accountId       String?   @map("account_id") // Broker's account ID
+  name            String    // User-friendly name for this connection
+  isPaper         Boolean   @default(true) @map("is_paper") // Paper vs live trading
+  isActive        Boolean   @default(true) @map("is_active")
+  isDefault       Boolean   @default(false) @map("is_default")
+  lastSyncAt      DateTime? @map("last_sync_at")
+  lastError       String?   @map("last_error")
+  settings        String?   // JSON for broker-specific settings
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  credentials     BrokerCredential?
+  orders          BrokerOrder[]
+
+  @@unique([userId, brokerType, accountId])
+  @@index([userId])
+  @@index([brokerType])
+  @@index([isActive])
+  @@map("broker_connections")
+}
+
+model BrokerCredential {
+  id              String           @id @default(uuid())
+  connectionId    String           @unique @map("connection_id")
+  encryptedApiKey String           @map("encrypted_api_key")
+  encryptedSecret String           @map("encrypted_secret")
+  encryptedToken  String?          @map("encrypted_token") // For OAuth brokers
+  tokenExpiresAt  DateTime?        @map("token_expires_at")
+  scopes          String?          // JSON array of granted scopes
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  connection      BrokerConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@map("broker_credentials")
+}
+
+model BrokerOrder {
+  id              String           @id @default(uuid())
+  connectionId    String           @map("connection_id")
+  portfolioId     String?          @map("portfolio_id")
+  brokerOrderId   String           @map("broker_order_id") // Broker's internal order ID
+  symbol          String
+  side            String           // buy, sell
+  quantity        Float
+  orderType       String           @map("order_type") // market, limit, stop, stop_limit
+  limitPrice      Float?           @map("limit_price")
+  stopPrice       Float?           @map("stop_price")
+  timeInForce     String           @default("day") @map("time_in_force")
+  status          String           @default("pending") // pending, filled, partial, cancelled, rejected
+  filledPrice     Float?           @map("filled_price")
+  filledQuantity  Float?           @map("filled_quantity")
+  filledAt        DateTime?        @map("filled_at")
+  commission      Float            @default(0)
+  notes           String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  connection      BrokerConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
+  @@index([symbol])
+  @@index([status])
+  @@index([createdAt])
+  @@map("broker_orders")
+}
+
+// ============== OAUTH TOKENS ==============
+
+model OAuthToken {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  providerId    String    @map("provider_id") // schwab, etrade, robinhood, coinbase
+  accessToken   String    @map("access_token") // Encrypted
+  refreshToken  String?   @map("refresh_token") // Encrypted
+  expiresIn     Int       @default(3600) @map("expires_in") // Seconds
+  tokenType     String    @default("Bearer") @map("token_type")
+  scope         String?   // Granted scopes
+  obtainedAt    DateTime  @default(now()) @map("obtained_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, providerId])
+  @@index([userId])
+  @@index([providerId])
+  @@map("oauth_tokens")
+}
+
+// ============== FINANCE ASSISTANT ==============
+
+model AssistantSession {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  title        String   @default("New Conversation")
+  portfolioId  String?  @map("portfolio_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  messages     AssistantMessage[]
+  attachments  AssistantAttachment[]
+
+  @@index([userId])
+  @@index([portfolioId])
+  @@index([createdAt])
+  @@map("assistant_sessions")
+}
+
+model AssistantMessage {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  role        String   // 'user' | 'assistant' | 'system' | 'tool'
+  content     String   @db.Text
+  toolCalls   String?  @map("tool_calls") @db.Text // JSON for tool invocations
+  toolResults String?  @map("tool_results") @db.Text // JSON for tool responses
+  tokens      Int?
+  provider    String?  // 'claude' | 'openai'
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session     AssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("assistant_messages")
+}
+
+model AssistantAttachment {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  messageId   String?  @map("message_id")
+  filename    String
+  mimeType    String   @map("mime_type")
+  size        Int
+  content     String?  @db.Text // Extracted text content
+  analysis    String?  @db.Text // AI analysis summary
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session     AssistantSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("assistant_attachments")
+}

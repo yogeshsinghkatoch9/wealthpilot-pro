@@ -1,0 +1,203 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeFollowing = following || [];
+const safeAvailableTraders = availableTraders || [];
+const safeTheme = theme || 'dark';
+const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
+%>
+<%- include('../partials/header', { pageTitle: 'Copy Trading' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b-2 border-amber-400 px-6 py-3 -mx-6 -mt-6 mb-6">
+  <h1 class="text-2xl font-bold text-amber-400 tracking-wide">COPY TRADING</h1>
+  <p class="text-slate-400 text-sm mt-1">Follow top performers and mirror their trades</p>
+</div>
+
+<!-- Copy Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm uppercase tracking-wider">Following</p>
+<p class="text-2xl font-bold text-white font-mono"><%= safeFollowing.length %> Traders</p>
+<% const totalAllocated = safeFollowing.reduce((sum, t) => sum + (t.allocation_percent || 0), 0); %>
+<p class="text-sm text-amber-400 font-mono"><%= totalAllocated.toFixed(0) %>% allocated</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm uppercase tracking-wider">Total P/L</p>
+<% const totalPL = safeFollowing.reduce((sum, t) => sum + (t.profit_loss || 0), 0); %>
+<p class="text-2xl font-bold font-mono <%= totalPL >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= totalPL >= 0 ? '+' : '' %><%= safeFmt.money(totalPL) %></p>
+<p class="text-sm text-slate-400 uppercase">All time</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm uppercase tracking-wider">Trades Copied</p>
+<% const totalTrades = safeFollowing.reduce((sum, t) => sum + (t.total_copied_trades || 0), 0); %>
+<p class="text-2xl font-bold text-white font-mono"><%= totalTrades %></p>
+<p class="text-sm text-slate-400 uppercase">Total</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="text-slate-400 text-sm uppercase tracking-wider">Available</p>
+<p class="text-2xl font-bold text-amber-400 font-mono"><%= safeAvailableTraders.length %></p>
+<p class="text-sm text-slate-400 uppercase">traders to follow</p>
+</div>
+</div>
+
+<!-- Currently Following -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Currently Following (<%= safeFollowing.length %>)</h3>
+<% if (safeFollowing.length === 0) { %>
+<div class="text-center py-8">
+<svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+</svg>
+<h4 class="text-lg font-semibold text-white mb-2 uppercase">Not following anyone</h4>
+<p class="text-slate-400">Browse top traders below and start copying!</p>
+</div>
+<% } else { %>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<% safeFollowing.forEach(trader => { %>
+<div class="p-4 rounded border-2 <%= trader.is_active ? 'border-emerald-400/50 bg-emerald-400/5' : 'border-slate-600/50 bg-slate-800/50' %>">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-12 h-12 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold"><%= (trader.trader_name || 'T').substring(0, 2).toUpperCase() %></div>
+<div>
+<p class="font-bold text-white uppercase"><%= trader.trader_name %></p>
+<p class="text-xs font-mono <%= trader.is_active ? 'text-emerald-400' : 'text-slate-400' %>"><%= trader.is_active ? 'ACTIVE' : 'PAUSED' %></p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-2 text-sm mb-3">
+<div><p class="text-slate-400 text-xs uppercase">Allocation</p><p class="font-bold text-white font-mono"><%= trader.allocation_percent || 0 %>%</p></div>
+<div><p class="text-slate-400 text-xs uppercase">P/L</p><p class="font-bold font-mono <%= (trader.profit_loss || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= (trader.profit_loss || 0) >= 0 ? '+' : '' %><%= safeFmt.money(trader.profit_loss || 0) %></p></div>
+<div><p class="text-slate-400 text-xs uppercase">Trades</p><p class="font-bold text-white font-mono"><%= trader.total_copied_trades || 0 %></p></div>
+</div>
+<div class="flex gap-2">
+<button onclick="toggleTrader('<%= trader.id %>')" class="bloomberg-btn-secondary flex-1 uppercase"><%= trader.is_active ? 'Pause' : 'Resume' %></button>
+<button onclick="unfollowTrader('<%= trader.id %>')" class="bloomberg-btn-secondary flex-1 text-red-400 uppercase">Unfollow</button>
+</div>
+</div>
+<% }) %>
+</div>
+<% } %>
+</div>
+
+<!-- Available Traders -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Top Traders to Follow</h3>
+<% if (safeAvailableTraders.length === 0) { %>
+<p class="text-center py-8 text-slate-400">No traders available at the moment</p>
+<% } else { %>
+<div class="overflow-x-auto">
+<table class="bloomberg-table w-full text-sm">
+<thead>
+<tr class="bg-black/50 text-slate-400 text-left border-b-2 border-amber-400">
+<th class="px-4 py-3 uppercase tracking-wider">Trader</th>
+<th class="px-4 py-3 uppercase tracking-wider">Return</th>
+<th class="px-4 py-3 uppercase tracking-wider">Win Rate</th>
+<th class="px-4 py-3 uppercase tracking-wider">Trades</th>
+<th class="px-4 py-3"></th>
+</tr>
+</thead>
+<tbody>
+<% safeAvailableTraders.forEach(trader => { %>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold"><%= (trader.display_name || 'T').substring(0, 2).toUpperCase() %></div>
+<p class="font-medium text-white"><%= trader.display_name %></p>
+</div>
+</td>
+<td class="px-4 py-4 <%= (trader.total_return || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-bold font-mono"><%= (trader.total_return || 0) >= 0 ? '+' : '' %><%= (trader.total_return || 0).toFixed(2) %>%</td>
+<td class="px-4 py-4 text-white font-mono"><%= (trader.win_rate || 0).toFixed(0) %>%</td>
+<td class="px-4 py-4 text-white font-mono"><%= trader.total_trades || 0 %></td>
+<td class="px-4 py-4"><button onclick="followTrader('<%= trader.user_id %>', '<%= trader.display_name %>')" class="bloomberg-btn-primary">FOLLOW</button></td>
+</tr>
+<% }) %>
+</tbody>
+</table>
+</div>
+<% } %>
+</div>
+
+</div></div></main>
+
+<!-- Follow Modal -->
+<div id="followModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="bloomberg-card p-6 w-full max-w-md mx-4">
+<h3 class="text-xl font-bold text-amber-400 mb-4 uppercase tracking-wide" id="followModalTitle">Follow Trader</h3>
+<form id="followForm" class="space-y-4">
+<input type="hidden" name="traderId" id="traderIdInput">
+<input type="hidden" name="traderName" id="traderNameInput">
+<div>
+<label class="block text-sm font-medium text-slate-300 mb-1 uppercase tracking-wider">Allocation %</label>
+<input type="number" name="allocationPercent" class="form-input bg-slate-900 border-slate-700 text-white font-mono" placeholder="10" min="1" max="100" required>
+<p class="text-xs text-slate-400 mt-1">Percentage of portfolio to allocate to this trader</p>
+</div>
+</form>
+<div class="flex gap-3 mt-6">
+<button onclick="closeFollowModal()" class="bloomberg-btn-secondary flex-1 uppercase">Cancel</button>
+<button onclick="submitFollow()" class="bloomberg-btn-primary flex-1 uppercase">Follow</button>
+</div>
+</div>
+</div>
+
+<script>
+function followTrader(traderId, traderName) {
+  document.getElementById('traderIdInput').value = traderId;
+  document.getElementById('traderNameInput').value = traderName;
+  document.getElementById('followModalTitle').textContent = 'Follow ' + traderName;
+  document.getElementById('followModal').classList.remove('hidden');
+  document.getElementById('followModal').classList.add('flex');
+}
+
+function closeFollowModal() {
+  document.getElementById('followModal').classList.add('hidden');
+  document.getElementById('followModal').classList.remove('flex');
+}
+
+async function submitFollow() {
+  const form = document.getElementById('followForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  try {
+    const res = await fetch('/api/copy-trading/traders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showToast('Now following trader!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to follow', 'error');
+    }
+  } catch (e) {
+    showToast('Error following trader', 'error');
+  }
+  closeFollowModal();
+}
+
+async function toggleTrader(id) {
+  try {
+    const res = await fetch('/api/copy-trading/traders/' + id + '/toggle', { method: 'PUT' });
+    if (res.ok) {
+      showToast('Updated!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error updating', 'error');
+  }
+}
+
+async function unfollowTrader(id) {
+  if (!confirm('Stop following this trader?')) return;
+  try {
+    const res = await fetch('/api/copy-trading/traders/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Unfollowed!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error unfollowing', 'error');
+  }
+}
+</script>
+<%- include('../partials/footer') %>

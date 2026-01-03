@@ -1,0 +1,863 @@
+<%- include('../partials/header', { pageTitle: 'Research Center' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Research Center</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Deep-dive company analysis and SEC filings</p></div>
+<div class="flex gap-2">
+<div class="relative">
+<input type="text" id="symbolSearch" class="form-input pl-10 w-64" placeholder="Search ticker (e.g., AAPL)" onkeyup="if(event.key==='Enter')loadResearch()">
+<svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 <%= theme === 'light' ? 'text-gray-400' : 'text-slate-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+</div>
+<button onclick="loadResearch()" class="btn-primary">Research</button>
+</div>
+</div>
+
+<!-- Company Header -->
+<div class="card p-5" id="companyHeader">
+<div class="flex items-start gap-4">
+<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-sky-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">AAPL</div>
+<div class="flex-1">
+<div class="flex items-center gap-3">
+<h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Apple Inc.</h2>
+<span class="px-2 py-1 bg-sky-500/20 text-sky-400 rounded text-xs">Technology</span>
+<span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">Consumer Electronics</span>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">NASDAQ: AAPL • Cupertino, CA • Founded 1976</p>
+</div>
+<div class="text-right">
+<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$189.84</p>
+<p class="text-emerald-400">+$2.47 (+1.32%)</p>
+</div>
+</div>
+</div>
+
+<!-- Research Tabs -->
+<div class="flex flex-wrap gap-2 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %> pb-4">
+<button onclick="showTab('overview')" class="research-tab active" data-tab="overview">📊 Overview</button>
+<button onclick="showTab('financials')" class="research-tab" data-tab="financials">💰 Financials</button>
+<button onclick="showTab('filings')" class="research-tab" data-tab="filings">📄 SEC Filings</button>
+<button onclick="showTab('earnings')" class="research-tab" data-tab="earnings">📈 Earnings</button>
+<button onclick="showTab('analysts')" class="research-tab" data-tab="analysts">🎯 Analysts</button>
+<button onclick="showTab('news')" class="research-tab" data-tab="news">📰 News</button>
+</div>
+
+<!-- Overview Tab -->
+<div id="overview-tab" class="research-panel">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 space-y-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Company Description</h3>
+<p id="companyDescription" class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. The company offers iPhone, Mac, iPad, and wearables including Apple Watch, AirPods, Beats, and Apple TV. It also provides AppleCare support, cloud services, operating licensing, and other services. The company was founded in 1976 and is headquartered in Cupertino, California.</p>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Key Statistics</h3>
+<div id="keyStatistics" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Market Cap</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">$2.94T</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">P/E Ratio</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">29.4</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">EPS (TTM)</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">$6.46</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Dividend Yield</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">0.51%</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">52-Week High</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">$199.62</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">52-Week Low</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">$164.08</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Avg Volume</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">54.2M</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Beta</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">1.28</p></div>
+</div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue by Segment</h3>
+<div class="h-64"><canvas id="segmentChart"></canvas></div>
+</div>
+</div>
+
+<div class="space-y-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">AI Summary</h3>
+<div id="aiSummaryContainer" class="p-4 rounded-lg <%= theme === 'light' ? 'bg-sky-50 border border-sky-200' : 'bg-sky-500/10 border border-sky-500/20' %>">
+<p id="aiSummary" class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> text-sm">Apple remains a dominant force in consumer tech with strong iPhone sales and growing services revenue. The company's AI initiatives and Vision Pro launch signal expansion into new markets. Key risks include China exposure and regulatory scrutiny.</p>
+</div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Management</h3>
+<div id="managementList" class="space-y-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500"></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Tim Cook</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO since 2011</p></div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500"></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Luca Maestri</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CFO</p></div>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500"></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Jeff Williams</p><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">COO</p></div>
+</div>
+</div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Competitors</h3>
+<div id="competitorsList" class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">MSFT</span>
+<span class="text-emerald-400">+0.8%</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">GOOGL</span>
+<span class="text-red-400">-0.3%</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">AMZN</span>
+<span class="text-emerald-400">+1.2%</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">META</span>
+<span class="text-emerald-400">+2.1%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Financials Tab -->
+<div id="financials-tab" class="research-panel hidden">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Income Statement (Annual)</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead><tr class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-left border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>"><th class="pb-2">Metric</th><th class="pb-2">2024</th><th class="pb-2">2023</th><th class="pb-2">2022</th></tr></thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Revenue</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$385B</td><td>$383B</td><td>$394B</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Gross Profit</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$170B</td><td>$169B</td><td>$171B</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Operating Income</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$115B</td><td>$114B</td><td>$119B</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Net Income</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$97B</td><td>$97B</td><td>$100B</td></tr>
+<tr><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">EPS</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$6.46</td><td>$6.13</td><td>$6.11</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Balance Sheet</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead><tr class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-left border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>"><th class="pb-2">Metric</th><th class="pb-2">2024</th><th class="pb-2">2023</th></tr></thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Total Assets</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$352B</td><td>$353B</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Total Liabilities</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$290B</td><td>$290B</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Cash & Equiv</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$62B</td><td>$62B</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Long-term Debt</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$98B</td><td>$98B</td></tr>
+<tr><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Shareholders' Equity</td><td class="py-2 <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$62B</td><td>$62B</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card p-5 lg:col-span-2">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue & Earnings Trend</h3>
+<div class="h-64"><canvas id="financialsChart"></canvas></div>
+</div>
+</div>
+</div>
+
+<!-- SEC Filings Tab -->
+<div id="filings-tab" class="research-panel hidden">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Recent SEC Filings</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="px-3 py-1 bg-sky-500/20 text-sky-400 rounded font-mono text-sm">10-K</span>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Annual Report</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Filed Nov 3, 2024 • Fiscal Year 2024</p>
+</div>
+</div>
+<button class="btn-ghost btn-sm">View PDF</button>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded font-mono text-sm">10-Q</span>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Quarterly Report</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Filed Aug 4, 2024 • Q3 FY2024</p>
+</div>
+</div>
+<button class="btn-ghost btn-sm">View PDF</button>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded font-mono text-sm">8-K</span>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Current Report</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Filed Oct 31, 2024 • Earnings Release</p>
+</div>
+</div>
+<button class="btn-ghost btn-sm">View PDF</button>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded font-mono text-sm">DEF 14A</span>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Proxy Statement</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Filed Jan 12, 2024 • Annual Meeting</p>
+</div>
+</div>
+<button class="btn-ghost btn-sm">View PDF</button>
+</div>
+<div class="flex items-center justify-between p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800 hover:bg-slate-700' %> cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="px-3 py-1 bg-rose-500/20 text-rose-400 rounded font-mono text-sm">4</span>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Insider Transaction</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Filed Nov 15, 2024 • Tim Cook - Sale</p>
+</div>
+</div>
+<button class="btn-ghost btn-sm">View PDF</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Earnings Tab -->
+<div id="earnings-tab" class="research-panel hidden">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Earnings History</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead><tr class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-left border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>"><th class="pb-2">Quarter</th><th class="pb-2">EPS Est</th><th class="pb-2">EPS Act</th><th class="pb-2">Surprise</th></tr></thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Q4 2024</td><td class="py-2">$2.10</td><td>$2.18</td><td class="text-emerald-400">+3.8%</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Q3 2024</td><td class="py-2">$1.35</td><td>$1.40</td><td class="text-emerald-400">+3.7%</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Q2 2024</td><td class="py-2">$1.50</td><td>$1.53</td><td class="text-emerald-400">+2.0%</td></tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>"><td class="py-2 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Q1 2024</td><td class="py-2">$1.42</td><td>$1.43</td><td class="text-emerald-400">+0.7%</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Upcoming Earnings</h3>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-amber-50 border border-amber-200' : 'bg-amber-500/10 border border-amber-500/20' %>">
+<p class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Q1 FY2025 Earnings</p>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mt-1">Expected: January 30, 2025</p>
+<div class="mt-3 flex gap-4">
+<div><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">EPS Estimate</p><p class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$2.35</p></div>
+<div><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Revenue Est</p><p class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$118B</p></div>
+</div>
+</div>
+</div>
+
+<div class="card p-5 lg:col-span-2">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Latest Earnings Call Transcript</h3>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %> max-h-64 overflow-y-auto">
+<p class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> text-sm leading-relaxed">
+<strong>Tim Cook (CEO):</strong> "Good afternoon, and thank you for joining us. Today Apple is reporting revenue of $94.9 billion for the December quarter, an all-time revenue record and better than we expected..."<br><br>
+<strong>Analyst Question:</strong> "Can you provide more color on the Services growth trajectory?"<br><br>
+<strong>Luca Maestri (CFO):</strong> "Services revenue grew 11% year-over-year, driven by strong performance across the App Store, Apple Music, and our advertising business..."
+</p>
+</div>
+<button class="btn-ghost btn-sm mt-3">Read Full Transcript</button>
+</div>
+</div>
+</div>
+
+<!-- Analysts Tab -->
+<div id="analysts-tab" class="research-panel hidden">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Price Target</p>
+<p class="text-3xl font-bold text-emerald-400">$210</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">+10.6% upside</p>
+</div>
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Consensus</p>
+<p class="text-3xl font-bold text-sky-400">BUY</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">42 analysts</p>
+</div>
+<div class="card p-4 text-center">
+<p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Rating Distribution</p>
+<p class="text-sm mt-2"><span class="text-emerald-400">30 Buy</span> • <span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">10 Hold</span> • <span class="text-red-400">2 Sell</span></p>
+</div>
+</div>
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Recent Analyst Actions</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<div><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Morgan Stanley</p><p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Dec 5, 2024</p></div>
+<div class="text-right"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Overweight</span><p class="text-sm mt-1">PT: $220</p></div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<div><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Goldman Sachs</p><p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Dec 3, 2024</p></div>
+<div class="text-right"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Buy</span><p class="text-sm mt-1">PT: $215</p></div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<div><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">JP Morgan</p><p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Nov 28, 2024</p></div>
+<div class="text-right"><span class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Neutral</span><p class="text-sm mt-1">PT: $195</p></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- News Tab -->
+<div id="news-tab" class="research-panel hidden">
+<div class="space-y-4">
+<div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors">
+<div class="flex gap-4">
+<div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Apple's AI Strategy: What Vision Pro Means for the Future</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">Reuters • 2 hours ago</p>
+</div>
+</div>
+</div>
+<div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors">
+<div class="flex gap-4">
+<div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">iPhone Sales in China Show Signs of Recovery</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">Bloomberg • 5 hours ago</p>
+</div>
+</div>
+</div>
+<div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors">
+<div class="flex gap-4">
+<div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>
+<div>
+<p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Apple Services Revenue Hits New Record</p>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">CNBC • 1 day ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<style>
+.research-tab { @apply px-4 py-2 rounded-lg text-sm font-medium transition-colors; }
+.research-tab:not(.active) { @apply <%= theme === 'light' ? 'text-gray-600 hover:bg-gray-100' : 'text-slate-400 hover:bg-slate-800' %>; }
+.research-tab.active { @apply bg-sky-500 text-white; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+/**
+ * Get authentication token from localStorage
+ */
+function getToken() {
+  return localStorage.getItem('wealthpilot_token') || '';
+}
+
+/**
+ * Make authenticated fetch request
+ */
+async function authFetch(url, options = {}) {
+  const token = getToken();
+
+  // Don't set Content-Type for FormData - browser will set it with boundary
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
+    ...options.headers
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return fetch(url, {
+    ...options,
+    headers
+  });
+}
+
+async function showTab(tab) {
+  document.querySelectorAll('.research-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.research-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tab + '-tab').classList.remove('hidden');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+  // Load data for the tab if not overview
+  if (tab !== 'overview' && currentSymbol) {
+    await loadTabData(tab, currentSymbol);
+  }
+}
+
+async function loadTabData(tab, symbol) {
+  try {
+    let endpoint = '';
+    switch(tab) {
+      case 'financials':
+        endpoint = `/api/research/stock/${symbol}/financials`;
+        break;
+      case 'filings':
+        endpoint = `/api/research/stock/${symbol}/sec-filings`;
+        break;
+      case 'earnings':
+        endpoint = `/api/research/stock/${symbol}/earnings`;
+        break;
+      case 'analysts':
+        endpoint = `/api/research/stock/${symbol}/analysts`;
+        break;
+      case 'news':
+        endpoint = `/api/research/stock/${symbol}/news`;
+        break;
+    }
+
+    if (endpoint) {
+      const response = await authFetch(endpoint);
+      const data = await response.json();
+
+      // Update the tab with data
+      switch(tab) {
+        case 'financials':
+          updateFinancials(data);
+          break;
+        case 'filings':
+          updateSECFilings(data);
+          break;
+        case 'earnings':
+          updateEarnings(data);
+          break;
+        case 'analysts':
+          updateAnalysts(data);
+          break;
+        case 'news':
+          updateNews(data);
+          break;
+      }
+    }
+  } catch (error) {
+    console.error(`Error loading ${tab} data:`, error);
+  }
+}
+
+function updateFinancials(data) {
+  const container = document.getElementById('financials-tab');
+  if (!container) return;
+
+  if (data.error) {
+    container.innerHTML = `
+      <div class="card p-6">
+        <p class="text-red-400">Error loading financial data: ${data.error}</p>
+      </div>
+    `;
+    return;
+  }
+
+  const formatValue = (val) => {
+    if (!val) return 'N/A';
+    if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + 'T';
+    if (val >= 1e9) return '$' + (val / 1e9).toFixed(2) + 'B';
+    if (val >= 1e6) return '$' + (val / 1e6).toFixed(2) + 'M';
+    if (val >= 1e3) return '$' + (val / 1e3).toFixed(2) + 'K';
+    return '$' + val.toFixed(2);
+  };
+
+  const getYears = (dataArray) => {
+    if (!dataArray || dataArray.length === 0) return [];
+    return dataArray.map(d => new Date(d.period).getFullYear());
+  };
+
+  const getValue = (dataArray, index) => {
+    if (!dataArray || !dataArray[index]) return 'N/A';
+    return formatValue(dataArray[index].value);
+  };
+
+  const years = getYears(data.incomeStatement.revenue);
+
+  container.innerHTML = `
+    <div class="space-y-6">
+      <!-- Income Statement -->
+      <div class="card p-6">
+        <h3 class="text-xl font-bold mb-4 text-white">Income Statement</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-2 text-slate-400">Metric</th>
+                ${years.map(year => `<th class="text-right py-2 text-slate-400">${year}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-semibold">Revenue</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-emerald-400">${getValue(data.incomeStatement.revenue, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Cost of Revenue</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.incomeStatement.costOfRevenue, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-semibold">Gross Profit</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-white">${getValue(data.incomeStatement.grossProfit, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Operating Expenses</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.incomeStatement.operatingExpenses, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-semibold">Operating Income</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-white">${getValue(data.incomeStatement.operatingIncome, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-bold">Net Income</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-emerald-400 font-bold">${getValue(data.incomeStatement.netIncome, i)}</td>`).join('')}
+              </tr>
+              <tr>
+                <td class="py-3 text-slate-300">EPS (Basic)</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.incomeStatement.eps, i)}</td>`).join('')}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Balance Sheet -->
+      <div class="card p-6">
+        <h3 class="text-xl font-bold mb-4 text-white">Balance Sheet</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-2 text-slate-400">Metric</th>
+                ${years.map(year => `<th class="text-right py-2 text-slate-400">${year}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-bold">Total Assets</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-emerald-400 font-bold">${getValue(data.balanceSheet.totalAssets, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Current Assets</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.balanceSheet.currentAssets, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Cash & Equivalents</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.balanceSheet.cashAndEquivalents, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-bold">Total Liabilities</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-red-400 font-bold">${getValue(data.balanceSheet.totalLiabilities, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Current Liabilities</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.balanceSheet.currentLiabilities, i)}</td>`).join('')}
+              </tr>
+              <tr>
+                <td class="py-3 text-white font-bold">Total Equity</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-sky-400 font-bold">${getValue(data.balanceSheet.totalEquity, i)}</td>`).join('')}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Cash Flow -->
+      <div class="card p-6">
+        <h3 class="text-xl font-bold mb-4 text-white">Cash Flow Statement</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-slate-700">
+                <th class="text-left py-2 text-slate-400">Metric</th>
+                ${years.map(year => `<th class="text-right py-2 text-slate-400">${year}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody class="text-sm">
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-white font-bold">Operating Cash Flow</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-emerald-400 font-bold">${getValue(data.cashFlow.operatingCashFlow, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Investing Cash Flow</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.cashFlow.investingCashFlow, i)}</td>`).join('')}
+              </tr>
+              <tr class="border-b border-slate-800">
+                <td class="py-3 text-slate-300">Financing Cash Flow</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-slate-300">${getValue(data.cashFlow.financingCashFlow, i)}</td>`).join('')}
+              </tr>
+              <tr>
+                <td class="py-3 text-white font-bold">Free Cash Flow</td>
+                ${[0,1,2,3].map(i => `<td class="text-right text-sky-400 font-bold">${getValue(data.cashFlow.freeCashFlow, i)}</td>`).join('')}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function updateSECFilings(filings) {
+  const container = document.getElementById('filings-tab');
+  if (!container) return;
+
+  const filingsHTML = filings.map(filing => `
+    <div class="card p-4 hover:bg-slate-700 transition-colors">
+      <div class="flex justify-between items-start">
+        <div>
+          <h4 class="font-semibold text-white">${filing.type}</h4>
+          <p class="text-sm text-slate-400">${filing.date}</p>
+        </div>
+        <a href="${filing.url}" target="_blank" class="btn-primary text-sm">
+          Download
+        </a>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="space-y-3">
+      <h3 class="text-lg font-semibold">SEC Filings</h3>
+      ${filingsHTML || '<p class="text-slate-400">No filings available</p>'}
+    </div>
+  `;
+}
+
+function updateEarnings(data) {
+  const container = document.getElementById('earnings-tab');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="card p-6">
+      <h3 class="text-lg font-semibold mb-4">Earnings History</h3>
+      <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">
+        Earnings data will appear here.
+      </p>
+    </div>
+  `;
+}
+
+function updateAnalysts(data) {
+  const container = document.getElementById('analysts-tab');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="card p-6">
+      <h3 class="text-lg font-semibold mb-4">Analyst Recommendations</h3>
+      <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">
+        Analyst ratings will appear here.
+      </p>
+    </div>
+  `;
+}
+
+function updateNews(articles) {
+  const container = document.getElementById('news-tab');
+  if (!container) return;
+
+  const newsHTML = articles.map(article => `
+    <div class="card p-4">
+      <h4 class="font-semibold text-white mb-2">${article.title}</h4>
+      <p class="text-sm text-slate-400 mb-3">${article.summary}</p>
+      <div class="flex justify-between items-center text-xs text-slate-500">
+        <span>${article.source}</span>
+        <span>${new Date(article.date).toLocaleDateString()}</span>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="space-y-3">
+      <h3 class="text-lg font-semibold">Latest News</h3>
+      ${newsHTML || '<p class="text-slate-400">No news available</p>'}
+    </div>
+  `;
+}
+
+let currentSymbol = 'AAPL';
+
+async function loadResearch() {
+  const symbol = document.getElementById('symbolSearch').value.toUpperCase() || 'AAPL';
+  currentSymbol = symbol;
+
+  showToast(`Loading research for ${symbol}...`, 'info');
+
+  try {
+    // Fetch stock data from backend API
+    const response = await authFetch(`/api/research/stock/${symbol}`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch data for ${symbol}`);
+    }
+
+    const data = await response.json();
+    console.log('Research data received:', data);
+
+    // Update the UI with live data
+    updateCompanyHeader(data);
+    updateCompanyDescription(data);
+    updateKeyStatistics(data);
+    updateAISummary(data);
+    updateManagement(data);
+    updateCompetitors(data);
+    updateRevenueChart(data);
+
+    showToast(`Research loaded for ${symbol}`, 'success');
+  } catch (error) {
+    console.error('Error loading research:', error);
+    showToast(`Error loading data for ${symbol}. Please try again.`, 'error');
+  }
+}
+
+function updateCompanyHeader(data) {
+  const header = document.getElementById('companyHeader');
+  const changePercent = data.changePercent || 0;
+  const change = data.change || 0;
+  const changeClass = changePercent >= 0 ? 'text-emerald-400' : 'text-red-400';
+  const changeSign = changePercent >= 0 ? '+' : '';
+
+  header.innerHTML = `
+    <div class="flex items-start gap-4">
+      <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-sky-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">${data.symbol}</div>
+      <div class="flex-1">
+        <div class="flex items-center gap-3">
+          <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">${data.name}</h2>
+          ${data.tags ? data.tags.map(tag => `<span class="px-2 py-1 bg-sky-500/20 text-sky-400 rounded text-xs">${tag}</span>`).join('') : ''}
+        </div>
+        <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">${data.exchange || 'NASDAQ'}: ${data.symbol} • ${data.location || 'USA'}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$${data.price ? data.price.toFixed(2) : 'N/A'}</p>
+        <p class="${changeClass}">${changeSign}$${Math.abs(change).toFixed(2)} (${changeSign}${Math.abs(changePercent).toFixed(2)}%)</p>
+      </div>
+    </div>
+  `;
+}
+
+function updateCompanyDescription(data) {
+  const descElement = document.getElementById('companyDescription');
+  if (descElement && data.description) {
+    descElement.textContent = data.description;
+  }
+}
+
+function updateKeyStatistics(data) {
+  if (!data.stats) return;
+
+  const stats = data.stats;
+  const statsGrid = document.getElementById('keyStatistics');
+  if (!statsGrid) return;
+
+  statsGrid.innerHTML = `
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Market Cap</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.marketCap || 'N/A'}</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">P/E Ratio</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.peRatio || 'N/A'}</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">EPS (TTM)</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.eps || 'N/A'}</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Dividend Yield</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.dividendYield || '0.00'}%</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">52-Week High</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.week52High || 'N/A'}</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">52-Week Low</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.week52Low || 'N/A'}</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Avg Volume</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.avgVolume || 'N/A'}</p></div>
+    <div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Beta</p><p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-semibold">${stats.beta || 'N/A'}</p></div>
+  `;
+}
+
+function updateAISummary(data) {
+  const summaryElement = document.getElementById('aiSummary');
+  if (summaryElement && data.aiSummary) {
+    summaryElement.textContent = data.aiSummary;
+  }
+}
+
+function updateManagement(data) {
+  if (!data.management || !data.management.length) return;
+
+  const managementDiv = document.getElementById('managementList');
+  if (!managementDiv) return;
+
+  managementDiv.innerHTML = data.management.slice(0, 3).map(exec => `
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-500"></div>
+      <div>
+        <p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">${exec.name}</p>
+        <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">${exec.title}${exec.age ? ' • Age ' + exec.age : ''}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateCompetitors(data) {
+  if (!data.competitors || !data.competitors.length) return;
+
+  const competitorsDiv = document.getElementById('competitorsList');
+  if (!competitorsDiv) return;
+
+  competitorsDiv.innerHTML = data.competitors.map(comp => {
+    const changeValue = parseFloat(comp.change) || 0;
+    const changeClass = changeValue >= 0 ? 'text-emerald-400' : 'text-red-400';
+    const changeSign = changeValue >= 0 ? '+' : '';
+    return `
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> font-medium">${comp.symbol}</div>
+          <div class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">${comp.name || comp.symbol}</div>
+        </div>
+        <div class="text-right">
+          <div class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">$${comp.price ? comp.price.toFixed(2) : 'N/A'}</div>
+          <div class="${changeClass} text-sm">${changeSign}${Math.abs(changeValue).toFixed(2)}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Revenue by Segment Chart
+let segmentChart = null;
+
+function initializeSegmentChart() {
+  const ctx = document.getElementById('segmentChart');
+  if (!ctx) return;
+
+  segmentChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Products', 'Services', 'Other'],
+      datasets: [{
+        data: [65, 25, 10],
+        backgroundColor: ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right' }
+      }
+    }
+  });
+}
+
+function updateRevenueChart(data) {
+  if (!data.revenueSegments || !data.revenueSegments.length) return;
+
+  const labels = data.revenueSegments.map(seg => seg.name);
+  const values = data.revenueSegments.map(seg => seg.value);
+
+  if (segmentChart) {
+    segmentChart.data.labels = labels;
+    segmentChart.data.datasets[0].data = values;
+    segmentChart.update();
+  }
+}
+
+// Initialize chart on page load
+initializeSegmentChart();
+
+// Financials Chart
+new Chart(document.getElementById('financialsChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2020', '2021', '2022', '2023', '2024'],
+    datasets: [
+      { label: 'Revenue ($B)', data: [274, 366, 394, 383, 385], backgroundColor: '#0ea5e9' },
+      { label: 'Net Income ($B)', data: [57, 95, 100, 97, 97], backgroundColor: '#10b981' }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,300 @@
+<%
+  const regional = data.regional || null;
+  const sectorRotation = data.sectorRotation || null;
+  const peerBench = data.peerBench || null;
+  const alphaDecay = data.alphaDecay || null;
+%>
+
+<!-- Attribution Tab Content -->
+<div class="space-y-6">
+
+  <!-- ========== ANALYSIS 10: Attribution by Region/Currency ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        10. Attribution by Region/Currency
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">GEOGRAPHIC BREAKDOWN</span>
+    </div>
+
+    <% if (regional && !regional.error) { %>
+      <!-- Regional Summary Cards -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <% if (regional.regions && regional.regions.length > 0) { %>
+          <% regional.regions.slice(0, 4).forEach(region => { %>
+            <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+              <div class="text-xs text-slate-500 uppercase tracking-wide mb-1"><%= region.name %></div>
+              <div class="text-xl font-bold text-white font-mono">
+                <%= region.weight.toFixed(1) %>%
+              </div>
+              <div class="text-sm <%= region.return >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono mt-1">
+                <%= region.return >= 0 ? '+' : '' %><%= region.return.toFixed(2) %>%
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <!-- Stacked Column Chart -->
+      <div class="h-96">
+        <canvas id="regional-attribution-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No regional attribution data available. Requires holdings with country/region information.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 11: Sector Rotation & Exposure ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        11. Sector Rotation & Exposure
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">SECTOR DYNAMICS</span>
+    </div>
+
+    <% if (sectorRotation && !sectorRotation.error) { %>
+      <!-- Current Sector Allocations -->
+      <div class="grid grid-cols-5 gap-3 mb-6">
+        <% if (sectorRotation.currentAllocation) { %>
+          <% Object.entries(sectorRotation.currentAllocation).slice(0, 5).forEach(([sector, data]) => { %>
+            <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+              <div class="text-xs text-slate-500 uppercase tracking-wide mb-1"><%= sector %></div>
+              <div class="text-lg font-bold text-white font-mono">
+                <%= data.weight.toFixed(1) %>%
+              </div>
+              <div class="text-xs <%= data.change >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+                <%= data.change >= 0 ? '▲' : '▼' %> <%= Math.abs(data.change).toFixed(1) %>%
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <!-- Stacked Area Chart (Sector Evolution Over Time) -->
+      <div class="h-80 mb-6">
+        <canvas id="sector-rotation-area-chart"></canvas>
+      </div>
+
+      <!-- Sector Performance Heatmap -->
+      <div class="h-64">
+        <canvas id="sector-heatmap-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No sector rotation data available. Requires historical sector allocations.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 12: Attribution vs Peers (Peer Benchmarking) ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        12. Peer Benchmarking
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">RELATIVE PERFORMANCE</span>
+    </div>
+
+    <% if (peerBench && !peerBench.error) { %>
+      <!-- Percentile Rankings -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Universe</div>
+          <div class="text-lg font-bold text-bloomberg-amber uppercase">
+            <%= peerBench.peerUniverse || 'Balanced' %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Return Percentile</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (peerBench.percentiles?.return || 0).toFixed(0) %><span class="text-sm">th</span>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Sharpe Percentile</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (peerBench.percentiles?.sharpe || 0).toFixed(0) %><span class="text-sm">th</span>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Risk Percentile</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (peerBench.percentiles?.volatility || 0).toFixed(0) %><span class="text-sm">th</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk-Return Scatter Plot -->
+      <div class="h-96 mb-6">
+        <canvas id="peer-scatter-chart"></canvas>
+      </div>
+
+      <!-- Peer Rankings Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-bloomberg-surface border-b border-bloomberg-border">
+            <tr>
+              <th class="px-4 py-3 text-left text-slate-400 font-semibold">Metric</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Your Portfolio</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Peer Avg</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Ranking</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Percentile</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono">
+            <tr class="border-b border-slate-800">
+              <td class="px-4 py-3 text-white">Annual Return</td>
+              <td class="px-4 py-3 text-right text-white">
+                <%= (peerBench.portfolio?.return || 0).toFixed(2) %>%
+              </td>
+              <td class="px-4 py-3 text-right text-slate-400">
+                <%= (peerBench.peerAverage?.return || 0).toFixed(2) %>%
+              </td>
+              <td class="px-4 py-3 text-right text-bloomberg-amber">
+                <%= peerBench.ranking?.return || 'N/A' %>
+              </td>
+              <td class="px-4 py-3 text-right text-emerald-400">
+                <%= (peerBench.percentiles?.return || 0).toFixed(0) %>th
+              </td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-4 py-3 text-white">Volatility</td>
+              <td class="px-4 py-3 text-right text-white">
+                <%= (peerBench.portfolio?.volatility || 0).toFixed(2) %>%
+              </td>
+              <td class="px-4 py-3 text-right text-slate-400">
+                <%= (peerBench.peerAverage?.volatility || 0).toFixed(2) %>%
+              </td>
+              <td class="px-4 py-3 text-right text-bloomberg-amber">
+                <%= peerBench.ranking?.volatility || 'N/A' %>
+              </td>
+              <td class="px-4 py-3 text-right text-emerald-400">
+                <%= (peerBench.percentiles?.volatility || 0).toFixed(0) %>th
+              </td>
+            </tr>
+            <tr class="border-b border-slate-800">
+              <td class="px-4 py-3 text-white">Sharpe Ratio</td>
+              <td class="px-4 py-3 text-right text-white">
+                <%= (peerBench.portfolio?.sharpe || 0).toFixed(2) %>
+              </td>
+              <td class="px-4 py-3 text-right text-slate-400">
+                <%= (peerBench.peerAverage?.sharpe || 0).toFixed(2) %>
+              </td>
+              <td class="px-4 py-3 text-right text-bloomberg-amber">
+                <%= peerBench.ranking?.sharpe || 'N/A' %>
+              </td>
+              <td class="px-4 py-3 text-right text-emerald-400">
+                <%= (peerBench.percentiles?.sharpe || 0).toFixed(0) %>th
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No peer benchmarking data available. Using simulated peer universe.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 13: Alpha Decay / Factor Crowding ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        13. Alpha Decay / Factor Crowding
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">STRATEGY PERSISTENCE</span>
+    </div>
+
+    <% if (alphaDecay && !alphaDecay.error) { %>
+      <!-- Alpha Metrics -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Current Alpha</div>
+          <div class="text-2xl font-bold <%= alphaDecay.currentAlpha >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= alphaDecay.currentAlpha >= 0 ? '+' : '' %><%= (alphaDecay.currentAlpha || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">3M Alpha</div>
+          <div class="text-xl font-bold <%= alphaDecay.alpha3M >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= alphaDecay.alpha3M >= 0 ? '+' : '' %><%= (alphaDecay.alpha3M || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">6M Alpha</div>
+          <div class="text-xl font-bold <%= alphaDecay.alpha6M >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= alphaDecay.alpha6M >= 0 ? '+' : '' %><%= (alphaDecay.alpha6M || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">12M Alpha</div>
+          <div class="text-xl font-bold <%= alphaDecay.alpha12M >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
+            <%= alphaDecay.alpha12M >= 0 ? '+' : '' %><%= (alphaDecay.alpha12M || 0).toFixed(2) %>%
+          </div>
+        </div>
+      </div>
+
+      <!-- Alpha Decay Line Chart -->
+      <div class="h-80 mb-6">
+        <canvas id="alpha-decay-chart"></canvas>
+      </div>
+
+      <!-- Factor Crowding Heatmap -->
+      <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Factor Crowding Index</h3>
+        <div class="grid grid-cols-6 gap-3">
+          <% if (alphaDecay.factorCrowding) { %>
+            <% Object.entries(alphaDecay.factorCrowding).forEach(([factor, crowding]) => { %>
+              <%
+                let crowdClass = 'bg-green-900';
+                if (crowding > 0.7) crowdClass = 'bg-red-900';
+                else if (crowding > 0.4) crowdClass = 'bg-orange-900';
+              %>
+              <div class="<%= crowdClass %> rounded p-3 text-center">
+                <div class="text-xs text-slate-300 uppercase mb-1"><%= factor %></div>
+                <div class="text-lg font-bold text-white font-mono">
+                  <%= (crowding * 100).toFixed(0) %>%
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div class="col-span-6 text-center text-slate-500 py-4">Factor crowding data not available</div>
+          <% } %>
+        </div>
+        <div class="flex items-center justify-center gap-6 mt-4 text-xs">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-green-900 border border-slate-600"></div>
+            <span class="text-slate-400">Low (&lt; 40%)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-orange-900 border border-slate-600"></div>
+            <span class="text-slate-400">Moderate (40-70%)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 bg-red-900 border border-slate-600"></div>
+            <span class="text-slate-400">High (&gt; 70%)</span>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No alpha decay data available. Requires rolling alpha calculations.
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+  // Store chart data for later initialization
+  window.attributionTabData = {
+    regional: <%- JSON.stringify(regional) %>,
+    sectorRotation: <%- JSON.stringify(sectorRotation) %>,
+    peerBench: <%- JSON.stringify(peerBench) %>,
+    alphaDecay: <%- JSON.stringify(alphaDecay) %>
+  };
+</script>

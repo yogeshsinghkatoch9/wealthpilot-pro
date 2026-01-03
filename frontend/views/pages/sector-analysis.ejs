@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en" class="<%= theme %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %> | WealthPilot Pro</title>
+  <link rel="stylesheet" href="/css/tailwind.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Modern Gradient Hero Animation */
+    @keyframes gradient-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .gradient-hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 200% 200%;
+      animation: gradient-shift 8s ease infinite;
+    }
+
+    /* Glass Morphism Cards */
+    .glass-card {
+      background: <%= theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.05)' %>;
+      backdrop-filter: blur(10px);
+      border: 1px solid <%= theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)' %>;
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px <%= theme === 'light' ? 'rgba(0, 0, 0, 0.15)' : 'rgba(0, 0, 0, 0.5)' %>;
+    }
+
+    /* Live Pulse Animation */
+    @keyframes pulse-ring {
+      0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      }
+      100% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+      }
+    }
+
+    .live-pulse {
+      animation: pulse-ring 1.5s ease-out infinite;
+    }
+
+    /* Modern Tab Styles */
+    .tab-btn {
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      background: <%= theme === 'light' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)' %>;
+      color: <%= theme === 'light' ? '#4b5563' : '#9ca3af' %>;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: <%= theme === 'light' ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.2)' %>;
+    }
+
+    /* Fade In Up Animation */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in-up {
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
+
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+
+    /* Sector Badge */
+    .sector-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      display: inline-block;
+    }
+
+    .badge-gain {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .badge-loss {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    .badge-neutral {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+      color: white;
+    }
+
+    /* Portfolio Selector */
+    .portfolio-select {
+      padding: 12px 20px;
+      border-radius: 12px;
+      background: <%= theme === 'light' ? 'white' : 'rgba(255, 255, 255, 0.1)' %>;
+      border: 2px solid <%= theme === 'light' ? '#e5e7eb' : 'rgba(255, 255, 255, 0.2)' %>;
+      color: <%= theme === 'light' ? '#1f2937' : '#f3f4f6' %>;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .portfolio-select:hover {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Metric Cards */
+    .metric-card {
+      padding: 20px;
+      border-radius: 16px;
+      background: <%= theme === 'light' ? 'white' : 'rgba(255, 255, 255, 0.05)' %>;
+      border: 1px solid <%= theme === 'light' ? '#e5e7eb' : 'rgba(255, 255, 255, 0.1)' %>;
+      transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 30px <%= theme === 'light' ? 'rgba(102, 126, 234, 0.2)' : 'rgba(102, 126, 234, 0.3)' %>;
+    }
+
+    /* Period Selector Buttons */
+    .period-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: all 0.3s ease;
+      background: <%= theme === 'light' ? '#f3f4f6' : 'rgba(255, 255, 255, 0.05)' %>;
+      color: <%= theme === 'light' ? '#4b5563' : '#9ca3af' %>;
+      border: none;
+      cursor: pointer;
+    }
+
+    .period-btn.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .period-btn:hover:not(.active) {
+      background: <%= theme === 'light' ? '#e5e7eb' : 'rgba(255, 255, 255, 0.1)' %>;
+    }
+
+    /* Tabular Numbers */
+    .stat-number {
+      font-feature-settings: 'tnum';
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Chart Container */
+    .chart-container {
+      position: relative;
+      height: 400px;
+      padding: 20px;
+      border-radius: 16px;
+      background: <%= theme === 'light' ? 'white' : 'rgba(255, 255, 255, 0.03)' %>;
+    }
+
+    /* Allocation Bar */
+    .allocation-bar {
+      height: 24px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: <%= theme === 'light' ? '#f3f4f6' : 'rgba(255, 255, 255, 0.05)' %>;
+      display: flex;
+    }
+
+    .allocation-segment {
+      transition: all 0.5s ease;
+    }
+
+    .allocation-segment:hover {
+      filter: brightness(1.2);
+    }
+  </style>
+</head>
+<body class="<%= theme === 'light' ? 'bg-gray-50' : 'bg-gray-900' %> min-h-screen">
+  <%- include('../partials/header') %>
+
+  <main class="container mx-auto px-4 py-8">
+    <!-- Gradient Hero Section -->
+    <div class="gradient-hero rounded-3xl p-8 mb-8 text-white shadow-2xl">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-3 h-3 bg-green-400 rounded-full live-pulse"></div>
+            <span class="text-sm font-semibold uppercase tracking-wide opacity-90">Live Sector Data</span>
+          </div>
+          <h1 class="text-4xl font-bold mb-2">Sector Analysis</h1>
+          <p class="text-lg opacity-90">Portfolio allocation and sector performance breakdown</p>
+        </div>
+
+        <!-- Portfolio Selector -->
+        <div class="flex flex-col gap-2">
+          <label class="text-sm font-semibold opacity-90">Portfolio</label>
+          <select id="portfolioSelect" class="portfolio-select">
+            <option value="all" <%= portfolioId === 'all' ? 'selected' : '' %>>All Portfolios Combined</option>
+            <% if (portfolios && portfolios.length > 0) { %>
+              <% portfolios.forEach(portfolio => { %>
+                <option value="<%= portfolio.id %>" <%= portfolioId === portfolio.id ? 'selected' : '' %>>
+                  <%= portfolio.name %>
+                </option>
+              <% }); %>
+            <% } %>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="glass-card rounded-2xl p-6 mb-8 fade-in-up">
+      <div class="flex gap-3 overflow-x-auto pb-2">
+        <button class="tab-btn <%= selectedTab === 'overview' ? 'active' : '' %>" data-tab="overview" onclick="switchTab('overview')">
+          📊 Overview
+        </button>
+        <button class="tab-btn <%= selectedTab === 'performance' ? 'active' : '' %>" data-tab="performance" onclick="switchTab('performance')">
+          📈 Performance
+        </button>
+        <button class="tab-btn <%= selectedTab === 'allocation' ? 'active' : '' %>" data-tab="allocation" onclick="switchTab('allocation')">
+          🎯 Allocation
+        </button>
+        <button class="tab-btn <%= selectedTab === 'heatmap' ? 'active' : '' %>" data-tab="heatmap" onclick="switchTab('heatmap')">
+          🔥 Heatmap
+        </button>
+      </div>
+    </div>
+
+    <!-- Overview Tab -->
+    <div id="overview-tab" class="tab-content" style="<%= selectedTab !== 'overview' ? 'display: none;' : '' %>">
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="metric-card fade-in-up delay-100">
+          <div class="text-sm font-semibold text-gray-500 mb-2">Top Performer</div>
+          <% if (performance && performance.length > 0) { %>
+            <div class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+              <%= performance[0].sectorName %>
+            </div>
+            <div class="text-sm text-green-500 font-bold mt-1">
+              +<%= performance[0].periodReturn.toFixed(2) %>%
+            </div>
+          <% } else { %>
+            <div class="text-2xl font-bold text-gray-400">-</div>
+          <% } %>
+        </div>
+
+        <div class="metric-card fade-in-up delay-200">
+          <div class="text-sm font-semibold text-gray-500 mb-2">Worst Performer</div>
+          <% if (performance && performance.length > 0) { %>
+            <div class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+              <%= performance[performance.length - 1].sectorName %>
+            </div>
+            <div class="text-sm text-red-500 font-bold mt-1">
+              <%= performance[performance.length - 1].periodReturn.toFixed(2) %>%
+            </div>
+          <% } else { %>
+            <div class="text-2xl font-bold text-gray-400">-</div>
+          <% } %>
+        </div>
+
+        <div class="metric-card fade-in-up delay-300">
+          <div class="text-sm font-semibold text-gray-500 mb-2">Sectors Tracked</div>
+          <div class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> stat-number">
+            <%= sectors.length %>
+          </div>
+        </div>
+
+        <div class="metric-card fade-in-up delay-400">
+          <div class="text-sm font-semibold text-gray-500 mb-2">Period</div>
+          <div class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+            <%= period %>
+          </div>
+          <div class="flex gap-2 mt-2">
+            <button class="period-btn <%= period === '1D' ? 'active' : '' %>" onclick="changePeriod('1D')">1D</button>
+            <button class="period-btn <%= period === '1W' ? 'active' : '' %>" onclick="changePeriod('1W')">1W</button>
+            <button class="period-btn <%= period === '1M' ? 'active' : '' %>" onclick="changePeriod('1M')">1M</button>
+            <button class="period-btn <%= period === '3M' ? 'active' : '' %>" onclick="changePeriod('3M')">3M</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sector Performance Chart -->
+      <div class="glass-card rounded-2xl p-6 mb-8 fade-in-up delay-100">
+        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">
+          Sector Performance Comparison
+        </h2>
+        <div class="chart-container">
+          <canvas id="sectorPerformanceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Tab -->
+    <div id="performance-tab" class="tab-content" style="<%= selectedTab !== 'performance' ? 'display: none;' : '' %>">
+      <div class="glass-card rounded-2xl p-6 mb-8 fade-in-up">
+        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">
+          Sector Performance Rankings
+        </h2>
+
+        <div class="space-y-4">
+          <% if (performance && performance.length > 0) { %>
+            <% performance.forEach((sector, index) => { %>
+              <div class="flex items-center gap-4 p-4 rounded-xl bg-opacity-50 <%= theme === 'light' ? 'bg-gray-100' : 'bg-gray-800' %> hover:scale-102 transition-all">
+                <div class="text-2xl font-bold text-gray-400 w-12">#<%= index + 1 %></div>
+                <div class="flex-1">
+                  <div class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> text-lg">
+                    <%= sector.sectorName %>
+                  </div>
+                  <div class="text-sm text-gray-500"><%= sector.sectorCode %></div>
+                </div>
+                <div class="text-right">
+                  <div class="text-2xl font-bold stat-number <%= sector.periodReturn >= 0 ? 'text-green-500' : 'text-red-500' %>">
+                    <%= sector.periodReturn >= 0 ? '+' : '' %><%= sector.periodReturn.toFixed(2) %>%
+                  </div>
+                  <div class="text-sm text-gray-500">
+                    <%= sector.currentPrice ? fmt.money(sector.currentPrice) : '-' %>
+                  </div>
+                </div>
+                <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div class="h-full <%= sector.periodReturn >= 0 ? 'bg-green-500' : 'bg-red-500' %>"
+                       style="width: <%= Math.min(100, Math.abs(sector.periodReturn) * 10) %>%"></div>
+                </div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div class="text-center py-12 text-gray-500">
+              No performance data available
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allocation Tab -->
+    <div id="allocation-tab" class="tab-content" style="<%= selectedTab !== 'allocation' ? 'display: none;' : '' %>">
+      <% if (portfolioAllocation && portfolioAllocation.allocations && portfolioAllocation.allocations.length > 0) { %>
+        <!-- Allocation Visual Bar -->
+        <div class="glass-card rounded-2xl p-6 mb-8 fade-in-up">
+          <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">
+            Portfolio Sector Allocation
+          </h2>
+          <div class="allocation-bar mb-6">
+            <% portfolioAllocation.allocations.forEach((alloc, index) => { %>
+              <div class="allocation-segment"
+                   style="width: <%= alloc.percentAlloc %>%; background: hsl(<%= (index * 360) / portfolioAllocation.allocations.length %>, 70%, 60%);"
+                   title="<%= alloc.sectorName %>: <%= alloc.percentAlloc.toFixed(2) %>%">
+              </div>
+            <% }); %>
+          </div>
+
+          <!-- Allocation Details -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <% portfolioAllocation.allocations.forEach((alloc, index) => { %>
+              <div class="p-4 rounded-xl <%= theme === 'light' ? 'bg-gray-50' : 'bg-gray-800' %>">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-3">
+                    <div class="w-4 h-4 rounded"
+                         style="background: hsl(<%= (index * 360) / portfolioAllocation.allocations.length %>, 70%, 60%);"></div>
+                    <span class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+                      <%= alloc.sectorName %>
+                    </span>
+                  </div>
+                  <span class="text-lg font-bold <%= alloc.returnPct >= 0 ? 'text-green-500' : 'text-red-500' %>">
+                    <%= alloc.percentAlloc.toFixed(1) %>%
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <div class="text-gray-500">Value</div>
+                    <div class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+                      <%= fmt.money(alloc.totalValue) %>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="text-gray-500">Return</div>
+                    <div class="font-bold <%= alloc.returnPct >= 0 ? 'text-green-500' : 'text-red-500' %>">
+                      <%= alloc.returnPct >= 0 ? '+' : '' %><%= (alloc.returnPct || 0).toFixed(2) %>%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+
+        <!-- Allocation Pie Chart -->
+        <div class="glass-card rounded-2xl p-6 fade-in-up delay-100">
+          <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">
+            Allocation Breakdown
+          </h2>
+          <div class="chart-container" style="height: 500px;">
+            <canvas id="allocationChart"></canvas>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="glass-card rounded-2xl p-12 text-center fade-in-up">
+          <div class="text-6xl mb-4">📊</div>
+          <h3 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
+            No Portfolio Selected
+          </h3>
+          <p class="text-gray-500 mb-6">
+            Select a portfolio from the dropdown above to view sector allocation
+          </p>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Heatmap Tab -->
+    <div id="heatmap-tab" class="tab-content" style="<%= selectedTab !== 'heatmap' ? 'display: none;' : '' %>">
+      <div class="glass-card rounded-2xl p-6 fade-in-up">
+        <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-6">
+          Sector Performance Heatmap
+        </h2>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <% if (performance && performance.length > 0) { %>
+            <% performance.forEach(sector => { %>
+              <%
+                let bgColor;
+                if (sector.periodReturn > 5) bgColor = 'bg-green-600';
+                else if (sector.periodReturn > 2) bgColor = 'bg-green-500';
+                else if (sector.periodReturn > 0) bgColor = 'bg-green-400';
+                else if (sector.periodReturn > -2) bgColor = 'bg-red-400';
+                else if (sector.periodReturn > -5) bgColor = 'bg-red-500';
+                else bgColor = 'bg-red-600';
+              %>
+              <div class="p-6 rounded-xl <%= bgColor %> text-white text-center hover:scale-105 transition-all cursor-pointer">
+                <div class="text-sm font-semibold mb-2"><%= sector.sectorCode %></div>
+                <div class="text-2xl font-bold stat-number mb-1">
+                  <%= sector.periodReturn >= 0 ? '+' : '' %><%= sector.periodReturn.toFixed(2) %>%
+                </div>
+                <div class="text-xs opacity-90"><%= sector.sectorName %></div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div class="col-span-full text-center py-12 text-gray-500">
+              No heatmap data available
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-8 flex items-center justify-center gap-4 flex-wrap">
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-green-600"></div>
+            <span class="text-sm text-gray-500">&gt; 5%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-green-500"></div>
+            <span class="text-sm text-gray-500">2% - 5%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-green-400"></div>
+            <span class="text-sm text-gray-500">0% - 2%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-red-400"></div>
+            <span class="text-sm text-gray-500">0% - -2%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-red-500"></div>
+            <span class="text-sm text-gray-500">-2% - -5%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded bg-red-600"></div>
+            <span class="text-sm text-gray-500">&lt; -5%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <%- include('../partials/footer') %>
+
+  <script>
+    // Data from server
+    const sectors = <%- JSON.stringify(sectors) %>;
+    const performance = <%- JSON.stringify(performance) %>;
+    const portfolioAllocation = <%- JSON.stringify(portfolioAllocation) %>;
+    const theme = '<%= theme %>';
+
+    // Tab switching function
+    function switchTab(tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabName) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+      });
+      document.getElementById(tabName + '-tab').style.display = 'block';
+
+      // Update URL
+      const url = new URL(window.location);
+      url.searchParams.set('tab', tabName);
+      window.history.pushState({}, '', url);
+    }
+
+    // Portfolio selector
+    document.getElementById('portfolioSelect').addEventListener('change', (e) => {
+      const url = new URL(window.location);
+      url.searchParams.set('portfolio', e.target.value);
+      window.location.href = url.toString();
+    });
+
+    // Period selector
+    function changePeriod(period) {
+      const url = new URL(window.location);
+      url.searchParams.set('period', period);
+      window.location.href = url.toString();
+    }
+
+    // Chart.js default config
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: theme === 'light' ? '#1f2937' : '#f3f4f6'
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: {
+            color: theme === 'light' ? '#e5e7eb' : '#374151'
+          },
+          ticks: {
+            color: theme === 'light' ? '#6b7280' : '#9ca3af'
+          }
+        },
+        x: {
+          grid: {
+            color: theme === 'light' ? '#e5e7eb' : '#374151'
+          },
+          ticks: {
+            color: theme === 'light' ? '#6b7280' : '#9ca3af'
+          }
+        }
+      }
+    };
+
+    // Sector Performance Chart
+    if (performance && performance.length > 0) {
+      const ctx = document.getElementById('sectorPerformanceChart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: performance.map(s => s.sectorCode),
+            datasets: [{
+              label: 'Performance (%)',
+              data: performance.map(s => s.periodReturn),
+              backgroundColor: performance.map(s =>
+                s.periodReturn >= 0
+                  ? 'rgba(16, 185, 129, 0.8)'
+                  : 'rgba(239, 68, 68, 0.8)'
+              ),
+              borderColor: performance.map(s =>
+                s.periodReturn >= 0
+                  ? 'rgba(16, 185, 129, 1)'
+                  : 'rgba(239, 68, 68, 1)'
+              ),
+              borderWidth: 2,
+              borderRadius: 8
+            }]
+          },
+          options: {
+            ...chartDefaults,
+            plugins: {
+              ...chartDefaults.plugins,
+              tooltip: {
+                callbacks: {
+                  title: (items) => performance[items[0].dataIndex].sectorName,
+                  label: (context) => {
+                    const value = context.parsed.y;
+                    return `Return: ${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Allocation Pie Chart
+    if (portfolioAllocation && portfolioAllocation.allocations) {
+      const ctx = document.getElementById('allocationChart');
+      if (ctx) {
+        const allocations = portfolioAllocation.allocations;
+        const colors = allocations.map((_, i) =>
+          `hsl(${(i * 360) / allocations.length}, 70%, 60%)`
+        );
+
+        new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: allocations.map(a => a.sectorName),
+            datasets: [{
+              data: allocations.map(a => a.percentAlloc),
+              backgroundColor: colors,
+              borderColor: theme === 'light' ? '#ffffff' : '#1f2937',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  color: theme === 'light' ? '#1f2937' : '#f3f4f6',
+                  padding: 15,
+                  font: {
+                    size: 12,
+                    weight: '600'
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const alloc = allocations[context.dataIndex];
+                    return [
+                      `Allocation: ${alloc.percentAlloc.toFixed(2)}%`,
+                      `Value: $${alloc.totalValue.toLocaleString()}`,
+                      `Return: ${alloc.returnPct >= 0 ? '+' : ''}${(alloc.returnPct || 0).toFixed(2)}%`
+                    ];
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>

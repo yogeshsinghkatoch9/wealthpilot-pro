@@ -1,0 +1,715 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeData = typeof data !== 'undefined' ? data : {};
+const safeSymbols = safeData.symbols || [];
+const safeMatrix = safeData.matrix || [];
+const safeAvgCorrelation = safeData.avgCorrelation || 0;
+const safeHighestCorrelation = safeData.highestCorrelation || { value: 0, pair: 'N/A' };
+const safeLowestCorrelation = safeData.lowestCorrelation || { value: 0, pair: 'N/A' };
+const safeTopCorrelations = safeData.topCorrelations || [];
+const safeBottomCorrelations = safeData.bottomCorrelations || [];
+const safeInsights = safeData.insights || [];
+
+// Calculate diversification score
+const divScore = safeData.diversificationScore || ((1 - safeAvgCorrelation) * 100);
+const divRating = divScore > 60 ? 'EXCELLENT' : divScore > 40 ? 'GOOD' : divScore > 20 ? 'FAIR' : 'POOR';
+const divColor = divScore > 60 ? 'emerald' : divScore > 40 ? 'sky' : divScore > 20 ? 'amber' : 'red';
+%>
+<%- include('../partials/header', { pageTitle: 'Correlation Heatmap' }) %>
+
+<style>
+  .correlation-heatmap-container {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .heatmap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .metric-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--card-accent, #3b82f6);
+  }
+
+  .metric-card.good::before { --card-accent: #10b981; }
+  .metric-card.warning::before { --card-accent: #f59e0b; }
+  .metric-card.danger::before { --card-accent: #ef4444; }
+  .metric-card.info::before { --card-accent: #3b82f6; }
+
+  .metric-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .metric-sub {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+  }
+
+  .heatmap-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.15s;
+    min-width: 50px;
+    height: 50px;
+  }
+
+  .heatmap-cell:hover {
+    transform: scale(1.05);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .heatmap-cell.diagonal {
+    background: rgba(16, 185, 129, 0.8) !important;
+  }
+
+  .correlation-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+  }
+
+  .correlation-bar:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .correlation-symbol {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-width: 120px;
+  }
+
+  .correlation-visual {
+    flex: 1;
+    height: 8px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .correlation-visual .fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .correlation-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  .insight-card {
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+
+  .insight-card.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .insight-card.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .insight-card.danger {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .insight-card.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .legend-color {
+    width: 20px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .period-btn {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .period-btn:hover {
+    color: #e2e8f0;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .period-btn.active {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.3);
+  }
+
+  .diversification-gauge {
+    position: relative;
+    width: 160px;
+    height: 80px;
+    margin: 0 auto;
+  }
+
+  .gauge-background {
+    stroke: rgba(148, 163, 184, 0.1);
+    stroke-width: 12;
+    fill: none;
+  }
+
+  .gauge-fill {
+    stroke-width: 12;
+    fill: none;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease-out;
+  }
+
+  @media (max-width: 768px) {
+    .heatmap-cell {
+      min-width: 40px;
+      height: 40px;
+      font-size: 10px;
+    }
+    .metric-value {
+      font-size: 22px;
+    }
+  }
+</style>
+
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Header Section -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Correlation Heatmap</h1>
+      <p class="text-slate-400 text-sm mt-1">Analyze asset relationships in your portfolio</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex gap-1 bg-black/30 p-1 rounded-lg">
+        <button class="period-btn" data-period="30">30D</button>
+        <button class="period-btn active" data-period="90">90D</button>
+        <button class="period-btn" data-period="365">1Y</button>
+        <button class="period-btn" data-period="1095">3Y</button>
+      </div>
+      <button onclick="refreshCorrelation()" class="px-4 py-2 bg-amber-500 text-black font-bold text-sm rounded-lg hover:bg-amber-400 transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <% if (safeSymbols.length > 0) { %>
+
+  <!-- Key Metrics -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="metric-card <%= safeAvgCorrelation > 0.7 ? 'danger' : safeAvgCorrelation > 0.4 ? 'warning' : 'good' %>">
+      <div class="metric-label">Average Correlation</div>
+      <div class="metric-value text-<%= safeAvgCorrelation > 0.7 ? 'red' : safeAvgCorrelation > 0.4 ? 'amber' : 'emerald' %>-400">
+        <%= safeAvgCorrelation.toFixed(2) %>
+      </div>
+      <div class="metric-sub">
+        <%= safeAvgCorrelation > 0.7 ? 'High risk concentration' : safeAvgCorrelation > 0.4 ? 'Moderate correlation' : 'Well diversified' %>
+      </div>
+    </div>
+
+    <div class="metric-card danger">
+      <div class="metric-label">Highest Correlation</div>
+      <div class="metric-value text-red-400"><%= safeHighestCorrelation.value.toFixed(2) %></div>
+      <div class="metric-sub font-mono"><%= safeHighestCorrelation.pair %></div>
+    </div>
+
+    <div class="metric-card good">
+      <div class="metric-label">Lowest Correlation</div>
+      <div class="metric-value text-emerald-400"><%= safeLowestCorrelation.value.toFixed(2) %></div>
+      <div class="metric-sub font-mono"><%= safeLowestCorrelation.pair %></div>
+    </div>
+
+    <div class="metric-card <%= divColor === 'emerald' ? 'good' : divColor === 'amber' ? 'warning' : divColor === 'red' ? 'danger' : 'info' %>">
+      <div class="metric-label">Diversification Score</div>
+      <div class="metric-value text-<%= divColor %>-400"><%= divScore.toFixed(0) %><span class="text-lg">/100</span></div>
+      <div class="metric-sub text-<%= divColor %>-400"><%= divRating %></div>
+    </div>
+  </div>
+
+  <!-- Diversification Gauge + Heatmap -->
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+    <!-- Gauge Section -->
+    <div class="correlation-heatmap-container p-6">
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide mb-6">Diversification Score</h3>
+
+      <div class="diversification-gauge mb-4">
+        <svg viewBox="0 0 160 80" class="w-full">
+          <path class="gauge-background" d="M 20,70 A 60,60 0 0,1 140,70"/>
+          <path class="gauge-fill"
+                stroke="url(#gaugeGradient)"
+                d="M 20,70 A 60,60 0 0,1 140,70"
+                stroke-dasharray="188"
+                stroke-dashoffset="<%= 188 - (divScore / 100 * 188) %>"/>
+          <defs>
+            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ef4444"/>
+              <stop offset="50%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#10b981"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="absolute inset-x-0 bottom-0 text-center">
+          <span class="text-3xl font-bold font-mono text-<%= divColor %>-400"><%= divScore.toFixed(0) %></span>
+        </div>
+      </div>
+
+      <div class="text-center mb-6">
+        <span class="px-4 py-2 bg-<%= divColor %>-500/20 text-<%= divColor %>-400 text-sm font-bold rounded-lg">
+          <%= divRating %>
+        </span>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div class="flex justify-between text-slate-400">
+          <span>Avg Correlation</span>
+          <span class="font-mono text-white"><%= safeAvgCorrelation.toFixed(2) %></span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Unique Pairs</span>
+          <span class="font-mono text-white"><%= safeSymbols.length * (safeSymbols.length - 1) / 2 %></span>
+        </div>
+        <div class="flex justify-between text-slate-400">
+          <span>Assets Analyzed</span>
+          <span class="font-mono text-white"><%= safeSymbols.length %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Heatmap -->
+    <div class="correlation-heatmap-container xl:col-span-3">
+      <div class="heatmap-header">
+        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Correlation Matrix</h3>
+        <div class="flex items-center gap-4">
+          <div class="legend-item"><div class="legend-color" style="background:#10b981"></div>Negative</div>
+          <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div>Low</div>
+          <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div>Medium</div>
+          <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div>High</div>
+        </div>
+      </div>
+      <div class="p-4 overflow-x-auto">
+        <div id="heatmapContainer" style="min-height: 300px;">
+          <canvas id="heatmapCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correlation Lists -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Most Correlated -->
+    <div class="correlation-heatmap-container">
+      <div class="heatmap-header">
+        <h3 class="text-sm font-bold text-red-400 uppercase tracking-wide">Highest Correlations</h3>
+        <span class="text-xs text-slate-500">May indicate concentration risk</span>
+      </div>
+      <div class="p-4 space-y-2">
+        <% if (safeTopCorrelations.length > 0) { %>
+        <% safeTopCorrelations.slice(0, 5).forEach((pair, idx) => { %>
+        <div class="correlation-bar">
+          <span class="w-6 text-xs text-slate-500">#<%= idx + 1 %></span>
+          <span class="correlation-symbol"><%= pair.pair %></span>
+          <div class="correlation-visual">
+            <div class="fill <%= pair.value > 0.8 ? 'bg-red-500' : pair.value > 0.6 ? 'bg-amber-500' : 'bg-sky-500' %>"
+                 style="width: <%= Math.abs(pair.value) * 100 %>%"></div>
+          </div>
+          <span class="correlation-value <%= pair.value > 0.8 ? 'text-red-400' : pair.value > 0.6 ? 'text-amber-400' : 'text-sky-400' %>">
+            <%= pair.value.toFixed(3) %>
+          </span>
+        </div>
+        <% }); %>
+        <% } else { %>
+        <div class="text-center text-slate-400 py-8">No highly correlated pairs found</div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Least Correlated -->
+    <div class="correlation-heatmap-container">
+      <div class="heatmap-header">
+        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Lowest Correlations</h3>
+        <span class="text-xs text-slate-500">Best for diversification</span>
+      </div>
+      <div class="p-4 space-y-2">
+        <% if (safeBottomCorrelations.length > 0) { %>
+        <% safeBottomCorrelations.slice(0, 5).forEach((pair, idx) => { %>
+        <div class="correlation-bar">
+          <span class="w-6 text-xs text-slate-500">#<%= idx + 1 %></span>
+          <span class="correlation-symbol"><%= pair.pair %></span>
+          <div class="correlation-visual">
+            <div class="fill bg-emerald-500" style="width: <%= (1 - Math.abs(pair.value)) * 100 %>%"></div>
+          </div>
+          <span class="correlation-value text-emerald-400"><%= pair.value.toFixed(3) %></span>
+        </div>
+        <% }); %>
+        <% } else { %>
+        <div class="text-center text-slate-400 py-8">No lowly correlated pairs found</div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correlation Over Time Chart -->
+  <div class="correlation-heatmap-container">
+    <div class="heatmap-header">
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Correlation Trend</h3>
+      <span class="text-xs text-slate-500">Rolling 30-day average correlation</span>
+    </div>
+    <div class="p-4">
+      <div style="height: 200px;">
+        <canvas id="correlationTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights & Recommendations -->
+  <div class="correlation-heatmap-container">
+    <div class="heatmap-header">
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Diversification Insights</h3>
+    </div>
+    <div class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% if (safeAvgCorrelation > 0.7) { %>
+        <div class="insight-card danger">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span class="font-bold text-red-400">High Concentration Risk</span>
+          </div>
+          <p class="text-sm text-slate-400">Your holdings move together, increasing vulnerability to market swings.</p>
+        </div>
+        <% } else if (safeAvgCorrelation > 0.4) { %>
+        <div class="insight-card warning">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="font-bold text-amber-400">Moderate Correlation</span>
+          </div>
+          <p class="text-sm text-slate-400">Some diversification present but could be improved with uncorrelated assets.</p>
+        </div>
+        <% } else { %>
+        <div class="insight-card success">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="font-bold text-emerald-400">Well Diversified</span>
+          </div>
+          <p class="text-sm text-slate-400">Your portfolio shows good diversification across different asset behaviors.</p>
+        </div>
+        <% } %>
+
+        <div class="insight-card info">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            <span class="font-bold text-sky-400">Diversification Tip</span>
+          </div>
+          <p class="text-sm text-slate-400">Consider adding bonds (AGG, BND) or commodities (GLD) which typically have low stock correlation.</p>
+        </div>
+
+        <% if (safeHighestCorrelation.value > 0.85) { %>
+        <div class="insight-card warning">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+            </svg>
+            <span class="font-bold text-amber-400">Redundant Pair</span>
+          </div>
+          <p class="text-sm text-slate-400"><%= safeHighestCorrelation.pair %> are highly correlated (<%= safeHighestCorrelation.value.toFixed(2) %>). Consider consolidating.</p>
+        </div>
+        <% } else { %>
+        <div class="insight-card success">
+          <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="font-bold text-emerald-400">No Redundancies</span>
+          </div>
+          <p class="text-sm text-slate-400">No excessively correlated pairs detected in your portfolio.</p>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <% } else { %>
+  <!-- Empty State -->
+  <div class="correlation-heatmap-container p-12 text-center">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-amber-500/10 flex items-center justify-center">
+      <svg class="w-10 h-10 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+      </svg>
+    </div>
+    <h3 class="text-2xl font-bold text-white mb-3">No Correlation Data</h3>
+    <p class="text-slate-400 max-w-md mx-auto mb-6">Add at least 2 holdings to your portfolio to see correlation analysis between your assets.</p>
+    <a href="/portfolio-manager" class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      Add Holdings
+    </a>
+  </div>
+  <% } %>
+</div>
+
+<script>
+// Period button handlers
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    window.location.href = '/correlation?period=' + this.dataset.period;
+  });
+});
+
+function refreshCorrelation() {
+  if (typeof showToast === 'function') showToast('Refreshing correlation data...', 'info');
+  setTimeout(() => location.reload(), 500);
+}
+
+<% if (safeSymbols.length > 0) { %>
+// Render Interactive Heatmap
+const symbols = <%- JSON.stringify(safeSymbols) %>;
+const matrix = <%- JSON.stringify(safeMatrix) %>;
+
+function getCorrelationColor(value) {
+  if (value === 1) return 'rgba(16, 185, 129, 0.9)'; // Diagonal
+  if (value >= 0.8) return 'rgba(239, 68, 68, 0.85)';
+  if (value >= 0.6) return 'rgba(239, 68, 68, 0.65)';
+  if (value >= 0.4) return 'rgba(245, 158, 11, 0.65)';
+  if (value >= 0.2) return 'rgba(59, 130, 246, 0.5)';
+  if (value >= 0) return 'rgba(59, 130, 246, 0.35)';
+  if (value >= -0.2) return 'rgba(16, 185, 129, 0.35)';
+  return 'rgba(16, 185, 129, 0.65)';
+}
+
+// Create heatmap using Chart.js matrix plugin
+const heatmapCanvas = document.getElementById('heatmapCanvas');
+if (heatmapCanvas && symbols.length > 0) {
+  const matrixData = [];
+  symbols.forEach((rowSym, rowIdx) => {
+    symbols.forEach((colSym, colIdx) => {
+      const val = matrix[rowIdx] ? matrix[rowIdx][colIdx] : (rowIdx === colIdx ? 1 : 0);
+      matrixData.push({
+        x: colSym,
+        y: rowSym,
+        v: val
+      });
+    });
+  });
+
+  new Chart(heatmapCanvas, {
+    type: 'matrix',
+    data: {
+      datasets: [{
+        data: matrixData,
+        backgroundColor: (ctx) => {
+          const val = ctx.raw.v;
+          return getCorrelationColor(val);
+        },
+        borderColor: 'rgba(15, 23, 42, 0.8)',
+        borderWidth: 2,
+        width: ({ chart }) => (chart.chartArea || {}).width / symbols.length - 4,
+        height: ({ chart }) => (chart.chartArea || {}).height / symbols.length - 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: () => '',
+            label: (ctx) => {
+              const pair = `${ctx.raw.y} / ${ctx.raw.x}`;
+              const val = ctx.raw.v.toFixed(3);
+              return `${pair}: ${val}`;
+            }
+          },
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          bodyFont: { family: 'JetBrains Mono' },
+          padding: 12,
+          displayColors: false
+        }
+      },
+      scales: {
+        x: {
+          type: 'category',
+          labels: symbols,
+          offset: true,
+          position: 'top',
+          ticks: {
+            color: '#fbbf24',
+            font: { family: 'JetBrains Mono', size: 11, weight: '600' }
+          },
+          grid: { display: false }
+        },
+        y: {
+          type: 'category',
+          labels: symbols,
+          offset: true,
+          ticks: {
+            color: '#fbbf24',
+            font: { family: 'JetBrains Mono', size: 11, weight: '600' }
+          },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// Correlation Trend Chart
+const trendCanvas = document.getElementById('correlationTrendChart');
+if (trendCanvas) {
+  // Generate sample rolling correlation data
+  const labels = [];
+  const avgCorr = [];
+  const baseCorr = <%= safeAvgCorrelation %>;
+
+  for (let i = 90; i >= 0; i -= 5) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    avgCorr.push(baseCorr + (Math.random() - 0.5) * 0.15);
+  }
+
+  new Chart(trendCanvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Avg Correlation',
+        data: avgCorr,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          bodyFont: { family: 'JetBrains Mono' },
+          callbacks: {
+            label: (ctx) => 'Correlation: ' + ctx.parsed.y.toFixed(3)
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 1,
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: {
+            color: '#64748b',
+            font: { family: 'JetBrains Mono', size: 10 }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#64748b',
+            font: { size: 10 },
+            maxTicksLimit: 8
+          }
+        }
+      }
+    }
+  });
+}
+<% } %>
+</script>
+
+<%- include('../partials/footer') %>

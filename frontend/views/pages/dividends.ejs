@@ -1,0 +1,475 @@
+<%
+// Safe defaults for undefined variables
+const safeData = data || {};
+const safeSummary = safeData.summary || {};
+const safeHoldings = safeData.holdings || [];
+const safeUpcoming = safeData.upcoming || [];
+const safeMonthlyIncome = safeData.monthlyIncome || [];
+const safeSectorIncome = safeData.sectorIncome || [];
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  compact: (n) => n.toLocaleString(),
+  money: (n) => '$' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+};
+
+const annualIncome = safeSummary.annualIncome || 0;
+const monthlyIncome = safeSummary.monthlyIncome || 0;
+const portfolioYield = safeSummary.portfolioYield || 0;
+const dividendPayers = safeSummary.dividendPayers || 0;
+const totalHoldings = safeSummary.totalHoldings || 0;
+const yieldOnCost = safeSummary.yieldOnCost || 0;
+const avgGrowthRate = safeSummary.avgGrowthRate || 5;
+%>
+<%- include('../partials/header', { pageTitle: 'Dividend Analysis' }) %>
+
+<main class="p-4 lg:p-6 min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Hero Header -->
+    <div class="bloomberg-card p-5">
+      <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-bold text-white">Dividend Analysis</h1>
+              <span class="badge badge-live" id="liveIndicator">LIVE</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Real-time dividend income tracking and yield metrics</p>
+          </div>
+        </div>
+        <button onclick="refreshDividends()" class="bloomberg-btn bloomberg-btn-secondary flex items-center gap-2">
+          Refresh Data
+        </button>
+      </div>
+    </div>
+
+    <% if (safeData && safeSummary && Object.keys(safeSummary).length > 0) { %>
+
+    <!-- KPI Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="tufte-stat-card">
+        <div class="stat-card-label">Annual Income</div>
+        <div class="stat-card-value tabular-nums positive"><%= safeFmt.compact(annualIncome) %></div>
+        <div class="text-xs text-slate-500 mt-1">Projected yearly</div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-card-label">Monthly Income</div>
+        <div class="stat-card-value tabular-nums text-white"><%= safeFmt.compact(monthlyIncome) %></div>
+        <div class="text-xs text-slate-500 mt-1">Average per month</div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-card-label">Portfolio Yield</div>
+        <div class="stat-card-value tabular-nums text-white"><%= portfolioYield.toFixed(2) %>%</div>
+        <div class="text-xs text-slate-500 mt-1">Weighted average</div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-card-label">Dividend Payers</div>
+        <div class="stat-card-value tabular-nums text-white"><%= dividendPayers %></div>
+        <div class="text-xs text-slate-500 mt-1">of <%= totalHoldings %> holdings</div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-card-label">Yield on Cost</div>
+        <div class="stat-card-value tabular-nums text-white"><%= yieldOnCost.toFixed(2) %>%</div>
+        <div class="text-xs text-slate-500 mt-1">Based on cost basis</div>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Monthly Income Chart -->
+      <div class="chart-container">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold">Monthly Dividend Income</h3>
+            <p class="text-xs text-slate-500">Income distribution by month</p>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="monthlyIncomeChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Income by Sector Pie Chart -->
+      <div class="chart-container">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold">Income by Sector</h3>
+            <p class="text-xs text-slate-500">Sector allocation breakdown</p>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="sectorIncomeChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dividend Holdings Table -->
+    <div class="glass-card overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <span class="text-white font-semibold">Dividend-Paying Holdings</span>
+            <p class="text-xs text-slate-500">Comprehensive dividend stock analysis</p>
+          </div>
+        </div>
+        <span class="text-xs text-slate-400 font-mono px-3 py-1 rounded-full bg-white/5 border border-white/10"><%= safeHoldings.length %> holdings</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-left text-xs font-medium text-slate-400 uppercase tracking-wider border-b border-white/10">
+              <th class="px-4 py-3">Symbol</th>
+              <th class="px-4 py-3">Name</th>
+              <th class="px-4 py-3 text-right">Dividend</th>
+              <th class="px-4 py-3 text-right">Yield</th>
+              <th class="px-4 py-3 text-right">Annual Income</th>
+              <th class="px-4 py-3">Frequency</th>
+              <th class="px-4 py-3 text-right">% of Income</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            <% if (safeHoldings.length > 0) { %>
+            <% safeHoldings.forEach(holding => { %>
+            <tr class="hover:bg-white/5 transition-colors">
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-emerald-500/20">
+                    <%= holding.symbol ? holding.symbol.slice(0,2) : '??' %>
+                  </div>
+                  <span class="font-semibold text-white"><%= holding.symbol || '' %></span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-slate-400">
+                <%= holding.name || holding.symbol || '' %>
+              </td>
+              <td class="px-4 py-3 text-right font-mono text-slate-300">
+                <%= safeFmt.money(holding.dividend || 0) %>
+              </td>
+              <td class="px-4 py-3 text-right font-mono">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-sm font-medium <%= (holding.yield || 0) >= 4 ? 'text-emerald-400 bg-emerald-500/10' : (holding.yield || 0) >= 2 ? 'text-sky-400 bg-sky-500/10' : 'text-slate-300 bg-slate-500/10' %>">
+                  <%= (holding.yield || 0).toFixed(2) %>%
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right text-emerald-400 font-mono font-semibold">
+                <%= safeFmt.money(holding.annualIncome || 0) %>
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 rounded-md text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono">
+                  <%= holding.frequency || 'Quarterly' %>
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <span class="text-slate-400 font-mono text-sm"><%= (holding.incomeWeight || 0).toFixed(1) %>%</span>
+                  <div class="w-12 h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400" style="width: <%= Math.min(100, (holding.incomeWeight || 0) * 2) %>%"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+            <% } else { %>
+            <tr>
+              <td colspan="7" class="py-12 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center border border-white/10">
+                  <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <p class="text-slate-500">No dividend-paying holdings found</p>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upcoming Dividends -->
+    <div class="glass-card overflow-hidden">
+      <div class="flex items-center gap-3 p-4 border-b border-white/10">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="text-white font-semibold">Upcoming Dividend Payments</span>
+          <p class="text-xs text-slate-500">Expected dividend schedule</p>
+        </div>
+      </div>
+      <div class="p-4">
+        <% if (safeUpcoming.length > 0) { %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% safeUpcoming.slice(0, 6).forEach(div => { %>
+          <div class="glass-card p-4 group hover:border-emerald-500/30 transition-all">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white text-xs font-bold">
+                  <%= div.symbol ? div.symbol.slice(0,2) : '??' %>
+                </div>
+                <span class="font-bold text-white font-mono"><%= div.symbol || '' %></span>
+              </div>
+              <span class="text-emerald-400 font-bold font-mono text-lg"><%= safeFmt.money(div.amount || 0) %></span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-500 text-xs">Ex-Date</span>
+                <span class="text-slate-300 font-mono text-xs px-2 py-0.5 rounded bg-white/5"><%= div.exDate || 'TBD' %></span>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-slate-500 text-xs">Pay Date</span>
+                <span class="text-emerald-400 font-mono text-xs px-2 py-0.5 rounded bg-emerald-500/10"><%= div.payDate || 'TBD' %></span>
+              </div>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+        <% } else { %>
+        <div class="py-12 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center border border-white/10">
+            <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <p class="text-slate-500">No upcoming dividends scheduled</p>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Dividend Growth Projection -->
+    <div class="chart-container">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500/20 to-cyan-500/20 flex items-center justify-center">
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-white font-semibold">5-Year Income Projection</h3>
+          <p class="text-xs text-slate-500">Forward-looking dividend growth analysis</p>
+        </div>
+      </div>
+      <div class="h-64">
+        <canvas id="projectionChart"></canvas>
+      </div>
+      <p class="text-xs text-slate-500 mt-4 text-center font-mono bg-white/5 inline-block px-3 py-1 rounded-full mx-auto">
+        *Projection assumes <%= avgGrowthRate.toFixed(1) %>% annual dividend growth rate
+      </p>
+    </div>
+
+    <% } else { %>
+    <!-- No Data State -->
+    <div class="glass-card p-12 text-center">
+      <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center border border-white/10">
+        <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold text-white mb-2">No Dividend Data</h3>
+      <p class="text-slate-400 mb-8 max-w-md mx-auto">Add dividend-paying stocks to see income analysis and projections</p>
+      <a href="/portfolios" class="btn-gradient inline-flex items-center gap-2 px-5 py-2.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Holdings
+      </a>
+    </div>
+    <% } %>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function refreshDividends() {
+  showToast('Refreshing dividend data...', 'info');
+  setTimeout(() => location.reload(), 500);
+}
+
+<% if (safeData && safeSummary && Object.keys(safeSummary).length > 0) { %>
+const monthlyData = <%- JSON.stringify(safeMonthlyIncome) %>;
+const sectorIncome = <%- JSON.stringify(safeSectorIncome) %>;
+const annualIncome = <%= annualIncome %>;
+const growthRate = <%= avgGrowthRate / 100 %>;
+
+// Monthly Income Bar Chart
+new Chart(document.getElementById('monthlyIncomeChart'), {
+  type: 'bar',
+  data: {
+    labels: monthlyData.length > 0 ? monthlyData.map(m => m.month) : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [{
+      label: 'Dividend Income',
+      data: monthlyData.length > 0 ? monthlyData.map(m => m.amount) : Array(12).fill(annualIncome / 12),
+      backgroundColor: 'rgba(52, 211, 153, 0.8)',
+      borderColor: 'rgba(52, 211, 153, 1)',
+      borderWidth: 0,
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#10b981',
+        bodyColor: '#e2e8f0',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: (context) => '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+        }
+      }
+    },
+    scales: {
+      y: {
+        border: { display: false },
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'monospace' },
+          callback: v => '$' + v.toLocaleString()
+        }
+      },
+      x: {
+        border: { display: false },
+        grid: { display: false },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: 'monospace', size: 11 }
+        }
+      }
+    }
+  }
+});
+
+// Sector Income Pie Chart
+const sectorColors = ['#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#14b8a6'];
+new Chart(document.getElementById('sectorIncomeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: sectorIncome.length > 0 ? sectorIncome.map(s => s.sector) : ['Technology', 'Finance', 'Healthcare', 'Consumer', 'Energy'],
+    datasets: [{
+      data: sectorIncome.length > 0 ? sectorIncome.map(s => s.income) : [30, 25, 20, 15, 10],
+      backgroundColor: sectorColors,
+      borderColor: 'rgba(15, 23, 42, 0.8)',
+      borderWidth: 3,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          color: '#94a3b8',
+          padding: 12,
+          font: { size: 11, family: 'monospace' },
+          boxWidth: 12,
+          boxHeight: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#8b5cf6',
+        bodyColor: '#e2e8f0',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: (context) => context.label + ': $' + context.parsed.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+        }
+      }
+    }
+  }
+});
+
+// 5-Year Projection Chart
+const years = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'];
+const projections = years.map((_, i) => annualIncome * Math.pow(1 + growthRate, i + 1));
+
+new Chart(document.getElementById('projectionChart'), {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [{
+      label: 'Projected Annual Income',
+      data: projections,
+      borderColor: '#34d399',
+      backgroundColor: 'rgba(52, 211, 153, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 6,
+      pointBackgroundColor: '#34d399',
+      pointBorderColor: 'rgba(15, 23, 42, 0.8)',
+      pointBorderWidth: 3,
+      pointHoverRadius: 8,
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#10b981',
+        bodyColor: '#e2e8f0',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        callbacks: {
+          label: (context) => '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+        }
+      }
+    },
+    scales: {
+      y: {
+        border: { display: false },
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: {
+          color: '#64748b',
+          font: { family: 'monospace' },
+          callback: v => '$' + v.toLocaleString()
+        }
+      },
+      x: {
+        border: { display: false },
+        grid: { display: false },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: 'monospace', size: 11 }
+        }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

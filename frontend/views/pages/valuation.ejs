@@ -1,0 +1,367 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const fin = financials || {};
+const quote = fin.quote || {};
+const keyStats = fin.keyStats || fin.keyStatistics || {};
+const financialData = fin.financialData || {};
+const summaryDetail = fin.summaryDetail || {};
+
+// Helper functions
+function formatNum(v, decimals = 1) { return (v || 0).toFixed(decimals); }
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%'; }
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatMktCap(v) {
+  if (!v) return 'N/A';
+  if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  return '$' + v.toFixed(0);
+}
+
+// Extract valuation metrics
+const pe = keyStats.trailingPE || summaryDetail.trailingPE || fin.pe || 0;
+const forwardPe = keyStats.forwardPE || summaryDetail.forwardPE || fin.forwardPe || 0;
+const pb = keyStats.priceToBook || summaryDetail.priceToBook || fin.pb || 0;
+const ps = keyStats.priceToSalesTrailing12Months || summaryDetail.priceToSalesTrailing12Months || fin.ps || 0;
+const peg = keyStats.pegRatio || fin.peg || 0;
+const evEbitda = keyStats.enterpriseToEbitda || fin.evEbitda || 0;
+const evRevenue = keyStats.enterpriseToRevenue || fin.evRevenue || 0;
+const marketCap = quote.marketCap || keyStats.marketCap || fin.marketCap || 0;
+const price = quote.price || fin.price || 0;
+
+// Sector averages (for comparison)
+const sectorPe = 22.4;
+const sectorPb = 4.2;
+const sectorPs = 2.8;
+
+// Determine valuation status
+function getValuationStatus(pe, forwardPe, peg) {
+  if (pe > 50 || peg > 3) return { status: 'Expensive', color: 'red' };
+  if (pe > 30 || peg > 2) return { status: 'Premium', color: 'amber' };
+  if (pe < 15 && peg < 1.5) return { status: 'Value', color: 'emerald' };
+  return { status: 'Fair', color: 'sky' };
+}
+
+const valStatus = getValuationStatus(pe, forwardPe, peg);
+
+// Get color for metric based on comparison to sector
+function getMetricColor(value, sectorAvg, lowerIsBetter = true) {
+  if (!value) return 'slate';
+  const ratio = value / sectorAvg;
+  if (lowerIsBetter) {
+    if (ratio < 0.8) return 'emerald';
+    if (ratio > 1.3) return 'amber';
+    return 'sky';
+  } else {
+    if (ratio > 1.2) return 'emerald';
+    if (ratio < 0.8) return 'red';
+    return 'sky';
+  }
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Valuation Metrics' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">VALUATION METRICS</h1>
+      <p class="text-slate-400">P/E, P/B, P/S, EV/EBITDA analysis</p>
+    </div>
+    <form method="GET" action="/valuation" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<% if (!financials) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No valuation data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol.</p>
+</div>
+<% } else { %>
+
+<!-- Stock Valuation Summary -->
+<div class="bloomberg-card p-5">
+  <div class="flex items-center gap-4 mb-4">
+    <div class="w-14 h-14 rounded bg-slate-700 flex items-center justify-center text-white font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+      <p class="text-slate-400 tabular-nums"><%= formatPrice(price) %> • Mkt Cap: <%= formatMktCap(marketCap) %></p>
+    </div>
+    <span class="px-3 py-1 rounded bg-<%= valStatus.color %>-500/20 text-<%= valStatus.color %>-400 font-bold"><%= valStatus.status %></span>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">P/E Ratio</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white"><%= formatNum(pe) %></p>
+      <p class="text-xs text-slate-400">vs S&P: <%= formatNum(sectorPe) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Forward P/E</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white"><%= formatNum(forwardPe) %></p>
+      <p class="text-xs text-slate-400"><%= forwardPe < pe ? 'Improving' : 'Declining' %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">P/B Ratio</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white"><%= formatNum(pb) %></p>
+      <p class="text-xs text-slate-400">vs S&P: <%= formatNum(sectorPb) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">P/S Ratio</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white"><%= formatNum(ps) %></p>
+      <p class="text-xs text-slate-400">vs S&P: <%= formatNum(sectorPs) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">PEG Ratio</p>
+      <p class="text-3xl font-bold font-mono tabular-nums text-white"><%= formatNum(peg, 2) %></p>
+      <p class="text-xs text-slate-400"><%= peg < 1 ? 'Undervalued' : peg < 2 ? 'Reasonable' : 'Expensive' %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Valuation Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Valuation Multiples</h3>
+    <div class="h-64"><canvas id="peChart"></canvas></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Valuation vs Sector</h3>
+    <div class="h-64"><canvas id="compChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Detailed Metrics Table -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-slate-700">
+    <h3 class="font-semibold text-white">Detailed Valuation Metrics</h3>
+  </div>
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-slate-800 text-slate-400 text-left">
+        <th class="px-4 py-3">Metric</th>
+        <th class="px-4 py-3 text-center"><%= symbol %></th>
+        <th class="px-4 py-3 text-center">Sector Avg</th>
+        <th class="px-4 py-3 text-center">Premium/Discount</th>
+        <th class="px-4 py-3 text-center">Assessment</th>
+      </tr>
+    </thead>
+    <tbody class="text-white">
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">Trailing P/E</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(pe) %></td>
+        <td class="px-4 py-3 text-center font-mono"><%= formatNum(sectorPe) %></td>
+        <td class="px-4 py-3 text-center font-mono text-<%= pe > sectorPe ? 'amber' : 'emerald' %>-400"><%= formatPct((pe - sectorPe) / sectorPe * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= pe > sectorPe * 1.2 ? 'amber' : pe < sectorPe * 0.8 ? 'emerald' : 'sky' %>-500/20 text-<%= pe > sectorPe * 1.2 ? 'amber' : pe < sectorPe * 0.8 ? 'emerald' : 'sky' %>-400 text-xs"><%= pe > sectorPe * 1.2 ? 'Premium' : pe < sectorPe * 0.8 ? 'Value' : 'Fair' %></span></td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">Forward P/E</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(forwardPe) %></td>
+        <td class="px-4 py-3 text-center font-mono">20.8</td>
+        <td class="px-4 py-3 text-center font-mono text-<%= forwardPe > 20.8 ? 'amber' : 'emerald' %>-400"><%= formatPct((forwardPe - 20.8) / 20.8 * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= forwardPe > 25 ? 'amber' : forwardPe < 18 ? 'emerald' : 'sky' %>-500/20 text-<%= forwardPe > 25 ? 'amber' : forwardPe < 18 ? 'emerald' : 'sky' %>-400 text-xs"><%= forwardPe > 25 ? 'Premium' : forwardPe < 18 ? 'Value' : 'Fair' %></span></td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">Price/Book</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(pb) %></td>
+        <td class="px-4 py-3 text-center font-mono"><%= formatNum(sectorPb) %></td>
+        <td class="px-4 py-3 text-center font-mono text-<%= pb > sectorPb ? 'amber' : 'emerald' %>-400"><%= formatPct((pb - sectorPb) / sectorPb * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= pb > sectorPb * 1.5 ? 'amber' : pb < sectorPb * 0.7 ? 'emerald' : 'sky' %>-500/20 text-<%= pb > sectorPb * 1.5 ? 'amber' : pb < sectorPb * 0.7 ? 'emerald' : 'sky' %>-400 text-xs"><%= pb > sectorPb * 1.5 ? 'Premium' : pb < sectorPb * 0.7 ? 'Value' : 'Fair' %></span></td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">Price/Sales</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(ps) %></td>
+        <td class="px-4 py-3 text-center font-mono"><%= formatNum(sectorPs) %></td>
+        <td class="px-4 py-3 text-center font-mono text-<%= ps > sectorPs ? 'amber' : 'emerald' %>-400"><%= formatPct((ps - sectorPs) / sectorPs * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= ps > sectorPs * 2 ? 'amber' : ps < sectorPs * 0.8 ? 'emerald' : 'sky' %>-500/20 text-<%= ps > sectorPs * 2 ? 'amber' : ps < sectorPs * 0.8 ? 'emerald' : 'sky' %>-400 text-xs"><%= ps > sectorPs * 2 ? 'Premium' : ps < sectorPs * 0.8 ? 'Value' : 'Fair' %></span></td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">PEG Ratio</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(peg, 2) %></td>
+        <td class="px-4 py-3 text-center font-mono">1.50</td>
+        <td class="px-4 py-3 text-center font-mono text-<%= peg > 1.5 ? 'amber' : 'emerald' %>-400"><%= formatPct((peg - 1.5) / 1.5 * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= peg > 2 ? 'amber' : peg < 1 ? 'emerald' : 'sky' %>-500/20 text-<%= peg > 2 ? 'amber' : peg < 1 ? 'emerald' : 'sky' %>-400 text-xs"><%= peg > 2 ? 'Expensive' : peg < 1 ? 'Undervalued' : 'Reasonable' %></span></td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">EV/EBITDA</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(evEbitda) %></td>
+        <td class="px-4 py-3 text-center font-mono">14.0</td>
+        <td class="px-4 py-3 text-center font-mono text-<%= evEbitda > 14 ? 'amber' : 'emerald' %>-400"><%= formatPct((evEbitda - 14) / 14 * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= evEbitda > 20 ? 'amber' : evEbitda < 10 ? 'emerald' : 'sky' %>-500/20 text-<%= evEbitda > 20 ? 'amber' : evEbitda < 10 ? 'emerald' : 'sky' %>-400 text-xs"><%= evEbitda > 20 ? 'Premium' : evEbitda < 10 ? 'Value' : 'Fair' %></span></td>
+      </tr>
+      <tr class="border-b border-slate-700/50">
+        <td class="px-4 py-3 font-medium">EV/Revenue</td>
+        <td class="px-4 py-3 text-center font-mono font-bold"><%= formatNum(evRevenue) %></td>
+        <td class="px-4 py-3 text-center font-mono">3.0</td>
+        <td class="px-4 py-3 text-center font-mono text-<%= evRevenue > 3 ? 'amber' : 'emerald' %>-400"><%= formatPct((evRevenue - 3) / 3 * 100) %></td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-<%= evRevenue > 5 ? 'amber' : evRevenue < 2 ? 'emerald' : 'sky' %>-500/20 text-<%= evRevenue > 5 ? 'amber' : evRevenue < 2 ? 'emerald' : 'sky' %>-400 text-xs"><%= evRevenue > 5 ? 'Premium' : evRevenue < 2 ? 'Value' : 'Fair' %></span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Valuation Insights -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="bloomberg-card p-5 border-l-4 border-<%= pe < sectorPe && peg < 1.5 ? 'emerald' : 'slate' %>-500">
+    <h4 class="font-bold text-emerald-400 mb-2">Value Signals</h4>
+    <p class="text-sm text-slate-400 mb-3">Metrics suggesting undervaluation</p>
+    <div class="space-y-2 text-sm">
+      <% if (pe < sectorPe) { %>
+      <div class="flex justify-between"><span>Low P/E</span><span class="text-emerald-400"><%= formatNum(pe) %> vs <%= formatNum(sectorPe) %></span></div>
+      <% } %>
+      <% if (peg < 1) { %>
+      <div class="flex justify-between"><span>Low PEG</span><span class="text-emerald-400"><%= formatNum(peg, 2) %></span></div>
+      <% } %>
+      <% if (pb < sectorPb) { %>
+      <div class="flex justify-between"><span>Low P/B</span><span class="text-emerald-400"><%= formatNum(pb) %> vs <%= formatNum(sectorPb) %></span></div>
+      <% } %>
+      <% if (pe >= sectorPe && peg >= 1 && pb >= sectorPb) { %>
+      <div class="text-slate-500">No strong value signals</div>
+      <% } %>
+    </div>
+  </div>
+  <div class="bloomberg-card p-5 border-l-4 border-sky-500">
+    <h4 class="font-bold text-sky-400 mb-2">Fair Value Range</h4>
+    <p class="text-sm text-slate-400 mb-3">Estimated fair value based on multiples</p>
+    <div class="space-y-2 text-sm">
+      <%
+        const fairPe = price / pe * sectorPe;
+        const fairPb = price / pb * sectorPb;
+        const lowFair = Math.min(fairPe, fairPb) * 0.9;
+        const highFair = Math.max(fairPe, fairPb) * 1.1;
+      %>
+      <div class="flex justify-between"><span>P/E-based</span><span class="text-sky-400"><%= formatPrice(fairPe) %></span></div>
+      <div class="flex justify-between"><span>P/B-based</span><span class="text-sky-400"><%= formatPrice(fairPb) %></span></div>
+      <div class="mt-2 pt-2 border-t border-slate-700 flex justify-between font-bold">
+        <span>Range</span>
+        <span><%= formatPrice(lowFair) %> - <%= formatPrice(highFair) %></span>
+      </div>
+    </div>
+  </div>
+  <div class="bloomberg-card p-5 border-l-4 border-<%= pe > sectorPe * 1.3 || peg > 2 ? 'amber' : 'slate' %>-500">
+    <h4 class="font-bold text-amber-400 mb-2">Premium Signals</h4>
+    <p class="text-sm text-slate-400 mb-3">Metrics suggesting overvaluation</p>
+    <div class="space-y-2 text-sm">
+      <% if (pe > sectorPe * 1.3) { %>
+      <div class="flex justify-between"><span>High P/E</span><span class="text-amber-400"><%= formatNum(pe) %> vs <%= formatNum(sectorPe) %></span></div>
+      <% } %>
+      <% if (peg > 2) { %>
+      <div class="flex justify-between"><span>High PEG</span><span class="text-amber-400"><%= formatNum(peg, 2) %></span></div>
+      <% } %>
+      <% if (ps > sectorPs * 2) { %>
+      <div class="flex justify-between"><span>High P/S</span><span class="text-amber-400"><%= formatNum(ps) %> vs <%= formatNum(sectorPs) %></span></div>
+      <% } %>
+      <% if (pe <= sectorPe * 1.3 && peg <= 2 && ps <= sectorPs * 2) { %>
+      <div class="text-slate-500">No strong premium signals</div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Valuation Summary -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Valuation Summary</h3>
+  <div class="p-4 rounded-lg bg-slate-800">
+    <div class="flex items-start gap-4">
+      <div class="w-16 h-16 rounded-xl bg-<%= valStatus.color %>-500/20 flex items-center justify-center">
+        <span class="text-3xl"><%= valStatus.status === 'Value' ? '💎' : valStatus.status === 'Fair' ? '⚖️' : valStatus.status === 'Premium' ? '⭐' : '🔥' %></span>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-<%= valStatus.color %>-400 text-lg"><%= symbol %> appears <%= valStatus.status %></h4>
+        <p class="text-slate-300 mt-2">
+          <% if (valStatus.status === 'Value') { %>
+            Trading at attractive valuations relative to the sector. Multiple metrics suggest the stock may be undervalued. Consider for value-oriented portfolios.
+          <% } else if (valStatus.status === 'Fair') { %>
+            Trading near fair value based on current fundamentals. Valuation is in line with sector averages. Suitable for investors with conviction in the company's outlook.
+          <% } else if (valStatus.status === 'Premium') { %>
+            Trading at a premium to sector averages. This may be justified by strong growth prospects or competitive advantages. Monitor for entry points.
+          <% } else { %>
+            Trading at elevated valuations. High expectations are priced in. Consider risk/reward carefully before investing.
+          <% } %>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (financials) { %>
+// Valuation multiples chart
+new Chart(document.getElementById('peChart'), {
+  type: 'bar',
+  data: {
+    labels: ['P/E', 'Fwd P/E', 'P/B', 'P/S', 'PEG', 'EV/EBITDA'],
+    datasets: [{
+      label: '<%= symbol %>',
+      data: [<%= pe %>, <%= forwardPe %>, <%= pb %>, <%= ps %>, <%= peg * 10 %>, <%= evEbitda %>],
+      backgroundColor: ctx => {
+        const colors = ['#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
+        return colors[ctx.dataIndex];
+      },
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    }
+  }
+});
+
+// Comparison chart
+new Chart(document.getElementById('compChart'), {
+  type: 'bar',
+  data: {
+    labels: ['P/E', 'P/B', 'P/S'],
+    datasets: [
+      {
+        label: '<%= symbol %>',
+        data: [<%= pe %>, <%= pb %>, <%= ps %>],
+        backgroundColor: '#8b5cf6',
+        borderRadius: 4
+      },
+      {
+        label: 'Sector Avg',
+        data: [<%= sectorPe %>, <%= sectorPb %>, <%= sectorPs %>],
+        backgroundColor: '#94a3b8',
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#94a3b8' } }
+    },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>
