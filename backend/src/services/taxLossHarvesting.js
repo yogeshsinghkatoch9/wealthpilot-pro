@@ -15,6 +15,112 @@ class TaxLossHarvestingService {
       longTerm: 0.20,    // Long-term capital gains
       stateRate: 0.05    // Average state rate
     };
+    this.tablesInitialized = false;
+  }
+
+  /**
+   * Initialize tax harvesting tables if they don't exist
+   */
+  async initializeTables() {
+    if (this.tablesInitialized) return;
+
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS user_tax_preferences (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID UNIQUE NOT NULL,
+          federal_tax_bracket DECIMAL DEFAULT 32,
+          state VARCHAR(50),
+          state_tax_rate DECIMAL DEFAULT 0,
+          default_lot_method VARCHAR(50) DEFAULT 'tax_efficient',
+          min_harvest_threshold DECIMAL DEFAULT 100,
+          auto_harvest_enabled BOOLEAN DEFAULT FALSE,
+          short_term_rate DECIMAL DEFAULT 37,
+          long_term_rate DECIMAL DEFAULT 20,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS wash_sale_tracking (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL,
+          portfolio_id UUID NOT NULL,
+          symbol VARCHAR(20) NOT NULL,
+          sale_date TIMESTAMP NOT NULL,
+          shares_sold DECIMAL NOT NULL,
+          sale_price DECIMAL NOT NULL,
+          cost_basis DECIMAL NOT NULL,
+          realized_loss DECIMAL NOT NULL,
+          wash_sale_window_start TIMESTAMP NOT NULL,
+          wash_sale_window_end TIMESTAMP NOT NULL,
+          status VARCHAR(20) DEFAULT 'active',
+          disallowed_loss DECIMAL DEFAULT 0,
+          replacement_symbol VARCHAR(20),
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS tax_loss_carryforward (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL,
+          tax_year INTEGER NOT NULL,
+          short_term_loss DECIMAL DEFAULT 0,
+          long_term_loss DECIMAL DEFAULT 0,
+          used_against_gains DECIMAL DEFAULT 0,
+          used_against_income DECIMAL DEFAULT 0,
+          remaining_balance DECIMAL DEFAULT 0,
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW(),
+          UNIQUE(user_id, tax_year)
+        )
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS tax_harvest_history (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL,
+          portfolio_id UUID NOT NULL,
+          symbol VARCHAR(20) NOT NULL,
+          shares_sold DECIMAL NOT NULL,
+          sale_price DECIMAL NOT NULL,
+          cost_basis DECIMAL NOT NULL,
+          realized_loss DECIMAL NOT NULL,
+          tax_savings DECIMAL NOT NULL,
+          holding_period VARCHAR(20) NOT NULL,
+          lot_method VARCHAR(50),
+          replacement_symbol VARCHAR(20),
+          replacement_shares DECIMAL,
+          replacement_price DECIMAL,
+          wash_sale_safe BOOLEAN DEFAULT TRUE,
+          executed_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS tax_lots (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          portfolio_id UUID NOT NULL,
+          symbol VARCHAR(20) NOT NULL,
+          purchase_date TIMESTAMP NOT NULL,
+          shares DECIMAL NOT NULL,
+          cost_per_share DECIMAL NOT NULL,
+          total_cost DECIMAL NOT NULL,
+          lot_method VARCHAR(50) DEFAULT 'fifo',
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+
+      this.tablesInitialized = true;
+      logger.info('Tax harvesting tables initialized');
+    } catch (error) {
+      logger.warn('Tax tables init (may already exist):', error.message);
+      this.tablesInitialized = true; // Continue anyway
+    }
   }
   /**
    * Find tax loss harvesting opportunities
@@ -478,6 +584,7 @@ class TaxLossHarvestingService {
    */
   async getUserTaxPreferences(userId) {
     try {
+      await this.initializeTables();
       const prefs = await prisma.$queryRaw`
         SELECT * FROM user_tax_preferences WHERE user_id = ${userId}
       `;
