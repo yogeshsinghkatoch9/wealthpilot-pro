@@ -9,6 +9,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const liveDataService = require('../services/liveDataService');
 const { authenticate } = require('../middleware/auth');
+const { prisma } = require('../db/simpleDb');
 
 // Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
 let Database;
@@ -294,51 +295,94 @@ router.delete('/journal/:id', (req, res) => {
 
 // ==================== TAX ====================
 
-router.get('/tax/documents', (req, res) => {
+router.get('/tax/documents', async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : null;
-    const documents = Database.getTaxDocuments(req.user.id, year);
+    // Return empty array - tax documents not yet implemented with Prisma
+    const documents = [];
     res.json(documents);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/tax/lots', (req, res) => {
+router.get('/tax/lots', async (req, res) => {
   try {
-    const lots = Database.getTaxLots(req.user.id, req.query.portfolioId);
+    const userId = req.user.id;
+    const portfolioId = req.query.portfolioId;
+
+    // Get tax lots from TaxLot table if exists, otherwise return holdings as lots
+    let lots = [];
+    try {
+      lots = await prisma.taxLot.findMany({
+        where: portfolioId ? { userId, portfolioId } : { userId },
+        orderBy: { purchaseDate: 'desc' }
+      });
+    } catch (e) {
+      // TaxLot table might not exist, get holdings instead
+      const holdings = await prisma.holding.findMany({
+        where: portfolioId ? { portfolio: { userId, id: portfolioId } } : { portfolio: { userId } },
+        include: { portfolio: true }
+      });
+      lots = holdings.map(h => ({
+        id: h.id,
+        symbol: h.symbol,
+        shares: h.shares,
+        costBasis: h.avgCost * h.shares,
+        purchaseDate: h.createdAt,
+        currentValue: h.marketValue || (h.shares * h.avgCost),
+        gain: (h.marketValue || 0) - (h.avgCost * h.shares),
+        holdingPeriod: Math.floor((Date.now() - new Date(h.createdAt).getTime()) / (1000 * 60 * 60 * 24)),
+        isLongTerm: Math.floor((Date.now() - new Date(h.createdAt).getTime()) / (1000 * 60 * 60 * 24)) > 365
+      }));
+    }
     res.json(lots);
   } catch (err) {
+    logger.error('Tax lots error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/tax/summary', (req, res) => {
+router.get('/tax/summary', async (req, res) => {
   try {
     const year = parseInt(req.query.year) || new Date().getFullYear();
-    const transactions = Database.getTransactionsByUser(req.user.id, 1000);
+    const userId = req.user.id;
 
-    // Filter by year and calculate gains/losses
-    const yearTransactions = transactions.filter(t => {
-      const txYear = new Date(t.executed_at).getFullYear();
-      return txYear === year;
-    });
+    // Get transactions from Prisma
+    let transactions = [];
+    try {
+      transactions = await prisma.transaction.findMany({
+        where: {
+          userId,
+          date: {
+            gte: new Date(`${year}-01-01`),
+            lt: new Date(`${year + 1}-01-01`)
+          }
+        }
+      });
+    } catch (e) {
+      // Transaction table might not exist
+      transactions = [];
+    }
 
-    const sells = yearTransactions.filter(t => t.type === 'sell');
+    const sells = transactions.filter(t => t.type === 'sell' || t.type === 'SELL');
     let shortTermGains = 0;
     const longTermGains = 0;
     let dividends = 0;
 
-    yearTransactions.forEach(t => {
-      if (t.type === 'dividend') {
-        dividends += t.amount || 0;
+    transactions.forEach(t => {
+      if (t.type === 'dividend' || t.type === 'DIVIDEND') {
+        dividends += parseFloat(t.amount || t.total || 0);
       }
     });
 
     // Simplified gain calculation
     sells.forEach(s => {
-      const gain = (s.price - (s.avg_cost || s.price * 0.9)) * s.shares;
-      shortTermGains += gain; // Simplified - would need holding period analysis
+      const price = parseFloat(s.price || 0);
+      const avgCost = parseFloat(s.avgCost || s.avg_cost || price * 0.9);
+      const shares = parseFloat(s.shares || s.quantity || 0);
+      const gain = (price - avgCost) * shares;
+      shortTermGains += gain;
     });
 
     res.json({
@@ -348,9 +392,10 @@ router.get('/tax/summary', (req, res) => {
       totalGains: shortTermGains + longTermGains,
       dividendIncome: dividends,
       estimatedTax: (shortTermGains * 0.22 + longTermGains * 0.15 + dividends * 0.15).toFixed(2),
-      transactionCount: yearTransactions.length
+      transactionCount: transactions.length
     });
   } catch (err) {
+    logger.error('Tax summary error:', err);
     res.status(500).json({ error: err.message });
   }
 });
