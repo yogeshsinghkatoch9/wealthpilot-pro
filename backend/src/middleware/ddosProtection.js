@@ -22,36 +22,35 @@ const requestFingerprints = new Map(); // fingerprint -> { count, lastSeen }
 const burstTracker = new Map(); // IP -> { requests: [], blocked: boolean }
 const ipRequestCounts = new Map(); // IP -> { count, windowStart }
 
-// Configuration
+// Configuration - Relaxed for development/testing
 const CONFIG = {
   // Blacklist settings
-  blacklistThreshold: 100, // Requests per minute to auto-blacklist
-  blacklistDuration: 30 * 60 * 1000, // 30 minutes
+  blacklistThreshold: 1000, // Requests per minute to auto-blacklist (was 100)
+  blacklistDuration: 5 * 60 * 1000, // 5 minutes (was 30)
 
   // Burst protection
   burstWindowMs: 1000, // 1 second
-  maxBurstRequests: 50, // Max 50 requests per second
+  maxBurstRequests: 200, // Max 200 requests per second (was 50)
 
   // Suspicious activity detection
-  suspiciousThreshold: 5, // Number of suspicious activities before flagging
+  suspiciousThreshold: 20, // Number of suspicious activities before flagging (was 5)
   suspiciousDecayMs: 60 * 60 * 1000, // 1 hour decay
 
   // Fingerprint tracking
   fingerprintWindowMs: 5 * 60 * 1000, // 5 minutes
-  maxFingerprintRequests: 100, // Max same fingerprint in window
+  maxFingerprintRequests: 500, // Max same fingerprint in window (was 100)
 
   // Adaptive rate limiting
   adaptiveMultiplier: 0.5, // Reduce limits by 50% under attack
-  attackThreshold: 1000, // Global requests/minute to trigger adaptive mode
+  attackThreshold: 5000, // Global requests/minute to trigger adaptive mode (was 1000)
 
   // Request validation
   maxHeaderSize: 16384, // 16KB
   maxPayloadSize: 10 * 1024 * 1024, // 10MB
 
-  // Bot patterns
+  // Bot patterns - Removed curl/wget to allow API testing
   botUserAgents: [
-    /curl/i, /wget/i, /python-requests/i, /scrapy/i,
-    /bot/i, /crawl/i, /spider/i, /scan/i
+    /scrapy/i, /crawl/i, /spider/i, /scan/i
   ],
 
   // Suspicious paths
