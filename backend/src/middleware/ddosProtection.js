@@ -3,10 +3,10 @@ const blacklist = new Map();
 
 const CONFIG = {
   WINDOW_MS: 60 * 1000,
-  MAX_REQUESTS_PER_WINDOW: 200,
-  BLACKLIST_DURATION_MS: 5 * 60 * 1000,
-  BLACKLIST_THRESHOLD: 500,
-  BYPASS_PATHS: new Set(['/health', '/api/health', '/favicon.ico']),
+  MAX_REQUESTS_PER_WINDOW: 1000,
+  BLACKLIST_DURATION_MS: 60 * 1000, // 1 minute only
+  BLACKLIST_THRESHOLD: 2000,
+  BYPASS_PATHS: new Set(['/health', '/api/health', '/favicon.ico', '/api/auth/register', '/api/auth/login']),
 };
 
 setInterval(() => {
