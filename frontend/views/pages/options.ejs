@@ -218,17 +218,17 @@ Add Position
   </div>
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label class="block text-sm text-slate-400 mb-1">Quantity (+ long, - short)</label>
-      <input type="number" name="quantity" required class="form-input w-full" placeholder="5">
+      <label class="block text-sm text-slate-400 mb-1">Contracts (+ long, - short)</label>
+      <input type="number" name="contracts" required class="form-input w-full" placeholder="5">
     </div>
     <div>
-      <label class="block text-sm text-slate-400 mb-1">Average Cost</label>
-      <input type="number" name="avgCost" step="0.01" required class="form-input w-full" placeholder="3.50">
+      <label class="block text-sm text-slate-400 mb-1">Premium per Share</label>
+      <input type="number" name="premium" step="0.01" required class="form-input w-full" placeholder="3.50">
     </div>
   </div>
   <div>
-    <label class="block text-sm text-slate-400 mb-1">Implied Volatility (%)</label>
-    <input type="number" name="impliedVolatility" step="0.1" class="form-input w-full" placeholder="30" value="30">
+    <label class="block text-sm text-slate-400 mb-1">Notes (optional)</label>
+    <input type="text" name="notes" class="form-input w-full" placeholder="Trade notes...">
   </div>
   <button type="submit" class="bloomberg-btn-primary w-full">Add Position</button>
 </form>
@@ -386,22 +386,22 @@ function renderPositions(data) {
   tbody.innerHTML = data.positions.map(pos => {
     const pnlClass = pos.pnl >= 0 ? 'positive' : 'negative';
     const deltaClass = pos.greeks?.delta >= 0 ? 'positive' : 'negative';
-    const typeClass = pos.option_type === 'call' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400';
-    const expiryDate = new Date(pos.expiration_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const typeClass = pos.optionType === 'call' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400';
+    const expiryDate = new Date(pos.expirationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const isNearExpiry = pos.daysToExpiry <= 7;
 
     return `
       <tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
         <td class="py-3 font-semibold text-white">${pos.symbol}</td>
-        <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${typeClass}">${pos.option_type.toUpperCase()}</span></td>
-        <td class="py-3 text-right text-slate-300 font-mono">$${pos.strike}</td>
+        <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${typeClass}">${(pos.optionType || 'call').toUpperCase()}</span></td>
+        <td class="py-3 text-right text-slate-300 font-mono">$${pos.strikePrice}</td>
         <td class="py-3 text-right ${isNearExpiry ? 'text-amber-400' : 'text-slate-300'} font-mono">${expiryDate}</td>
-        <td class="py-3 text-right text-white font-medium font-mono">${pos.quantity > 0 ? '+' : ''}${pos.quantity}</td>
-        <td class="py-3 text-right text-slate-300 font-mono">$${pos.avg_cost?.toFixed(2)}</td>
+        <td class="py-3 text-right text-white font-medium font-mono">${pos.contracts > 0 ? '+' : ''}${pos.contracts}</td>
+        <td class="py-3 text-right text-slate-300 font-mono">$${pos.premium?.toFixed(2)}</td>
         <td class="py-3 text-right text-white font-medium font-mono">$${pos.currentOptionPrice?.toFixed(2) || '--'}</td>
         <td class="py-3 text-right font-medium tabular-nums ${pnlClass}">${pos.pnl >= 0 ? '+' : ''}$${pos.pnl?.toFixed(0) || '--'}</td>
         <td class="py-3 text-right tabular-nums ${deltaClass}">${pos.greeks?.delta?.toFixed(2) || '--'}</td>
-        <td class="py-3 text-right text-slate-300 font-mono">${pos.implied_volatility}%</td>
+        <td class="py-3 text-right text-slate-300 font-mono">${pos.daysToExpiry || '--'}d</td>
         <td class="py-3 text-right">
           <button onclick="closePosition('${pos.id}')" class="bloomberg-btn-secondary btn-sm">Close</button>
         </td>

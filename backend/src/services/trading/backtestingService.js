@@ -3,8 +3,8 @@
  * Simulates trading strategies on historical data and calculates performance metrics
  */
 
-const { prisma } = require('../../db/simpleDb');
-const { v4: uuidv4 } = require('uuid');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const logger = require('../../utils/logger');
 const strategyEngine = require('./strategyEngine');
 
@@ -278,29 +278,38 @@ class BacktestingService {
    * @param {Object} result - Backtest result
    */
   async saveBacktestResult(userId, result) {
-    const backtestId = uuidv4();
-
     try {
-      await prisma.$executeRaw`
-        INSERT INTO backtest_results (
-          id, strategy_id, user_id, symbol, start_date, end_date,
-          initial_capital, final_capital, total_return, total_trades,
-          winning_trades, losing_trades, win_rate, avg_win, avg_loss,
-          max_drawdown, sharpe_ratio, profit_factor, expectancy,
-          trades_data, equity_curve, created_at
-        ) VALUES (
-          ${backtestId}, ${result.strategyId}, ${userId}, ${result.symbol},
-          ${result.startDate}, ${result.endDate}, ${result.initialCapital},
-          ${result.finalCapital}, ${result.totalReturn}, ${result.totalTrades},
-          ${result.winningTrades}, ${result.losingTrades}, ${result.winRate},
-          ${result.avgWin}, ${result.avgLoss}, ${result.maxDrawdown},
-          ${result.sharpeRatio}, ${result.profitFactor}, ${result.expectancy},
-          ${JSON.stringify(result.trades)}, ${JSON.stringify(result.equityCurve)}, NOW()
-        )
-      `;
+      const backtest = await prisma.backtestResult.create({
+        data: {
+          userId,
+          strategyName: result.strategyName || 'Custom Strategy',
+          strategyType: result.strategyType || 'custom',
+          symbol: result.symbol,
+          startDate: new Date(result.startDate),
+          endDate: new Date(result.endDate),
+          initialCapital: result.initialCapital,
+          finalValue: result.finalCapital,
+          totalReturn: result.finalCapital - result.initialCapital,
+          totalReturnPct: result.totalReturn,
+          annualizedReturn: result.annualizedReturn || null,
+          sharpeRatio: result.sharpeRatio || null,
+          maxDrawdown: result.maxDrawdown || null,
+          maxDrawdownPct: result.maxDrawdown || null,
+          winRate: result.winRate || null,
+          totalTrades: result.totalTrades || 0,
+          winningTrades: result.winningTrades || null,
+          losingTrades: result.losingTrades || null,
+          avgWin: result.avgWin || null,
+          avgLoss: result.avgLoss || null,
+          profitFactor: result.profitFactor || null,
+          parameters: result.config ? JSON.stringify(result.config) : null,
+          trades: result.trades ? JSON.stringify(result.trades) : null,
+          equityCurve: result.equityCurve ? JSON.stringify(result.equityCurve) : null
+        }
+      });
 
-      logger.info(`Backtest result saved: ${backtestId}`);
-      return backtestId;
+      logger.info(`Backtest result saved: ${backtest.id}`);
+      return backtest.id;
     } catch (error) {
       logger.error('Error saving backtest result:', error);
       // Don't throw - backtest still completed, just couldn't save
@@ -315,21 +324,17 @@ class BacktestingService {
    */
   async getBacktestResult(backtestId) {
     try {
-      const results = await prisma.$queryRaw`
-        SELECT * FROM backtest_results WHERE id = ${backtestId}
-      `;
+      const result = await prisma.backtestResult.findUnique({
+        where: { id: backtestId }
+      });
 
-      if (!results || results.length === 0) return null;
+      if (!result) return null;
 
-      const result = results[0];
       return {
         ...result,
-        trades_data: typeof result.trades_data === 'string'
-          ? JSON.parse(result.trades_data)
-          : result.trades_data,
-        equity_curve: typeof result.equity_curve === 'string'
-          ? JSON.parse(result.equity_curve)
-          : result.equity_curve
+        trades: result.trades ? JSON.parse(result.trades) : [],
+        equityCurve: result.equityCurve ? JSON.parse(result.equityCurve) : [],
+        parameters: result.parameters ? JSON.parse(result.parameters) : {}
       };
     } catch (error) {
       logger.error('Error getting backtest result:', error);
@@ -338,22 +343,22 @@ class BacktestingService {
   }
 
   /**
-   * Get all backtest results for a strategy
-   * @param {String} strategyId - Strategy ID
+   * Get all backtest results for a strategy type
+   * @param {String} strategyType - Strategy type
    * @returns {Array} Array of backtest results
    */
-  async getStrategyBacktests(strategyId) {
+  async getStrategyBacktests(strategyType) {
     try {
-      const results = await prisma.$queryRaw`
-        SELECT * FROM backtest_results
-        WHERE strategy_id = ${strategyId}
-        ORDER BY created_at DESC
-      `;
+      const results = await prisma.backtestResult.findMany({
+        where: { strategyType },
+        orderBy: { createdAt: 'desc' }
+      });
 
       return results.map(r => ({
         ...r,
-        trades_data: typeof r.trades_data === 'string' ? JSON.parse(r.trades_data) : r.trades_data,
-        equity_curve: typeof r.equity_curve === 'string' ? JSON.parse(r.equity_curve) : r.equity_curve
+        trades: r.trades ? JSON.parse(r.trades) : [],
+        equityCurve: r.equityCurve ? JSON.parse(r.equityCurve) : [],
+        parameters: r.parameters ? JSON.parse(r.parameters) : {}
       }));
     } catch (error) {
       logger.error('Error getting strategy backtests:', error);
@@ -368,18 +373,16 @@ class BacktestingService {
    */
   async getUserBacktests(userId) {
     try {
-      const results = await prisma.$queryRaw`
-        SELECT br.*, ts.name as strategy_name, ts.strategy_type
-        FROM backtest_results br
-        LEFT JOIN trading_strategies ts ON br.strategy_id = ts.id
-        WHERE br.user_id = ${userId}
-        ORDER BY br.created_at DESC
-      `;
+      const results = await prisma.backtestResult.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' }
+      });
 
       return results.map(r => ({
         ...r,
-        trades_data: typeof r.trades_data === 'string' ? JSON.parse(r.trades_data) : r.trades_data,
-        equity_curve: typeof r.equity_curve === 'string' ? JSON.parse(r.equity_curve) : r.equity_curve
+        trades: r.trades ? JSON.parse(r.trades) : [],
+        equityCurve: r.equityCurve ? JSON.parse(r.equityCurve) : [],
+        parameters: r.parameters ? JSON.parse(r.parameters) : {}
       }));
     } catch (error) {
       logger.error('Error getting user backtests:', error);
@@ -393,9 +396,9 @@ class BacktestingService {
    */
   async deleteBacktest(backtestId) {
     try {
-      await prisma.$executeRaw`
-        DELETE FROM backtest_results WHERE id = ${backtestId}
-      `;
+      await prisma.backtestResult.delete({
+        where: { id: backtestId }
+      });
       logger.info(`Backtest deleted: ${backtestId}`);
       return true;
     } catch (error) {

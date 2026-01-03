@@ -6,11 +6,12 @@
 
 const express = require('express');
 const router = express.Router();
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { authenticate } = require('../middleware/auth');
 const optionsAnalysis = require('../services/optionsAnalysis');
 const yahooOptions = require('../services/yahooOptionsService');
 const MarketDataService = require('../services/marketDataService');
-const db = require('../db');
 const logger = require('../utils/logger');
 
 const marketData = new MarketDataService(process.env.ALPHA_VANTAGE_API_KEY);
@@ -384,28 +385,36 @@ router.get('/positions', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const positions = await db.prepare(`
-      SELECT * FROM options_positions
-      WHERE user_id = ? AND status = 'open'
-      ORDER BY expiration_date ASC
-    `).all(userId);
+    const positions = await prisma.optionsPosition.findMany({
+      where: { userId, status: 'open' },
+      orderBy: { expirationDate: 'asc' }
+    });
 
     // Enrich with current prices and Greeks
     const enrichedPositions = await Promise.all(positions.map(async pos => {
       try {
         const quote = await marketData.getQuote(pos.symbol);
-        const currentPrice = quote?.price || pos.entry_price;
-        const T = Math.max(0, (new Date(pos.expiration_date) - Date.now()) / (365 * 24 * 60 * 60 * 1000));
-        const iv = pos.implied_volatility / 100;
+        const currentPrice = quote?.price || pos.premium;
+        const T = Math.max(0, (new Date(pos.expirationDate) - Date.now()) / (365 * 24 * 60 * 60 * 1000));
+        const iv = 0.3; // Default IV estimate
 
-        const greeks = optionsAnalysis.calculateGreeks(pos.option_type, currentPrice, pos.strike, T, 0.05, iv);
-        const optionPrice = optionsAnalysis.blackScholes(pos.option_type, currentPrice, pos.strike, T, 0.05, iv);
+        const greeks = optionsAnalysis.calculateGreeks(pos.optionType, currentPrice, pos.strikePrice, T, 0.05, iv);
+        const optionPrice = optionsAnalysis.blackScholes(pos.optionType, currentPrice, pos.strikePrice, T, 0.05, iv);
 
-        const pnl = (optionPrice - pos.avg_cost) * pos.quantity * 100;
-        const pnlPercent = ((optionPrice - pos.avg_cost) / pos.avg_cost) * 100;
+        const pnl = (optionPrice - pos.premium) * pos.contracts * 100;
+        const pnlPercent = pos.premium > 0 ? ((optionPrice - pos.premium) / pos.premium) * 100 : 0;
 
         return {
-          ...pos,
+          id: pos.id,
+          symbol: pos.symbol,
+          optionType: pos.optionType,
+          strikePrice: pos.strikePrice,
+          expirationDate: pos.expirationDate,
+          contracts: pos.contracts,
+          premium: pos.premium,
+          status: pos.status,
+          entryDate: pos.entryDate,
+          notes: pos.notes,
           currentStockPrice: currentPrice,
           currentOptionPrice: Math.round(optionPrice * 100) / 100,
           pnl: Math.round(pnl * 100) / 100,
@@ -421,7 +430,7 @@ router.get('/positions', async (req, res) => {
     // Calculate portfolio Greeks
     const portfolioGreeks = enrichedPositions.reduce((acc, pos) => {
       if (pos.greeks) {
-        const multiplier = pos.quantity * 100;
+        const multiplier = pos.contracts * 100;
         acc.delta += (pos.greeks.delta || 0) * multiplier;
         acc.gamma += (pos.greeks.gamma || 0) * multiplier;
         acc.theta += (pos.greeks.theta || 0) * multiplier;
@@ -461,12 +470,12 @@ router.post('/positions', async (req, res) => {
       optionType,
       strike,
       expirationDate,
-      quantity,
-      avgCost,
-      impliedVolatility = 30
+      contracts,
+      premium,
+      notes
     } = req.body;
 
-    if (!symbol || !optionType || !strike || !expirationDate || !quantity || !avgCost) {
+    if (!symbol || !optionType || !strike || !expirationDate || !contracts || !premium) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -476,27 +485,24 @@ router.post('/positions', async (req, res) => {
       return res.status(404).json({ error: 'Symbol not found' });
     }
 
-    const result = await db.prepare(`
-      INSERT INTO options_positions (
-        user_id, symbol, option_type, strike, expiration_date,
-        quantity, avg_cost, entry_price, implied_volatility, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', datetime('now'))
-    `).run(
-      userId,
-      symbol.toUpperCase(),
-      optionType.toLowerCase(),
-      parseFloat(strike),
-      expirationDate,
-      parseInt(quantity),
-      parseFloat(avgCost),
-      quote.price,
-      parseFloat(impliedVolatility)
-    );
+    const position = await prisma.optionsPosition.create({
+      data: {
+        userId,
+        symbol: symbol.toUpperCase(),
+        optionType: optionType.toLowerCase(),
+        strikePrice: parseFloat(strike),
+        expirationDate: new Date(expirationDate),
+        contracts: parseInt(contracts),
+        premium: parseFloat(premium),
+        status: 'open',
+        notes: notes || null
+      }
+    });
 
     res.json({
       success: true,
       message: 'Position added successfully',
-      positionId: result.lastInsertRowid
+      position
     });
   } catch (error) {
     logger.error('Add position error:', error);
@@ -512,15 +518,27 @@ router.put('/positions/:id', async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { quantity, avgCost } = req.body;
+    const { contracts, premium, notes } = req.body;
 
-    await db.prepare(`
-      UPDATE options_positions
-      SET quantity = ?, avg_cost = ?, updated_at = datetime('now')
-      WHERE id = ? AND user_id = ?
-    `).run(parseInt(quantity), parseFloat(avgCost), id, userId);
+    // Verify ownership
+    const existing = await prisma.optionsPosition.findFirst({
+      where: { id, userId }
+    });
 
-    res.json({ success: true, message: 'Position updated' });
+    if (!existing) {
+      return res.status(404).json({ error: 'Position not found' });
+    }
+
+    const position = await prisma.optionsPosition.update({
+      where: { id },
+      data: {
+        contracts: contracts ? parseInt(contracts) : undefined,
+        premium: premium ? parseFloat(premium) : undefined,
+        notes: notes !== undefined ? notes : undefined
+      }
+    });
+
+    res.json({ success: true, message: 'Position updated', position });
   } catch (error) {
     logger.error('Update position error:', error);
     res.status(500).json({ error: 'Failed to update position' });
@@ -535,15 +553,27 @@ router.delete('/positions/:id', async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { closePrice } = req.body;
+    const { exitPrice } = req.body;
 
-    await db.prepare(`
-      UPDATE options_positions
-      SET status = 'closed', close_price = ?, closed_at = datetime('now')
-      WHERE id = ? AND user_id = ?
-    `).run(parseFloat(closePrice || 0), id, userId);
+    // Verify ownership
+    const existing = await prisma.optionsPosition.findFirst({
+      where: { id, userId }
+    });
 
-    res.json({ success: true, message: 'Position closed' });
+    if (!existing) {
+      return res.status(404).json({ error: 'Position not found' });
+    }
+
+    const position = await prisma.optionsPosition.update({
+      where: { id },
+      data: {
+        status: 'closed',
+        exitPrice: exitPrice ? parseFloat(exitPrice) : null,
+        exitDate: new Date()
+      }
+    });
+
+    res.json({ success: true, message: 'Position closed', position });
   } catch (error) {
     logger.error('Close position error:', error);
     res.status(500).json({ error: 'Failed to close position' });

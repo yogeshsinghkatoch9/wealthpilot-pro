@@ -1039,6 +1039,159 @@ model OAuthToken {
   @@map("oauth_tokens")
 }
 
+// ============== OPTIONS TRADING ==============
+
+model OptionsPosition {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  symbol         String    // Underlying symbol (AAPL, MSFT, etc.)
+  optionType     String    @map("option_type") // 'call' or 'put'
+  strikePrice    Float     @map("strike_price")
+  expirationDate DateTime  @map("expiration_date")
+  contracts      Int       // Number of contracts (1 contract = 100 shares)
+  premium        Float     // Premium paid per share
+  status         String    @default("open") // open, closed, expired
+  entryDate      DateTime  @default(now()) @map("entry_date")
+  exitDate       DateTime? @map("exit_date")
+  exitPrice      Float?    @map("exit_price")
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([status])
+  @@index([expirationDate])
+  @@map("options_positions")
+}
+
+// ============== CRYPTO PORTFOLIO ==============
+
+model CryptoHolding {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  symbol        String    // BTC, ETH, SOL, etc.
+  name          String?   // Bitcoin, Ethereum, etc.
+  quantity      Float
+  avgCost       Float     @map("avg_cost")
+  walletAddress String?   @map("wallet_address")
+  exchange      String?   // coinbase, binance, kraken, etc.
+  notes         String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  transactions  CryptoTransaction[]
+
+  @@unique([userId, symbol])
+  @@index([userId])
+  @@index([symbol])
+  @@map("crypto_holdings")
+}
+
+model CryptoTransaction {
+  id            String        @id @default(uuid())
+  holdingId     String        @map("holding_id")
+  type          String        // buy, sell, transfer_in, transfer_out, stake, unstake
+  quantity      Float
+  price         Float         // Price per coin at transaction time
+  fees          Float         @default(0)
+  exchange      String?
+  txHash        String?       @map("tx_hash") // Blockchain transaction hash
+  notes         String?
+  executedAt    DateTime      @map("executed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  holding       CryptoHolding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@index([holdingId])
+  @@index([executedAt])
+  @@map("crypto_transactions")
+}
+
+// ============== BACKTESTING ==============
+
+model BacktestResult {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  strategyName   String    @map("strategy_name")
+  strategyType   String    @map("strategy_type") // sma_crossover, rsi, macd, bollinger, custom
+  symbol         String
+  startDate      DateTime  @map("start_date")
+  endDate        DateTime  @map("end_date")
+  initialCapital Float     @map("initial_capital")
+  finalValue     Float     @map("final_value")
+  totalReturn    Float     @map("total_return")
+  totalReturnPct Float     @map("total_return_pct")
+  annualizedReturn Float?  @map("annualized_return")
+  sharpeRatio    Float?    @map("sharpe_ratio")
+  maxDrawdown    Float?    @map("max_drawdown")
+  maxDrawdownPct Float?    @map("max_drawdown_pct")
+  winRate        Float?    @map("win_rate")
+  totalTrades    Int       @map("total_trades")
+  winningTrades  Int?      @map("winning_trades")
+  losingTrades   Int?      @map("losing_trades")
+  avgWin         Float?    @map("avg_win")
+  avgLoss        Float?    @map("avg_loss")
+  profitFactor   Float?    @map("profit_factor")
+  parameters     String?   // JSON string of strategy parameters
+  trades         String?   @db.Text // JSON string of all trades
+  equityCurve    String?   @db.Text // JSON string of equity curve data
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([strategyType])
+  @@index([createdAt])
+  @@map("backtest_results")
+}
+
+// ============== TAX HARVESTING ==============
+
+model TaxHarvestingOpportunity {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  portfolioId     String?   @map("portfolio_id")
+  symbol          String
+  shares          Float
+  currentPrice    Float     @map("current_price")
+  costBasis       Float     @map("cost_basis")
+  unrealizedLoss  Float     @map("unrealized_loss")
+  potentialSavings Float    @map("potential_savings")
+  holdingPeriod   String    @map("holding_period") // short_term, long_term
+  washSaleRisk    Boolean   @default(false) @map("wash_sale_risk")
+  washSaleEndDate DateTime? @map("wash_sale_end_date")
+  suggestedAction String    @map("suggested_action")
+  alternativeSymbols String? @map("alternative_symbols") // JSON array of similar symbols
+  status          String    @default("pending") // pending, harvested, skipped, expired
+  harvestedAt     DateTime? @map("harvested_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([status])
+  @@index([unrealizedLoss])
+  @@map("tax_harvesting_opportunities")
+}
+
+model TaxHarvestingReport {
+  id                  String    @id @default(uuid())
+  userId              String    @map("user_id")
+  year                Int
+  totalHarvested      Float     @map("total_harvested")
+  shortTermLosses     Float     @map("short_term_losses")
+  longTermLosses      Float     @map("long_term_losses")
+  estimatedTaxSavings Float     @map("estimated_tax_savings")
+  transactionsCount   Int       @map("transactions_count")
+  reportData          String?   @db.Text // JSON detailed report
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  @@unique([userId, year])
+  @@index([userId])
+  @@index([year])
+  @@map("tax_harvesting_reports")
+}
+
 // ============== FINANCE ASSISTANT ==============
 
 model AssistantSession {

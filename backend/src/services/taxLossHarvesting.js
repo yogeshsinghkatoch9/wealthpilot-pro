@@ -1,4 +1,5 @@
-const { prisma } = require('../db/simpleDb');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const logger = require('../utils/logger');
 const etfAlternatives = require('./etfAlternatives');
 const { v4: uuidv4 } = require('uuid');

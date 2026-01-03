@@ -5,9 +5,10 @@
 
 const express = require('express');
 const router = express.Router();
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const { authenticate } = require('../middleware/auth');
 const cryptoService = require('../services/cryptoService');
-const { prisma } = require('../db/simpleDb');
 const logger = require('../utils/logger');
 
 // All routes require authentication
@@ -158,12 +159,12 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Get holdings from database using raw SQL (PostgreSQL)
-    const holdings = await prisma.$queryRaw`
-      SELECT * FROM crypto_holdings
-      WHERE user_id = ${userId}
-      ORDER BY market_value DESC
-    `;
+    // Get holdings from database using Prisma ORM
+    const holdings = await prisma.cryptoHolding.findMany({
+      where: { userId },
+      include: { transactions: { orderBy: { executedAt: 'desc' }, take: 5 } },
+      orderBy: { updatedAt: 'desc' }
+    });
 
     if (holdings.length === 0) {
       return res.json({
@@ -185,32 +186,41 @@ router.get('/', async (req, res) => {
     // Enrich holdings with current data
     const enrichedHoldings = holdings.map(h => {
       const priceData = prices[h.symbol];
-      const currentPrice = priceData?.price || h.current_price || 0;
+      const currentPrice = priceData?.price || 0;
+      const costBasis = h.quantity * h.avgCost;
       const marketValue = h.quantity * currentPrice;
-      const gain = marketValue - h.cost_basis;
-      const gainPercent = h.cost_basis > 0 ? (gain / h.cost_basis) * 100 : 0;
+      const gain = marketValue - costBasis;
+      const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
 
       return {
-        ...h,
-        current_price: currentPrice,
-        market_value: marketValue,
+        id: h.id,
+        symbol: h.symbol,
+        name: h.name,
+        quantity: h.quantity,
+        avgCost: h.avgCost,
+        exchange: h.exchange,
+        walletAddress: h.walletAddress,
+        currentPrice,
+        costBasis,
+        marketValue,
         gain,
-        gain_percent: gainPercent,
-        change_24h: priceData?.change24h || 0,
-        volume_24h: priceData?.volume24h || 0,
-        market_cap: priceData?.marketCap || 0
+        gainPercent,
+        change24h: priceData?.change24h || 0,
+        volume24h: priceData?.volume24h || 0,
+        marketCap: priceData?.marketCap || 0,
+        recentTransactions: h.transactions
       };
     });
 
     // Calculate totals
-    const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.market_value, 0);
-    const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.cost_basis, 0);
+    const totalValue = enrichedHoldings.reduce((sum, h) => sum + h.marketValue, 0);
+    const totalCost = enrichedHoldings.reduce((sum, h) => sum + h.costBasis, 0);
     const totalGain = totalValue - totalCost;
 
     // Calculate weighted 24h change
     const dayChange = totalValue > 0 ? enrichedHoldings.reduce((sum, h) => {
-      const weight = h.market_value / totalValue;
-      return sum + (h.change_24h * weight);
+      const weight = h.marketValue / totalValue;
+      return sum + (h.change24h * weight);
     }, 0) : 0;
 
     res.json({
@@ -238,67 +248,58 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const userId = req.user.id;
-    const { symbol, name, quantity, costBasis, purchaseDate, notes } = req.body;
+    const { symbol, name, quantity, avgCost, exchange, walletAddress, notes } = req.body;
 
-    if (!symbol || !quantity || !costBasis) {
-      return res.status(400).json({ error: 'Symbol, quantity, and cost basis required' });
+    if (!symbol || !quantity || !avgCost) {
+      return res.status(400).json({ error: 'Symbol, quantity, and average cost required' });
     }
 
-    // Get current price
-    const priceData = await cryptoService.getPrice(symbol.toUpperCase());
-    const currentPrice = priceData?.price || 0;
-    const marketValue = parseFloat(quantity) * currentPrice;
-
     // Check if holding already exists
-    const existing = await prisma.$queryRaw`
-      SELECT * FROM crypto_holdings WHERE user_id = ${userId} AND symbol = ${symbol.toUpperCase()}
-    `;
+    const existing = await prisma.cryptoHolding.findUnique({
+      where: { userId_symbol: { userId, symbol: symbol.toUpperCase() } }
+    });
 
-    if (existing.length > 0) {
-      // Update existing holding (average cost basis)
-      const oldHolding = existing[0];
-      const newQuantity = oldHolding.quantity + parseFloat(quantity);
-      const newCostBasis = oldHolding.cost_basis + parseFloat(costBasis);
+    if (existing) {
+      // Update existing holding (calculate new average cost)
+      const newQuantity = existing.quantity + parseFloat(quantity);
+      const totalCost = (existing.quantity * existing.avgCost) + (parseFloat(quantity) * parseFloat(avgCost));
+      const newAvgCost = totalCost / newQuantity;
 
-      await prisma.$executeRaw`
-        UPDATE crypto_holdings
-        SET quantity = ${newQuantity}, cost_basis = ${newCostBasis},
-            current_price = ${currentPrice}, market_value = ${newQuantity * currentPrice},
-            updated_at = NOW()
-        WHERE id = ${oldHolding.id}
-      `;
+      const updated = await prisma.cryptoHolding.update({
+        where: { id: existing.id },
+        data: {
+          quantity: newQuantity,
+          avgCost: newAvgCost,
+          exchange: exchange || existing.exchange,
+          walletAddress: walletAddress || existing.walletAddress,
+          notes: notes || existing.notes
+        }
+      });
 
       res.json({
         success: true,
         message: 'Holding updated',
-        holding: {
-          id: oldHolding.id,
-          symbol: symbol.toUpperCase(),
-          quantity: newQuantity,
-          costBasis: newCostBasis,
-          avgCost: newCostBasis / newQuantity,
-          currentPrice,
-          marketValue: newQuantity * currentPrice
-        }
+        holding: updated
       });
     } else {
-      // Insert new holding
-      const id = require('crypto').randomUUID();
-      await prisma.$executeRaw`
-        INSERT INTO crypto_holdings (
-          id, user_id, symbol, name, quantity, cost_basis, current_price, market_value,
-          purchase_date, notes, created_at, updated_at
-        ) VALUES (
-          ${id}, ${userId}, ${symbol.toUpperCase()}, ${name || symbol.toUpperCase()},
-          ${parseFloat(quantity)}, ${parseFloat(costBasis)}, ${currentPrice}, ${marketValue},
-          ${purchaseDate || null}, ${notes || null}, NOW(), NOW()
-        )
-      `;
+      // Create new holding
+      const holding = await prisma.cryptoHolding.create({
+        data: {
+          userId,
+          symbol: symbol.toUpperCase(),
+          name: name || symbol.toUpperCase(),
+          quantity: parseFloat(quantity),
+          avgCost: parseFloat(avgCost),
+          exchange: exchange || null,
+          walletAddress: walletAddress || null,
+          notes: notes || null
+        }
+      });
 
       res.json({
         success: true,
         message: 'Holding added',
-        holdingId: id
+        holding
       });
     }
   } catch (error) {
@@ -315,35 +316,29 @@ router.put('/:id', async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { quantity, costBasis, notes } = req.body;
+    const { quantity, avgCost, exchange, walletAddress, notes } = req.body;
 
-    const holdings = await prisma.$queryRaw`
-      SELECT * FROM crypto_holdings WHERE id = ${id} AND user_id = ${userId}
-    `;
+    // Verify ownership
+    const existing = await prisma.cryptoHolding.findFirst({
+      where: { id, userId }
+    });
 
-    if (holdings.length === 0) {
+    if (!existing) {
       return res.status(404).json({ error: 'Holding not found' });
     }
 
-    const holding = holdings[0];
+    const holding = await prisma.cryptoHolding.update({
+      where: { id },
+      data: {
+        quantity: quantity !== undefined ? parseFloat(quantity) : undefined,
+        avgCost: avgCost !== undefined ? parseFloat(avgCost) : undefined,
+        exchange: exchange !== undefined ? exchange : undefined,
+        walletAddress: walletAddress !== undefined ? walletAddress : undefined,
+        notes: notes !== undefined ? notes : undefined
+      }
+    });
 
-    // Get current price
-    const priceData = await cryptoService.getPrice(holding.symbol);
-    const currentPrice = priceData?.price || holding.current_price;
-
-    const newQuantity = quantity !== undefined ? parseFloat(quantity) : holding.quantity;
-    const newCostBasis = costBasis !== undefined ? parseFloat(costBasis) : holding.cost_basis;
-    const marketValue = newQuantity * currentPrice;
-
-    await prisma.$executeRaw`
-      UPDATE crypto_holdings
-      SET quantity = ${newQuantity}, cost_basis = ${newCostBasis},
-          current_price = ${currentPrice}, market_value = ${marketValue},
-          notes = ${notes || holding.notes}, updated_at = NOW()
-      WHERE id = ${id}
-    `;
-
-    res.json({ success: true, message: 'Holding updated' });
+    res.json({ success: true, message: 'Holding updated', holding });
   } catch (error) {
     logger.error('Update holding error:', error);
     res.status(500).json({ error: 'Failed to update holding' });
@@ -359,13 +354,18 @@ router.delete('/:id', async (req, res) => {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const result = await prisma.$executeRaw`
-      DELETE FROM crypto_holdings WHERE id = ${id} AND user_id = ${userId}
-    `;
+    // Verify ownership
+    const existing = await prisma.cryptoHolding.findFirst({
+      where: { id, userId }
+    });
 
-    if (result === 0) {
+    if (!existing) {
       return res.status(404).json({ error: 'Holding not found' });
     }
+
+    // Delete associated transactions first, then the holding
+    await prisma.cryptoTransaction.deleteMany({ where: { holdingId: id } });
+    await prisma.cryptoHolding.delete({ where: { id } });
 
     res.json({ success: true, message: 'Holding removed' });
   } catch (error) {
@@ -382,64 +382,65 @@ router.post('/:id/transaction', async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    const { type, quantity, price, date, notes } = req.body;
+    const { type, quantity, price, exchange, txHash, notes } = req.body;
 
     if (!type || !quantity || !price) {
       return res.status(400).json({ error: 'Type, quantity, and price required' });
     }
 
-    const holdings = await prisma.$queryRaw`
-      SELECT * FROM crypto_holdings WHERE id = ${id} AND user_id = ${userId}
-    `;
+    // Verify holding exists and belongs to user
+    const holding = await prisma.cryptoHolding.findFirst({
+      where: { id, userId }
+    });
 
-    if (holdings.length === 0) {
+    if (!holding) {
       return res.status(404).json({ error: 'Holding not found' });
     }
 
-    const holding = holdings[0];
     const txQuantity = parseFloat(quantity);
     const txPrice = parseFloat(price);
-    const txValue = txQuantity * txPrice;
 
     // Record transaction
-    const txId = require('crypto').randomUUID();
-    await prisma.$executeRaw`
-      INSERT INTO crypto_transactions (
-        id, user_id, holding_id, symbol, type, quantity, price, total_value, date, notes, created_at
-      ) VALUES (
-        ${txId}, ${userId}, ${id}, ${holding.symbol}, ${type}, ${txQuantity}, ${txPrice}, ${txValue},
-        ${date || null}, ${notes || null}, NOW()
-      )
-    `;
+    const transaction = await prisma.cryptoTransaction.create({
+      data: {
+        holdingId: id,
+        type,
+        quantity: txQuantity,
+        price: txPrice,
+        fees: 0,
+        exchange: exchange || null,
+        txHash: txHash || null,
+        notes: notes || null,
+        executedAt: new Date()
+      }
+    });
 
     // Update holding based on transaction type
     if (type === 'buy') {
       const newQuantity = holding.quantity + txQuantity;
-      const newCostBasis = holding.cost_basis + txValue;
-      await prisma.$executeRaw`
-        UPDATE crypto_holdings
-        SET quantity = ${newQuantity}, cost_basis = ${newCostBasis}, updated_at = NOW()
-        WHERE id = ${id}
-      `;
+      const totalCost = (holding.quantity * holding.avgCost) + (txQuantity * txPrice);
+      const newAvgCost = totalCost / newQuantity;
+
+      await prisma.cryptoHolding.update({
+        where: { id },
+        data: { quantity: newQuantity, avgCost: newAvgCost }
+      });
     } else if (type === 'sell') {
       const newQuantity = Math.max(0, holding.quantity - txQuantity);
-      // Proportional cost basis reduction
-      const costReduction = holding.quantity > 0 ? (txQuantity / holding.quantity) * holding.cost_basis : 0;
-      const newCostBasis = Math.max(0, holding.cost_basis - costReduction);
 
       if (newQuantity === 0) {
-        // Remove holding if fully sold
-        await prisma.$executeRaw`DELETE FROM crypto_holdings WHERE id = ${id}`;
+        // Delete holding and all transactions if fully sold
+        await prisma.cryptoTransaction.deleteMany({ where: { holdingId: id } });
+        await prisma.cryptoHolding.delete({ where: { id } });
       } else {
-        await prisma.$executeRaw`
-          UPDATE crypto_holdings
-          SET quantity = ${newQuantity}, cost_basis = ${newCostBasis}, updated_at = NOW()
-          WHERE id = ${id}
-        `;
+        await prisma.cryptoHolding.update({
+          where: { id },
+          data: { quantity: newQuantity }
+        });
       }
     }
 
-    res.json({ success: true, message: 'Transaction recorded' });
+    res.json({ success: true, message: 'Transaction recorded', transaction });
   } catch (error) {
     logger.error('Transaction error:', error);
     res.status(500).json({ error: 'Failed to record transaction' });
@@ -455,11 +456,19 @@ router.get('/:id/transactions', async (req, res) => {
     const userId = req.user.id;
     const { id } = req.params;
 
-    const transactions = await prisma.$queryRaw`
-      SELECT * FROM crypto_transactions
-      WHERE user_id = ${userId} AND holding_id = ${id}
-      ORDER BY date DESC, created_at DESC
-    `;
+    // Verify holding belongs to user
+    const holding = await prisma.cryptoHolding.findFirst({
+      where: { id, userId }
+    });
+
+    if (!holding) {
+      return res.status(404).json({ error: 'Holding not found' });
+    }
+
+    const transactions = await prisma.cryptoTransaction.findMany({
+      where: { holdingId: id },
+      orderBy: { executedAt: 'desc' }
+    });
 
     res.json({ success: true, transactions });
   } catch (error) {
@@ -477,12 +486,20 @@ router.get('/transactions/all', async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 50;
 
-    const transactions = await prisma.$queryRaw`
-      SELECT * FROM crypto_transactions
-      WHERE user_id = ${userId}
-      ORDER BY date DESC, created_at DESC
-      LIMIT ${limit}
-    `;
+    // Get all holdings for user, then get their transactions
+    const holdings = await prisma.cryptoHolding.findMany({
+      where: { userId },
+      select: { id: true }
+    });
+
+    const holdingIds = holdings.map(h => h.id);
+
+    const transactions = await prisma.cryptoTransaction.findMany({
+      where: { holdingId: { in: holdingIds } },
+      orderBy: { executedAt: 'desc' },
+      take: limit,
+      include: { holding: { select: { symbol: true, name: true } } }
+    });
 
     res.json({ success: true, transactions });
   } catch (error) {
@@ -493,15 +510,15 @@ router.get('/transactions/all', async (req, res) => {
 
 /**
  * POST /api/crypto/refresh
- * Refresh all holdings with current prices
+ * Refresh all holdings with current prices (updates UI display only)
  */
 router.post('/refresh', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const holdings = await prisma.$queryRaw`
-      SELECT * FROM crypto_holdings WHERE user_id = ${userId}
-    `;
+    const holdings = await prisma.cryptoHolding.findMany({
+      where: { userId }
+    });
 
     if (holdings.length === 0) {
       return res.json({ success: true, message: 'No holdings to refresh', updated: 0 });
@@ -510,21 +527,29 @@ router.post('/refresh', async (req, res) => {
     const symbols = holdings.map(h => h.symbol);
     const prices = await cryptoService.getPrices(symbols);
 
-    let updated = 0;
-    for (const holding of holdings) {
-      const priceData = prices[holding.symbol];
-      if (priceData) {
-        const marketValue = holding.quantity * priceData.price;
-        await prisma.$executeRaw`
-          UPDATE crypto_holdings
-          SET current_price = ${priceData.price}, market_value = ${marketValue}, updated_at = NOW()
-          WHERE id = ${holding.id}
-        `;
-        updated++;
-      }
-    }
+    // Return enriched holdings with current prices
+    const enrichedHoldings = holdings.map(h => {
+      const priceData = prices[h.symbol];
+      const currentPrice = priceData?.price || 0;
+      const costBasis = h.quantity * h.avgCost;
+      const marketValue = h.quantity * currentPrice;
 
-    res.json({ success: true, message: 'Prices refreshed', updated });
+      return {
+        ...h,
+        currentPrice,
+        costBasis,
+        marketValue,
+        gain: marketValue - costBasis,
+        change24h: priceData?.change24h || 0
+      };
+    });
+
+    res.json({
+      success: true,
+      message: 'Prices refreshed',
+      holdings: enrichedHoldings,
+      updated: holdings.length
+    });
   } catch (error) {
     logger.error('Refresh error:', error);
     res.status(500).json({ error: 'Failed to refresh prices' });
