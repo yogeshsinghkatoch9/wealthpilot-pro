@@ -6,8 +6,19 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
-const Database = require('../db/database');
 const { authenticate } = require('../middleware/auth');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available, using mock database for SPAC tracker routes');
+  Database = {
+    all: () => [],
+    get: () => ({ count: 0, total: 0 })
+  };
+}
 
 router.use(authenticate);
 

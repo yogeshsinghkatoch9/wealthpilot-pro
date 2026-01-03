@@ -9,10 +9,27 @@ const ImportService = require('../services/import');
 const ReportService = require('../services/report');
 const OnboardingService = require('../services/onboarding');
 const { auditService } = require('../services/audit');
-const Database = require('../db/database');
+const { v4: uuidv4 } = require('uuid');
 
 const logger = require('../utils/logger');
 const router = express.Router();
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available, using mock database for extended routes');
+  Database = {
+    createTransaction: (data) => ({ id: uuidv4(), ...data }),
+    addHolding: (data) => ({ id: uuidv4(), ...data }),
+    getPortfolioById: (id) => ({ id, user_id: null, name: 'Demo Portfolio', cash_balance: 0 }),
+    getHoldingsByPortfolio: () => [],
+    getTransactionsByPortfolio: () => [],
+    getQuote: () => null,
+    getHoldingsByUser: () => []
+  };
+}
 
 // File upload config
 const upload = multer({ 

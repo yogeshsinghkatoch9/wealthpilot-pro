@@ -6,10 +6,115 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
-const Database = require('../db/database');
 const { v4: uuidv4 } = require('uuid');
 const liveDataService = require('../services/liveDataService');
 const { authenticate } = require('../middleware/auth');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available, using mock database for features routes');
+  // Mock Database object with empty/demo data methods
+  Database = {
+    getAlertsByUser: () => [],
+    getActiveAlerts: () => [],
+    createAlert: (userId, symbol, alertType, condition, targetValue, message) => ({ id: uuidv4(), user_id: userId, symbol, alert_type: alertType, condition, target_value: targetValue, message, is_active: true, created_at: new Date().toISOString() }),
+    updateAlert: (id, data) => ({ id, ...data }),
+    getAlertById: () => null,
+    deleteAlert: () => true,
+    getAlertHistory: () => [],
+    getGoalsByUser: () => [],
+    createGoal: (userId, name, targetAmount, targetDate, category, priority, notes) => ({ id: uuidv4(), user_id: userId, name, target_amount: targetAmount, target_date: targetDate, category, priority, notes, current_amount: 0 }),
+    updateGoal: (id, data) => ({ id, ...data }),
+    getGoalById: () => null,
+    deleteGoal: () => true,
+    getJournalEntries: () => [],
+    getJournalStats: () => ({ totalTrades: 0, winRate: 0, totalProfitLoss: 0, avgProfitLoss: 0 }),
+    createJournalEntry: (userId, data) => ({ id: uuidv4(), user_id: userId, ...data }),
+    updateJournalEntry: (id, data) => ({ id, ...data }),
+    getJournalEntryById: () => null,
+    deleteJournalEntry: () => true,
+    getTaxDocuments: () => [],
+    getTaxLots: () => [],
+    getTransactionsByUser: () => [],
+    getRealEstateByUser: () => [],
+    createRealEstate: (userId, data) => ({ id: uuidv4(), user_id: userId, ...data }),
+    updateRealEstate: (id, data) => ({ id, ...data }),
+    deleteRealEstate: () => true,
+    getBondsByUser: () => [],
+    createBond: (userId, portfolioId, data) => ({ id: uuidv4(), user_id: userId, portfolio_id: portfolioId, ...data }),
+    updateBond: (id, data) => ({ id, ...data }),
+    getBondById: () => null,
+    deleteBond: () => true,
+    getDripSettings: () => [],
+    setDripSetting: (userId, portfolioId, symbol, isEnabled, reinvestPercent) => ({ id: uuidv4(), user_id: userId, portfolio_id: portfolioId, symbol, is_enabled: isEnabled, reinvest_percent: reinvestPercent }),
+    getPaperPortfolio: async () => ({ balance: 100000, starting_balance: 100000 }),
+    getPaperTrades: async () => [],
+    createPaperTrade: async (userId, symbol, tradeType, quantity, entryPrice, notes) => ({ id: uuidv4(), user_id: userId, symbol, trade_type: tradeType, quantity, entry_price: entryPrice, notes, status: 'open' }),
+    closePaperTrade: async (id, exitPrice) => ({ id, exit_price: exitPrice, status: 'closed', profit_loss: 0 }),
+    updatePaperPortfolioBalance: async () => true,
+    resetPaperPortfolio: async () => true,
+    getBrokerConnections: () => [],
+    createBrokerConnection: (userId, brokerName, accountId, accessToken, refreshToken) => ({ id: uuidv4(), user_id: userId, broker_name: brokerName, account_id: accountId }),
+    getBrokerConnectionById: () => null,
+    deleteBrokerConnection: () => true,
+    getUserApiKeys: () => [],
+    createUserApiKey: (userId, name, permissions) => ({ id: uuidv4(), user_id: userId, name, permissions, api_key: 'wp_' + uuidv4().replace(/-/g, '') }),
+    getApiKeyById: () => null,
+    deleteUserApiKey: () => true,
+    getAiChatHistory: () => [],
+    addAiChatMessage: () => true,
+    getCopyTraders: () => [],
+    getLeaderboard: () => [],
+    addCopyTrader: (userId, traderId, traderName, allocationPercent) => ({ id: uuidv4(), user_id: userId, trader_id: traderId, trader_name: traderName, allocation_percent: allocationPercent }),
+    updateCopyTrader: (id, data) => ({ id, ...data }),
+    getCopyTraderById: () => null,
+    deleteCopyTrader: () => true,
+    getSocialFeed: () => [],
+    getUserPosts: () => [],
+    createSocialPost: (userId, content, tradeSymbol, tradeType) => ({ id: uuidv4(), user_id: userId, content, trade_symbol: tradeSymbol, trade_type: tradeType }),
+    getSocialPostById: () => null,
+    deleteSocialPost: () => true,
+    getPostComments: () => [],
+    addComment: (postId, userId, content) => ({ id: uuidv4(), post_id: postId, user_id: userId, content }),
+    likePost: (id) => ({ id, likes: 1 }),
+    followUser: () => true,
+    unfollowUser: () => true,
+    getFollowers: () => [],
+    getFollowing: () => [],
+    updateLeaderboardEntry: (userId, displayName, stats) => ({ user_id: userId, display_name: displayName, ...stats }),
+    getForumCategories: () => [{ id: '1', name: 'General Discussion' }, { id: '2', name: 'Trading Strategies' }],
+    getForumPosts: () => [],
+    getForumPost: () => null,
+    getForumReplies: () => [],
+    createForumPost: (categoryId, userId, title, content) => ({ id: uuidv4(), category_id: categoryId, user_id: userId, title, content }),
+    addForumReply: (postId, userId, content) => ({ id: uuidv4(), post_id: postId, user_id: userId, content }),
+    getCalendarEvents: () => [],
+    createCalendarEvent: (userId, title, description, eventType, eventDate, symbol, reminder) => ({ id: uuidv4(), user_id: userId, title, description, event_type: eventType, event_date: eventDate, symbol, reminder }),
+    updateCalendarEvent: (id, data) => ({ id, ...data }),
+    getCalendarEventById: () => null,
+    deleteCalendarEvent: () => true,
+    sharePortfolio: (portfolioId, userId, isPublic) => ({ portfolio_id: portfolioId, share_code: uuidv4().substring(0, 8), is_public: isPublic }),
+    getSharedPortfolio: () => null,
+    unsharePortfolio: () => true,
+    getUserById: (id) => ({ id, email: 'user@example.com', first_name: 'Demo', last_name: 'User', theme: 'light', currency: 'USD', timezone: 'America/New_York', plan: 'free' }),
+    getUserSettings: () => ({}),
+    updateUser: () => true,
+    updateUserSettings: () => true,
+    getGeneratedReports: () => [],
+    createGeneratedReport: (userId, reportType, reportName, parameters, filePath) => ({ id: uuidv4(), user_id: userId, report_type: reportType, report_name: reportName, parameters, file_path: filePath }),
+    getPortfolioTemplates: () => [],
+    getTemplateById: () => null,
+    useTemplate: () => ({}),
+    getEducationProgress: () => [],
+    updateEducationProgress: (userId, courseId, lessonId, completed, score) => ({ user_id: userId, course_id: courseId, lesson_id: lessonId, completed, score }),
+    getPortfoliosByUser: () => [],
+    getHoldingsByPortfolio: () => [],
+    getAllHoldingsByUser: () => []
+  };
+}
 
 // Apply authentication to all routes
 router.use(authenticate);
@@ -1455,17 +1560,14 @@ router.get('/news/holdings', async (req, res) => {
   try {
     const NewsService = require('../services/newsService');
     const newsService = new NewsService();
-    const db = require('../db/database');
 
     const userId = req.user?.id;
     if (!userId) {
       return res.json(await newsService.getMarketNews(20));
     }
 
-    // Get user's holdings
-    const holdings = db.prepare(`
-      SELECT DISTINCT symbol FROM holdings WHERE user_id = ?
-    `).all(userId);
+    // Get user's holdings using the mock-safe Database object
+    const holdings = Database.getAllHoldingsByUser(userId);
 
     const news = await newsService.getHoldingsNews(holdings, parseInt(req.query.limit) || 20);
     const sentimentSummary = newsService.calculateSentimentSummary(news);

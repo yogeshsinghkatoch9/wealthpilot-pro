@@ -4,7 +4,20 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const Database = require('../db/database');
+const logger = require('../utils/logger');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available for client service, using mock data');
+  Database = {
+    query: () => [],
+    queryOne: () => null,
+    run: () => ({})
+  };
+}
 
 class ClientService {
   

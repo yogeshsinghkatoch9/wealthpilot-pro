@@ -2,8 +2,19 @@ const axios = require('axios');
 const logger = require('../utils/logger');
 const cacheService = require('./cacheService');
 
-// Use shared database adapter (supports both SQLite and PostgreSQL)
-const db = require('../db/database');
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let db;
+try {
+  db = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available for market data service, using mock');
+  db = {
+    prepare: () => ({
+      run: () => ({}),
+      all: () => []
+    })
+  };
+}
 
 /**
  * Validate stock symbol to prevent SSRF attacks

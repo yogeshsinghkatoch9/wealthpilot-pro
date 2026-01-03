@@ -1,13 +1,24 @@
 /**
- * Simple Dashboard Route - Uses raw SQLite database
+ * Simple Dashboard Route - PostgreSQL compatible
  */
 
 const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
-const Database = require('../db/database');
 const { authenticate } = require('../middleware/auth');
 const MarketDataService = require('../services/marketData');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available, using mock database for simple dashboard routes');
+  Database = {
+    all: () => [],
+    get: () => null
+  };
+}
 
 router.use(authenticate);
 

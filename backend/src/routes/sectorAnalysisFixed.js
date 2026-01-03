@@ -2,7 +2,19 @@ const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
-const Database = require('../db/database');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available, using mock database for sector analysis routes');
+  Database = {
+    getPortfolioById: (id) => ({ id, user_id: null, name: 'Demo Portfolio' }),
+    getHoldingsByPortfolio: () => [],
+    getPortfoliosByUser: () => []
+  };
+}
 
 /**
  * Stock Symbol to Sector Mapping

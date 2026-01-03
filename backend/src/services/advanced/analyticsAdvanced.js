@@ -3,7 +3,24 @@
  * Comprehensive portfolio analytics and risk calculations
  */
 
-const Database = require('../../db/database');
+const logger = require('../../utils/logger');
+
+// Try to import Prisma client, use mock if not available
+let db;
+try {
+  const { PrismaClient } = require('@prisma/client');
+  db = new PrismaClient();
+} catch (err) {
+  logger.warn('Prisma client not available for advanced analytics, using mock data');
+  db = {
+    portfolios: {
+      findFirst: async () => null
+    },
+    portfolioSnapshots: {
+      findMany: async () => []
+    }
+  };
+}
 
 class AdvancedAnalyticsService {
   constructor() {

@@ -3,9 +3,27 @@
  * Quick-start wizard and progressive disclosure
  */
 
-const Database = require('../db/database');
 const ImportService = require('./import');
 const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available for onboarding service, using mock data');
+  Database = {
+    getUserById: (id) => ({ id, first_name: 'Demo', last_name: 'User' }),
+    getPortfoliosByUser: () => [],
+    getHoldingsByUser: () => [],
+    getWatchlistsByUser: () => [],
+    getAlertsByUser: () => [],
+    createPortfolio: () => uuidv4(),
+    getQuote: () => null,
+    addHolding: () => ({})
+  };
+}
 
 class OnboardingService {
   

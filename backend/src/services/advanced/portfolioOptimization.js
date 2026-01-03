@@ -3,7 +3,21 @@
  * Rebalancing, optimization, and model portfolio management
  */
 
-const Database = require('../../db/database');
+const logger = require('../../utils/logger');
+
+// Try to import Prisma client, use mock if not available
+let db;
+try {
+  const { PrismaClient } = require('@prisma/client');
+  db = new PrismaClient();
+} catch (err) {
+  logger.warn('Prisma client not available for portfolio optimization, using mock data');
+  db = {
+    portfolios: {
+      findFirst: async () => null
+    }
+  };
+}
 
 class PortfolioOptimizationService {
   constructor() {

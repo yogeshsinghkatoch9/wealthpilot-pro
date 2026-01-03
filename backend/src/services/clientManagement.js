@@ -3,8 +3,29 @@
  * Multi-client/household management for wealth advisors and RIAs
  */
 
-const Database = require('../db/database');
 const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let Database;
+try {
+  Database = require('../db/database');
+} catch (err) {
+  logger.warn('SQLite database not available for client management service, using mock data');
+  Database = {
+    createClient: () => ({}),
+    getClientsByAdvisor: () => [],
+    getPortfoliosByClient: () => [],
+    getHoldingsByPortfolio: () => [],
+    getQuote: () => null,
+    getClientById: () => null,
+    getTransactionsByClient: () => [],
+    createHousehold: () => ({}),
+    getHouseholdById: () => null,
+    getHouseholdsByAdvisor: () => [],
+    updateClient: () => true
+  };
+}
 
 class ClientService {
   

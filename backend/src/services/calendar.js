@@ -4,8 +4,18 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const db = require('../db/database');
 const logger = require('../utils/logger');
+
+// Try to import Database, use mock if not available (for AWS/PostgreSQL deployment)
+let db;
+let dbAvailable = false;
+try {
+  db = require('../db/database');
+  dbAvailable = true;
+} catch (err) {
+  logger.warn('SQLite database not available for calendar service, using mock data');
+  db = { db: { prepare: () => ({ all: () => [], get: () => null, run: () => ({}) }) } };
+}
 
 class CalendarService {
   /**
