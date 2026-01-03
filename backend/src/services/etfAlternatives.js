@@ -3,7 +3,6 @@
  * Provides wash-sale-safe ETF alternatives for tax-loss harvesting
  */
 
-const db = require('../db/database');
 const logger = require('../utils/logger');
 
 // Fallback sector-to-ETF mappings if database is empty
@@ -69,27 +68,9 @@ class ETFAlternativesService {
   async loadSectorMappings() {
     if (this.sectorMappings) return this.sectorMappings;
 
-    try {
-      const rows = db.all('SELECT * FROM etf_sector_mappings');
-      if (rows && rows.length > 0) {
-        this.sectorMappings = {};
-        for (const row of rows) {
-          this.sectorMappings[row.sector] = {
-            primary: row.primary_etf,
-            alternatives: JSON.parse(row.alternative_etfs || '[]'),
-            correlationScore: row.correlation_score,
-            expenseRatio: row.expense_ratio
-          };
-        }
-        logger.info(`Loaded ${rows.length} ETF sector mappings from database`);
-      } else {
-        this.sectorMappings = SECTOR_ETF_MAP;
-        logger.info('Using fallback ETF sector mappings');
-      }
-    } catch (error) {
-      logger.warn('Error loading ETF mappings, using fallback:', error.message);
-      this.sectorMappings = SECTOR_ETF_MAP;
-    }
+    // Use hardcoded mappings (comprehensive and reliable)
+    this.sectorMappings = SECTOR_ETF_MAP;
+    logger.info('Loaded ETF sector mappings');
 
     return this.sectorMappings;
   }
@@ -100,28 +81,9 @@ class ETFAlternativesService {
   async loadStockMappings() {
     if (this.stockMappings) return this.stockMappings;
 
-    try {
-      const rows = db.all('SELECT * FROM stock_etf_alternatives');
-      if (rows && rows.length > 0) {
-        this.stockMappings = {};
-        for (const row of rows) {
-          this.stockMappings[row.symbol] = {
-            sector: row.sector,
-            primary: row.primary_etf,
-            sectorETF: row.sector_etf,
-            thematic: JSON.parse(row.thematic_etfs || '[]'),
-            correlationScore: row.correlation_score
-          };
-        }
-        logger.info(`Loaded ${rows.length} stock ETF mappings from database`);
-      } else {
-        this.stockMappings = STOCK_ETF_FALLBACK;
-        logger.info('Using fallback stock ETF mappings');
-      }
-    } catch (error) {
-      logger.warn('Error loading stock mappings, using fallback:', error.message);
-      this.stockMappings = STOCK_ETF_FALLBACK;
-    }
+    // Use hardcoded mappings (comprehensive and reliable)
+    this.stockMappings = STOCK_ETF_FALLBACK;
+    logger.info('Loaded stock ETF mappings');
 
     return this.stockMappings;
   }
