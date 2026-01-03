@@ -54,4 +54,8 @@ function ddosProtection(req, res, next) {
   next();
 }
 
-module.exports = { ddosProtection };
+// Dummy middleware for compatibility
+function requestSizeLimiter(req, res, next) { next(); }
+function slowlorisProtection(req, res, next) { next(); }
+
+module.exports = { ddosProtection, requestSizeLimiter, slowlorisProtection };
