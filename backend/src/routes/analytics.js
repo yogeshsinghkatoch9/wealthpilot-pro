@@ -26,6 +26,62 @@ router.get('/dashboard', async (req, res) => {
       }
     });
 
+    // Check if user has any holdings for demo data
+    const hasHoldings = portfolios.some(p => p.holdings && p.holdings.length > 0);
+
+    if (!hasHoldings) {
+      // Return comprehensive demo dashboard data
+      return res.json({
+        value: 127450.25,
+        cost: 100000.00,
+        gain: 27450.25,
+        gainPct: 27.45,
+        dayChange: 1285.50,
+        dayChangePct: 1.02,
+        cash: 5250.00,
+        income: 2450.00,
+        ytdReturn: 18.75,
+        portfolioCount: 2,
+        holdingsCount: 12,
+        holdings: [
+          { symbol: 'AAPL', name: 'Apple Inc.', shares: 150, price: 195.25, change: 2.45, changePercent: 1.27, value: 29287.50, cost: 25000, gain: 4287.50, gainPct: 17.15, weight: 22.98, sector: 'Technology', dividend: 0.96, dividendYield: 0.49 },
+          { symbol: 'MSFT', name: 'Microsoft Corp', shares: 60, price: 378.50, change: 4.25, changePercent: 1.14, value: 22710.00, cost: 19500, gain: 3210.00, gainPct: 16.46, weight: 17.82, sector: 'Technology', dividend: 3.00, dividendYield: 0.79 },
+          { symbol: 'GOOGL', name: 'Alphabet Inc', shares: 120, price: 142.75, change: 1.85, changePercent: 1.31, value: 17130.00, cost: 15000, gain: 2130.00, gainPct: 14.20, weight: 13.44, sector: 'Technology', dividend: 0, dividendYield: 0 },
+          { symbol: 'AMZN', name: 'Amazon.com', shares: 80, price: 186.50, change: 2.15, changePercent: 1.17, value: 14920.00, cost: 13000, gain: 1920.00, gainPct: 14.77, weight: 11.71, sector: 'Consumer Discretionary', dividend: 0, dividendYield: 0 },
+          { symbol: 'NVDA', name: 'NVIDIA Corp', shares: 30, price: 495.25, change: 8.75, changePercent: 1.80, value: 14857.50, cost: 10000, gain: 4857.50, gainPct: 48.58, weight: 11.66, sector: 'Technology', dividend: 0.16, dividendYield: 0.03 },
+          { symbol: 'TSLA', name: 'Tesla Inc', shares: 50, price: 248.75, change: -1.25, changePercent: -0.50, value: 12437.50, cost: 11500, gain: 937.50, gainPct: 8.15, weight: 9.76, sector: 'Consumer Discretionary', dividend: 0, dividendYield: 0 },
+          { symbol: 'META', name: 'Meta Platforms', shares: 20, price: 512.80, change: 5.60, changePercent: 1.10, value: 10256.00, cost: 8000, gain: 2256.00, gainPct: 28.20, weight: 8.05, sector: 'Communication Services', dividend: 0, dividendYield: 0 },
+          { symbol: 'JPM', name: 'JPMorgan Chase', shares: 25, price: 198.50, change: 1.75, changePercent: 0.89, value: 4962.50, cost: 4500, gain: 462.50, gainPct: 10.28, weight: 3.89, sector: 'Financials', dividend: 4.60, dividendYield: 2.32 }
+        ],
+        sectors: [
+          { name: 'Technology', value: 84185.00, weight: 66.05 },
+          { name: 'Consumer Discretionary', value: 27357.50, weight: 21.46 },
+          { name: 'Communication Services', value: 10256.00, weight: 8.05 },
+          { name: 'Financials', value: 4962.50, weight: 3.89 },
+          { name: 'Cash', value: 5250.00, weight: 4.12 }
+        ],
+        risk: {
+          beta: 1.15,
+          sharpe: 1.42,
+          volatility: 18.5,
+          maxDrawdown: 12.3
+        },
+        portfolios: [
+          { id: 'demo-1', name: 'Growth Portfolio', holdingsCount: 8, transactionsCount: 24 },
+          { id: 'demo-2', name: 'Dividend Income', holdingsCount: 4, transactionsCount: 12 }
+        ],
+        recentTransactions: [
+          { id: 'tx-1', type: 'BUY', symbol: 'NVDA', shares: 5, price: 485.00, amount: 2425.00, executedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), portfolio: { name: 'Growth Portfolio' } },
+          { id: 'tx-2', type: 'DIVIDEND', symbol: 'AAPL', shares: 150, amount: 36.00, executedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), portfolio: { name: 'Growth Portfolio' } },
+          { id: 'tx-3', type: 'BUY', symbol: 'MSFT', shares: 10, price: 365.00, amount: 3650.00, executedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), portfolio: { name: 'Growth Portfolio' } },
+          { id: 'tx-4', type: 'SELL', symbol: 'AMD', shares: 25, price: 142.50, amount: 3562.50, executedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), portfolio: { name: 'Growth Portfolio' } },
+          { id: 'tx-5', type: 'DIVIDEND', symbol: 'JPM', shares: 25, amount: 28.75, executedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), portfolio: { name: 'Dividend Income' } }
+        ],
+        activeAlerts: [],
+        isDemo: true
+      });
+    }
+
     const totalHoldings = portfolios.reduce((sum, p) => sum + p.holdings.length, 0);
     logger.info(`[Dashboard API] Found ${portfolios.length} portfolios with ${totalHoldings} total holdings`);
 
@@ -740,25 +796,64 @@ router.get('/portfolio-performance', async (req, res) => {
       include: { holdings: true }
     });
 
-    if (portfolios.length === 0) {
+    // Check if user has any holdings
+    const hasHoldings = portfolios.some(p => p.holdings && p.holdings.length > 0);
+
+    if (!hasHoldings) {
+      // Return demo data for visualization
+      const days = period === '1W' ? 7 : period === '1M' ? 30 : period === '3M' ? 90 : period === '6M' ? 180 : period === '1Y' ? 365 : 30;
+      const labels = [];
+      const values = [];
+      const now = new Date();
+
+      // Generate realistic demo portfolio performance
+      let demoValue = 125000;
+      const dailyVolatility = 0.008; // ~0.8% daily volatility
+
+      for (let i = days; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        labels.push(date.toISOString().split('T')[0]);
+
+        // Add some realistic random walk with slight upward bias
+        const dailyReturn = (Math.random() - 0.48) * dailyVolatility * 2;
+        demoValue = demoValue * (1 + dailyReturn);
+        values.push(Math.round(demoValue * 100) / 100);
+      }
+
+      const demoTotalValue = values[values.length - 1];
+      const demoTotalCost = 100000;
+      const demoReturn = demoTotalValue - demoTotalCost;
+      const demoReturnPct = (demoReturn / demoTotalCost) * 100;
+
       return res.json({
-        totalValue: 0,
-        totalCost: 0,
-        totalReturn: 0,
-        totalReturnPct: 0,
-        dayChange: 0,
-        dayChangePct: 0,
-        periodReturn: 0,
-        periodReturnPct: 0,
-        holdings: [],
+        totalValue: demoTotalValue,
+        totalCost: demoTotalCost,
+        totalReturn: demoReturn,
+        totalReturnPct: demoReturnPct,
+        dayChange: (Math.random() - 0.4) * 1500,
+        dayChangePct: (Math.random() - 0.4) * 1.2,
+        periodReturn: demoReturn,
+        periodReturnPct: demoReturnPct,
+        holdings: [
+          { symbol: 'AAPL', name: 'Apple Inc.', price: 195.25, value: 29287.50, gain: 4287.50, gainPct: 17.15, returnPct: 17.15 },
+          { symbol: 'MSFT', name: 'Microsoft Corp', price: 378.50, value: 22710.00, gain: 3210.00, gainPct: 16.46, returnPct: 16.46 },
+          { symbol: 'GOOGL', name: 'Alphabet Inc', price: 142.75, value: 17130.00, gain: 2130.00, gainPct: 14.20, returnPct: 14.20 },
+          { symbol: 'AMZN', name: 'Amazon.com', price: 186.50, value: 14920.00, gain: 1920.00, gainPct: 14.77, returnPct: 14.77 },
+          { symbol: 'NVDA', name: 'NVIDIA Corp', price: 495.25, value: 14857.50, gain: 4857.50, gainPct: 48.58, returnPct: 48.58 },
+          { symbol: 'TSLA', name: 'Tesla Inc', price: 248.75, value: 12437.50, gain: 937.50, gainPct: 8.15, returnPct: 8.15 },
+          { symbol: 'META', name: 'Meta Platforms', price: 512.80, value: 10256.00, gain: 2256.00, gainPct: 28.20, returnPct: 28.20 },
+          { symbol: 'BRK.B', name: 'Berkshire Hathaway', price: 365.25, value: 3652.50, gain: 152.50, gainPct: 4.36, returnPct: 4.36 }
+        ],
         riskMetrics: {
-          beta: 1.0,
-          alpha: 0,
-          sharpe: 0,
-          volatility: 0,
-          maxDrawdown: 0
+          beta: 1.12,
+          alpha: 3.25,
+          sharpe: 1.45,
+          volatility: 18.5,
+          maxDrawdown: -12.3
         },
-        chartData: { labels: [], values: [] }
+        chartData: { labels, values },
+        isDemo: true
       });
     }
 
@@ -956,16 +1051,45 @@ router.get('/attribution', async (req, res) => {
       include: { holdings: true }
     });
 
-    if (portfolios.length === 0) {
+    // Check if user has any holdings
+    const hasHoldings = portfolios.some(p => p.holdings && p.holdings.length > 0);
+
+    if (!hasHoldings) {
+      // Return demo attribution data
       return res.json({
-        totalReturn: 0,
-        benchmarkReturn: 10.0,
-        alpha: -10.0,
-        informationRatio: 0,
-        sectorAttribution: [],
-        factorAttribution: [],
-        topContributors: [],
-        topDetractors: []
+        totalReturn: 25.3,
+        benchmarkReturn: 18.5,
+        alpha: 6.8,
+        informationRatio: 1.45,
+        sectorAttribution: [
+          { sector: 'Technology', weight: 45.2, benchmarkWeight: 29.5, sectorReturn: 32.5, contribution: 14.69, allocationEffect: 2.45, selectionEffect: 1.85 },
+          { sector: 'Healthcare', weight: 15.8, benchmarkWeight: 12.8, sectorReturn: 18.2, contribution: 2.88, allocationEffect: 0.42, selectionEffect: 0.68 },
+          { sector: 'Consumer Discretionary', weight: 12.5, benchmarkWeight: 10.5, sectorReturn: 22.4, contribution: 2.80, allocationEffect: 0.35, selectionEffect: 0.49 },
+          { sector: 'Financials', weight: 10.2, benchmarkWeight: 12.9, sectorReturn: 15.8, contribution: 1.61, allocationEffect: -0.38, selectionEffect: 0.28 },
+          { sector: 'Communication Services', weight: 8.5, benchmarkWeight: 8.9, sectorReturn: 28.5, contribution: 2.42, allocationEffect: -0.05, selectionEffect: 0.89 },
+          { sector: 'Industrials', weight: 4.8, benchmarkWeight: 8.5, sectorReturn: 12.5, contribution: 0.60, allocationEffect: -0.58, selectionEffect: 0.17 },
+          { sector: 'Energy', weight: 3.0, benchmarkWeight: 3.9, sectorReturn: 8.2, contribution: 0.25, allocationEffect: -0.12, selectionEffect: 0.05 }
+        ],
+        factorAttribution: [
+          { factor: 'Market Beta', contribution: 18.5, exposure: 1.12 },
+          { factor: 'Quality', contribution: 2.8, exposure: 0.45 },
+          { factor: 'Momentum', contribution: 2.1, exposure: 0.38 },
+          { factor: 'Size', contribution: 0.8, exposure: -0.25 },
+          { factor: 'Value', contribution: 0.6, exposure: 0.15 },
+          { factor: 'Selection', contribution: 0.5, exposure: 0.0 }
+        ],
+        topContributors: [
+          { name: 'Technology', contribution: 14.69 },
+          { name: 'Healthcare', contribution: 2.88 },
+          { name: 'Consumer Discretionary', contribution: 2.80 },
+          { name: 'Communication Services', contribution: 2.42 },
+          { name: 'Financials', contribution: 1.61 }
+        ],
+        topDetractors: [
+          { name: 'Industrials', contribution: 0.60 },
+          { name: 'Energy', contribution: 0.25 }
+        ],
+        isDemo: true
       });
     }
 
@@ -1311,6 +1435,23 @@ router.get('/risk', async (req, res) => {
       include: { holdings: true }
     });
 
+    // Check if user has any holdings
+    const hasHoldings = portfolios.some(p => p.holdings && p.holdings.length > 0);
+
+    if (!hasHoldings) {
+      // Return demo risk metrics
+      return res.json({
+        volatility: 18.5,
+        sharpeRatio: 1.42,
+        beta: 1.15,
+        var95: 2.85,
+        maxDrawdown: -12.3,
+        riskScore: 6.2,
+        riskLevel: 'Moderate',
+        isDemo: true
+      });
+    }
+
     // Collect all symbols
     const allSymbols = [...new Set(portfolios.flatMap(p => p.holdings.map(h => h.symbol)))];
 
@@ -1476,6 +1617,30 @@ router.get('/allocation', async (req, res) => {
       where: { userId: req.user.id },
       include: { holdings: true }
     });
+
+    // Check if user has any holdings
+    const hasHoldings = portfolios.some(p => p.holdings && p.holdings.length > 0);
+
+    if (!hasHoldings) {
+      // Return demo allocation data
+      return res.json({
+        sectors: [
+          { name: 'Technology', value: 84185.00, percentage: 66.05 },
+          { name: 'Consumer Discretionary', value: 27357.50, percentage: 21.46 },
+          { name: 'Communication Services', value: 10256.00, percentage: 8.05 },
+          { name: 'Financials', value: 4962.50, percentage: 3.89 },
+          { name: 'Cash', value: 5250.00, percentage: 4.12 }
+        ],
+        assetClasses: [
+          { name: 'Stocks', value: 117511.00, percentage: 92.21 },
+          { name: 'Cash', value: 5250.00, percentage: 4.12 },
+          { name: 'Bonds', value: 3500.00, percentage: 2.75 },
+          { name: 'REITs', value: 1189.25, percentage: 0.93 }
+        ],
+        totalValue: 127450.25,
+        isDemo: true
+      });
+    }
 
     // Collect all symbols and fetch quotes
     const allSymbols = [...new Set(portfolios.flatMap(p => p.holdings.map(h => h.symbol)))];
