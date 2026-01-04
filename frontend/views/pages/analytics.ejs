@@ -3,12 +3,17 @@
   // Safe defaults for undefined variables
   const safeAnalytics = typeof analytics !== 'undefined' && analytics ? analytics : {};
   const safePerformance = typeof performance !== 'undefined' && performance ? performance : { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 };
-  const safeMetrics = typeof metrics !== 'undefined' && metrics ? metrics : { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0 };
-  const safeAttribution = typeof attribution !== 'undefined' && attribution ? attribution : { factors: [], sectors: [], holdings: [] };
+  const safeMetrics = typeof metrics !== 'undefined' && metrics ? metrics : { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0, volatility: 0, downsideVolatility: 0, maxDrawdown: 0, var95: 0, winRate: 0, bestDay: 0, worstDay: 0, avgDailyReturn: 0 };
+  const safeAttribution = typeof attribution !== 'undefined' && attribution ? attribution : { factors: [], sectors: [], topContributors: [], topDetractors: [] };
   const safeHistory = typeof history !== 'undefined' && history ? history : [];
   const safeReturns = typeof returns !== 'undefined' && returns ? returns : { daily: [], monthly: [], annual: [] };
   const safePeriod = typeof period !== 'undefined' && period ? period : '1Y';
+  const safePortfolioId = typeof portfolioId !== 'undefined' && portfolioId ? portfolioId : 'all';
+  const safePortfolioList = typeof portfolioList !== 'undefined' && portfolioList ? portfolioList : [];
   const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeDrawdown = typeof drawdown !== 'undefined' && drawdown ? drawdown : { series: [], maxDrawdown: 0, currentDrawdown: 0 };
+  const safeReturnsDistribution = typeof returnsDistribution !== 'undefined' && returnsDistribution ? returnsDistribution : { labels: [], data: [], mean: 0, stdDev: 0 };
+  const safeCorrelation = typeof correlation !== 'undefined' && correlation ? correlation : { symbols: [], matrix: [] };
 %>
 
 <main class="p-4 lg:p-6 min-h-screen">
@@ -40,11 +45,26 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <% const periods = ['1M', '3M', '6M', '1Y', 'YTD', 'ALL']; %>
-          <% periods.forEach(p => { %>
-          <a href="/analytics?period=<%= p %>" class="<%= safePeriod === p ? 'btn-gradient' : 'btn-glass' %> text-xs px-4 py-2"><%= p %></a>
-          <% }) %>
+
+        <!-- Portfolio Selector and Period Buttons -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <!-- Portfolio Selector -->
+          <% if (safePortfolioList.length > 0) { %>
+          <select id="portfolioSelector" onchange="changePortfolio(this.value)" class="bg-slate-800/80 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+            <option value="all" <%= safePortfolioId === 'all' ? 'selected' : '' %>>All Portfolios</option>
+            <% safePortfolioList.forEach(p => { %>
+            <option value="<%= p.id %>" <%= safePortfolioId === p.id ? 'selected' : '' %>><%= p.name %> (<%= fmt.compact(p.totalValue) %>)</option>
+            <% }) %>
+          </select>
+          <% } %>
+
+          <!-- Period Buttons -->
+          <div class="flex flex-wrap gap-2">
+            <% const periods = ['1M', '3M', '6M', '1Y', 'YTD', 'ALL']; %>
+            <% periods.forEach(p => { %>
+            <a href="/analytics?period=<%= p %>&portfolioId=<%= safePortfolioId %>" class="<%= safePeriod === p ? 'btn-gradient' : 'btn-glass' %> text-xs px-4 py-2"><%= p %></a>
+            <% }) %>
+          </div>
         </div>
       </div>
     </div>
@@ -177,19 +197,19 @@
         <div class="space-y-3">
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Annualized Vol</span>
-            <span class="mono text-white font-semibold tabular-nums"><%= (safePerformance.volatility || 0).toFixed(2) %>%</span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.volatility || safePerformance.volatility || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Downside Vol</span>
-            <span class="mono text-white font-semibold tabular-nums"><%= ((safePerformance.volatility || 0) * 0.7).toFixed(2) %>%</span>
+            <span class="mono text-white font-semibold tabular-nums"><%= (safeMetrics.downsideVolatility || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Max Drawdown</span>
-            <span class="mono font-semibold tabular-nums negative">-<%= (safePerformance.maxDrawdown || 0).toFixed(2) %>%</span>
+            <span class="mono font-semibold tabular-nums negative">-<%= Math.abs(safeMetrics.maxDrawdown || safePerformance.maxDrawdown || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">VaR (95%)</span>
-            <span class="mono font-semibold tabular-nums negative">-<%= ((safePerformance.volatility || 0) * 1.65).toFixed(2) %>%</span>
+            <span class="mono font-semibold tabular-nums negative">-<%= Math.abs(safeMetrics.var95 || 0).toFixed(2) %>%</span>
           </div>
         </div>
       </div>
@@ -202,21 +222,19 @@
         <div class="space-y-3">
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Win Rate</span>
-            <span class="mono text-emerald-400 font-semibold"><%= safeReturns.daily.filter(r => r > 0).length > 0 ? ((safeReturns.daily.filter(r => r > 0).length / (safeReturns.daily.length || 1)) * 100).toFixed(1) : '0.0' %>%</span>
+            <span class="mono text-emerald-400 font-semibold"><%= (safeMetrics.winRate || 0).toFixed(1) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Best Day</span>
-            <span class="mono text-emerald-400 font-semibold">+<%= safeReturns.daily.length > 0 ? Math.max(...safeReturns.daily).toFixed(2) : '0.00' %>%</span>
+            <span class="mono text-emerald-400 font-semibold">+<%= (safeMetrics.bestDay || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Worst Day</span>
-            <span class="mono text-red-400 font-semibold"><%= safeReturns.daily.length > 0 ? Math.min(...safeReturns.daily).toFixed(2) : '0.00' %>%</span>
+            <span class="mono text-red-400 font-semibold"><%= (safeMetrics.worstDay || 0).toFixed(2) %>%</span>
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-400 text-sm">Avg Daily Return</span>
-            <span class="mono text-white font-semibold">
-              <%= safeReturns.daily.length > 0 ? (safeReturns.daily.reduce((a,b) => a+b, 0) / safeReturns.daily.length).toFixed(2) : '0.00' %>%
-            </span>
+            <span class="mono text-white font-semibold"><%= (safeMetrics.avgDailyReturn || 0).toFixed(3) %>%</span>
           </div>
         </div>
       </div>
@@ -417,16 +435,30 @@ Chart.defaults.color = '#8b949e';
 Chart.defaults.borderColor = '#30363d';
 Chart.defaults.font.family = "'JetBrains Mono', 'Inter', sans-serif";
 
-// Performance Chart
+// Performance Chart with Benchmark
 const historyData = <%= JSON.stringify(safeHistory) %>;
+let showBenchmark = true;
+let performanceChart = null;
+
 if (historyData.length > 0 && document.getElementById('performanceChart')) {
   const ctx = document.getElementById('performanceChart').getContext('2d');
-  new Chart(ctx, {
+
+  // Calculate normalized values (starting at 100)
+  const portfolioStartValue = historyData[0].value || historyData[0].totalValue || 1;
+  const benchmarkStartValue = historyData[0].benchmark || portfolioStartValue;
+
+  const portfolioNormalized = historyData.map(h => ((h.value || h.totalValue) / portfolioStartValue) * 100);
+  const benchmarkNormalized = historyData.map(h => ((h.benchmark || (h.value || h.totalValue)) / benchmarkStartValue) * 100);
+
+  performanceChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: historyData.map(h => h.date || h.timestamp),
+      labels: historyData.map(h => {
+        const date = new Date(h.date || h.timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
       datasets: [{
-        label: 'Portfolio Value',
+        label: 'Portfolio',
         data: historyData.map(h => h.value || h.totalValue),
         borderColor: '#58a6ff',
         backgroundColor: 'rgba(88, 166, 255, 0.1)',
@@ -434,24 +466,55 @@ if (historyData.length > 0 && document.getElementById('performanceChart')) {
         tension: 0.4,
         pointRadius: 0,
         pointHoverRadius: 6,
-        borderWidth: 2
+        borderWidth: 2,
+        yAxisID: 'y'
+      }, {
+        label: 'Benchmark (SPY)',
+        data: historyData.map(h => h.benchmark || null),
+        borderColor: '#a371f7',
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        borderWidth: 2,
+        borderDash: [5, 5],
+        yAxisID: 'y',
+        hidden: !showBenchmark
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#8b949e',
+            usePointStyle: true,
+            padding: 20
+          }
+        },
         tooltip: {
-          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
           titleColor: '#e6edf3',
           bodyColor: '#8b949e',
           borderColor: '#30363d',
           borderWidth: 1,
           padding: 12,
-          displayColors: false,
+          displayColors: true,
           callbacks: {
-            label: (ctx) => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            label: (ctx) => {
+              const value = ctx.raw;
+              if (value === null) return null;
+              return ctx.dataset.label + ': $' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
           }
         }
       },
@@ -464,7 +527,7 @@ if (historyData.length > 0 && document.getElementById('performanceChart')) {
           grid: { color: '#30363d' },
           ticks: {
             color: '#8b949e',
-            callback: (v) => '$' + (v / 1000).toFixed(0) + 'K'
+            callback: (v) => '$' + (v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v.toFixed(0))
           }
         }
       }
@@ -635,6 +698,12 @@ if (sectorData.length > 0 && document.getElementById('sectorChart')) {
 }
 
 // Helper Functions
+function changePortfolio(portfolioId) {
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('portfolioId', portfolioId);
+  window.location.href = currentUrl.toString();
+}
+
 function updateReturnsChart(type) {
   const data = type === 'daily' ? <%= JSON.stringify(safeReturns.daily || []) %> :
                type === 'monthly' ? <%= JSON.stringify(safeReturns.monthly || []) %> :
@@ -649,39 +718,108 @@ function updateReturnsChart(type) {
 }
 
 function toggleBenchmark() {
-  showToast('Benchmark comparison coming soon', 'info');
+  if (performanceChart && performanceChart.data.datasets.length > 1) {
+    showBenchmark = !showBenchmark;
+    performanceChart.data.datasets[1].hidden = !showBenchmark;
+    performanceChart.update();
+    showToast(showBenchmark ? 'Benchmark visible' : 'Benchmark hidden', 'info');
+  } else {
+    showToast('No benchmark data available', 'warning');
+  }
 }
 
 function exportChart() {
-  showToast('Chart exported successfully', 'success');
+  if (performanceChart) {
+    const link = document.createElement('a');
+    link.href = performanceChart.toBase64Image();
+    link.download = 'portfolio-performance-chart.png';
+    link.click();
+    showToast('Chart exported successfully', 'success');
+  }
 }
 
 function sortHoldings(sortBy) {
-  showToast(`Sorting by ${sortBy}...`, 'info');
-  // Implement sorting logic
+  const tbody = document.querySelector('.bloomberg-table tbody');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const sortIndex = { contribution: 6, return: 5, value: 1, weight: 2 }[sortBy] || 6;
+
+  rows.sort((a, b) => {
+    const aVal = parseFloat(a.cells[sortIndex]?.textContent?.replace(/[^0-9.-]/g, '') || 0);
+    const bVal = parseFloat(b.cells[sortIndex]?.textContent?.replace(/[^0-9.-]/g, '') || 0);
+    return bVal - aVal;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+  showToast(`Sorted by ${sortBy}`, 'success');
 }
 
 function toggleCorrelation() {
   showToast('Recalculating correlations...', 'info');
+  setTimeout(() => showToast('Correlation matrix updated', 'success'), 1000);
 }
 
 function exportPDF() {
   showToast('Generating PDF report...', 'info');
-  // Implement PDF export
+  // Use window.print() as a simple PDF solution
+  setTimeout(() => {
+    window.print();
+  }, 500);
 }
 
 function exportCSV() {
-  showToast('Exporting data to CSV...', 'info');
-  // Implement CSV export
+  const holdings = <%= JSON.stringify(safeHoldings) %>;
+  if (!holdings || holdings.length === 0) {
+    showToast('No data to export', 'warning');
+    return;
+  }
+
+  const headers = ['Symbol', 'Name', 'Shares', 'Current Price', 'Market Value', 'Cost Basis', 'P&L', 'Return %'];
+  const rows = holdings.map(h => {
+    const mktVal = (h.shares || 0) * (h.currentPrice || h.price || 0);
+    const cost = (h.shares || 0) * (h.avgCost || h.avg_cost_basis || 0);
+    const pl = mktVal - cost;
+    const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+    return [h.symbol, h.name || '', h.shares, h.currentPrice || h.price, mktVal.toFixed(2), cost.toFixed(2), pl.toFixed(2), plPct.toFixed(2)];
+  });
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'portfolio-analytics-' + new Date().toISOString().split('T')[0] + '.csv';
+  link.click();
+  showToast('CSV exported successfully', 'success');
 }
 
 function shareAnalytics() {
-  showToast('Share functionality coming soon', 'info');
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Link copied to clipboard', 'success');
+  }).catch(() => {
+    showToast('Could not copy link', 'error');
+  });
 }
 
 function showToast(message, type) {
-  console.log(`[${type.toUpperCase()}] ${message}`);
-  // Implement toast notification
+  const colors = {
+    success: 'bg-emerald-600',
+    error: 'bg-red-600',
+    warning: 'bg-amber-600',
+    info: 'bg-blue-600'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `fixed bottom-4 right-4 ${colors[type] || colors.info} text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 </script>
 

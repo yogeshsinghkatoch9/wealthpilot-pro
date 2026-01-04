@@ -78,6 +78,7 @@ const stockSearchRoutes = require('./routes/stockSearch');
 const portfoliosRoutes = require('./routes/portfolios');
 const holdingsRoutes = require('./routes/holdings');
 const analyticsRoutes = require('./routes/analytics');
+const portfolioAnalyticsRoutes = require('./routes/portfolioAnalytics');
 const marginsRoutes = require('./routes/margins');
 const settingsRoutes = require('./routes/settings');
 const portfolioToolsRoutes = require('./routes/portfolioTools');
@@ -848,6 +849,7 @@ app.get('/api/analytics/adx/:symbol', authenticate, async (req, res) => {
 });
 
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/portfolio-analytics', portfolioAnalyticsRoutes);
 app.use('/api/margins', marginsRoutes);
 app.use('/api/dividends', dividendsRoutes);
 

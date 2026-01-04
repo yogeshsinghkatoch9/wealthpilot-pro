@@ -1103,9 +1103,10 @@ app.get('/watchlist', requireAuth, async (req, res) => {
 app.get('/analytics', requireAuth, async (req, res) => {
   const token = res.locals.token;
   const period = (req.query.period as string) || '1Y';
+  const portfolioId = (req.query.portfolioId as string) || 'all';
 
   // Helper to add timeout to fetch requests
-  const fetchWithTimeout = async (endpoint: string, timeoutMs: number = 5000) => {
+  const fetchWithTimeout = async (endpoint: string, timeoutMs: number = 15000) => {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
     );
@@ -1116,35 +1117,40 @@ app.get('/analytics', requireAuth, async (req, res) => {
     }
   };
 
-  const [performanceData, attributionData, portfoliosData] = await Promise.all([
-    fetchWithTimeout(`/analytics/portfolio-performance?period=${period}`, 8000),
-    fetchWithTimeout('/analytics/attribution', 5000),
-    fetchWithTimeout('/portfolios', 5000)
+  // Fetch comprehensive analytics and portfolio list
+  const [analyticsData, portfolioListData] = await Promise.all([
+    fetchWithTimeout(`/portfolio-analytics/comprehensive?portfolioId=${portfolioId}&period=${period}`, 20000),
+    fetchWithTimeout('/portfolio-analytics/list', 5000)
   ]);
 
-  const performance = performanceData.error ? null : performanceData;
-  const attribution = attributionData.error ? null : attributionData;
-  const portfolios = portfoliosData.error ? [] : (Array.isArray(portfoliosData) ? portfoliosData : []);
+  const analytics = analyticsData.error ? null : analyticsData;
+  const portfolioList = portfolioListData.error ? { portfolios: [] } : portfolioListData;
 
-  // Transform chartData from { labels, values } to [{ date, value }] for charts
-  let history: { date: string; value: number }[] = [];
-  if (performance?.chartData?.labels && performance?.chartData?.values) {
-    history = performance.chartData.labels.map((date: string, i: number) => ({
-      date,
-      value: performance.chartData.values[i] || 0
-    }));
-  }
+  // Extract data for template
+  const performance = analytics?.performance || { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 };
+  const metrics = analytics?.metrics || { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0, volatility: 0, downsideVolatility: 0, maxDrawdown: 0, var95: 0, winRate: 0, bestDay: 0, worstDay: 0, avgDailyReturn: 0 };
+  const attribution = analytics?.attribution || { factors: [], sectors: [], topContributors: [], topDetractors: [] };
+  const history = analytics?.history || [];
+  const holdings = analytics?.holdings || [];
+  const drawdown = analytics?.drawdown || { series: [], maxDrawdown: 0, currentDrawdown: 0 };
+  const returnsDistribution = analytics?.returnsDistribution || { labels: [], data: [], mean: 0, stdDev: 0 };
+  const correlation = analytics?.correlation || { symbols: [], matrix: [] };
 
   res.render('pages/analytics', {
     pageTitle: 'Portfolio Analytics',
-    analytics: performance,
-    performance: performance || { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 },
-    metrics: performance?.riskMetrics || { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0 },
-    attribution: attribution || { factors: [], sectors: [], holdings: [] },
+    analytics,
+    performance,
+    metrics,
+    attribution,
     history,
+    drawdown,
+    returnsDistribution,
+    correlation,
     returns: { daily: [], monthly: [], annual: [] },
     period,
-    holdings: performance?.holdings || [],
+    portfolioId,
+    portfolioList: portfolioList.portfolios || [],
+    holdings,
     fmt: {
       money: (v: number) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
       compact: (v: number) => '$' + (v >= 1000000 ? (v / 1000000).toFixed(2) + 'M' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : (v || 0).toFixed(2)),
