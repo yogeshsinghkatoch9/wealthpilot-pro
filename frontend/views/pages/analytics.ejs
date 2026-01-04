@@ -535,19 +535,21 @@ if (historyData.length > 0 && document.getElementById('performanceChart')) {
   });
 }
 
-// Returns Distribution Chart
-const returnsData = <%= JSON.stringify(safeReturns.daily || []) %>;
-if (returnsData.length > 0 && document.getElementById('returnsChart')) {
+// Returns Distribution Chart (Histogram)
+const returnsDistData = <%= JSON.stringify(safeReturnsDistribution) %>;
+if (returnsDistData && returnsDistData.data && returnsDistData.data.length > 0 && document.getElementById('returnsChart')) {
   const ctx = document.getElementById('returnsChart').getContext('2d');
   window.returnsChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: returnsData.map((r, i) => `Day ${i + 1}`),
+      labels: returnsDistData.labels,
       datasets: [{
-        data: returnsData,
-        backgroundColor: returnsData.map(r => r >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)'),
-        borderRadius: 2,
-        borderWidth: 0
+        label: 'Frequency',
+        data: returnsDistData.data,
+        backgroundColor: 'rgba(88, 166, 255, 0.7)',
+        borderColor: '#58a6ff',
+        borderWidth: 1,
+        borderRadius: 2
       }]
     },
     options: {
@@ -556,46 +558,78 @@ if (returnsData.length > 0 && document.getElementById('returnsChart')) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
           callbacks: {
-            label: (ctx) => ctx.raw.toFixed(2) + '%'
+            title: (items) => `Return: ${items[0].label}`,
+            label: (ctx) => `${ctx.raw} days`
+          }
+        },
+        annotation: {
+          annotations: {
+            meanLine: {
+              type: 'line',
+              xMin: returnsDistData.labels.findIndex(l => parseFloat(l) >= returnsDistData.mean),
+              xMax: returnsDistData.labels.findIndex(l => parseFloat(l) >= returnsDistData.mean),
+              borderColor: '#3fb950',
+              borderWidth: 2,
+              borderDash: [5, 5]
+            }
           }
         }
       },
       scales: {
         x: {
           grid: { display: false },
-          ticks: { display: false }
+          ticks: {
+            color: '#8b949e',
+            maxRotation: 45,
+            callback: function(val, index) {
+              return index % 4 === 0 ? this.getLabelForValue(val) : '';
+            }
+          }
         },
         y: {
           grid: { color: '#30363d' },
           ticks: {
             color: '#8b949e',
-            callback: (v) => v.toFixed(1) + '%'
+            stepSize: 5
+          },
+          title: {
+            display: true,
+            text: 'Frequency',
+            color: '#8b949e'
           }
         }
       }
     }
   });
+} else if (document.getElementById('returnsChart')) {
+  // Fallback: Show message
+  document.getElementById('returnsChart').parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Loading returns data...</div>';
 }
 
 // Drawdown Chart
-if (historyData.length > 0 && document.getElementById('drawdownChart')) {
-  const peak = historyData.map((h, i) => Math.max(...historyData.slice(0, i + 1).map(x => x.value || x.totalValue)));
-  const drawdowns = historyData.map((h, i) => ((h.value || h.totalValue) - peak[i]) / peak[i] * 100);
-
+const drawdownData = <%= JSON.stringify(safeDrawdown) %>;
+if (drawdownData && drawdownData.series && drawdownData.series.length > 0 && document.getElementById('drawdownChart')) {
   const ctx = document.getElementById('drawdownChart').getContext('2d');
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: historyData.map(h => h.date || h.timestamp),
+      labels: drawdownData.series.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
       datasets: [{
-        data: drawdowns,
+        label: 'Drawdown',
+        data: drawdownData.series.map(d => d.drawdown),
         borderColor: '#f85149',
-        backgroundColor: 'rgba(248, 81, 73, 0.2)',
+        backgroundColor: 'rgba(248, 81, 73, 0.3)',
         fill: true,
         tension: 0.4,
         pointRadius: 0,
+        pointHoverRadius: 4,
         borderWidth: 2
       }]
     },
@@ -605,19 +639,25 @@ if (historyData.length > 0 && document.getElementById('drawdownChart')) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#f85149',
           callbacks: {
-            label: (ctx) => ctx.raw.toFixed(2) + '%'
+            label: (ctx) => `Drawdown: ${ctx.raw.toFixed(2)}%`
           }
         }
       },
       scales: {
         x: {
           grid: { display: false },
-          ticks: { display: false }
+          ticks: {
+            color: '#8b949e',
+            maxTicksLimit: 8
+          }
         },
         y: {
           grid: { color: '#30363d' },
+          max: 0,
           ticks: {
             color: '#8b949e',
             callback: (v) => v.toFixed(0) + '%'
@@ -626,9 +666,43 @@ if (historyData.length > 0 && document.getElementById('drawdownChart')) {
       }
     }
   });
+} else if (historyData.length > 0 && document.getElementById('drawdownChart')) {
+  // Fallback: Calculate from history
+  const peak = historyData.map((h, i) => Math.max(...historyData.slice(0, i + 1).map(x => x.value || x.totalValue)));
+  const drawdowns = historyData.map((h, i) => ((h.value || h.totalValue) - peak[i]) / peak[i] * 100);
+
+  const ctx = document.getElementById('drawdownChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: historyData.map(h => {
+        const date = new Date(h.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: [{
+        label: 'Drawdown',
+        data: drawdowns,
+        borderColor: '#f85149',
+        backgroundColor: 'rgba(248, 81, 73, 0.3)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b949e', maxTicksLimit: 8 } },
+        y: { grid: { color: '#30363d' }, max: 0, ticks: { color: '#8b949e', callback: (v) => v.toFixed(0) + '%' } }
+      }
+    }
+  });
 }
 
-// Factor Chart
+// Factor Chart (Horizontal Bar)
 const factorData = <%= JSON.stringify(safeAttribution.factors || []) %>;
 if (factorData.length > 0 && document.getElementById('factorChart')) {
   const ctx = document.getElementById('factorChart').getContext('2d');
@@ -637,8 +711,17 @@ if (factorData.length > 0 && document.getElementById('factorChart')) {
     data: {
       labels: factorData.map(f => f.name || f.factor),
       datasets: [{
-        data: factorData.map(f => f.contribution || f.value),
-        backgroundColor: factorData.map(f => (f.contribution || f.value) >= 0 ? '#3fb950' : '#f85149'),
+        label: 'Contribution',
+        data: factorData.map(f => f.contribution || f.value || 0),
+        backgroundColor: factorData.map(f => {
+          const val = f.contribution || f.value || 0;
+          return val >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)';
+        }),
+        borderColor: factorData.map(f => {
+          const val = f.contribution || f.value || 0;
+          return val >= 0 ? '#3fb950' : '#f85149';
+        }),
+        borderWidth: 1,
         borderRadius: 4
       }]
     },
@@ -649,52 +732,89 @@ if (factorData.length > 0 && document.getElementById('factorChart')) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
           callbacks: {
-            label: (ctx) => ctx.raw.toFixed(2) + '%'
+            label: (ctx) => {
+              const factor = factorData[ctx.dataIndex];
+              return [
+                `Contribution: ${ctx.raw.toFixed(2)}%`,
+                `Exposure: ${(factor.exposure || 0).toFixed(2)}`
+              ];
+            }
           }
         }
       },
       scales: {
-        x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e' } },
-        y: { grid: { display: false }, ticks: { color: '#8b949e' } }
+        x: {
+          grid: { color: '#30363d' },
+          ticks: { color: '#8b949e', callback: (v) => v.toFixed(1) + '%' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#e6edf3', font: { weight: '500' } }
+        }
       }
     }
   });
+} else if (document.getElementById('factorChart')) {
+  document.getElementById('factorChart').parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">No factor data available</div>';
 }
 
-// Sector Chart
+// Sector Chart (Doughnut + Bar combo)
 const sectorData = <%= JSON.stringify(safeAttribution.sectors || []) %>;
 if (sectorData.length > 0 && document.getElementById('sectorChart')) {
+  const sectorColors = ['#58a6ff', '#3fb950', '#a371f7', '#f85149', '#ff7b72', '#79c0ff', '#7ee787', '#ffa657', '#d2a8ff', '#ffc658'];
   const ctx = document.getElementById('sectorChart').getContext('2d');
   new Chart(ctx, {
-    type: 'bar',
+    type: 'doughnut',
     data: {
       labels: sectorData.map(s => s.name || s.sector),
       datasets: [{
-        data: sectorData.map(s => s.contribution || s.value),
-        backgroundColor: ['#58a6ff', '#3fb950', '#f85149', '#a371f7', '#ff7b72', '#79c0ff', '#7ee787', '#ffa657'],
-        borderRadius: 4
+        data: sectorData.map(s => s.weight || s.value || 0),
+        backgroundColor: sectorColors.slice(0, sectorData.length),
+        borderColor: '#161b22',
+        borderWidth: 2,
+        hoverOffset: 10
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '60%',
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: 'right',
+          labels: {
+            color: '#8b949e',
+            padding: 10,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { size: 11 }
+          }
+        },
         tooltip: {
-          backgroundColor: 'rgba(15, 20, 25, 0.9)',
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
           callbacks: {
-            label: (ctx) => ctx.raw.toFixed(2) + '%'
+            label: (ctx) => {
+              const sector = sectorData[ctx.dataIndex];
+              return [
+                `Weight: ${(sector.weight || 0).toFixed(1)}%`,
+                `Return: ${(sector.return || 0).toFixed(2)}%`,
+                `Holdings: ${sector.holdings || 0}`
+              ];
+            }
           }
         }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#8b949e', maxRotation: 45, minRotation: 45 } },
-        y: { grid: { color: '#30363d' }, ticks: { color: '#8b949e', callback: (v) => v.toFixed(1) + '%' } }
       }
     }
   });
+} else if (document.getElementById('sectorChart')) {
+  document.getElementById('sectorChart').parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">No sector data available</div>';
 }
 
 // Helper Functions
