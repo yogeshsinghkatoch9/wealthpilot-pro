@@ -1,31 +1,27 @@
-<!-- Live Market Ticker Bar -->
+<!-- Live Market Ticker Bar - Single Container with 2 Rows -->
 <style>
-/* Live Ticker Styles */
-.live-ticker-container {
-  background: linear-gradient(180deg, #0a0e14 0%, #0d1117 100%);
-  border-bottom: 1px solid rgba(41, 42, 56, 0.5);
-  overflow: hidden;
+/* Live Ticker Container - Fixed below navbar */
+.live-ticker-wrapper {
   position: fixed;
   top: 56px;
   left: 0;
   right: 0;
   z-index: 40;
+  background: #0a0e14;
+  border-bottom: 1px solid rgba(41, 42, 56, 0.5);
 }
 
-.live-ticker-row {
+/* News Row */
+.ticker-news-row {
   display: flex;
   align-items: center;
-  height: 32px;
+  height: 28px;
+  background: rgba(15, 17, 21, 0.98);
+  border-bottom: 1px solid rgba(41, 42, 56, 0.3);
   overflow: hidden;
 }
 
-/* News Ticker Row */
-.news-ticker-row {
-  background: rgba(15, 17, 21, 0.95);
-  border-bottom: 1px solid rgba(41, 42, 56, 0.3);
-}
-
-.news-ticker-label {
+.ticker-live-badge {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -40,186 +36,175 @@
   flex-shrink: 0;
 }
 
-.news-ticker-label .pulse-dot {
+.ticker-live-badge .pulse {
   width: 6px;
   height: 6px;
   background: #fff;
   border-radius: 50%;
-  animation: pulse-live 1.5s ease-in-out infinite;
+  animation: tickerPulse 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse-live {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+@keyframes tickerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
-.news-ticker-content {
+.ticker-news-scroll-area {
   flex: 1;
   overflow: hidden;
-  position: relative;
+  mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
 }
 
-.news-ticker-scroll {
-  display: flex;
+.ticker-news-track {
+  display: inline-flex;
   align-items: center;
-  animation: scroll-news 60s linear infinite;
+  animation: tickerScrollNews 80s linear infinite;
   white-space: nowrap;
 }
 
-.news-ticker-scroll:hover {
+.ticker-news-track:hover {
   animation-play-state: paused;
 }
 
-@keyframes scroll-news {
+@keyframes tickerScrollNews {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
-.news-ticker-item {
+.ticker-news-item {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 0 24px;
-  font-size: 12px;
+  padding: 0 20px;
+  font-size: 11px;
   color: #9e9fb7;
 }
 
-.news-ticker-item a {
+.ticker-news-item a {
   color: #e5e7eb;
   text-decoration: none;
   transition: color 0.2s;
 }
 
-.news-ticker-item a:hover {
-  color: #4850e5;
+.ticker-news-item a:hover {
+  color: #6366f1;
 }
 
-.news-ticker-source {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  background: rgba(72, 80, 229, 0.15);
-  border-radius: 4px;
-  font-size: 10px;
+.ticker-news-source {
+  padding: 2px 6px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 3px;
+  font-size: 9px;
   font-weight: 600;
-  color: #4850e5;
+  color: #6366f1;
   text-transform: uppercase;
 }
 
-.news-ticker-separator {
-  color: #3d3e52;
-  margin: 0 8px;
-}
-
-/* Stock Ticker Row */
-.stock-ticker-row {
+/* Stock Row */
+.ticker-stock-row {
+  display: flex;
+  align-items: center;
+  height: 32px;
   background: rgba(10, 14, 20, 0.98);
-}
-
-.stock-ticker-content {
-  flex: 1;
   overflow: hidden;
 }
 
-.stock-ticker-scroll {
-  display: flex;
+.ticker-stock-scroll-area {
+  flex: 1;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 1%, black 99%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 1%, black 99%, transparent);
+}
+
+.ticker-stock-track {
+  display: inline-flex;
   align-items: center;
-  animation: scroll-stocks 45s linear infinite;
+  animation: tickerScrollStocks 60s linear infinite;
   white-space: nowrap;
 }
 
-.stock-ticker-scroll:hover {
+.ticker-stock-track:hover {
   animation-play-state: paused;
 }
 
-@keyframes scroll-stocks {
+@keyframes tickerScrollStocks {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
-.stock-ticker-item {
+.ticker-stock-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 0 16px;
   border-right: 1px solid rgba(41, 42, 56, 0.3);
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
-.stock-ticker-item:last-child {
-  border-right: none;
+.ticker-stock-item:hover {
+  background: rgba(99, 102, 241, 0.1);
 }
 
-.stock-ticker-symbol {
+.ticker-stock-symbol {
   font-size: 12px;
   font-weight: 600;
   color: #e5e7eb;
-  font-family: 'Inter', sans-serif;
 }
 
-.stock-ticker-price {
+.ticker-stock-price {
   font-size: 12px;
   font-weight: 500;
   color: #9e9fb7;
   font-family: 'JetBrains Mono', monospace;
 }
 
-.stock-ticker-change {
+.ticker-stock-change {
   font-size: 11px;
   font-weight: 600;
   font-family: 'JetBrains Mono', monospace;
-  padding: 1px 6px;
+  padding: 2px 6px;
   border-radius: 3px;
 }
 
-.stock-ticker-change.up {
+.ticker-stock-change.up {
   color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(16, 185, 129, 0.12);
 }
 
-.stock-ticker-change.down {
+.ticker-stock-change.down {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.12);
 }
 
-.stock-ticker-change .arrow {
-  font-size: 10px;
-}
-
-/* Mobile responsive */
+/* Hide on mobile */
 @media (max-width: 768px) {
-  .live-ticker-container {
+  .live-ticker-wrapper {
     display: none;
   }
 }
 </style>
 
-<div class="live-ticker-container" id="liveTickerContainer">
-  <!-- News Ticker Row -->
-  <div class="live-ticker-row news-ticker-row">
-    <div class="news-ticker-label">
-      <span class="pulse-dot"></span>
+<div class="live-ticker-wrapper">
+  <!-- Row 1: News Headlines -->
+  <div class="ticker-news-row">
+    <div class="ticker-live-badge">
+      <span class="pulse"></span>
       <span>LIVE</span>
     </div>
-    <div class="news-ticker-content">
-      <div class="news-ticker-scroll" id="newsTickerScroll">
-        <!-- News items will be populated by JavaScript -->
-        <div class="news-ticker-item">
-          <span class="news-ticker-source">Loading</span>
-          <a href="#">Fetching latest market news...</a>
-        </div>
+    <div class="ticker-news-scroll-area">
+      <div class="ticker-news-track" id="tickerNewsTrack">
+        <span class="ticker-news-item"><span class="ticker-news-source">Loading</span> <a href="#">Fetching market news...</a></span>
       </div>
     </div>
   </div>
 
-  <!-- Stock Ticker Row -->
-  <div class="live-ticker-row stock-ticker-row">
-    <div class="stock-ticker-content">
-      <div class="stock-ticker-scroll" id="stockTickerScroll">
-        <!-- Stock items will be populated by JavaScript -->
-        <div class="stock-ticker-item">
-          <span class="stock-ticker-symbol">Loading...</span>
-        </div>
+  <!-- Row 2: Stock Prices -->
+  <div class="ticker-stock-row">
+    <div class="ticker-stock-scroll-area">
+      <div class="ticker-stock-track" id="tickerStockTrack">
+        <span class="ticker-stock-item"><span class="ticker-stock-symbol">Loading...</span></span>
       </div>
     </div>
   </div>
@@ -227,130 +212,91 @@
 
 <script>
 (function() {
-  // Ticker configuration
-  const TICKER_SYMBOLS = [
+  const STOCK_SYMBOLS = [
     'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'AMD',
     'BTC-USD', 'ETH-USD', 'SPY', 'QQQ', 'NFLX', 'CRM', 'AVGO', 'ORCL'
   ];
 
-  const REFRESH_INTERVAL = 30000; // 30 seconds
-
-  // Format price
-  function formatPrice(price) {
-    if (price >= 1000) return price.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    if (price >= 100) return price.toFixed(2);
-    return price.toFixed(2);
+  function formatPrice(p) {
+    if (!p) return '0.00';
+    return p >= 1000 ? p.toLocaleString('en-US', {maximumFractionDigits: 0}) : p.toFixed(2);
   }
 
-  // Format percentage
-  function formatPercent(pct) {
-    const sign = pct >= 0 ? '▲' : '▼';
-    return `${sign}${Math.abs(pct).toFixed(2)}%`;
+  function formatPct(p) {
+    const arrow = p >= 0 ? '▲' : '▼';
+    return `${arrow}${Math.abs(p).toFixed(2)}%`;
   }
 
-  // Render stock ticker
-  function renderStockTicker(quotes) {
-    const container = document.getElementById('stockTickerScroll');
-    if (!container || !quotes || quotes.length === 0) return;
+  function renderStocks(data) {
+    const track = document.getElementById('tickerStockTrack');
+    if (!track || !data || !data.length) return;
 
-    // Create items HTML - duplicate for seamless scroll
-    const itemsHtml = quotes.map(q => {
-      const isUp = q.changePercent >= 0;
-      const symbol = q.symbol.replace('-USD', '');
-      return `
-        <div class="stock-ticker-item">
-          <span class="stock-ticker-symbol">${symbol}</span>
-          <span class="stock-ticker-price">$${formatPrice(q.price)}</span>
-          <span class="stock-ticker-change ${isUp ? 'up' : 'down'}">
-            ${formatPercent(q.changePercent)}
-          </span>
-        </div>
-      `;
+    const html = data.map(q => {
+      const sym = (q.symbol || '').replace('-USD', '');
+      const pct = q.changePercent || 0;
+      const cls = pct >= 0 ? 'up' : 'down';
+      return `<div class="ticker-stock-item" onclick="location.href='/charts?symbol=${q.symbol}'">
+        <span class="ticker-stock-symbol">${sym}</span>
+        <span class="ticker-stock-price">$${formatPrice(q.price)}</span>
+        <span class="ticker-stock-change ${cls}">${formatPct(pct)}</span>
+      </div>`;
     }).join('');
 
-    // Duplicate content for seamless scrolling
-    container.innerHTML = itemsHtml + itemsHtml;
+    track.innerHTML = html + html; // Duplicate for seamless loop
   }
 
-  // Render news ticker
-  function renderNewsTicker(news) {
-    const container = document.getElementById('newsTickerScroll');
-    if (!container || !news || news.length === 0) return;
+  function renderNews(data) {
+    const track = document.getElementById('tickerNewsTrack');
+    if (!track || !data || !data.length) return;
 
-    const itemsHtml = news.slice(0, 15).map(n => `
-      <div class="news-ticker-item">
-        <span class="news-ticker-source">${n.source || 'News'}</span>
-        <a href="${n.link || '#'}" target="_blank" rel="noopener">${n.title}</a>
-        <span class="news-ticker-separator">•</span>
-      </div>
-    `).join('');
+    const html = data.slice(0, 12).map(n => {
+      const url = (n.link || n.url || '#').replace(/'/g, "\\'");
+      return `<div class="ticker-news-item">
+        <span class="ticker-news-source">${(n.source || 'News').split(' ')[0]}</span>
+        <a href="${url}" target="_blank">${n.title}</a>
+      </div>`;
+    }).join('');
 
-    // Duplicate for seamless scroll
-    container.innerHTML = itemsHtml + itemsHtml;
+    track.innerHTML = html + html; // Duplicate for seamless loop
   }
 
-  // Fetch stock data
-  async function fetchStockData() {
+  async function fetchStocks() {
     try {
-      const token = localStorage.getItem('wealthpilot_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch(`/api/market/quotes?symbols=${TICKER_SYMBOLS.join(',')}`, { headers });
-      if (!response.ok) throw new Error('Failed to fetch quotes');
-
-      const data = await response.json();
-      if (Array.isArray(data) && data.length > 0) {
-        renderStockTicker(data);
-      }
-    } catch (error) {
-      console.warn('[Ticker] Stock fetch error:', error.message);
+      const token = localStorage.getItem('wealthpilot_token') || '';
+      const res = await fetch(`/api/market/quotes?symbols=${STOCK_SYMBOLS.join(',')}`, {
+        headers: token ? {'Authorization': `Bearer ${token}`} : {}
+      });
+      const data = await res.json();
+      if (Array.isArray(data) && data.length) renderStocks(data);
+    } catch (e) {
+      console.warn('[Ticker] Stock error:', e.message);
     }
   }
 
-  // Fetch news data
-  async function fetchNewsData() {
+  async function fetchNews() {
     try {
-      const token = localStorage.getItem('wealthpilot_token');
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-
-      const response = await fetch('/api/news/rss?limit=15', { headers });
-      if (!response.ok) throw new Error('Failed to fetch news');
-
-      const data = await response.json();
-      if (data.success && data.news && data.news.length > 0) {
-        renderNewsTicker(data.news);
-      }
-    } catch (error) {
-      console.warn('[Ticker] News fetch error:', error.message);
-      // Try alternative endpoint
-      try {
-        const altResponse = await fetch('/api/news/all-trending?limit=15');
-        if (altResponse.ok) {
-          const altData = await altResponse.json();
-          if (altData.news && altData.news.length > 0) {
-            renderNewsTicker(altData.news);
-          }
-        }
-      } catch (e) {}
+      const token = localStorage.getItem('wealthpilot_token') || '';
+      const res = await fetch('/api/news/rss?limit=12', {
+        headers: token ? {'Authorization': `Bearer ${token}`} : {}
+      });
+      const data = await res.json();
+      if (data.success && data.news) renderNews(data.news);
+    } catch (e) {
+      console.warn('[Ticker] News error:', e.message);
     }
   }
 
-  // Initialize ticker
-  function initTicker() {
-    // Initial fetch
-    fetchStockData();
-    fetchNewsData();
-
-    // Set up refresh intervals
-    setInterval(fetchStockData, REFRESH_INTERVAL);
-    setInterval(fetchNewsData, REFRESH_INTERVAL * 2); // News refreshes less frequently
+  function init() {
+    fetchStocks();
+    fetchNews();
+    setInterval(fetchStocks, 30000);
+    setInterval(fetchNews, 60000);
   }
 
-  // Start when DOM is ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initTicker);
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    initTicker();
+    init();
   }
 })();
 </script>
