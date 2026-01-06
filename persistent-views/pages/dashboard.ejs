@@ -6,8 +6,7 @@
   <title>Dashboard - WealthPilot Pro</title>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,324 +16,66 @@
       theme: {
         extend: {
           colors: {
-            "primary": "#6366f1",
-            "primary-dark": "#4f46e5",
-            "background-dark": "#09090b",
-            "card-dark": "#18181b",
-            "card-hover": "#1f1f23",
-            "border-dark": "#27272a",
-            "text-primary": "#fafafa",
-            "text-secondary": "#a1a1aa",
-            "text-muted": "#71717a",
-            "accent-green": "#22c55e",
-            "accent-red": "#ef4444",
-            "accent-blue": "#3b82f6",
-            "accent-purple": "#a855f7",
-            "accent-amber": "#f59e0b",
+            "primary": "#4850e5",
+            "background-light": "#f6f6f8",
+            "background-dark": "#0f1115",
+            "card-dark": "#181b21",
+            "border-dark": "#292a38",
+            "text-secondary": "#9e9fb7",
+            "accent-green": "#0bda65",
+            "accent-red": "#fa6538",
           },
           fontFamily: {
-            "sans": ["Inter", "system-ui", "sans-serif"],
-            "mono": ["JetBrains Mono", "monospace"]
+            "display": ["Manrope", "sans-serif"]
           },
         },
       },
     }
   </script>
   <style>
-    * { font-family: 'Inter', system-ui, sans-serif; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-    .material-symbols-outlined { font-family: 'Material Symbols Outlined'; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #111217; }
+    ::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d3e52; }
     .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
-
-    /* Auto-hide Sidebar */
-    .sidebar-container {
-      position: fixed;
-      left: 0;
-      top: 0;
-      height: 100vh;
-      z-index: 50;
-    }
-
-    .sidebar-trigger {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 8px;
-      height: 100%;
-      z-index: 51;
-    }
-
-    .sidebar-trigger::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 60px;
-      background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-      border-radius: 0 4px 4px 0;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .sidebar-trigger:hover::after,
-    .sidebar-container:hover .sidebar-trigger::after {
-      opacity: 1;
-    }
-
-    .sidebar-panel {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 260px;
-      height: 100%;
-      background: #18181b;
-      border-right: 1px solid #27272a;
-      transform: translateX(-100%);
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 0 0 rgba(0,0,0,0);
-    }
-
-    .sidebar-container:hover .sidebar-panel,
-    .sidebar-panel.show {
-      transform: translateX(0);
-      box-shadow: 20px 0 60px -10px rgba(0, 0, 0, 0.5);
-    }
-
-    /* Glassmorphism Cards */
-    .glass-card {
-      background: rgba(24, 24, 27, 0.8);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(39, 39, 42, 0.8);
-      border-radius: 16px;
-      transition: all 0.2s ease;
-    }
-
-    .glass-card:hover {
-      border-color: rgba(99, 102, 241, 0.3);
-      box-shadow: 0 0 30px -10px rgba(99, 102, 241, 0.2);
-    }
-
-    /* Stat Cards */
-    .stat-card {
-      background: linear-gradient(135deg, rgba(24, 24, 27, 0.9) 0%, rgba(24, 24, 27, 0.6) 100%);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(39, 39, 42, 0.6);
-      border-radius: 16px;
-      padding: 20px;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .stat-card:hover::before {
-      opacity: 1;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(99, 102, 241, 0.4);
-      box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.2);
-    }
-
-    /* Value Display */
-    .value-display {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-    }
-
-    /* Animated Badge */
-    .pulse-badge {
-      animation: pulse-glow 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
-      50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-    }
-
-    /* Chart Container */
-    .chart-container {
-      background: linear-gradient(180deg, rgba(24, 24, 27, 0.9) 0%, rgba(24, 24, 27, 0.7) 100%);
-      border: 1px solid rgba(39, 39, 42, 0.6);
-      border-radius: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .chart-container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    /* Time Period Buttons */
-    .period-btn {
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 8px;
-      color: #a1a1aa;
-      transition: all 0.2s;
-    }
-
-    .period-btn:hover {
-      color: #fafafa;
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    .period-btn.active {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      color: white;
-      box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.4);
-    }
-
-    /* Market Item */
-    .market-item {
-      padding: 12px 16px;
-      border-radius: 12px;
-      transition: all 0.2s;
-      cursor: pointer;
-    }
-
-    .market-item:hover {
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    /* Holdings Table */
-    .holdings-table tr {
-      transition: background 0.2s;
-    }
-
-    .holdings-table tr:hover {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    /* AI Card Gradient */
-    .ai-card {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      border-radius: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .ai-card::before {
-      content: '';
-      position: absolute;
-      top: -100px;
-      right: -100px;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    /* Insight Card */
-    .insight-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 12px;
-      padding: 16px;
-      transition: all 0.2s;
-    }
-
-    .insight-card:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(99, 102, 241, 0.3);
-    }
-
-    /* News Card */
-    .news-card {
-      transition: all 0.2s;
-    }
-
-    .news-card:hover {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    /* Header */
-    .top-header {
-      background: rgba(9, 9, 11, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(39, 39, 42, 0.5);
-    }
-
-    /* Search Input */
-    .search-input {
-      background: rgba(39, 39, 42, 0.5);
-      border: 1px solid rgba(63, 63, 70, 0.5);
-      border-radius: 12px;
-      transition: all 0.2s;
-    }
-
-    .search-input:focus {
-      background: rgba(39, 39, 42, 0.8);
-      border-color: rgba(99, 102, 241, 0.5);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-
-    /* Notification Badge */
-    .notif-badge {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 8px;
-      height: 8px;
-      background: #ef4444;
-      border-radius: 50%;
-      border: 2px solid #09090b;
-    }
   </style>
 </head>
-<body class="bg-background-dark text-text-primary font-sans min-h-screen">
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex overflow-hidden">
 
 <%
-  // Data processing
+  // Data processing - preserve existing logic
   const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
   const safeWatchlist = typeof watchlist !== 'undefined' && watchlist ? watchlist : [];
   const safeAlerts = typeof alerts !== 'undefined' && alerts ? alerts : [];
+  const safeTransactions = typeof transactions !== 'undefined' && transactions ? transactions : [];
   const safeRisk = typeof risk !== 'undefined' && risk ? risk : { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
   const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0, dayChange: 0, ytdReturn: 0, income: 0, cash: 0, holdingsCount: 0 };
   const gainPct = safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0;
   const dayChangePct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0;
 
+  // Format currency helper
   const formatCurrency = (val) => {
     if (val === undefined || val === null || isNaN(val)) return '$0.00';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(val);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
+  // Format percent helper
   const formatPercent = (val) => {
     if (val === undefined || val === null || isNaN(val)) return '0.00%';
     return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
   };
 
+  // Get user info
   const userName = typeof user !== 'undefined' && user ? (user.firstName || user.email?.split('@')[0] || 'User') : 'User';
   const userInitial = userName.charAt(0).toUpperCase();
+
+  // Market data
+  const safeIndices = typeof indices !== 'undefined' && indices ? indices : [];
+
+  // News data
   const safeNews = typeof news !== 'undefined' && news ? news : [];
 
+  // Get top holdings (limit to 5)
   const topHoldings = safeHoldings
     .map(h => ({
       ...h,
@@ -345,369 +86,387 @@
     .slice(0, 5);
 %>
 
-<!-- Auto-Hide Sidebar -->
-<div class="sidebar-container" id="sidebarContainer">
-  <div class="sidebar-trigger"></div>
-  <aside class="sidebar-panel flex flex-col h-full overflow-y-auto" id="sidebar">
+<!-- Sidebar -->
+<aside class="w-64 flex-shrink-0 border-r border-border-dark bg-card-dark flex flex-col h-screen overflow-y-auto fixed left-0 top-0 z-40 transform transition-transform duration-300 lg:translate-x-0 -translate-x-full" id="sidebar">
+  <div class="p-6 pb-2">
     <!-- Logo -->
-    <div class="p-5 border-b border-border-dark">
-      <a href="/dashboard" class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center">
-          <span class="material-symbols-outlined text-white" style="font-size: 22px;">rocket_launch</span>
-        </div>
-        <div>
-          <h1 class="text-text-primary text-base font-bold">WealthPilot</h1>
-          <p class="text-text-muted text-[10px] font-medium tracking-wider uppercase">Pro Terminal</p>
-        </div>
-      </a>
-    </div>
+    <a href="/dashboard" class="flex items-center gap-3 mb-8">
+      <div class="bg-primary/20 p-2 rounded-lg">
+        <span class="material-symbols-outlined text-primary" style="font-size: 28px;">flight_takeoff</span>
+      </div>
+      <div class="flex flex-col">
+        <h1 class="text-white text-lg font-bold leading-tight">WealthPilot</h1>
+        <p class="text-text-secondary text-xs font-medium">PRO TERMINAL</p>
+      </div>
+    </a>
 
     <!-- Navigation -->
-    <nav class="flex-1 p-4 space-y-1">
-      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20">
-        <span class="material-symbols-outlined filled text-lg">dashboard</span>
-        <span class="text-sm font-medium">Dashboard</span>
+    <div class="flex flex-col gap-1">
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white cursor-pointer">
+        <span class="material-symbols-outlined filled">dashboard</span>
+        <p class="text-sm font-medium">Dashboard</p>
       </a>
-      <a href="/portfolios" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">account_balance_wallet</span>
-        <span class="text-sm font-medium">Portfolios</span>
+      <a href="/portfolios" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <p class="text-sm font-medium">Portfolios</p>
       </a>
-      <a href="/market-overview" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">monitoring</span>
-        <span class="text-sm font-medium">Market Data</span>
+      <a href="/market-overview" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">bar_chart</span>
+        <p class="text-sm font-medium">Market Data</p>
       </a>
-      <a href="/technical-analysis" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">candlestick_chart</span>
-        <span class="text-sm font-medium">Technical Analysis</span>
+      <a href="/technical-analysis" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">show_chart</span>
+        <p class="text-sm font-medium">Technical Analysis</p>
       </a>
-      <a href="/fundamental-analysis" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">analytics</span>
-        <span class="text-sm font-medium">Fundamentals</span>
+      <a href="/fundamental-analysis" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">pie_chart</span>
+        <p class="text-sm font-medium">Fundamental Analysis</p>
       </a>
-      <a href="/dividends" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">payments</span>
-        <span class="text-sm font-medium">Dividends</span>
+      <a href="/dividends" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">payments</span>
+        <p class="text-sm font-medium">Dividends</p>
       </a>
-      <a href="/risk" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">shield</span>
-        <span class="text-sm font-medium">Risk Analytics</span>
+      <a href="/risk" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">shield</span>
+        <p class="text-sm font-medium">Risk Analytics</p>
       </a>
-      <a href="/ai-chat" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">psychology</span>
-        <span class="text-sm font-medium">AI Assistant</span>
+      <a href="/options" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">candlestick_chart</span>
+        <p class="text-sm font-medium">Options Trading</p>
       </a>
-      <a href="/tax-loss-harvesting" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">receipt_long</span>
-        <span class="text-sm font-medium">Tax Tools</span>
+      <a href="/ai-chat" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">smart_toy</span>
+        <p class="text-sm font-medium">AI & Research</p>
       </a>
-    </nav>
-
-    <!-- Bottom -->
-    <div class="p-4 border-t border-border-dark space-y-1">
-      <a href="/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">settings</span>
-        <span class="text-sm font-medium">Settings</span>
-      </a>
-      <a href="/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all">
-        <span class="material-symbols-outlined text-lg">logout</span>
-        <span class="text-sm font-medium">Log Out</span>
+      <a href="/tax-loss-harvesting" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">description</span>
+        <p class="text-sm font-medium">Tax Tools</p>
       </a>
     </div>
-  </aside>
-</div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="mt-auto p-6 border-t border-border-dark">
+    <a href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+      <span class="material-symbols-outlined">settings</span>
+      <p class="text-sm font-medium">Settings</p>
+    </a>
+    <a href="/logout" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+      <span class="material-symbols-outlined">logout</span>
+      <p class="text-sm font-medium">Log Out</p>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
 <!-- Main Content -->
-<main class="min-h-screen">
+<main class="flex-1 flex flex-col h-screen overflow-hidden lg:ml-64">
   <!-- Header -->
-  <header class="top-header sticky top-0 z-40 h-16 flex items-center justify-between px-6">
-    <div class="flex items-center gap-6">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center lg:hidden">
-          <span class="material-symbols-outlined text-white text-sm">rocket_launch</span>
+  <header class="h-16 border-b border-border-dark bg-background-dark/95 backdrop-blur flex items-center justify-between px-4 lg:px-8 flex-shrink-0 z-10">
+    <!-- Mobile Menu Button -->
+    <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-card-dark text-text-secondary">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+
+    <div class="flex items-center gap-4 flex-1">
+      <h2 class="text-white text-lg font-bold hidden sm:block">Dashboard Overview</h2>
+      <div class="h-6 w-px bg-border-dark mx-2 hidden sm:block"></div>
+      <div class="relative w-full max-w-md group">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="material-symbols-outlined text-text-secondary group-focus-within:text-primary transition-colors">search</span>
         </div>
-        <h2 class="text-text-primary text-lg font-semibold hidden sm:block">Dashboard</h2>
-      </div>
-      <div class="hidden md:block relative">
-        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <span class="material-symbols-outlined text-text-muted text-lg">search</span>
-        </div>
-        <input class="search-input w-80 pl-11 pr-4 py-2.5 text-sm text-text-primary placeholder-text-muted focus:outline-none" placeholder="Search ticker, company..." type="text" id="globalSearch"/>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-          <kbd class="text-[10px] text-text-muted bg-border-dark/50 px-2 py-1 rounded">⌘K</kbd>
+        <input class="block w-full pl-10 pr-3 py-2 border-none rounded-lg leading-5 bg-card-dark text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm" placeholder="Search ticker, company..." type="text" id="globalSearch"/>
+        <div class="absolute inset-y-0 right-0 pr-2 flex items-center hidden sm:flex">
+          <kbd class="inline-flex items-center border border-border-dark rounded px-2 text-xs font-sans font-medium text-text-secondary">⌘K</kbd>
         </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-3">
-      <button class="relative p-2.5 rounded-xl hover:bg-white/5 text-text-secondary hover:text-text-primary transition-colors">
+    <div class="flex items-center gap-2 lg:gap-4">
+      <button onclick="window.location.href='/paper-trading'" class="hidden md:flex items-center justify-center h-10 px-4 bg-primary hover:bg-primary/90 transition-colors text-white text-sm font-bold rounded-lg shadow-[0_0_15px_rgba(72,80,229,0.3)]">
+        <span class="material-symbols-outlined mr-2 text-lg">bolt</span>
+        Quick Trade
+      </button>
+      <a href="/alerts" class="flex items-center justify-center size-10 rounded-lg hover:bg-card-dark text-text-secondary hover:text-white transition-colors relative">
         <span class="material-symbols-outlined">notifications</span>
-        <% if (safeAlerts.length > 0) { %><span class="notif-badge"></span><% } %>
-      </button>
-      <button class="p-2.5 rounded-xl hover:bg-white/5 text-text-secondary hover:text-text-primary transition-colors hidden sm:block">
+        <% if (safeAlerts.length > 0) { %>
+        <span class="absolute top-2 right-2 size-2 bg-accent-red rounded-full border-2 border-background-dark"></span>
+        <% } %>
+      </a>
+      <a href="/help" class="hidden sm:flex items-center justify-center size-10 rounded-lg hover:bg-card-dark text-text-secondary hover:text-white transition-colors">
         <span class="material-symbols-outlined">help</span>
-      </button>
-      <div class="h-6 w-px bg-border-dark mx-1"></div>
-      <a href="/settings" class="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center text-white font-semibold text-sm">
+      </a>
+      <div class="h-8 w-px bg-border-dark mx-2 hidden lg:block"></div>
+      <a href="/settings" class="flex items-center gap-3 cursor-pointer hover:bg-card-dark p-1.5 rounded-lg transition-colors pr-3">
+        <div class="bg-gradient-to-br from-primary to-purple-600 rounded-full size-8 flex items-center justify-center text-white font-bold text-sm ring-2 ring-border-dark">
           <%= userInitial %>
         </div>
-        <div class="hidden lg:block">
-          <p class="text-sm font-medium text-text-primary leading-none"><%= userName %></p>
-          <p class="text-[11px] text-text-muted mt-0.5">Pro Account</p>
+        <div class="flex-col hidden xl:flex">
+          <span class="text-xs font-medium text-white leading-none mb-1"><%= userName %></span>
+          <span class="text-[10px] text-text-secondary leading-none">Pro Account</span>
         </div>
+        <span class="material-symbols-outlined text-text-secondary text-sm hidden xl:block">expand_more</span>
       </a>
     </div>
   </header>
 
   <!-- Dashboard Content -->
-  <div class="px-6 py-6 max-w-[1800px] mx-auto space-y-6">
+  <div class="flex-1 overflow-y-auto p-4 lg:p-8">
+    <div class="max-w-[1600px] mx-auto flex flex-col gap-6">
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- Total Value -->
-      <div class="stat-card">
-        <div class="flex justify-between items-start mb-3">
-          <p class="text-text-muted text-sm font-medium">Total Portfolio Value</p>
-          <div class="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-primary text-lg">account_balance</span>
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Portfolio Value -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors group">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Total Portfolio Value</p>
+            <span class="material-symbols-outlined text-primary bg-primary/10 p-1.5 rounded-lg text-lg">account_balance</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= formatCurrency(safeTotals.value) %></h3>
+          <div class="flex items-center gap-2">
+            <span class="<%= gainPct >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-1.5 py-0.5 rounded text-xs font-bold flex items-center">
+              <span class="material-symbols-outlined text-sm mr-0.5"><%= gainPct >= 0 ? 'trending_up' : 'trending_down' %></span>
+              <%= formatPercent(gainPct) %>
+            </span>
+            <span class="text-text-secondary text-xs">all time</span>
           </div>
         </div>
-        <h3 class="value-display text-2xl text-text-primary mb-2"><%= formatCurrency(safeTotals.value) %></h3>
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold <%= gainPct >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %>">
-            <span class="material-symbols-outlined text-sm"><%= gainPct >= 0 ? 'trending_up' : 'trending_down' %></span>
-            <%= formatPercent(gainPct) %>
-          </span>
-          <span class="text-text-muted text-xs">all time</span>
+
+        <!-- Day's Gain/Loss -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Day's Gain/Loss</p>
+            <span class="material-symbols-outlined <%= safeTotals.dayChange >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> p-1.5 rounded-lg text-lg">attach_money</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= safeTotals.dayChange >= 0 ? '+' : '' %><%= formatCurrency(safeTotals.dayChange) %></h3>
+          <div class="flex items-center gap-2">
+            <span class="<%= dayChangePct >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-1.5 py-0.5 rounded text-xs font-bold">
+              <%= formatPercent(dayChangePct) %>
+            </span>
+            <span class="text-text-secondary text-xs">vs yesterday</span>
+          </div>
+        </div>
+
+        <!-- Alpha vs SPY -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Alpha vs SPY (YTD)</p>
+            <span class="material-symbols-outlined text-purple-400 bg-purple-400/10 p-1.5 rounded-lg text-lg">query_stats</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= formatPercent(safeTotals.ytdReturn || 0) %></h3>
+          <div class="flex items-center gap-2">
+            <span class="text-text-secondary text-xs font-medium">Beta: <%= (safeRisk.beta || 1.0).toFixed(2) %></span>
+            <span class="h-1 w-1 bg-text-secondary rounded-full"></span>
+            <span class="text-text-secondary text-xs font-medium">Sharpe: <%= (safeRisk.sharpe || 0).toFixed(2) %></span>
+          </div>
+        </div>
+
+        <!-- Cash / Buying Power -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Available Cash</p>
+            <span class="material-symbols-outlined text-orange-400 bg-orange-400/10 p-1.5 rounded-lg text-lg">bolt</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= formatCurrency(safeTotals.cash || 0) %></h3>
+          <div class="flex items-center gap-2">
+            <a href="/add-holding" class="text-primary text-xs font-bold hover:underline">Add Position</a>
+          </div>
         </div>
       </div>
 
-      <!-- Day's Change -->
-      <div class="stat-card">
-        <div class="flex justify-between items-start mb-3">
-          <p class="text-text-muted text-sm font-medium">Day's Gain/Loss</p>
-          <div class="w-9 h-9 rounded-xl <%= safeTotals.dayChange >= 0 ? 'bg-accent-green/10' : 'bg-accent-red/10' %> flex items-center justify-center">
-            <span class="material-symbols-outlined <%= safeTotals.dayChange >= 0 ? 'text-accent-green' : 'text-accent-red' %> text-lg">show_chart</span>
-          </div>
-        </div>
-        <h3 class="value-display text-2xl text-text-primary mb-2"><%= safeTotals.dayChange >= 0 ? '+' : '' %><%= formatCurrency(safeTotals.dayChange) %></h3>
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold <%= dayChangePct >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %>">
-            <%= formatPercent(dayChangePct) %>
-          </span>
-          <span class="text-text-muted text-xs">vs yesterday</span>
-        </div>
-      </div>
-
-      <!-- Alpha -->
-      <div class="stat-card">
-        <div class="flex justify-between items-start mb-3">
-          <p class="text-text-muted text-sm font-medium">Alpha vs SPY (YTD)</p>
-          <div class="w-9 h-9 rounded-xl bg-accent-purple/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-accent-purple text-lg">trending_up</span>
-          </div>
-        </div>
-        <h3 class="value-display text-2xl text-text-primary mb-2"><%= formatPercent(safeTotals.ytdReturn || 0) %></h3>
-        <div class="flex items-center gap-3 text-xs text-text-muted">
-          <span>Beta: <span class="text-text-secondary font-mono"><%= (safeRisk.beta || 1.0).toFixed(2) %></span></span>
-          <span>Sharpe: <span class="text-text-secondary font-mono"><%= (safeRisk.sharpe || 0).toFixed(2) %></span></span>
-        </div>
-      </div>
-
-      <!-- Cash -->
-      <div class="stat-card">
-        <div class="flex justify-between items-start mb-3">
-          <p class="text-text-muted text-sm font-medium">Available Cash</p>
-          <div class="w-9 h-9 rounded-xl bg-accent-amber/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-accent-amber text-lg">savings</span>
-          </div>
-        </div>
-        <h3 class="value-display text-2xl text-text-primary mb-2"><%= formatCurrency(safeTotals.cash || 0) %></h3>
-        <a href="/add-holding" class="inline-flex items-center gap-1 text-primary text-xs font-semibold hover:underline">
-          <span class="material-symbols-outlined text-sm">add</span> Add Position
-        </a>
-      </div>
-    </div>
-
-    <!-- Chart & Market -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Chart -->
-      <div class="lg:col-span-2 chart-container p-6">
-        <div class="flex flex-wrap items-center justify-between mb-6 gap-4 relative z-10">
-          <div>
-            <h3 class="text-text-primary text-lg font-semibold">Portfolio Performance</h3>
-            <p class="text-text-muted text-sm mt-0.5">Net asset value over time</p>
-          </div>
-          <div class="flex bg-card-dark/50 p-1 rounded-xl border border-border-dark/50">
-            <button class="period-btn" data-period="1D">1D</button>
-            <button class="period-btn" data-period="1W">1W</button>
-            <button class="period-btn active" data-period="1M">1M</button>
-            <button class="period-btn" data-period="3M">3M</button>
-            <button class="period-btn" data-period="YTD">YTD</button>
-            <button class="period-btn" data-period="ALL">ALL</button>
-          </div>
-        </div>
-        <div class="h-[320px] relative z-10">
-          <canvas id="portfolioChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Market Overview -->
-      <div class="glass-card flex flex-col">
-        <div class="p-5 border-b border-border-dark/50">
-          <h3 class="text-text-primary font-semibold">Market Overview</h3>
-          <p class="text-text-muted text-xs mt-1">Real-time indices</p>
-        </div>
-        <div class="flex-1 overflow-y-auto p-3 space-y-1" id="marketOverview">
-          <div class="flex items-center justify-center py-12">
-            <div class="text-center">
-              <span class="material-symbols-outlined text-text-muted text-3xl animate-pulse">sync</span>
-              <p class="text-text-muted text-sm mt-2">Loading...</p>
+      <!-- Chart & Market Overview -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Portfolio Performance Chart -->
+        <div class="lg:col-span-2 bg-card-dark border border-border-dark rounded-xl p-6 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between mb-6 gap-4">
+            <div>
+              <h3 class="text-white text-lg font-bold">Portfolio Performance</h3>
+              <p class="text-text-secondary text-sm">Net Asset Value over time</p>
+            </div>
+            <div class="flex bg-background-dark p-1 rounded-lg border border-border-dark">
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="1D">1D</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="1W">1W</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-bold text-white bg-card-dark shadow-sm rounded border border-border-dark active" data-period="1M">1M</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="3M">3M</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="YTD">YTD</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="ALL">ALL</button>
             </div>
           </div>
+          <div class="flex-1 min-h-[300px]">
+            <canvas id="portfolioChart"></canvas>
+          </div>
         </div>
-        <div class="p-4 border-t border-border-dark/50">
-          <a href="/market-overview" class="flex items-center justify-center gap-2 text-primary text-sm font-medium hover:underline">
-            View All Markets <span class="material-symbols-outlined text-sm">arrow_forward</span>
-          </a>
-        </div>
-      </div>
-    </div>
 
-    <!-- News -->
-    <div class="glass-card overflow-hidden">
-      <div class="p-5 border-b border-border-dark/50 flex flex-wrap justify-between items-center gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
-            <span class="material-symbols-outlined text-accent-blue">newspaper</span>
+        <!-- Market Overview -->
+        <div class="bg-card-dark border border-border-dark rounded-xl flex flex-col overflow-hidden">
+          <div class="p-4 border-b border-border-dark bg-background-dark/30">
+            <h3 class="text-white text-base font-bold">Market Overview</h3>
           </div>
-          <div>
-            <h3 class="text-text-primary font-semibold">Personalized News</h3>
-            <p class="text-text-muted text-xs">Tailored to your holdings</p>
-          </div>
-        </div>
-        <a href="/news" class="text-primary text-sm font-medium hover:underline">View All</a>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border-dark/30" id="newsFeed">
-        <% if (safeNews.length > 0) { %>
-          <% safeNews.slice(0, 3).forEach(article => { %>
-          <a href="<%= article.link || article.url || '#' %>" target="_blank" class="news-card p-5 block">
-            <div class="flex items-center gap-2 mb-3">
-              <% if (article.symbol) { %><span class="text-[10px] font-semibold bg-border-dark text-text-muted px-2 py-0.5 rounded"><%= article.symbol %></span><% } %>
-              <span class="text-text-muted text-xs"><%= article.source || 'News' %></span>
+          <div class="flex-1 overflow-y-auto p-4 space-y-2" id="marketOverview">
+            <!-- Populated by JavaScript -->
+            <div class="text-center py-8 text-text-secondary">
+              <span class="material-symbols-outlined text-4xl mb-2 animate-pulse">sync</span>
+              <p class="text-sm">Loading market data...</p>
             </div>
-            <h4 class="text-text-primary font-medium text-sm leading-snug mb-2 line-clamp-2"><%= article.title %></h4>
-            <p class="text-text-muted text-xs line-clamp-2"><%= article.summary || article.description || '' %></p>
-          </a>
-          <% }); %>
-        <% } else { %>
-          <div class="col-span-3 py-12 text-center">
-            <span class="material-symbols-outlined text-text-muted text-4xl mb-2">article</span>
-            <p class="text-text-muted text-sm">Add stocks to your watchlist to see personalized news</p>
           </div>
-        <% } %>
-      </div>
-    </div>
-
-    <!-- Holdings & AI -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Holdings -->
-      <div class="lg:col-span-2 glass-card overflow-hidden">
-        <div class="p-5 border-b border-border-dark/50 flex justify-between items-center">
-          <h3 class="text-text-primary font-semibold">Top Holdings</h3>
-          <a href="/holdings" class="text-primary text-sm font-medium hover:underline">View All</a>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full holdings-table">
-            <thead>
-              <tr class="text-left text-xs text-text-muted uppercase tracking-wider border-b border-border-dark/30">
-                <th class="px-5 py-4 font-medium">Asset</th>
-                <th class="px-5 py-4 font-medium text-right">Price</th>
-                <th class="px-5 py-4 font-medium text-right hidden sm:table-cell">Shares</th>
-                <th class="px-5 py-4 font-medium text-right">Value</th>
-                <th class="px-5 py-4 font-medium text-right">Change</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border-dark/20">
-              <% if (topHoldings.length > 0) { %>
-                <% topHoldings.forEach(h => {
-                  const price = h.currentPrice || h.price || 0;
-                  const change = h.change || 0;
-                %>
-                <tr class="cursor-pointer" onclick="window.location.href='/market/quote/<%= h.symbol %>'">
-                  <td class="px-5 py-4">
-                    <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center text-white font-semibold text-xs">
-                        <%= (h.symbol || '?').substring(0, 2) %>
-                      </div>
-                      <div>
-                        <p class="font-semibold text-text-primary text-sm"><%= h.symbol %></p>
-                        <p class="text-xs text-text-muted truncate max-w-[100px]"><%= h.name || h.symbol %></p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-5 py-4 text-right font-mono text-sm text-text-primary"><%= formatCurrency(price) %></td>
-                  <td class="px-5 py-4 text-right font-mono text-sm text-text-secondary hidden sm:table-cell"><%= (h.shares || 0).toFixed(2) %></td>
-                  <td class="px-5 py-4 text-right font-mono text-sm font-medium text-text-primary"><%= formatCurrency(h.value) %></td>
-                  <td class="px-5 py-4 text-right">
-                    <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold <%= change >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %>">
-                      <%= formatPercent(change) %>
-                    </span>
-                  </td>
-                </tr>
-                <% }); %>
-              <% } else { %>
-                <tr>
-                  <td colspan="5" class="px-5 py-12 text-center">
-                    <span class="material-symbols-outlined text-text-muted text-4xl mb-2">inventory_2</span>
-                    <p class="text-text-muted">No holdings yet. <a href="/add-holding" class="text-primary hover:underline">Add your first position</a></p>
-                  </td>
-                </tr>
-              <% } %>
-            </tbody>
-          </table>
+          <div class="p-4 border-t border-border-dark bg-background-dark/30">
+            <a href="/market-overview" class="block w-full text-center text-xs text-primary font-bold hover:underline">View All Markets</a>
+          </div>
         </div>
       </div>
 
-      <!-- AI Insights -->
-      <div class="ai-card p-6 flex flex-col">
-        <div class="flex items-center gap-3 mb-5 relative z-10">
-          <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-            <span class="material-symbols-outlined text-primary">auto_awesome</span>
+      <!-- News Feed -->
+      <div class="bg-card-dark border border-border-dark rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-border-dark flex flex-wrap justify-between items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">feed</span>
+            <div>
+              <h3 class="text-white text-lg font-bold">Personalized News Feed</h3>
+              <p class="text-xs text-text-secondary">Tailored to your watchlist and holdings</p>
+            </div>
           </div>
-          <h3 class="text-text-primary font-semibold">AI Insights</h3>
+          <div class="flex items-center gap-3">
+            <a href="/news" class="text-sm text-primary font-medium hover:text-white transition-colors">View All News</a>
+          </div>
         </div>
-        <div class="flex-1 space-y-3 relative z-10">
-          <div class="insight-card">
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">PORTFOLIO</span>
-              <span class="text-[10px] text-text-muted">Just now</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-border-dark divide-border-dark" id="newsFeed">
+          <% if (safeNews.length > 0) { %>
+            <% safeNews.slice(0, 3).forEach(article => { %>
+            <div class="p-5 hover:bg-white/5 transition-colors group cursor-pointer">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-2">
+                  <% if (article.symbol) { %>
+                  <span class="bg-border-dark text-text-secondary text-[10px] font-bold px-1.5 py-0.5 rounded"><%= article.symbol %></span>
+                  <% } %>
+                  <span class="text-xs text-text-secondary"><%= article.source || 'News' %></span>
+                </div>
+                <span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">open_in_new</span>
+              </div>
+              <h4 class="text-white font-bold text-sm leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2"><%= article.title %></h4>
+              <p class="text-text-secondary text-xs line-clamp-2"><%= article.summary || article.description || '' %></p>
             </div>
-            <p class="text-text-primary text-sm font-medium mb-1">Your portfolio has <%= safeTotals.holdingsCount || 0 %> holdings.</p>
-            <p class="text-text-muted text-xs">Consider diversifying across more sectors for better risk management.</p>
-          </div>
-          <% if (safeRisk.sharpe > 1.5) { %>
-          <div class="insight-card">
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-[10px] font-bold text-accent-green bg-accent-green/10 px-2 py-0.5 rounded">PERFORMANCE</span>
-              <span class="text-[10px] text-text-muted">Today</span>
+            <% }); %>
+          <% } else { %>
+            <div class="p-5 col-span-3 text-center">
+              <span class="material-symbols-outlined text-text-secondary text-4xl mb-2">article</span>
+              <p class="text-text-secondary text-sm">No news available. Add stocks to your watchlist to see personalized news.</p>
             </div>
-            <p class="text-text-primary text-sm font-medium mb-1">Strong risk-adjusted returns!</p>
-            <p class="text-text-muted text-xs">Your Sharpe ratio of <%= safeRisk.sharpe.toFixed(2) %> indicates excellent performance.</p>
-          </div>
           <% } %>
         </div>
-        <a href="/ai-chat" class="mt-5 w-full py-3 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-sm font-semibold transition-colors flex items-center justify-center gap-2 relative z-10">
-          <span class="material-symbols-outlined text-lg">chat</span>
-          Ask AI Assistant
-        </a>
       </div>
+
+      <!-- Holdings & AI Insights -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Top Holdings -->
+        <div class="lg:col-span-2 bg-card-dark border border-border-dark rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-border-dark flex justify-between items-center">
+            <h3 class="text-white text-lg font-bold">Top Holdings</h3>
+            <a href="/holdings" class="text-sm text-primary font-medium hover:text-white transition-colors">View All</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-background-dark/50 text-xs text-text-secondary font-medium uppercase tracking-wider">
+                <tr>
+                  <th class="px-6 py-4 font-semibold">Asset</th>
+                  <th class="px-6 py-4 font-semibold text-right">Price</th>
+                  <th class="px-6 py-4 font-semibold text-right hidden sm:table-cell">Shares</th>
+                  <th class="px-6 py-4 font-semibold text-right">Value</th>
+                  <th class="px-6 py-4 font-semibold text-right">Change</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border-dark text-sm">
+                <% if (topHoldings.length > 0) { %>
+                  <% topHoldings.forEach(h => {
+                    const price = h.currentPrice || h.price || 0;
+                    const change = h.change || 0;
+                  %>
+                  <tr class="group hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="bg-gradient-to-br from-primary to-purple-600 rounded-full w-8 h-8 flex items-center justify-center text-white font-bold text-xs">
+                          <%= (h.symbol || '?').substring(0, 2) %>
+                        </div>
+                        <div>
+                          <p class="font-bold text-white"><%= h.symbol %></p>
+                          <p class="text-xs text-text-secondary truncate max-w-[120px]"><%= h.name || h.symbol %></p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-right text-white"><%= formatCurrency(price) %></td>
+                    <td class="px-6 py-4 text-right hidden sm:table-cell">
+                      <p class="text-white"><%= (h.shares || 0).toFixed(2) %></p>
+                    </td>
+                    <td class="px-6 py-4 text-right font-medium text-white"><%= formatCurrency(h.value) %></td>
+                    <td class="px-6 py-4 text-right">
+                      <span class="<%= change >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-2 py-1 rounded text-xs font-bold">
+                        <%= formatPercent(change) %>
+                      </span>
+                    </td>
+                  </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                      <span class="material-symbols-outlined text-text-secondary text-4xl mb-2">inventory_2</span>
+                      <p class="text-text-secondary">No holdings yet. <a href="/add-holding" class="text-primary hover:underline">Add your first position</a></p>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="bg-gradient-to-br from-[#1c1f2e] to-[#12141a] border border-border-dark rounded-xl p-6 relative overflow-hidden flex flex-col">
+          <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="flex items-center gap-2 mb-6 relative z-10">
+            <span class="material-symbols-outlined text-primary">auto_awesome</span>
+            <h3 class="text-white text-lg font-bold">WealthPilot AI Insights</h3>
+          </div>
+          <div class="flex-1 flex flex-col gap-4 relative z-10">
+            <div class="bg-white/5 rounded-lg p-4 border border-white/5 hover:border-primary/30 transition-colors cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">PORTFOLIO TIP</span>
+                <span class="text-[10px] text-text-secondary">Just now</span>
+              </div>
+              <p class="text-white text-sm font-medium mb-1">Your portfolio has <%= safeTotals.holdingsCount || 0 %> holdings.</p>
+              <p class="text-xs text-text-secondary">Consider diversifying across more sectors for better risk management.</p>
+            </div>
+            <% if (safeRisk.sharpe > 1.5) { %>
+            <div class="bg-white/5 rounded-lg p-4 border border-white/5 hover:border-primary/30 transition-colors cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-accent-green bg-accent-green/10 px-2 py-0.5 rounded">PERFORMANCE</span>
+                <span class="text-[10px] text-text-secondary">Today</span>
+              </div>
+              <p class="text-white text-sm font-medium mb-1">Strong risk-adjusted returns!</p>
+              <p class="text-xs text-text-secondary">Your Sharpe ratio of <%= safeRisk.sharpe.toFixed(2) %> indicates excellent performance.</p>
+            </div>
+            <% } %>
+            <a href="/ai-chat" class="mt-auto w-full py-2.5 rounded-lg bg-border-dark hover:bg-white/10 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2">
+              Ask AI Assistant
+              <span class="material-symbols-outlined text-sm">send</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </main>
 
 <script>
-  // Portfolio Chart
+  // Toggle sidebar for mobile
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+  }
+
+  // Portfolio chart
   const ctx = document.getElementById('portfolioChart');
   if (ctx) {
     const portfolioValue = <%= safeTotals.value || 100000 %>;
@@ -715,34 +474,34 @@
     const values = [];
     const today = new Date();
 
+    // Generate mock historical data based on current value
     for (let i = 30; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+      // Random walk around current value
       const variance = 0.02 * (30 - i) / 30;
       const randomFactor = 1 + (Math.random() - 0.5) * variance;
       values.push(portfolioValue * randomFactor * (0.95 + i * 0.0015));
     }
     values[values.length - 1] = portfolioValue;
 
-    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
-    gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
-
     new Chart(ctx, {
       type: 'line',
       data: {
         labels: dates,
         datasets: [{
+          label: 'Portfolio Value',
           data: values,
-          borderColor: '#6366f1',
-          backgroundColor: gradient,
+          borderColor: '#4850e5',
+          backgroundColor: 'rgba(72, 80, 229, 0.1)',
           borderWidth: 2,
           fill: true,
           tension: 0.4,
           pointRadius: 0,
           pointHoverRadius: 6,
-          pointHoverBackgroundColor: '#6366f1',
+          pointHoverBackgroundColor: '#4850e5',
           pointHoverBorderColor: '#fff',
           pointHoverBorderWidth: 2
         }]
@@ -753,77 +512,136 @@
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#18181b',
-            titleColor: '#a1a1aa',
-            bodyColor: '#fafafa',
-            borderColor: '#27272a',
+            backgroundColor: '#181b21',
+            titleColor: '#9e9fb7',
+            bodyColor: '#fff',
+            borderColor: '#292a38',
             borderWidth: 1,
             padding: 12,
             displayColors: false,
             callbacks: {
-              label: ctx => '$' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              label: function(context) {
+                return '$' + context.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              }
             }
           }
         },
         scales: {
-          x: { grid: { color: 'rgba(39, 39, 42, 0.3)', drawBorder: false }, ticks: { color: '#71717a', maxTicksLimit: 6 } },
-          y: { grid: { color: 'rgba(39, 39, 42, 0.3)', drawBorder: false }, ticks: { color: '#71717a', callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+          x: {
+            grid: { color: 'rgba(41, 42, 56, 0.5)', drawBorder: false },
+            ticks: { color: '#9e9fb7', maxTicksLimit: 6 }
+          },
+          y: {
+            grid: { color: 'rgba(41, 42, 56, 0.5)', drawBorder: false },
+            ticks: {
+              color: '#9e9fb7',
+              callback: function(value) {
+                return '$' + (value / 1000).toFixed(0) + 'k';
+              }
+            }
+          }
         },
-        interaction: { intersect: false, mode: 'index' }
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        }
       }
     });
   }
 
-  // Market Data
+  // Load market data
   async function loadMarketData() {
     const container = document.getElementById('marketOverview');
     try {
-      const res = await fetch('/api/market/indices');
-      if (res.ok) {
-        const data = await res.json();
+      const response = await fetch('/api/market/indices');
+      if (response.ok) {
+        const data = await response.json();
         const indices = data.indices || data || [];
+
         if (indices.length > 0) {
-          container.innerHTML = indices.slice(0, 5).map(idx => {
-            const change = idx.changePercent || idx.change || 0;
-            return `
-              <div class="market-item" onclick="window.location.href='/market/quote/${idx.symbol}'">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <div class="flex items-center gap-2">
-                      <span class="text-text-primary font-semibold text-sm">${idx.name || idx.symbol}</span>
-                      <span class="text-[10px] bg-border-dark/50 text-text-muted px-1.5 py-0.5 rounded">${idx.symbol}</span>
-                    </div>
-                    <p class="text-text-muted text-xs mt-1 font-mono">$${(idx.price || idx.value || 0).toLocaleString()}</p>
-                  </div>
-                  <span class="${change >= 0 ? 'text-accent-green' : 'text-accent-red'} font-semibold text-sm font-mono">
-                    ${change >= 0 ? '+' : ''}${change.toFixed(2)}%
-                  </span>
+          container.innerHTML = indices.slice(0, 5).map(idx => `
+            <div class="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-white font-bold text-sm">${idx.name || idx.symbol}</span>
+                  <span class="text-[10px] bg-border-dark text-text-secondary px-1 rounded">${idx.symbol}</span>
                 </div>
+                <p class="text-text-secondary text-xs mt-1">$${(idx.price || idx.value || 0).toLocaleString()}</p>
               </div>
-            `;
-          }).join('');
+              <div class="text-right">
+                <p class="${(idx.changePercent || idx.change || 0) >= 0 ? 'text-accent-green' : 'text-accent-red'} text-sm font-bold">
+                  ${(idx.changePercent || idx.change || 0) >= 0 ? '+' : ''}${(idx.changePercent || idx.change || 0).toFixed(2)}%
+                </p>
+              </div>
+            </div>
+          `).join('');
         }
       }
-    } catch (e) { console.error('Market data error:', e); }
+    } catch (error) {
+      console.error('Failed to load market data:', error);
+    }
   }
-  loadMarketData();
 
-  // Period buttons
-  document.querySelectorAll('.period-btn').forEach(btn => {
+  // Load personalized news
+  async function loadNews() {
+    const container = document.getElementById('newsFeed');
+    if (!container) return;
+
+    try {
+      const response = await fetch('/api/news/rss?limit=6');
+      if (response.ok) {
+        const data = await response.json();
+        const news = data.news || data || [];
+
+        if (news.length > 0) {
+          container.innerHTML = news.slice(0, 3).map(article => `
+            <a href="${article.link || article.url || '#'}" target="_blank" class="p-5 hover:bg-white/5 transition-colors group cursor-pointer block">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-2">
+                  ${article.symbol ? `<span class="bg-border-dark text-text-secondary text-[10px] font-bold px-1.5 py-0.5 rounded">${article.symbol}</span>` : ''}
+                  <span class="text-xs text-text-secondary">${article.source || 'News'}</span>
+                </div>
+                <span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">open_in_new</span>
+              </div>
+              <h4 class="text-white font-bold text-sm leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">${article.title}</h4>
+              <p class="text-text-secondary text-xs line-clamp-2">${article.summary || article.description || ''}</p>
+            </a>
+          `).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load news:', error);
+    }
+  }
+
+  // Initialize
+  loadMarketData();
+  loadNews();
+
+  // Refresh news every 30 seconds
+  setInterval(loadNews, 30000);
+
+  // Timeframe buttons
+  document.querySelectorAll('.timeframe-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
+      document.querySelectorAll('.timeframe-btn').forEach(b => {
+        b.classList.remove('active', 'text-white', 'bg-card-dark', 'shadow-sm', 'border', 'border-border-dark');
+        b.classList.add('text-text-secondary');
+      });
+      this.classList.add('active', 'text-white', 'bg-card-dark', 'shadow-sm', 'border', 'border-border-dark');
+      this.classList.remove('text-text-secondary');
     });
   });
 
-  // Search
-  document.getElementById('globalSearch')?.addEventListener('keypress', e => {
-    if (e.key === 'Enter' && e.target.value.trim()) {
-      window.location.href = `/market/quote/${e.target.value.trim().toUpperCase()}`;
+  // Global search
+  document.getElementById('globalSearch')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && this.value.trim()) {
+      window.location.href = `/market/quote/${this.value.trim().toUpperCase()}`;
     }
   });
 
-  document.addEventListener('keydown', e => {
+  // Keyboard shortcut for search
+  document.addEventListener('keydown', function(e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
       document.getElementById('globalSearch')?.focus();
