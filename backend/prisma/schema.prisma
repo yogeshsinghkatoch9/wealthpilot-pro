@@ -61,7 +61,7 @@ model CompanyProfile {
   headquarters String?
   website      String?
   ipoDate      DateTime?
-  updatedAt    DateTime
+  updatedAt DateTime @updatedAt
 
   @@index([sector])
   @@index([symbol])
@@ -244,7 +244,7 @@ model PortfolioSectorAllocation {
   weight        Float?
   date          DateTime   @default(now())
   createdAt     DateTime   @default(now())
-  updatedAt     DateTime
+  updatedAt DateTime @updatedAt
   portfolios    portfolios @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
 
   @@unique([portfolioId, sectorName, date])
@@ -293,7 +293,7 @@ model SectorData {
   volatility       Float?
   beta             Float?
   sharpeRatio      Float?
-  updatedAt        DateTime
+  updatedAt DateTime @updatedAt
   createdAt        DateTime @default(now())
 
   @@index([sectorCode])
@@ -348,7 +348,7 @@ model SentimentData {
   mentionVolume    Int
   correlationScore Float?
   createdAt        DateTime @default(now())
-  updatedAt        DateTime
+  updatedAt DateTime @updatedAt
 
   @@unique([symbol, date])
   @@index([date])
@@ -419,7 +419,7 @@ model UserSettings {
   defaultPortfolioId String?
   dashboardLayout    String?
   createdAt          DateTime @default(now())
-  updatedAt          DateTime
+  updatedAt DateTime @updatedAt
   users              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -429,7 +429,7 @@ model Watchlist {
   name            String
   description     String?
   createdAt       DateTime          @default(now())
-  updatedAt       DateTime
+  updatedAt DateTime @updatedAt
   users           users             @relation(fields: [userId], references: [id], onDelete: Cascade)
   watchlist_items watchlist_items[]
 
@@ -1204,6 +1204,7 @@ model watchlists {
   name        String    @db.VarChar(255)
   description String?
   created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime  @updatedAt
   users       users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
