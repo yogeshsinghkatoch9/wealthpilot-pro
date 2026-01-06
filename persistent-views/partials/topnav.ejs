@@ -65,21 +65,50 @@
 
     <!-- Right Side Actions -->
     <div class="topnav-actions">
-      <!-- Market Ticker -->
-      <div class="topnav-ticker">
-        <div class="topnav-ticker-item">
+      <!-- Market Ticker - Live Data -->
+      <div class="topnav-ticker" id="topnavTicker">
+        <div class="topnav-ticker-item" data-symbol="SPY">
           <span class="topnav-ticker-symbol">SPY</span>
-          <span class="topnav-ticker-change up">+0.45%</span>
+          <span class="topnav-ticker-change up" id="ticker-SPY">+0.00%</span>
         </div>
-        <div class="topnav-ticker-item">
+        <div class="topnav-ticker-item" data-symbol="QQQ">
           <span class="topnav-ticker-symbol">QQQ</span>
-          <span class="topnav-ticker-change up">+0.72%</span>
+          <span class="topnav-ticker-change up" id="ticker-QQQ">+0.00%</span>
         </div>
-        <div class="topnav-ticker-item">
+        <div class="topnav-ticker-item" data-symbol="DIA">
           <span class="topnav-ticker-symbol">DIA</span>
-          <span class="topnav-ticker-change down">-0.12%</span>
+          <span class="topnav-ticker-change up" id="ticker-DIA">+0.00%</span>
         </div>
       </div>
+
+      <script>
+      // Live Ticker - Fetch every 5 seconds
+      (function() {
+        async function updateTopnavTicker() {
+          try {
+            const res = await fetch('/api/market/indices');
+            const data = await res.json();
+            if (!Array.isArray(data)) return;
+
+            data.forEach(idx => {
+              const el = document.getElementById('ticker-' + idx.symbol);
+              if (el) {
+                const pct = idx.changePercent || 0;
+                const sign = pct >= 0 ? '+' : '';
+                el.textContent = sign + pct.toFixed(2) + '%';
+                el.className = 'topnav-ticker-change ' + (pct >= 0 ? 'up' : 'down');
+              }
+            });
+          } catch (e) {
+            console.warn('[Ticker] Update error:', e.message);
+          }
+        }
+
+        // Initial fetch + every 5 seconds
+        updateTopnavTicker();
+        setInterval(updateTopnavTicker, 5000);
+      })();
+      </script>
 
       <!-- Search Button -->
       <button class="topnav-search" onclick="window.commandPalette?.open()">
