@@ -22,47 +22,6 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  /* News Ticker */
-  .ticker-container {
-    overflow: hidden;
-    mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
-  }
-  .ticker-track {
-    display: flex;
-    animation: scroll 60s linear infinite;
-    width: max-content;
-  }
-  .ticker-track:hover { animation-play-state: paused; }
-  @keyframes scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-  /* Live Stock Ticker - Scrolling */
-  .stock-ticker-container {
-    overflow: hidden;
-    mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
-  }
-  .stock-ticker-track {
-    display: flex;
-    animation: stockScroll 40s linear infinite;
-    width: max-content;
-  }
-  .stock-ticker-track:hover { animation-play-state: paused; }
-  @keyframes stockScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  .stock-ticker-item {
-    transition: all 0.2s ease;
-    cursor: pointer;
-  }
-  .stock-ticker-item:hover {
-    background: <%= theme === 'light' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.25)' %> !important;
-  }
-
   /* Cards */
   .news-card {
     transition: all 0.3s ease;
@@ -159,39 +118,6 @@
 </style>
 
 <main class="news-page <%= theme === 'light' ? 'bg-gray-50' : 'bg-[#0a0f1a]' %> min-h-screen">
-
-<!-- Live News Ticker Bar -->
-<div class="<%= theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900/80 border-slate-800' %> border-b backdrop-blur-sm sticky top-0 z-40">
-  <div class="max-w-[1400px] mx-auto px-4">
-    <div class="flex items-center h-10">
-      <div class="flex items-center gap-2 pr-4 border-r <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %> shrink-0">
-        <span class="pulse-dot w-2 h-2 bg-red-500 rounded-full"></span>
-        <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider">Live</span>
-      </div>
-      <div class="ticker-container flex-1 ml-4">
-        <div class="ticker-track" id="newsTicker">
-          <span class="<%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> text-xs">Loading market updates...</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Live Stock Prices Bar (Scrolling) -->
-<div class="<%= theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-800' %> border-b">
-  <div class="stock-ticker-container">
-    <div id="liveStockTicker" class="stock-ticker-track py-2">
-      <!-- Stock items will be rendered here -->
-      <% for(let i = 0; i < 18; i++) { %>
-      <div class="flex items-center gap-2 px-3 py-1 mx-1 rounded-lg shrink-0 <%= theme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %>">
-        <div class="skeleton h-3 w-10 rounded"></div>
-        <div class="skeleton h-3 w-12 rounded"></div>
-        <div class="skeleton h-3 w-10 rounded"></div>
-      </div>
-      <% } %>
-    </div>
-  </div>
-</div>
 
 <div class="max-w-[1400px] mx-auto px-4 py-4">
 
@@ -439,18 +365,6 @@ let losersData = [];
 let trendingData = [];
 let previousPrices = {};
 
-// Live Stock Ticker Symbols (Stocks, Crypto, ETFs, Metals)
-const TICKER_SYMBOLS = [
-  // Stocks
-  'AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA', 'AMD', 'META', 'AMZN',
-  // Crypto
-  'BTC-USD', 'ETH-USD', 'SOL-USD', 'XRP-USD',
-  // ETFs
-  'SPY', 'QQQ', 'SOXL', 'ARKK',
-  // Metals
-  'GC=F', 'SI=F'
-];
-
 // All symbols for gainers/losers
 const ALL_MARKET_SYMBOLS = [
   'NVDA', 'SMCI', 'PLTR', 'AMD', 'TSLA', 'MSTR', 'COIN', 'AVGO', 'META', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NFLX', 'CRM', 'ORCL', 'INTC', 'QCOM',
@@ -475,91 +389,16 @@ const SYMBOL_NAMES = {
 document.addEventListener('DOMContentLoaded', () => {
   loadAllNews();
   loadMarketData();
-  loadTickerData();
   startMarketRefresh();
   startAutoRefresh();
 });
 
-// ===== Live Stock Ticker =====
-async function loadTickerData() {
-  try {
-    const token = localStorage.getItem('token') || '';
-    const symbolsParam = TICKER_SYMBOLS.join(',');
-    const res = await fetch(`/api/market/quotes?symbols=${symbolsParam}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const data = await res.json();
-
-    if (Array.isArray(data) && data.length > 0) {
-      renderStockTicker(data);
-    } else {
-      renderStockTicker(getFallbackTickerData());
-    }
-  } catch (e) {
-    console.error('Ticker fetch error:', e);
-    renderStockTicker(getFallbackTickerData());
-  }
-}
-
-function getFallbackTickerData() {
-  return [
-    { symbol: 'AAPL', price: 248.52, changePercent: 1.24 },
-    { symbol: 'MSFT', price: 442.85, changePercent: 0.87 },
-    { symbol: 'GOOGL', price: 192.45, changePercent: -0.52 },
-    { symbol: 'NVDA', price: 142.85, changePercent: 3.45 },
-    { symbol: 'TSLA', price: 412.50, changePercent: 2.18 },
-    { symbol: 'AMD', price: 124.32, changePercent: -1.42 },
-    { symbol: 'META', price: 612.45, changePercent: 1.05 },
-    { symbol: 'AMZN', price: 228.45, changePercent: 0.65 },
-    { symbol: 'BTC-USD', price: 98542.80, changePercent: 2.85 },
-    { symbol: 'ETH-USD', price: 3842.50, changePercent: 4.12 },
-    { symbol: 'SOL-USD', price: 218.45, changePercent: 5.82 },
-    { symbol: 'XRP-USD', price: 2.42, changePercent: 8.45 },
-    { symbol: 'SPY', price: 602.18, changePercent: 0.85 },
-    { symbol: 'QQQ', price: 528.45, changePercent: 1.12 },
-    { symbol: 'SOXL', price: 32.45, changePercent: 4.85 },
-    { symbol: 'ARKK', price: 58.42, changePercent: 2.18 },
-    { symbol: 'GC=F', price: 2685.40, changePercent: 0.42 },
-    { symbol: 'SI=F', price: 31.42, changePercent: 1.28 }
-  ];
-}
-
-function renderStockTicker(data) {
-  const container = document.getElementById('liveStockTicker');
-  const quotes = data.map(q => ({
-    symbol: q.symbol,
-    price: q.price || q.regularMarketPrice || 0,
-    changePercent: q.changePercent || q.regularMarketChangePercent || 0
-  }));
-
-  const itemsHtml = quotes.map(q => {
-    const displaySymbol = q.symbol.replace('-USD', '').replace('=F', '');
-    const pct = q.changePercent || 0;
-    const isUp = pct >= 0;
-    const color = isUp ? 'text-green-500' : 'text-red-500';
-    const bgColor = isUp ? 'bg-green-500/10' : 'bg-red-500/10';
-    const arrow = isUp ? '▲' : '▼';
-
-    return `
-      <div onclick="goToChart('${q.symbol}')" class="stock-ticker-item flex items-center gap-2 px-3 py-1 mx-1 rounded-lg shrink-0 ${bgColor}">
-        <span class="text-xs font-bold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">${displaySymbol}</span>
-        <span class="text-xs font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">$${formatPrice(q.price)}</span>
-        <span class="text-[10px] font-bold ${color}">${arrow}${Math.abs(pct).toFixed(2)}%</span>
-      </div>
-    `;
-  }).join('');
-
-  // Duplicate for seamless infinite scroll
-  container.innerHTML = itemsHtml + itemsHtml;
-}
-
 // ===== Market Data Functions =====
 function startMarketRefresh() {
-  // Refresh every 1 second
+  // Refresh every 30 seconds
   marketRefreshInterval = setInterval(() => {
     loadMarketData();
-    loadTickerData();
-  }, 1000);
+  }, 30000);
 }
 
 async function loadMarketData() {
@@ -808,7 +647,6 @@ function renderAllNews() {
   renderMediumStories(allNews.slice(14, 18));
   renderLatestHeadlines(allNews.slice(18, 33)); // 15 items for Latest
   renderGrid(allNews.slice(33));
-  renderTicker(allNews);
   document.getElementById('newsCount').textContent = `(${allNews.length} articles)`;
 }
 
@@ -1010,26 +848,6 @@ function renderGrid(items) {
         </div>
       </article>`;
   }).join('');
-}
-
-function renderTicker(items) {
-  const c = document.getElementById('newsTicker');
-  const html = items.slice(0, 15).map(a => {
-    // Determine icon based on category or source
-    let icon = '📰';
-    const cat = (a.category || '').toLowerCase();
-    const src = (a.source || '').toLowerCase();
-    if (cat === 'markets' || src.includes('market')) icon = '📊';
-    else if (cat === 'analysis' || src.includes('seeking')) icon = '🔍';
-    else if (src.includes('cnbc')) icon = '📺';
-    else if (src.includes('yahoo')) icon = '🌐';
-    else if (src.includes('investing')) icon = '💹';
-
-    const sourceLabel = a.source ? a.source.split(' ')[0].toUpperCase() : 'NEWS';
-    const safeUrl = (a.url || '#').replace(/'/g, "\\'");
-    return `<span class="inline-flex items-center gap-2 px-4 ${theme === 'light' ? 'text-gray-600' : 'text-slate-300'} hover:text-indigo-500 cursor-pointer whitespace-nowrap text-xs" onclick="window.open('${safeUrl}', '_blank')">${icon} <strong class="text-indigo-500">${sourceLabel}</strong> ${a.title.substring(0, 60)}${a.title.length > 60 ? '...' : ''}</span>`;
-  }).join('<span class="text-slate-600 px-2">•</span>');
-  c.innerHTML = html + '<span class="text-slate-600 px-2">•</span>' + html;
 }
 
 function loadMoreNews() {
