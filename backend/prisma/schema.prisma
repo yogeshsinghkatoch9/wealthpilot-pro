@@ -443,7 +443,7 @@ model ai_chat_sessions {
   title      String?
   messages   String   @default("[]")
   created_at DateTime @default(now())
-  updated_at DateTime
+  updated_at DateTime @updatedAt
 
   @@index([created_at])
   @@index([user_id])
@@ -492,7 +492,7 @@ model alerts {
   is_triggered Boolean   @default(false)
   triggered_at DateTime?
   created_at   DateTime  @default(now())
-  updated_at   DateTime
+  updated_at DateTime @updatedAt
   users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([is_active])
@@ -539,7 +539,7 @@ model assistant_sessions {
   title                 String                  @default("New Conversation")
   portfolio_id          String?
   created_at            DateTime                @default(now())
-  updated_at            DateTime
+  updated_at DateTime @updatedAt
   assistant_attachments assistant_attachments[]
   assistant_messages    assistant_messages[]
 
@@ -595,7 +595,7 @@ model broker_connections {
   last_error         String?
   settings           String?
   created_at         DateTime            @default(now())
-  updated_at         DateTime
+  updated_at DateTime @updatedAt
   broker_credentials broker_credentials?
   broker_orders      broker_orders[]
 
@@ -614,7 +614,7 @@ model broker_credentials {
   token_expires_at   DateTime?
   scopes             String?
   created_at         DateTime           @default(now())
-  updated_at         DateTime
+  updated_at DateTime @updatedAt
   broker_connections broker_connections @relation(fields: [connection_id], references: [id], onDelete: Cascade)
 }
 
@@ -637,7 +637,7 @@ model broker_orders {
   commission         Float              @default(0)
   notes              String?
   created_at         DateTime           @default(now())
-  updated_at         DateTime
+  updated_at DateTime @updatedAt
   broker_connections broker_connections @relation(fields: [connection_id], references: [id], onDelete: Cascade)
 
   @@index([connection_id])
@@ -657,7 +657,7 @@ model crypto_holdings {
   exchange            String?
   notes               String?
   created_at          DateTime              @default(now())
-  updated_at          DateTime
+  updated_at DateTime @updatedAt
   crypto_transactions crypto_transactions[]
 
   @@unique([user_id, symbol])
@@ -693,7 +693,7 @@ model holdings {
   asset_type     String     @default("stock")
   notes          String?
   created_at     DateTime   @default(now())
-  updated_at     DateTime
+  updated_at DateTime @updatedAt
   portfolios     portfolios @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
   tax_lots       tax_lots[]
 
@@ -731,7 +731,7 @@ model oauth_tokens {
   scope         String?
   obtained_at   DateTime @default(now())
   created_at    DateTime @default(now())
-  updated_at    DateTime
+  updated_at DateTime @updatedAt
 
   @@unique([user_id, provider_id])
   @@index([provider_id])
@@ -753,7 +753,7 @@ model options_positions {
   exit_price      Float?
   notes           String?
   created_at      DateTime  @default(now())
-  updated_at      DateTime
+  updated_at DateTime @updatedAt
 
   @@index([expiration_date])
   @@index([status])
@@ -778,7 +778,7 @@ model paper_orders {
   filled_at              DateTime?
   commission             Float                  @default(0)
   created_at             DateTime               @default(now())
-  updated_at             DateTime
+  updated_at DateTime @updatedAt
   paper_trading_accounts paper_trading_accounts @relation(fields: [account_id], references: [id], onDelete: Cascade)
 
   @@index([account_id])
@@ -807,7 +807,7 @@ model paper_positions {
   quantity               Float
   avg_cost               Float
   created_at             DateTime               @default(now())
-  updated_at             DateTime
+  updated_at DateTime @updatedAt
   paper_trading_accounts paper_trading_accounts @relation(fields: [account_id], references: [id], onDelete: Cascade)
 
   @@unique([account_id, symbol])
@@ -844,7 +844,7 @@ model paper_trading_accounts {
   losing_trades   Int               @default(0)
   total_pnl       Float             @default(0)
   created_at      DateTime          @default(now())
-  updated_at      DateTime
+  updated_at DateTime @updatedAt
   paper_orders    paper_orders[]
   paper_positions paper_positions[]
 
@@ -862,7 +862,7 @@ model portfolio_shares {
   show_quantities Boolean   @default(true)
   view_count      Int       @default(0)
   created_at      DateTime  @default(now())
-  updated_at      DateTime
+  updated_at DateTime @updatedAt
 
   @@index([portfolio_id])
   @@index([share_token])
@@ -879,7 +879,7 @@ model portfolios {
   is_public                 Boolean                     @default(false)
   cash_balance              Float                       @default(0)
   created_at                DateTime                    @default(now())
-  updated_at                DateTime
+  updated_at DateTime @updatedAt
   PortfolioSectorAllocation PortfolioSectorAllocation[]
   PortfolioSnapshot         PortfolioSnapshot[]
   holdings                  holdings[]
@@ -938,7 +938,7 @@ model stock_data_tracker {
   last_error_at           DateTime?
   primary_data_source     String?
   created_at              DateTime  @default(now())
-  updated_at              DateTime
+  updated_at DateTime @updatedAt
 
   @@index([initial_fetch_completed])
   @@index([is_active])
@@ -986,7 +986,7 @@ model stock_quotes {
   week_52_low    Float?
   change_amount  Float?
   change_percent Float?
-  updated_at     DateTime
+  updated_at DateTime @updatedAt
 }
 
 model tax_harvest_history {
@@ -1026,7 +1026,7 @@ model tax_harvesting_opportunities {
   status              String    @default("pending")
   harvested_at        DateTime?
   created_at          DateTime  @default(now())
-  updated_at          DateTime
+  updated_at DateTime @updatedAt
 
   @@index([status])
   @@index([symbol])
@@ -1132,7 +1132,7 @@ model users {
   is_verified        Boolean           @default(false)
   last_login_at      DateTime?
   created_at         DateTime          @default(now())
-  updated_at         DateTime
+  updated_at DateTime @updatedAt
   plan               String            @default("free")
   plan_expires_at    DateTime?
   two_factor_enabled Boolean           @default(false)
@@ -1235,7 +1235,7 @@ model webhooks {
   disabled_reason    String?
   disabled_at        DateTime?
   created_at         DateTime             @default(now())
-  updated_at         DateTime
+  updated_at DateTime @updatedAt
   webhook_deliveries webhook_deliveries[]
 
   @@index([is_active])
