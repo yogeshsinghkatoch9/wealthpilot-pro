@@ -1,6 +1,64 @@
 <!-- Close main content wrapper from header -->
 </div>
 
+<!-- Fixed Market Sidebar (Collapsible) -->
+<div id="marketSidebarWrapper" class="fixed right-0 top-[120px] z-30 hidden lg:block">
+  <!-- Toggle Button -->
+  <button id="marketSidebarToggle" onclick="toggleMarketSidebar()"
+    class="absolute -left-10 top-4 w-10 h-10 rounded-l-lg <%= typeof theme !== 'undefined' && theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-900 border border-slate-700' %> flex items-center justify-center shadow-lg hover:bg-indigo-600 hover:text-white transition-all group">
+    <svg id="sidebarOpenIcon" class="w-5 h-5 <%= typeof theme !== 'undefined' && theme === 'light' ? 'text-gray-600 group-hover:text-white' : 'text-slate-400 group-hover:text-white' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+    </svg>
+    <svg id="sidebarCloseIcon" class="w-5 h-5 hidden <%= typeof theme !== 'undefined' && theme === 'light' ? 'text-gray-600 group-hover:text-white' : 'text-slate-400 group-hover:text-white' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+
+  <!-- Sidebar Content -->
+  <div id="marketSidebarContent" class="w-[280px] max-h-[calc(100vh-140px)] overflow-y-auto <%= typeof theme !== 'undefined' && theme === 'light' ? 'bg-gray-50 border-l border-gray-200' : 'bg-[#0d1117] border-l border-slate-800' %> shadow-xl transform translate-x-full transition-transform duration-300">
+    <div class="p-3">
+      <%- include('./market-sidebar') %>
+    </div>
+  </div>
+</div>
+
+<script>
+// Market Sidebar Toggle
+function toggleMarketSidebar() {
+  const content = document.getElementById('marketSidebarContent');
+  const openIcon = document.getElementById('sidebarOpenIcon');
+  const closeIcon = document.getElementById('sidebarCloseIcon');
+
+  if (content.classList.contains('translate-x-full')) {
+    content.classList.remove('translate-x-full');
+    content.classList.add('translate-x-0');
+    openIcon.classList.add('hidden');
+    closeIcon.classList.remove('hidden');
+  } else {
+    content.classList.add('translate-x-full');
+    content.classList.remove('translate-x-0');
+    openIcon.classList.remove('hidden');
+    closeIcon.classList.add('hidden');
+  }
+}
+
+// Check localStorage for sidebar preference
+document.addEventListener('DOMContentLoaded', () => {
+  const savedState = localStorage.getItem('marketSidebarOpen');
+  if (savedState === 'true') {
+    toggleMarketSidebar();
+  }
+});
+
+// Save sidebar state
+const originalToggle = toggleMarketSidebar;
+toggleMarketSidebar = function() {
+  originalToggle();
+  const content = document.getElementById('marketSidebarContent');
+  localStorage.setItem('marketSidebarOpen', !content.classList.contains('translate-x-full'));
+};
+</script>
+
 <!-- Mobile Bottom Navigation -->
 <%- include('./mobile-bottom-nav') %>
 
