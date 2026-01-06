@@ -32,7 +32,7 @@ RUN npx prisma generate
 # Production stage
 FROM node:20-slim
 
-# Install production runtime dependencies
+# Install production runtime dependencies + postgresql-client for DB init
 RUN apt-get update && apt-get install -y \
     libcairo2 \
     libpango-1.0-0 \
@@ -43,6 +43,8 @@ RUN apt-get update && apt-get install -y \
     libpixman-1-0 \
     sqlite3 \
     openssl \
+    postgresql-client \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
@@ -65,9 +67,13 @@ USER nodejs
 # Expose port
 EXPOSE 4000
 
+# Make start script executable
+RUN chmod +x /app/start.sh
+
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:4000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start application
-CMD ["node", "src/index.js"]
+# Use tini as init and start application with DB schema fix
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/app/start.sh"]

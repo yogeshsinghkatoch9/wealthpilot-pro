@@ -5,8 +5,8 @@ ENV PORT=4000
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apk add --no-cache curl tini openssl
+# Install runtime dependencies including postgresql-client for DB init
+RUN apk add --no-cache curl tini openssl postgresql-client
 
 # Copy package files
 COPY package*.json ./
