@@ -1,0 +1,403 @@
+<%- include('../partials/header', { pageTitle: 'Automated Portfolio Insights' }) %>
+<%
+  // Default values for dynamic data
+  const safePortfolios = typeof portfolios !== 'undefined' && portfolios ? portfolios : [
+    { id: 1, name: 'Main Growth Portfolio' },
+    { id: 2, name: 'Retirement Fund A' },
+    { id: 3, name: 'Tech Speculation Fund' }
+  ];
+  const selectedPortfolio = typeof portfolio !== 'undefined' && portfolio ? portfolio : safePortfolios[0];
+
+  // Performance data
+  const performanceData = typeof performance !== 'undefined' && performance ? performance : {
+    totalReturnMTD: 8.4,
+    vsBenchmark: 2.4,
+    benchmarkName: 'S&P 500'
+  };
+
+  // Risk assessment data
+  const riskData = typeof risk !== 'undefined' && risk ? risk : {
+    level: 'Moderate',
+    score: 64,
+    beta: 1.12,
+    var95: 4.5,
+    warning: 'Concentration risk detected. Semiconductor sector allocation exceeds 35% of total portfolio value.'
+  };
+
+  // Opportunities data
+  const opportunitiesData = typeof opportunities !== 'undefined' && opportunities ? opportunities : [
+    {
+      symbol: 'XLV',
+      name: 'Healthcare Select',
+      type: 'Sector Rotation',
+      action: 'BUY',
+      description: 'AI suggests rebalancing into defensive sectors to reduce volatility.'
+    },
+    {
+      symbol: 'GOOGL',
+      name: 'Alphabet Inc.',
+      type: 'Undervalued',
+      action: 'ACCUMULATE',
+      description: 'P/E ratio dropped below 5yr average despite strong earnings beat.'
+    }
+  ];
+
+  // Tax optimization data
+  const taxData = typeof taxOptimization !== 'undefined' && taxOptimization ? taxOptimization : {
+    harvestableLosses: 3240.50,
+    potentialSavings: 800,
+    lots: [
+      { symbol: 'TSLA', name: 'Tesla, Inc.', date: '02/14/24', loss: -1250 },
+      { symbol: 'ARKK', name: 'ARK Innovation', date: '01/10/24', loss: -1990 }
+    ]
+  };
+
+  // Sentiment data
+  const sentimentData = typeof sentiment !== 'undefined' && sentiment ? sentiment : [
+    {
+      symbol: 'NVDA',
+      name: 'NVIDIA',
+      sentiment: 'BULLISH',
+      score: 85,
+      description: 'News sentiment is overwhelmingly positive following the latest earnings call. AI demand continues to drive analyst upgrades.'
+    },
+    {
+      symbol: 'AAPL',
+      name: 'Apple',
+      sentiment: 'NEUTRAL',
+      score: 45,
+      description: 'Mixed sentiment due to regulatory concerns in EU markets, offset by strong services revenue growth and new product announcements.'
+    }
+  ];
+
+  // Last analysis timestamp
+  const lastAnalysis = typeof analysisTime !== 'undefined' && analysisTime ? analysisTime : new Date().toLocaleString('en-US', {
+    weekday: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).replace(/,/, ',');
+%>
+
+<style>
+  /* Stitch Design Theme Overrides for this page */
+  .insights-page {
+    background: #111217;
+  }
+
+  .insights-card {
+    background: #1c1d26;
+    border: 1px solid #292a38;
+    border-radius: 0.75rem;
+  }
+
+  .insights-card:hover {
+    border-color: #3d3e52;
+  }
+
+  /* Risk gauge animation */
+  .risk-gauge {
+    transition: all 0.5s ease-out;
+  }
+
+  /* Opportunity card hover effect */
+  .opportunity-item:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  /* Chart bar animation */
+  .chart-bar {
+    transition: height 0.3s ease-out;
+  }
+
+  /* Sentiment bar animation */
+  .sentiment-bar {
+    transition: width 0.5s ease-out;
+  }
+</style>
+
+<main class="flex-1 flex flex-col min-h-screen overflow-y-auto insights-page">
+  <!-- Page Header -->
+  <header class="w-full max-w-[1400px] mx-auto px-4 lg:px-6 py-6 lg:py-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 lg:gap-6 mb-6 lg:mb-8">
+      <div class="flex flex-col gap-2">
+        <h2 class="text-white text-2xl lg:text-3xl font-bold tracking-tight">Automated Portfolio Insights</h2>
+        <p class="text-text-secondary text-sm lg:text-base">AI-driven analysis and actionable intelligence for your investments.</p>
+      </div>
+      <div class="flex flex-col items-start md:items-end gap-2 w-full md:w-auto">
+        <div class="flex items-center gap-3 bg-card-dark border border-border-dark rounded-lg p-1 pr-4 w-full md:w-auto">
+          <div class="pl-3 py-2">
+            <span class="material-symbols-outlined text-text-secondary">account_balance_wallet</span>
+          </div>
+          <div class="relative flex-1 md:flex-none">
+            <select id="portfolioSelector" class="appearance-none bg-transparent border-none text-white text-sm font-medium focus:ring-0 focus:outline-none cursor-pointer pr-8 py-2 min-w-[180px] lg:min-w-[200px] w-full">
+              <% safePortfolios.forEach(p => { %>
+              <option value="<%= p.id %>" <%= p.id === selectedPortfolio.id ? 'selected' : '' %>><%= p.name %></option>
+              <% }) %>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
+              <span class="material-symbols-outlined text-sm">expand_more</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-text-secondary text-xs flex items-center gap-1">
+          <span class="material-symbols-outlined text-xs">schedule</span>
+          Last analysis generated: <%= lastAnalysis %>
+        </p>
+      </div>
+    </div>
+
+    <!-- Bento Grid Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+
+      <!-- Card 1: Performance Summary -->
+      <div class="insights-card p-4 lg:p-6 flex flex-col gap-4 relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-6xl lg:text-8xl text-primary">trending_up</span>
+        </div>
+        <div class="flex justify-between items-start z-10">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-lg bg-primary/10 text-primary">
+              <span class="material-symbols-outlined">analytics</span>
+            </span>
+            <h3 class="text-white font-semibold text-base lg:text-lg">Performance Summary</h3>
+          </div>
+          <button class="text-text-secondary hover:text-white transition-colors">
+            <span class="material-symbols-outlined">more_horiz</span>
+          </button>
+        </div>
+        <div class="mt-2 z-10">
+          <p class="text-text-secondary text-sm mb-1">Total Return (MTD)</p>
+          <div class="flex items-baseline gap-3 flex-wrap">
+            <span class="text-3xl lg:text-4xl font-bold text-white"><%= performanceData.totalReturnMTD >= 0 ? '+' : '' %><%= performanceData.totalReturnMTD %>%</span>
+            <span class="text-xs lg:text-sm font-medium <%= performanceData.vsBenchmark >= 0 ? 'text-emerald-400 bg-emerald-400/10' : 'text-red-400 bg-red-400/10' %> px-2 py-0.5 rounded flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm"><%= performanceData.vsBenchmark >= 0 ? 'arrow_upward' : 'arrow_downward' %></span>
+              <%= Math.abs(performanceData.vsBenchmark) %>% vs <%= performanceData.benchmarkName %>
+            </span>
+          </div>
+        </div>
+        <div class="h-20 lg:h-24 w-full mt-2 rounded-lg bg-gradient-to-b <%= performanceData.totalReturnMTD >= 0 ? 'from-emerald-500/10' : 'from-red-500/10' %> to-transparent border-t <%= performanceData.totalReturnMTD >= 0 ? 'border-emerald-500/20' : 'border-red-500/20' %> relative flex items-end justify-between px-2 pb-2 gap-1">
+          <!-- Simulated Chart Bars -->
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20' %> rounded-t-sm chart-bar" style="height: 30%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/30' : 'bg-red-500/30' %> rounded-t-sm chart-bar" style="height: 45%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/20' : 'bg-red-500/20' %> rounded-t-sm chart-bar" style="height: 40%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/40' : 'bg-red-500/40' %> rounded-t-sm chart-bar" style="height: 60%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/30' : 'bg-red-500/30' %> rounded-t-sm chart-bar" style="height: 55%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/50' : 'bg-red-500/50' %> rounded-t-sm chart-bar" style="height: 75%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/40' : 'bg-red-500/40' %> rounded-t-sm chart-bar" style="height: 70%"></div>
+          <div class="w-full <%= performanceData.totalReturnMTD >= 0 ? 'bg-emerald-500/60' : 'bg-red-500/60' %> rounded-t-sm chart-bar" style="height: 90%"></div>
+        </div>
+        <div class="mt-auto pt-4 border-t border-border-dark flex gap-3 z-10">
+          <a href="/performance" class="flex-1 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors text-center">View Report</a>
+        </div>
+      </div>
+
+      <!-- Card 2: Risk Assessment -->
+      <div class="insights-card p-4 lg:p-6 flex flex-col gap-4 relative">
+        <div class="flex justify-between items-start">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-lg bg-orange-500/10 text-orange-500">
+              <span class="material-symbols-outlined">shield_with_heart</span>
+            </span>
+            <h3 class="text-white font-semibold text-base lg:text-lg">Risk Assessment</h3>
+          </div>
+          <span class="bg-<%= riskData.level === 'Low' ? 'emerald' : riskData.level === 'Moderate' ? 'orange' : 'red' %>-500/20 text-<%= riskData.level === 'Low' ? 'emerald' : riskData.level === 'Moderate' ? 'orange' : 'red' %>-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide"><%= riskData.level %></span>
+        </div>
+        <div class="flex items-center justify-center py-4">
+          <div class="relative w-40 h-20 overflow-hidden">
+            <div class="absolute w-40 h-40 rounded-full border-[12px] border-[#292a38] border-b-transparent border-r-transparent transform rotate-[-45deg]"></div>
+            <div class="absolute w-40 h-40 rounded-full border-[12px] border-<%= riskData.level === 'Low' ? 'emerald' : riskData.level === 'Moderate' ? 'orange' : 'red' %>-500 border-b-transparent border-r-transparent border-l-transparent transform rotate-[-45deg] z-10 risk-gauge" style="clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); transform: rotate(<%= 45 + (riskData.score / 100) * 90 %>deg);"></div>
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
+              <span class="text-2xl font-bold text-white"><%= riskData.score %></span>
+              <span class="text-xs text-text-secondary">Risk Score</span>
+            </div>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-text-secondary">Portfolio Beta</span>
+            <span class="text-white font-medium"><%= riskData.beta %></span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-text-secondary">VaR (95%)</span>
+            <span class="text-white font-medium"><%= riskData.var95 %>%</span>
+          </div>
+          <% if (riskData.warning) { %>
+          <div class="p-3 bg-orange-500/5 border border-orange-500/20 rounded-lg">
+            <p class="text-xs text-orange-300 leading-relaxed">
+              <span class="font-bold">Warning:</span> <%= riskData.warning %>
+            </p>
+          </div>
+          <% } %>
+        </div>
+        <div class="mt-auto pt-4 border-t border-border-dark flex gap-3 z-10">
+          <a href="/stress-test" class="flex-1 py-2 text-sm font-medium text-white bg-card-dark border border-border-dark hover:bg-border-dark rounded-lg transition-colors text-center">Analyze Risk</a>
+        </div>
+      </div>
+
+      <!-- Card 3: Opportunity Identification -->
+      <div class="insights-card p-4 lg:p-6 flex flex-col gap-4">
+        <div class="flex justify-between items-start">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+              <span class="material-symbols-outlined">lightbulb</span>
+            </span>
+            <h3 class="text-white font-semibold text-base lg:text-lg">Opportunities</h3>
+          </div>
+          <% const newOpportunities = opportunitiesData.filter(o => o.isNew !== false).length; %>
+          <% if (newOpportunities > 0) { %>
+          <span class="bg-blue-500/20 text-blue-400 text-xs font-bold px-2 py-1 rounded"><%= newOpportunities %> New</span>
+          <% } %>
+        </div>
+        <div class="flex flex-col gap-3 mt-2">
+          <% opportunitiesData.slice(0, 2).forEach(opp => { %>
+          <!-- Opportunity Item -->
+          <div class="p-3 rounded-lg bg-[#242530] border border-border-dark hover:border-blue-500/30 transition-colors group cursor-pointer opportunity-item">
+            <div class="flex justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded <%= opp.symbol === 'XLV' ? 'bg-white text-black' : 'bg-gray-700 text-white' %> flex items-center justify-center font-bold text-xs"><%= opp.symbol.substring(0, 4) %></div>
+                <div>
+                  <p class="text-white text-sm font-bold"><%= opp.name %></p>
+                  <p class="text-xs text-text-secondary"><%= opp.type %></p>
+                </div>
+              </div>
+              <span class="text-<%= opp.action === 'BUY' || opp.action === 'ACCUMULATE' ? 'emerald' : opp.action === 'SELL' ? 'red' : 'orange' %>-400 text-xs font-bold bg-<%= opp.action === 'BUY' || opp.action === 'ACCUMULATE' ? 'emerald' : opp.action === 'SELL' ? 'red' : 'orange' %>-400/10 px-2 py-1 rounded h-fit"><%= opp.action %></span>
+            </div>
+            <p class="text-xs text-text-secondary group-hover:text-gray-300"><%= opp.description %></p>
+          </div>
+          <% }) %>
+        </div>
+        <div class="mt-auto pt-4 border-t border-border-dark flex gap-3">
+          <a href="/trade-ideas" class="flex-1 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors text-center">Review Trades</a>
+        </div>
+      </div>
+
+      <!-- Card 4: Tax Optimization -->
+      <div class="insights-card p-4 lg:p-6 flex flex-col gap-4">
+        <div class="flex justify-between items-start">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+              <span class="material-symbols-outlined">savings</span>
+            </span>
+            <h3 class="text-white font-semibold text-base lg:text-lg">Tax Optimization</h3>
+          </div>
+        </div>
+        <div class="flex flex-col items-center justify-center py-2">
+          <p class="text-text-secondary text-sm mb-1">Harvestable Losses</p>
+          <p class="text-2xl lg:text-3xl font-bold text-white">$<%= taxData.harvestableLosses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %></p>
+          <p class="text-xs text-emerald-400 mt-1">Potential tax savings: ~$<%= taxData.potentialSavings.toLocaleString() %></p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <% taxData.lots.forEach(lot => { %>
+          <div class="flex items-center justify-between p-3 bg-[#242530] rounded-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-gray-800 flex items-center justify-center text-xs font-bold text-white"><%= lot.symbol %></div>
+              <div class="flex flex-col">
+                <span class="text-white text-sm font-medium"><%= lot.name %></span>
+                <span class="text-xs text-text-secondary">Lot bought <%= lot.date %></span>
+              </div>
+            </div>
+            <span class="text-red-400 font-medium text-sm">$<%= lot.loss.toLocaleString() %></span>
+          </div>
+          <% }) %>
+        </div>
+        <div class="mt-auto pt-4 border-t border-border-dark flex gap-3">
+          <a href="/tax-lots" class="flex-1 py-2 text-sm font-medium text-white bg-card-dark border border-border-dark hover:bg-border-dark rounded-lg transition-colors text-center">Harvest Losses</a>
+        </div>
+      </div>
+
+      <!-- Card 5: Sentiment Analysis (spans 2 columns) -->
+      <div class="md:col-span-2 xl:col-span-2 insights-card p-4 lg:p-6 flex flex-col gap-4">
+        <div class="flex justify-between items-start flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+              <span class="material-symbols-outlined">psychology</span>
+            </span>
+            <h3 class="text-white font-semibold text-base lg:text-lg">Market Sentiment Analysis</h3>
+          </div>
+          <a href="/sentiment" class="text-primary text-sm font-medium hover:underline">View All Holdings</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6 mt-2">
+          <% sentimentData.forEach(item => { %>
+          <!-- Sentiment Item -->
+          <div class="flex flex-col gap-3">
+            <div class="flex justify-between items-center flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full <%= item.sentiment === 'BULLISH' ? 'bg-green-900/50 text-green-400' : item.sentiment === 'BEARISH' ? 'bg-red-900/50 text-red-400' : 'bg-orange-900/50 text-orange-400' %> flex items-center justify-center text-xs font-bold"><%= item.symbol.charAt(0) %></div>
+                <span class="text-white font-medium"><%= item.symbol %> (<%= item.name %>)</span>
+              </div>
+              <span class="text-<%= item.sentiment === 'BULLISH' ? 'emerald' : item.sentiment === 'BEARISH' ? 'red' : 'orange' %>-400 text-xs font-bold bg-<%= item.sentiment === 'BULLISH' ? 'emerald' : item.sentiment === 'BEARISH' ? 'red' : 'orange' %>-400/10 px-2 py-1 rounded"><%= item.sentiment %></span>
+            </div>
+            <div class="w-full bg-[#292a38] rounded-full h-2">
+              <div class="bg-gradient-to-r <%= item.sentiment === 'BULLISH' ? 'from-emerald-600 to-emerald-400' : item.sentiment === 'BEARISH' ? 'from-red-600 to-red-400' : 'from-orange-600 to-orange-400' %> h-2 rounded-full sentiment-bar" style="width: <%= item.score %>%"></div>
+            </div>
+            <p class="text-sm text-text-secondary leading-relaxed">
+              <%= item.description %>
+            </p>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+
+    </div>
+  </header>
+</main>
+
+<script>
+// Portfolio selector handler
+document.getElementById('portfolioSelector')?.addEventListener('change', function(e) {
+  const portfolioId = e.target.value;
+  // Navigate to the same page with new portfolio context
+  window.location.href = `/automated-portfolio-insights?portfolio=${portfolioId}`;
+});
+
+// Animate chart bars on load
+document.addEventListener('DOMContentLoaded', function() {
+  const chartBars = document.querySelectorAll('.chart-bar');
+  chartBars.forEach((bar, index) => {
+    const originalHeight = bar.style.height;
+    bar.style.height = '0%';
+    setTimeout(() => {
+      bar.style.height = originalHeight;
+    }, 100 + (index * 50));
+  });
+
+  // Animate sentiment bars
+  const sentimentBars = document.querySelectorAll('.sentiment-bar');
+  sentimentBars.forEach((bar, index) => {
+    const originalWidth = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => {
+      bar.style.width = originalWidth;
+    }, 300 + (index * 100));
+  });
+});
+
+// Refresh insights data
+function refreshInsights() {
+  const portfolioId = document.getElementById('portfolioSelector')?.value;
+
+  fetch(`/api/insights/refresh?portfolio=${portfolioId}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Insights refreshed successfully', 'success');
+      location.reload();
+    } else {
+      showToast(data.error || 'Failed to refresh insights', 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Failed to refresh insights:', err);
+    showToast('Failed to refresh insights', 'error');
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

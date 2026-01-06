@@ -1,0 +1,592 @@
+<%
+// Safe defaults
+const safeEntries = entries || [];
+const safeStats = stats || {};
+const safePortfolios = portfolios || [];
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  money: (val) => `$${Number(val || 0).toFixed(2)}`,
+  percent: (val) => `${Number(val || 0).toFixed(2)}%`,
+  compact: (val) => Number(val || 0).toLocaleString()
+};
+%>
+<%- include('../partials/header', { pageTitle: 'Trading Journal' }) %>
+
+<!-- Stitch Design System -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#4850e5",
+        "background-dark": "#111217",
+        "surface-dark": "#1a1d24",
+        "border-dark": "#292a38",
+        "text-secondary": "#9e9fb7",
+        "profit": "#0bda65",
+        "loss": "#ff4d4d"
+      },
+      fontFamily: {
+        "display": ["Manrope", "sans-serif"]
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Manrope', sans-serif; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #111217; }
+  ::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3d3e52; }
+</style>
+
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#292a38] bg-[#111217] px-4 py-3 md:px-10">
+  <div class="flex items-center gap-8">
+    <div class="flex items-center gap-4 text-white">
+      <div class="size-8 text-[#4850e5]">
+        <span class="material-symbols-outlined text-3xl">token</span>
+      </div>
+      <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em] hidden sm:block">WealthPilot Pro</h2>
+    </div>
+    <label class="hidden md:flex flex-col min-w-40 h-10 max-w-64">
+      <div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-[#292a38] bg-[#1a1d24]">
+        <div class="text-[#9e9fb7] flex items-center justify-center pl-3">
+          <span class="material-symbols-outlined text-[20px]">search</span>
+        </div>
+        <input class="flex w-full min-w-0 flex-1 bg-transparent text-white focus:outline-0 focus:ring-0 border-none h-full placeholder:text-[#9e9fb7] px-3 text-sm font-normal" placeholder="Search (Cmd+K)" value="">
+      </div>
+    </label>
+  </div>
+  <div class="flex flex-1 justify-end gap-4 md:gap-8">
+    <div class="hidden lg:flex items-center gap-6">
+      <a class="text-[#9e9fb7] hover:text-white transition-colors text-sm font-medium" href="/dashboard">Dashboard</a>
+      <a class="text-white text-sm font-medium" href="#">Journal</a>
+      <a class="text-[#9e9fb7] hover:text-white transition-colors text-sm font-medium" href="/portfolio">Portfolio</a>
+      <a class="text-[#9e9fb7] hover:text-white transition-colors text-sm font-medium" href="/settings">Settings</a>
+    </div>
+    <div class="flex items-center gap-4">
+      <button class="relative text-[#9e9fb7] hover:text-white">
+        <span class="material-symbols-outlined">notifications</span>
+        <div class="absolute top-0 right-0 size-2 bg-[#4850e5] rounded-full border-2 border-[#111217]"></div>
+      </button>
+      <div class="size-9 rounded-full bg-gradient-to-br from-[#4850e5] to-[#6366f1] ring-2 ring-[#292a38]"></div>
+    </div>
+  </div>
+</header>
+
+<!-- Main Layout -->
+<div class="min-h-screen bg-[#111217]">
+  <div class="px-4 md:px-10 lg:px-20 xl:px-40 py-5 max-w-[1440px] mx-auto">
+    <!-- Breadcrumbs -->
+    <div class="flex flex-wrap gap-2 py-2">
+      <a class="text-[#9e9fb7] hover:text-[#4850e5] transition-colors text-sm font-medium" href="/dashboard">Dashboard</a>
+      <span class="text-[#9e9fb7] text-sm font-medium">/</span>
+      <span class="text-white text-sm font-medium">Trading Journal</span>
+    </div>
+
+    <!-- Page Heading -->
+    <div class="flex flex-col md:flex-row flex-wrap justify-between gap-6 py-6 border-b border-[#292a38]/30">
+      <div class="flex min-w-72 flex-col gap-2">
+        <h1 class="text-white text-3xl md:text-4xl font-extrabold leading-tight tracking-tight">Trading Journal</h1>
+        <p class="text-[#9e9fb7] text-base font-normal max-w-2xl">
+          Record, analyze, and optimize your trading performance. Track your progress across all asset classes.
+        </p>
+      </div>
+      <div class="flex gap-3 items-center">
+        <button onclick="exportJournal()" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#1a1d24] border border-[#292a38] text-white text-sm font-bold hover:bg-[#292a38] transition-colors">
+          <span class="material-symbols-outlined text-[20px] mr-2">upload</span>
+          <span class="truncate">Import</span>
+        </button>
+        <button onclick="openNewEntryModal()" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#4850e5] text-white text-sm font-bold shadow-lg shadow-[#4850e5]/20 hover:bg-[#4850e5]/90 transition-colors">
+          <span class="material-symbols-outlined text-[20px] mr-2">add</span>
+          <span class="truncate">New Entry</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-6">
+      <!-- Total P&L -->
+      <div class="flex flex-col gap-2 rounded-xl p-6 bg-[#1a1d24] border border-[#292a38] relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-6xl text-[#4850e5]">account_balance_wallet</span>
+        </div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-[#9e9fb7] text-sm font-medium uppercase tracking-wider">Total P&L</span>
+          <span class="material-symbols-outlined text-[#9e9fb7] text-[16px] cursor-help" title="Total profit and loss from all trades">info</span>
+        </div>
+        <p class="text-white text-3xl font-bold leading-tight tabular-nums" id="totalPnL"><%= safeFmt.money(safeStats.totalPnL || 12450) %></p>
+        <div class="flex items-center gap-1 text-[#0bda65] text-sm font-medium">
+          <span class="material-symbols-outlined text-[16px]">trending_up</span>
+          <span>+15.2% this month</span>
+        </div>
+      </div>
+
+      <!-- Win Rate -->
+      <div class="flex flex-col gap-2 rounded-xl p-6 bg-[#1a1d24] border border-[#292a38] relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-6xl text-[#4850e5]">verified</span>
+        </div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-[#9e9fb7] text-sm font-medium uppercase tracking-wider">Win Rate</span>
+        </div>
+        <p class="text-white text-3xl font-bold leading-tight tabular-nums" id="winRate"><%= safeFmt.percent(safeStats.winRate || 68) %></p>
+        <div class="flex items-center gap-1 text-[#0bda65] text-sm font-medium">
+          <span class="material-symbols-outlined text-[16px]">arrow_drop_up</span>
+          <span>+2.4% vs last month</span>
+        </div>
+        <div class="w-full bg-[#292a38] h-1.5 rounded-full mt-2">
+          <div class="bg-[#4850e5] h-1.5 rounded-full" style="width: <%= safeStats.winRate || 68 %>%"></div>
+        </div>
+      </div>
+
+      <!-- Profit Factor -->
+      <div class="flex flex-col gap-2 rounded-xl p-6 bg-[#1a1d24] border border-[#292a38] relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-6xl text-[#4850e5]">scale</span>
+        </div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-[#9e9fb7] text-sm font-medium uppercase tracking-wider">Profit Factor</span>
+        </div>
+        <p class="text-white text-3xl font-bold leading-tight tabular-nums" id="profitFactor"><%= (safeStats.profitFactor || 2.1).toFixed(2) %></p>
+        <div class="flex items-center gap-1 text-[#9e9fb7] text-sm font-medium">
+          <span>Stable</span>
+        </div>
+      </div>
+
+      <!-- Avg Return -->
+      <div class="flex flex-col gap-2 rounded-xl p-6 bg-[#1a1d24] border border-[#292a38] relative overflow-hidden group">
+        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <span class="material-symbols-outlined text-6xl text-[#4850e5]">attach_money</span>
+        </div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-[#9e9fb7] text-sm font-medium uppercase tracking-wider">Avg Return</span>
+        </div>
+        <p class="text-white text-3xl font-bold leading-tight tabular-nums" id="avgProfit"><%= safeFmt.money(safeStats.avgProfit || 350.25) %></p>
+        <div class="flex items-center gap-1 text-[#0bda65] text-sm font-medium">
+          <span class="material-symbols-outlined text-[16px]">trending_up</span>
+          <span>+5.5%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters and Toolbar -->
+    <div class="py-4">
+      <div class="flex flex-col lg:flex-row justify-between gap-4 items-center bg-[#1a1d24] p-3 rounded-lg border border-[#292a38]">
+        <!-- Filter Group -->
+        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div class="relative">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9fb7]">
+              <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+            </div>
+            <select id="periodFilter" class="h-10 pl-9 pr-8 bg-[#111217] border border-[#292a38] text-white text-sm rounded-lg focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] outline-none appearance-none cursor-pointer">
+              <option>Last 30 Days</option>
+              <option>This Year</option>
+              <option>All Time</option>
+            </select>
+          </div>
+          <div class="relative">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9fb7]">
+              <span class="material-symbols-outlined text-[18px]">category</span>
+            </div>
+            <select id="assetFilter" class="h-10 pl-9 pr-8 bg-[#111217] border border-[#292a38] text-white text-sm rounded-lg focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] outline-none appearance-none cursor-pointer">
+              <option>All Assets</option>
+              <option>Stocks</option>
+              <option>Crypto</option>
+              <option>Forex</option>
+            </select>
+          </div>
+          <div class="relative">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9fb7]">
+              <span class="material-symbols-outlined text-[18px]">filter_list</span>
+            </div>
+            <select id="outcomeFilter" class="h-10 pl-9 pr-8 bg-[#111217] border border-[#292a38] text-white text-sm rounded-lg focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] outline-none appearance-none cursor-pointer">
+              <option>All Types</option>
+              <option>Long (Buy)</option>
+              <option>Short (Sell)</option>
+            </select>
+          </div>
+        </div>
+        <!-- Search -->
+        <div class="w-full lg:w-auto min-w-[280px]">
+          <div class="relative">
+            <input id="symbolSearch" onkeyup="filterEntries()" class="w-full h-10 pl-10 pr-4 bg-[#111217] border border-[#292a38] rounded-lg text-white text-sm placeholder:text-[#9e9fb7] focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] outline-none" placeholder="Search ticker or notes...">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[#9e9fb7]">
+              <span class="material-symbols-outlined text-[18px]">search</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade Table -->
+    <div class="pb-10">
+      <div class="w-full overflow-hidden rounded-xl border border-[#292a38] bg-[#1a1d24] shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-[#111217] border-b border-[#292a38]">
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] cursor-pointer hover:text-white transition-colors">
+                  <div class="flex items-center gap-1">Date <span class="material-symbols-outlined text-[14px]">unfold_more</span></div>
+                </th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7]">Asset</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7]">Type</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] text-right">Qty</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] text-right">Entry</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] text-right">Exit</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] text-right">
+                  <div class="flex items-center justify-end gap-1">P&L ($) <span class="material-symbols-outlined text-[14px]">arrow_downward</span></div>
+                </th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] text-right">P&L (%)</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7]">Notes</th>
+                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-[#9e9fb7] text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#292a38]" id="entriesTableBody">
+              <% if (safeEntries.length > 0) { %>
+                <% safeEntries.forEach((entry, idx) => {
+                  const pnl = Number(entry.pnl || 0);
+                  const pnlClass = pnl > 0 ? 'text-[#0bda65]' : pnl < 0 ? 'text-[#ff4d4d]' : 'text-[#9e9fb7]';
+                  const outcomeClass = entry.outcome === 'win' ? 'bg-[#0bda65]/10 text-[#0bda65] border-[#0bda65]/20' :
+                                       entry.outcome === 'loss' ? 'bg-[#ff4d4d]/10 text-[#ff4d4d] border-[#ff4d4d]/20' :
+                                       'bg-[#9e9fb7]/10 text-[#9e9fb7] border-[#9e9fb7]/20';
+                %>
+                <tr class="group hover:bg-[#111217]/50 transition-colors">
+                  <td class="px-6 py-4 text-sm text-[#9e9fb7] whitespace-nowrap font-mono"><%= new Date(entry.date || entry.entryDate).toLocaleDateString() %></td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-3">
+                      <div class="size-8 rounded-full bg-[#4850e5]/20 flex items-center justify-center text-[#4850e5] font-bold text-xs">
+                        <%= entry.symbol.substring(0, 2) %>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-white font-bold text-sm"><%= entry.symbol %></span>
+                        <span class="text-xs text-[#9e9fb7]"><%= entry.setup || 'N/A' %></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-bold border <%= outcomeClass %>">
+                      <%= (entry.side || 'N/A').toUpperCase() %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono"><%= entry.shares || entry.quantity || 0 %></td>
+                  <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono"><%= safeFmt.money(entry.entryPrice) %></td>
+                  <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono"><%= safeFmt.money(entry.exitPrice) %></td>
+                  <td class="px-6 py-4 text-sm font-bold text-right tabular-nums font-mono <%= pnlClass %>"><%= pnl >= 0 ? '+' : '' %><%= safeFmt.money(pnl) %></td>
+                  <td class="px-6 py-4 text-sm font-bold text-right tabular-nums font-mono <%= pnlClass %>"><%= entry.pnlPercent ? ((entry.pnlPercent >= 0 ? '+' : '') + entry.pnlPercent.toFixed(2) + '%') : '-' %></td>
+                  <td class="px-6 py-4 text-sm text-[#9e9fb7] max-w-[200px] truncate group-hover:text-white transition-colors"><%= entry.notes || '-' %></td>
+                  <td class="px-6 py-4 text-center">
+                    <button onclick="editEntry('<%= entry.id %>')" class="text-[#9e9fb7] hover:text-[#4850e5] transition-colors p-1">
+                      <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                    </button>
+                  </td>
+                </tr>
+                <% }) %>
+              <% } else { %>
+              <!-- Demo Data Rows -->
+              <tr class="group hover:bg-[#111217]/50 transition-colors">
+                <td class="px-6 py-4 text-sm text-[#9e9fb7] whitespace-nowrap font-mono">Oct 24, 2023</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div class="size-8 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0">
+                      <span class="text-black font-bold text-xs">AA</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-white font-bold text-sm">AAPL</span>
+                      <span class="text-xs text-[#9e9fb7]">Apple Inc.</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-bold text-[#0bda65] bg-[#0bda65]/10 border border-[#0bda65]/20">
+                    LONG
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">100</td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">$172.50</td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">$175.20</td>
+                <td class="px-6 py-4 text-sm text-[#0bda65] font-bold text-right tabular-nums font-mono">+$270.00</td>
+                <td class="px-6 py-4 text-sm text-[#0bda65] font-bold text-right tabular-nums font-mono">+1.56%</td>
+                <td class="px-6 py-4 text-sm text-[#9e9fb7] max-w-[200px] truncate group-hover:text-white transition-colors">
+                  Breakout retest on 15m timeframe.
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button class="text-[#9e9fb7] hover:text-[#4850e5] transition-colors p-1">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+              <tr class="group hover:bg-[#111217]/50 transition-colors">
+                <td class="px-6 py-4 text-sm text-[#9e9fb7] whitespace-nowrap font-mono">Oct 23, 2023</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div class="size-8 rounded-full bg-[#ef4444] flex items-center justify-center overflow-hidden shrink-0">
+                      <span class="text-white font-bold text-xs">TS</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-white font-bold text-sm">TSLA</span>
+                      <span class="text-xs text-[#9e9fb7]">Tesla Inc.</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-bold text-[#ff4d4d] bg-[#ff4d4d]/10 border border-[#ff4d4d]/20">
+                    SHORT
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">50</td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">$212.00</td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">$215.50</td>
+                <td class="px-6 py-4 text-sm text-[#ff4d4d] font-bold text-right tabular-nums font-mono">-$175.00</td>
+                <td class="px-6 py-4 text-sm text-[#ff4d4d] font-bold text-right tabular-nums font-mono">-1.65%</td>
+                <td class="px-6 py-4 text-sm text-[#9e9fb7] max-w-[200px] truncate group-hover:text-white transition-colors">
+                  Stop loss hit during news event.
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button class="text-[#9e9fb7] hover:text-[#4850e5] transition-colors p-1">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+              <tr class="group hover:bg-[#111217]/50 transition-colors">
+                <td class="px-6 py-4 text-sm text-[#9e9fb7] whitespace-nowrap font-mono">Oct 22, 2023</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div class="size-8 rounded-full bg-[#f7931a] flex items-center justify-center overflow-hidden shrink-0">
+                      <span class="text-white font-bold text-[10px]">BTC</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-white font-bold text-sm">BTCUSD</span>
+                      <span class="text-xs text-[#9e9fb7]">Bitcoin</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-bold text-[#0bda65] bg-[#0bda65]/10 border border-[#0bda65]/20">
+                    LONG
+                  </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">0.5</td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">$34,200</td>
+                <td class="px-6 py-4 text-sm text-white text-right tabular-nums font-mono">$35,100</td>
+                <td class="px-6 py-4 text-sm text-[#0bda65] font-bold text-right tabular-nums font-mono">+$450.00</td>
+                <td class="px-6 py-4 text-sm text-[#0bda65] font-bold text-right tabular-nums font-mono">+2.63%</td>
+                <td class="px-6 py-4 text-sm text-[#9e9fb7] max-w-[200px] truncate group-hover:text-white transition-colors">
+                  Daily support bounce confirmed.
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button class="text-[#9e9fb7] hover:text-[#4850e5] transition-colors p-1">
+                    <span class="material-symbols-outlined text-[20px]">more_vert</span>
+                  </button>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <div class="flex items-center justify-between border-t border-[#292a38] bg-[#1a1d24] px-6 py-3">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-[#9e9fb7]">Rows per page:</span>
+            <select class="h-8 rounded bg-[#111217] border border-[#292a38] text-xs text-white focus:ring-[#4850e5] focus:border-[#4850e5]">
+              <option>10</option>
+              <option>25</option>
+              <option>50</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-sm text-[#9e9fb7]">1-<%= Math.min(safeEntries.length || 5, 10) %> of <%= safeEntries.length || 142 %></span>
+            <div class="flex gap-1">
+              <button class="rounded p-1 text-[#9e9fb7] hover:bg-[#111217] hover:text-white disabled:opacity-50">
+                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+              </button>
+              <button class="rounded p-1 text-[#9e9fb7] hover:bg-[#111217] hover:text-white">
+                <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Entry Modal -->
+<div id="newEntryModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-[#1a1d24] rounded-xl border border-[#292a38] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="p-4 border-b border-[#292a38] flex justify-between items-center sticky top-0 bg-[#1a1d24] z-10">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-[#4850e5]">edit_note</span>
+        <span class="text-white font-bold text-lg" id="modalTitle">New Journal Entry</span>
+      </div>
+      <button onclick="closeModal()" class="text-[#9e9fb7] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form id="entryForm" onsubmit="saveEntry(event)" class="p-4 md:p-6 space-y-5">
+      <input type="hidden" id="entryId" value="">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Symbol *</label>
+          <input type="text" id="entrySymbol" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] uppercase" required placeholder="AAPL">
+        </div>
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Date *</label>
+          <input type="datetime-local" id="entryDate" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5]" required>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Side *</label>
+          <select id="entrySide" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5]" required>
+            <option value="long">LONG</option>
+            <option value="short">SHORT</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Setup</label>
+          <select id="entrySetup" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5]">
+            <option value="">Select Setup</option>
+            <option value="breakout">Breakout</option>
+            <option value="pullback">Pullback</option>
+            <option value="reversal">Reversal</option>
+            <option value="momentum">Momentum</option>
+            <option value="swing">Swing</option>
+            <option value="scalp">Scalp</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Timeframe</label>
+          <select id="entryTimeframe" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5]">
+            <option value="1m">1 Minute</option>
+            <option value="5m">5 Minutes</option>
+            <option value="15m">15 Minutes</option>
+            <option value="1h">1 Hour</option>
+            <option value="1d" selected>Daily</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Entry Price *</label>
+          <input type="number" step="0.01" id="entryPrice" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] font-mono" required placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Exit Price</label>
+          <input type="number" step="0.01" id="exitPrice" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] font-mono" placeholder="0.00">
+        </div>
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Shares *</label>
+          <input type="number" id="entryShares" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] font-mono" required placeholder="100">
+        </div>
+        <div>
+          <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Fees</label>
+          <input type="number" step="0.01" id="entryFees" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] font-mono" placeholder="0.00">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs text-[#9e9fb7] mb-2 font-bold uppercase tracking-wide">Notes / Lessons Learned</label>
+        <textarea id="entryNotes" class="w-full bg-[#111217] border border-[#292a38] rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5]" rows="3" placeholder="What did you learn from this trade?"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-[#292a38]">
+        <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-[#111217] border border-[#292a38] rounded-lg text-white text-sm font-bold hover:bg-[#292a38] transition-colors">Cancel</button>
+        <button type="submit" class="px-6 py-2.5 bg-[#4850e5] rounded-lg text-white text-sm font-bold hover:bg-[#4850e5]/90 transition-colors shadow-lg shadow-[#4850e5]/20">Save Entry</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let journalEntries = <%= JSON.stringify(safeEntries) %>;
+
+function openNewEntryModal() {
+  document.getElementById('modalTitle').textContent = 'New Journal Entry';
+  document.getElementById('entryForm').reset();
+  document.getElementById('entryId').value = '';
+  document.getElementById('entryDate').value = new Date().toISOString().slice(0, 16);
+  document.getElementById('newEntryModal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('newEntryModal').classList.add('hidden');
+}
+
+async function saveEntry(event) {
+  event.preventDefault();
+
+  const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
+  const exitPrice = parseFloat(document.getElementById('exitPrice').value) || 0;
+  const shares = parseInt(document.getElementById('entryShares').value) || 0;
+  const fees = parseFloat(document.getElementById('entryFees').value) || 0;
+  const side = document.getElementById('entrySide').value;
+
+  let pnl = 0;
+  if (exitPrice > 0) {
+    pnl = side === 'long' ? (exitPrice - entryPrice) * shares - fees : (entryPrice - exitPrice) * shares - fees;
+  }
+
+  const entry = {
+    symbol: document.getElementById('entrySymbol').value.toUpperCase(),
+    date: document.getElementById('entryDate').value,
+    side,
+    setup: document.getElementById('entrySetup').value,
+    timeframe: document.getElementById('entryTimeframe').value,
+    entryPrice,
+    exitPrice,
+    shares,
+    fees,
+    pnl,
+    outcome: pnl > 0 ? 'win' : pnl < 0 ? 'loss' : 'breakeven',
+    notes: document.getElementById('entryNotes').value
+  };
+
+  try {
+    const res = await fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+    if (res.ok) {
+      closeModal();
+      location.reload();
+    }
+  } catch (err) {
+    console.error('Save error:', err);
+  }
+}
+
+function filterEntries() {
+  const search = document.getElementById('symbolSearch').value.toUpperCase();
+  const rows = document.querySelectorAll('#entriesTableBody tr');
+  rows.forEach(row => {
+    const text = row.textContent.toUpperCase();
+    row.style.display = text.includes(search) ? '' : 'none';
+  });
+}
+
+async function exportJournal() {
+  try {
+    const res = await fetch('/api/journal/export?format=csv');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trading-journal-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  } catch (err) {
+    console.error('Export error:', err);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

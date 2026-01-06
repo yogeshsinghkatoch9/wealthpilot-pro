@@ -1,0 +1,578 @@
+// Prisma Schema for WealthPilot Pro
+// PostgreSQL version for production deployment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER & AUTH ==============
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @db.VarChar(255)
+  firstName     String?   @db.VarChar(100)
+  lastName      String?   @db.VarChar(100)
+  phone         String?   @db.VarChar(20)
+  avatarUrl     String?   @db.VarChar(500)
+  timezone      String    @default("America/New_York") @db.VarChar(50)
+  currency      String    @default("USD") @db.VarChar(3)
+  theme         String    @default("dark") @db.VarChar(20)
+  isActive      Boolean   @default(true)
+  isVerified    Boolean   @default(false)
+  lastLoginAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+  plan          String    @default("free") @db.VarChar(50)
+  planExpiresAt DateTime? @db.Timestamptz
+  
+  // RIA/Advisor fields
+  isAdvisor     Boolean   @default(false)
+  firmName      String?   @db.VarChar(200)
+  crdNumber     String?   @db.VarChar(20)
+  
+  portfolios    Portfolio[]
+  watchlists    Watchlist[]
+  alerts        Alert[]
+  transactions  Transaction[]
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  settings      UserSettings?
+  clients       Client[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([isAdvisor])
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  token        String   @unique @db.VarChar(500)
+  userAgent    String?  @db.VarChar(500)
+  ipAddress    String?  @db.VarChar(45)
+  expiresAt    DateTime @db.Timestamptz
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ApiKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  name        String    @db.VarChar(100)
+  keyHash     String    @unique @db.VarChar(255)
+  permissions String[]  @default([])
+  lastUsedAt  DateTime? @db.Timestamptz
+  expiresAt   DateTime? @db.Timestamptz
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+  @@index([userId])
+}
+
+model UserSettings {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @db.Uuid
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(false)
+  alertsEnabled         Boolean  @default(true)
+  dividendAlerts        Boolean  @default(true)
+  earningsAlerts        Boolean  @default(true)
+  priceAlerts           Boolean  @default(true)
+  weeklyReport          Boolean  @default(true)
+  monthlyReport         Boolean  @default(true)
+  defaultPortfolioId    String?  @db.Uuid
+  dashboardLayout       Json?
+  notificationSchedule  Json?
+  createdAt             DateTime @default(now()) @db.Timestamptz
+  updatedAt             DateTime @updatedAt @db.Timestamptz
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============== CLIENT MANAGEMENT (RIA) ==============
+
+model Client {
+  id            String    @id @default(uuid()) @db.Uuid
+  advisorId     String    @db.Uuid
+  email         String?   @db.VarChar(255)
+  firstName     String    @db.VarChar(100)
+  lastName      String    @db.VarChar(100)
+  phone         String?   @db.VarChar(20)
+  dateOfBirth   DateTime? @db.Date
+  ssn           String?   @db.VarChar(11)  // Encrypted
+  address       Json?
+  riskTolerance String?   @db.VarChar(20)
+  investmentGoal String?  @db.VarChar(100)
+  notes         String?   @db.Text
+  status        String    @default("active") @db.VarChar(20)
+  householdId   String?   @db.Uuid
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+  
+  advisor       User      @relation(fields: [advisorId], references: [id], onDelete: Cascade)
+  household     Household? @relation(fields: [householdId], references: [id])
+  accounts      ClientAccount[]
+
+  @@index([advisorId])
+  @@index([email])
+  @@index([householdId])
+  @@index([status])
+}
+
+model Household {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String    @db.VarChar(200)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+  
+  clients       Client[]
+}
+
+model ClientAccount {
+  id            String    @id @default(uuid()) @db.Uuid
+  clientId      String    @db.Uuid
+  portfolioId   String    @db.Uuid
+  accountType   String    @db.VarChar(50)  // IRA, 401k, Taxable, etc.
+  accountNumber String?   @db.VarChar(50)
+  custodian     String?   @db.VarChar(100)
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  
+  client        Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([portfolioId])
+}
+
+// ============== PORTFOLIO ==============
+
+model Portfolio {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  name          String    @db.VarChar(200)
+  description   String?   @db.Text
+  currency      String    @default("USD") @db.VarChar(3)
+  benchmark     String    @default("SPY") @db.VarChar(20)
+  isDefault     Boolean   @default(false)
+  isPublic      Boolean   @default(false)
+  cashBalance   Decimal   @default(0) @db.Decimal(18, 2)
+  accountType   String?   @db.VarChar(50)
+  taxStatus     String    @default("taxable") @db.VarChar(20)
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+  deletedAt     DateTime? @db.Timestamptz
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings      Holding[]
+  transactions  Transaction[]
+  snapshots     PortfolioSnapshot[]
+  
+  @@unique([userId, name])
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+model Holding {
+  id            String    @id @default(uuid()) @db.Uuid
+  portfolioId   String    @db.Uuid
+  symbol        String    @db.VarChar(20)
+  shares        Decimal   @db.Decimal(18, 8)
+  avgCostBasis  Decimal   @db.Decimal(18, 4)
+  sector        String?   @db.VarChar(100)
+  assetType     String    @default("stock") @db.VarChar(20)
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  taxLots       TaxLot[]
+
+  @@unique([portfolioId, symbol])
+  @@index([portfolioId])
+  @@index([symbol])
+}
+
+model TaxLot {
+  id            String    @id @default(uuid()) @db.Uuid
+  holdingId     String    @db.Uuid
+  shares        Decimal   @db.Decimal(18, 8)
+  costBasis     Decimal   @db.Decimal(18, 4)
+  purchaseDate  DateTime  @db.Date
+  soldShares    Decimal   @default(0) @db.Decimal(18, 8)
+  soldDate      DateTime? @db.Date
+  proceeds      Decimal?  @db.Decimal(18, 2)
+  gainLoss      Decimal?  @db.Decimal(18, 2)
+  isLongTerm    Boolean?
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  holding       Holding   @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@index([holdingId])
+  @@index([purchaseDate])
+}
+
+model Transaction {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  portfolioId   String    @db.Uuid
+  symbol        String    @db.VarChar(20)
+  type          String    @db.VarChar(20)
+  shares        Decimal?  @db.Decimal(18, 8)
+  price         Decimal?  @db.Decimal(18, 4)
+  amount        Decimal   @db.Decimal(18, 2)
+  fees          Decimal   @default(0) @db.Decimal(18, 2)
+  notes         String?   @db.Text
+  importSource  String?   @db.VarChar(50)
+  importBatchId String?   @db.Uuid
+  executedAt    DateTime  @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@index([userId])
+  @@index([symbol])
+  @@index([executedAt])
+  @@index([type])
+  @@index([importBatchId])
+}
+
+model PortfolioSnapshot {
+  id            String    @id @default(uuid()) @db.Uuid
+  portfolioId   String    @db.Uuid
+  totalValue    Decimal   @db.Decimal(18, 2)
+  cashBalance   Decimal   @db.Decimal(18, 2)
+  dayGain       Decimal   @db.Decimal(18, 2)
+  dayGainPct    Decimal   @db.Decimal(8, 4)
+  totalGain     Decimal   @db.Decimal(18, 2)
+  totalGainPct  Decimal   @db.Decimal(8, 4)
+  holdings      Json
+  snapshotDate  DateTime  @db.Date
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, snapshotDate])
+  @@index([portfolioId])
+  @@index([snapshotDate])
+}
+
+// ============== WATCHLIST ==============
+
+model Watchlist {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  name          String    @db.VarChar(100)
+  description   String?   @db.Text
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         WatchlistItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model WatchlistItem {
+  id            String    @id @default(uuid()) @db.Uuid
+  watchlistId   String    @db.Uuid
+  symbol        String    @db.VarChar(20)
+  targetPrice   Decimal?  @db.Decimal(18, 4)
+  notes         String?   @db.Text
+  addedAt       DateTime  @default(now()) @db.Timestamptz
+  watchlist     Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, symbol])
+  @@index([watchlistId])
+}
+
+// ============== ALERTS ==============
+
+model Alert {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @db.Uuid
+  symbol        String?   @db.VarChar(20)
+  type          String    @db.VarChar(50)
+  condition     String    @db.VarChar(200)
+  threshold     Decimal?  @db.Decimal(18, 4)
+  message       String?   @db.Text
+  isActive      Boolean   @default(true)
+  isTriggered   Boolean   @default(false)
+  triggeredAt   DateTime? @db.Timestamptz
+  lastCheckedAt DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive])
+  @@index([type])
+}
+
+// ============== AUDIT LOG ==============
+
+model AuditLog {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String?   @db.Uuid
+  action        String    @db.VarChar(100)
+  entityType    String    @db.VarChar(50)
+  entityId      String?   @db.VarChar(100)
+  oldValues     Json?
+  newValues     Json?
+  ipAddress     String?   @db.VarChar(45)
+  userAgent     String?   @db.VarChar(500)
+  metadata      Json?
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}
+
+// ============== MARKET DATA CACHE ==============
+
+model StockQuote {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String    @unique @db.VarChar(20)
+  name              String?   @db.VarChar(200)
+  exchange          String?   @db.VarChar(50)
+  sector            String?   @db.VarChar(100)
+  industry          String?   @db.VarChar(100)
+  price             Decimal   @db.Decimal(18, 4)
+  previousClose     Decimal?  @db.Decimal(18, 4)
+  open              Decimal?  @db.Decimal(18, 4)
+  high              Decimal?  @db.Decimal(18, 4)
+  low               Decimal?  @db.Decimal(18, 4)
+  volume            BigInt?
+  avgVolume         BigInt?
+  marketCap         BigInt?
+  peRatio           Decimal?  @db.Decimal(10, 2)
+  eps               Decimal?  @db.Decimal(10, 4)
+  dividend          Decimal?  @db.Decimal(10, 4)
+  dividendYield     Decimal?  @db.Decimal(8, 4)
+  beta              Decimal?  @db.Decimal(8, 4)
+  week52High        Decimal?  @db.Decimal(18, 4)
+  week52Low         Decimal?  @db.Decimal(18, 4)
+  change            Decimal?  @db.Decimal(18, 4)
+  changePercent     Decimal?  @db.Decimal(8, 4)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz
+
+  @@index([symbol])
+  @@index([sector])
+}
+
+model StockHistory {
+  id            String    @id @default(uuid()) @db.Uuid
+  symbol        String    @db.VarChar(20)
+  date          DateTime  @db.Date
+  open          Decimal   @db.Decimal(18, 4)
+  high          Decimal   @db.Decimal(18, 4)
+  low           Decimal   @db.Decimal(18, 4)
+  close         Decimal   @db.Decimal(18, 4)
+  adjClose      Decimal   @db.Decimal(18, 4)
+  volume        BigInt
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+}
+
+model DividendHistory {
+  id            String    @id @default(uuid()) @db.Uuid
+  symbol        String    @db.VarChar(20)
+  exDate        DateTime  @db.Date
+  payDate       DateTime? @db.Date
+  recordDate    DateTime? @db.Date
+  amount        Decimal   @db.Decimal(10, 6)
+  frequency     String?   @db.VarChar(20)
+  type          String?   @db.VarChar(50)
+
+  @@unique([symbol, exDate])
+  @@index([symbol])
+  @@index([exDate])
+}
+
+model EarningsCalendar {
+  id              String    @id @default(uuid()) @db.Uuid
+  symbol          String    @db.VarChar(20)
+  reportDate      DateTime  @db.Date
+  fiscalQuarter   String?   @db.VarChar(10)
+  fiscalYear      Int?
+  epsEstimate     Decimal?  @db.Decimal(10, 4)
+  epsActual       Decimal?  @db.Decimal(10, 4)
+  revenueEstimate Decimal?  @db.Decimal(18, 2)
+  revenueActual   Decimal?  @db.Decimal(18, 2)
+  surprise        Decimal?  @db.Decimal(8, 4)
+  timing          String?   @db.VarChar(20)
+
+  @@unique([symbol, reportDate])
+  @@index([symbol])
+  @@index([reportDate])
+}
+
+// ============== FUNDAMENTALS ==============
+
+model CompanyProfile {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String    @unique @db.VarChar(20)
+  name              String    @db.VarChar(200)
+  description       String?   @db.Text
+  exchange          String?   @db.VarChar(50)
+  sector            String?   @db.VarChar(100)
+  industry          String?   @db.VarChar(100)
+  employees         Int?
+  ceo               String?   @db.VarChar(200)
+  headquarters      String?   @db.VarChar(200)
+  website           String?   @db.VarChar(300)
+  ipoDate           DateTime? @db.Date
+  updatedAt         DateTime  @updatedAt @db.Timestamptz
+
+  @@index([symbol])
+  @@index([sector])
+}
+
+model FinancialStatement {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String    @db.VarChar(20)
+  period            String    @db.VarChar(20)
+  fiscalDate        DateTime  @db.Date
+  reportedDate      DateTime? @db.Date
+  revenue           Decimal?  @db.Decimal(18, 2)
+  costOfRevenue     Decimal?  @db.Decimal(18, 2)
+  grossProfit       Decimal?  @db.Decimal(18, 2)
+  operatingExpenses Decimal?  @db.Decimal(18, 2)
+  operatingIncome   Decimal?  @db.Decimal(18, 2)
+  netIncome         Decimal?  @db.Decimal(18, 2)
+  eps               Decimal?  @db.Decimal(10, 4)
+  epsDiluted        Decimal?  @db.Decimal(10, 4)
+  totalAssets       Decimal?  @db.Decimal(18, 2)
+  totalLiabilities  Decimal?  @db.Decimal(18, 2)
+  totalEquity       Decimal?  @db.Decimal(18, 2)
+  cash              Decimal?  @db.Decimal(18, 2)
+  totalDebt         Decimal?  @db.Decimal(18, 2)
+  operatingCashFlow Decimal?  @db.Decimal(18, 2)
+  capitalExpenditure Decimal? @db.Decimal(18, 2)
+  freeCashFlow      Decimal?  @db.Decimal(18, 2)
+  dividendsPaid     Decimal?  @db.Decimal(18, 2)
+  grossMargin       Decimal?  @db.Decimal(8, 4)
+  operatingMargin   Decimal?  @db.Decimal(8, 4)
+  netMargin         Decimal?  @db.Decimal(8, 4)
+  roe               Decimal?  @db.Decimal(8, 4)
+  roa               Decimal?  @db.Decimal(8, 4)
+  currentRatio      Decimal?  @db.Decimal(8, 4)
+  debtToEquity      Decimal?  @db.Decimal(8, 4)
+  createdAt         DateTime  @default(now()) @db.Timestamptz
+
+  @@unique([symbol, period, fiscalDate])
+  @@index([symbol])
+  @@index([fiscalDate])
+}
+
+// ============== ANALYTICS ==============
+
+model InsiderTransaction {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String    @db.VarChar(20)
+  filingDate        DateTime  @db.Date
+  transactionDate   DateTime? @db.Date
+  ownerName         String    @db.VarChar(200)
+  ownerTitle        String?   @db.VarChar(100)
+  transactionType   String    @db.VarChar(50)
+  shares            Decimal   @db.Decimal(18, 4)
+  pricePerShare     Decimal?  @db.Decimal(18, 4)
+  totalValue        Decimal?  @db.Decimal(18, 2)
+  sharesOwned       Decimal?  @db.Decimal(18, 4)
+
+  @@index([symbol])
+  @@index([filingDate])
+}
+
+model InstitutionalHolding {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String    @db.VarChar(20)
+  holderName        String    @db.VarChar(200)
+  shares            Decimal   @db.Decimal(18, 4)
+  value             Decimal   @db.Decimal(18, 2)
+  percentOwned      Decimal?  @db.Decimal(8, 4)
+  changeShares      Decimal?  @db.Decimal(18, 4)
+  changePercent     Decimal?  @db.Decimal(8, 4)
+  reportDate        DateTime  @db.Date
+
+  @@unique([symbol, holderName, reportDate])
+  @@index([symbol])
+  @@index([reportDate])
+}
+
+model AnalystRating {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String    @db.VarChar(20)
+  firm              String    @db.VarChar(200)
+  analyst           String?   @db.VarChar(200)
+  rating            String    @db.VarChar(50)
+  priceTarget       Decimal?  @db.Decimal(18, 4)
+  previousRating    String?   @db.VarChar(50)
+  previousTarget    Decimal?  @db.Decimal(18, 4)
+  date              DateTime  @db.Date
+
+  @@index([symbol])
+  @@index([date])
+}
+
+// ============== NEWS ==============
+
+model NewsArticle {
+  id                String    @id @default(uuid()) @db.Uuid
+  symbol            String?   @db.VarChar(20)
+  title             String    @db.VarChar(500)
+  summary           String?   @db.Text
+  source            String    @db.VarChar(100)
+  url               String    @db.VarChar(500)
+  imageUrl          String?   @db.VarChar(500)
+  sentiment         String?   @db.VarChar(20)
+  sentimentScore    Decimal?  @db.Decimal(5, 4)
+  publishedAt       DateTime  @db.Timestamptz
+  createdAt         DateTime  @default(now()) @db.Timestamptz
+
+  @@index([symbol])
+  @@index([publishedAt])
+}
+
+// ============== JOB QUEUE ==============
+
+model JobQueue {
+  id            String    @id @default(uuid()) @db.Uuid
+  type          String    @db.VarChar(100)
+  payload       Json
+  status        String    @default("pending") @db.VarChar(20)
+  priority      Int       @default(0)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3)
+  lastError     String?   @db.Text
+  scheduledFor  DateTime? @db.Timestamptz
+  startedAt     DateTime? @db.Timestamptz
+  completedAt   DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  @@index([status])
+  @@index([type])
+  @@index([scheduledFor])
+  @@index([priority])
+}

@@ -1,0 +1,190 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : null;
+%>
+<%- include('../partials/header', { pageTitle: 'Mutual Fund Analyzer' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-slate-900 border-b-2 border-amber-400 px-6 py-3 -mx-6 -mt-6 mb-6">
+<h1 class="text-2xl font-bold text-amber-400 tracking-wide">MUTUAL FUND ANALYZER</h1>
+<p class="text-slate-400 text-sm mt-1">Compare and analyze mutual funds</p>
+</div>
+
+<!-- Search -->
+<div class="bloomberg-card">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div>
+<label class="text-sm font-medium text-slate-300 mb-1 block uppercase tracking-wide">Fund 1</label>
+<input type="text" value="VFIAX" placeholder="Enter ticker..." class="form-input w-full font-mono">
+</div>
+<div>
+<label class="text-sm font-medium text-slate-300 mb-1 block uppercase tracking-wide">Fund 2 (Compare)</label>
+<input type="text" value="FXAIX" placeholder="Enter ticker..." class="form-input w-full font-mono">
+</div>
+<div class="flex items-end">
+<button onclick="analyzeFunds()" class="bloomberg-btn bloomberg-btn-primary w-full">ANALYZE & COMPARE</button>
+</div>
+</div>
+</div>
+
+<!-- Fund Overview Cards -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card border-l-4 border-sky-500">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-lg">V</div>
+<div>
+<h3 class="font-bold text-lg text-white">Vanguard 500 Index Admiral</h3>
+<p class="text-slate-400">VFIAX • Large Blend</p>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div><p class="text-xs text-slate-400 uppercase tracking-wide">NAV</p><p class="text-xl font-bold text-white font-mono">$512.48</p></div>
+<div><p class="text-xs text-slate-400 uppercase tracking-wide">Expense Ratio</p><p class="text-xl font-bold text-emerald-400 font-mono">0.04%</p></div>
+<div><p class="text-xs text-slate-400 uppercase tracking-wide">AUM</p><p class="text-xl font-bold text-white font-mono">$458B</p></div>
+</div>
+<div class="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-700">
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">1Y</p><p class="font-bold text-emerald-400 font-mono">+28.4%</p></div>
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">3Y</p><p class="font-bold text-emerald-400 font-mono">+10.2%</p></div>
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">5Y</p><p class="font-bold text-emerald-400 font-mono">+15.8%</p></div>
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">10Y</p><p class="font-bold text-emerald-400 font-mono">+12.4%</p></div>
+</div>
+</div>
+<div class="bloomberg-card border-l-4 border-amber-500">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white font-bold text-lg">F</div>
+<div>
+<h3 class="font-bold text-lg text-white">Fidelity 500 Index</h3>
+<p class="text-slate-400">FXAIX • Large Blend</p>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div><p class="text-xs text-slate-400 uppercase tracking-wide">NAV</p><p class="text-xl font-bold text-white font-mono">$198.42</p></div>
+<div><p class="text-xs text-slate-400 uppercase tracking-wide">Expense Ratio</p><p class="text-xl font-bold text-emerald-400 font-mono">0.015%</p></div>
+<div><p class="text-xs text-slate-400 uppercase tracking-wide">AUM</p><p class="text-xl font-bold text-white font-mono">$512B</p></div>
+</div>
+<div class="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-slate-700">
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">1Y</p><p class="font-bold text-emerald-400 font-mono">+28.5%</p></div>
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">3Y</p><p class="font-bold text-emerald-400 font-mono">+10.3%</p></div>
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">5Y</p><p class="font-bold text-emerald-400 font-mono">+15.9%</p></div>
+<div class="text-center"><p class="text-xs text-slate-400 uppercase tracking-wide">10Y</p><p class="font-bold text-emerald-400 font-mono">+12.5%</p></div>
+</div>
+</div>
+</div>
+
+<!-- Comparison Table -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b border-slate-700">
+<h3 class="font-semibold text-white uppercase tracking-wide">Side-by-Side Comparison</h3>
+</div>
+<table class="bloomberg-table">
+<thead>
+<tr class="bg-slate-800 text-slate-400 text-left">
+<th class="px-4 py-3 uppercase tracking-wide">Metric</th>
+<th class="px-4 py-3 text-center uppercase tracking-wide"><span class="text-sky-400">VFIAX</span></th>
+<th class="px-4 py-3 text-center uppercase tracking-wide"><span class="text-amber-400">FXAIX</span></th>
+<th class="px-4 py-3 text-center uppercase tracking-wide">Winner</th>
+</tr>
+</thead>
+<tbody class="text-white">
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3 font-medium">Expense Ratio</td>
+<td class="px-4 py-3 text-center font-mono">0.04%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">0.015%</td>
+<td class="px-4 py-3 text-center text-amber-400">FXAIX</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3 font-medium">Min Investment</td>
+<td class="px-4 py-3 text-center font-mono">$3,000</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">$0</td>
+<td class="px-4 py-3 text-center text-amber-400">FXAIX</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3 font-medium">Dividend Yield</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">1.42%</td>
+<td class="px-4 py-3 text-center font-mono">1.40%</td>
+<td class="px-4 py-3 text-center text-amber-400">VFIAX</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3 font-medium">Turnover Rate</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">2%</td>
+<td class="px-4 py-3 text-center font-mono">4%</td>
+<td class="px-4 py-3 text-center text-amber-400">VFIAX</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3 font-medium">Morningstar Rating</td>
+<td class="px-4 py-3 text-center">5-Star</td>
+<td class="px-4 py-3 text-center">5-Star</td>
+<td class="px-4 py-3 text-center text-slate-400">Tie</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3 font-medium">Tax Efficiency</td>
+<td class="px-4 py-3 text-center font-mono">98.2%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 font-mono">98.8%</td>
+<td class="px-4 py-3 text-center text-amber-400">FXAIX</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card">
+<h3 class="font-semibold text-white mb-4 uppercase tracking-wide">Performance Comparison</h3>
+<div class="h-64"><canvas id="perfChart"></canvas></div>
+</div>
+<div class="bloomberg-card">
+<h3 class="font-semibold text-white mb-4 uppercase tracking-wide">Cost Impact Over Time</h3>
+<p class="text-sm text-slate-400 mb-4">On $100,000 invested for 30 years</p>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between mb-1"><span class="text-sky-400 font-medium font-mono">VFIAX (0.04%)</span><span class="font-bold text-white font-mono">$11,200 in fees</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-sky-500" style="width:40%"></div></div>
+</div>
+<div>
+<div class="flex justify-between mb-1"><span class="text-amber-400 font-medium font-mono">FXAIX (0.015%)</span><span class="font-bold text-white font-mono">$4,200 in fees</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-amber-500" style="width:15%"></div></div>
+</div>
+<div>
+<div class="flex justify-between mb-1"><span class="text-red-400 font-medium font-mono">Avg Active Fund (0.70%)</span><span class="font-bold text-white font-mono">$156,800 in fees</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-red-500" style="width:100%"></div></div>
+</div>
+</div>
+<p class="text-xs text-slate-400 mt-4">FXAIX saves you $7,000 vs VFIAX over 30 years</p>
+</div>
+</div>
+
+<!-- Top Holdings -->
+<div class="bloomberg-card">
+<h3 class="font-semibold text-white mb-4 uppercase tracking-wide">Top 10 Holdings (Shared)</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">AAPL</p><p class="text-sm text-emerald-400 font-mono">7.2%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">MSFT</p><p class="text-sm text-emerald-400 font-mono">6.8%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">NVDA</p><p class="text-sm text-emerald-400 font-mono">5.4%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">AMZN</p><p class="text-sm text-emerald-400 font-mono">3.8%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">META</p><p class="text-sm text-emerald-400 font-mono">2.4%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">GOOGL</p><p class="text-sm text-emerald-400 font-mono">2.1%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">GOOG</p><p class="text-sm text-emerald-400 font-mono">1.8%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">BRK.B</p><p class="text-sm text-emerald-400 font-mono">1.7%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">LLY</p><p class="text-sm text-emerald-400 font-mono">1.4%</p></div>
+<div class="text-center p-3 rounded-lg bg-slate-800"><p class="font-bold text-white font-mono">JPM</p><p class="text-sm text-emerald-400 font-mono">1.3%</p></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function analyzeFunds() { showToast('Analyzing funds...', 'info'); }
+new Chart(document.getElementById('perfChart'), {
+  type: 'line',
+  data: {
+    labels: ['2019','2020','2021','2022','2023','2024'],
+    datasets: [
+      { label: 'VFIAX', data: [100,118,152,124,156,200], borderColor: '#0ea5e9', tension: 0.3 },
+      { label: 'FXAIX', data: [100,118,153,125,157,201], borderColor: '#f59e0b', tension: 0.3 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,228 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const fd = floatData || {};
+
+// Helper functions
+function formatShares(v) {
+  if (!v) return 'N/A';
+  if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toString();
+}
+function formatPct(v) { return (v || 0).toFixed(2) + '%'; }
+function getShortColor(pct) {
+  if (pct > 20) return 'red';
+  if (pct > 10) return 'amber';
+  return 'emerald';
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Float Analysis' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b border-amber-400/30 px-6 py-3 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 font-mono">FLOAT ANALYSIS</h1>
+      <p class="text-gray-400 text-sm">Shares outstanding, float & ownership breakdown</p>
+    </div>
+    <form method="GET" action="/float-analysis" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="bloomberg-btn w-24 font-mono uppercase text-center">
+      <button type="submit" class="bloomberg-btn bg-amber-400 text-black">Analyze</button>
+    </form>
+  </div>
+</div>
+
+<% if (!floatData) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No float data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol.</p>
+</div>
+<% } else { %>
+
+<!-- Float Summary -->
+<div class="bloomberg-card p-5 border-l-4 border-amber-400">
+  <div class="flex items-center gap-4 mb-4">
+    <div>
+      <h2 class="text-xl font-bold text-white"><%= symbol %> Float Analysis</h2>
+      <p class="text-slate-400">Share structure and ownership breakdown</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+    <div class="text-center">
+      <p class="text-sm text-gray-400">Shares Outstanding</p>
+      <p class="text-2xl font-bold text-white tabular-nums"><%= formatShares(fd.sharesOutstanding) %></p>
+      <p class="text-xs text-gray-500">total shares</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-gray-400">Float</p>
+      <p class="text-2xl font-bold text-sky-400 tabular-nums"><%= formatShares(fd.floatShares) %></p>
+      <p class="text-xs text-gray-500">tradeable shares</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-gray-400">Float %</p>
+      <p class="text-2xl font-bold text-emerald-400 font-mono"><%= formatPct(fd.floatPercent) %></p>
+      <p class="text-xs text-gray-500">of outstanding</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-gray-400">Insider Own</p>
+      <p class="text-2xl font-bold text-purple-400 font-mono"><%= formatPct(fd.insiderPercent) %></p>
+      <p class="text-xs text-gray-500">management</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-gray-400">Institutional</p>
+      <p class="text-2xl font-bold text-emerald-400 font-mono"><%= formatPct(fd.institutionalPercent) %></p>
+      <p class="text-xs text-gray-500">institutions</p>
+    </div>
+  </div>
+</div>
+
+<!-- Ownership Breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4 font-mono">OWNERSHIP STRUCTURE</h3>
+    <div class="space-y-4">
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Institutional Ownership</span>
+          <span class="text-emerald-400 font-mono font-bold"><%= formatPct(fd.institutionalPercent) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-emerald-400 rounded-full" style="width: <%= Math.min(fd.institutionalPercent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Insider Ownership</span>
+          <span class="text-purple-400 font-mono font-bold"><%= formatPct(fd.insiderPercent) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-purple-400 rounded-full" style="width: <%= Math.min(fd.insiderPercent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Public Float</span>
+          <span class="text-sky-400 font-mono font-bold"><%= formatPct(fd.floatPercent) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-sky-400 rounded-full" style="width: <%= Math.min(fd.floatPercent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <% if (fd.shortPercent) { %>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Short Interest (% of Float)</span>
+          <span class="text-<%= getShortColor(fd.shortPercent) %>-400 font-mono font-bold"><%= formatPct(fd.shortPercent) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-<%= getShortColor(fd.shortPercent) %>-400 rounded-full" style="width: <%= Math.min(fd.shortPercent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4 font-mono">SHARE STATISTICS</h3>
+    <div class="space-y-3">
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Shares Outstanding</span>
+        <span class="font-bold font-mono text-white"><%= formatShares(fd.sharesOutstanding) %></span>
+      </div>
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Float Shares</span>
+        <span class="font-bold font-mono text-sky-400"><%= formatShares(fd.floatShares) %></span>
+      </div>
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Shares Short</span>
+        <span class="font-bold font-mono text-<%= getShortColor(fd.shortPercent || 0) %>-400"><%= formatShares(fd.sharesShort) %></span>
+      </div>
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Short Ratio (Days to Cover)</span>
+        <span class="font-bold font-mono text-white"><%= fd.shortRatio ? fd.shortRatio.toFixed(2) : 'N/A' %></span>
+      </div>
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Avg Volume (10 Day)</span>
+        <span class="font-bold font-mono text-white"><%= formatShares(fd.avgVolume) %></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Ownership Structure</h3>
+    <div class="h-64"><canvas id="ownershipChart"></canvas></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Float Breakdown</h3>
+    <div class="h-64"><canvas id="floatChart"></canvas></div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (floatData) { %>
+new Chart(document.getElementById('ownershipChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Institutional', 'Insider', 'Retail/Other'],
+    datasets: [{
+      data: [
+        <%= fd.institutionalPercent || 0 %>,
+        <%= fd.insiderPercent || 0 %>,
+        <%= 100 - (fd.institutionalPercent || 0) - (fd.insiderPercent || 0) %>
+      ],
+      backgroundColor: ['#10b981', '#8b5cf6', '#0ea5e9'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+    }
+  }
+});
+
+new Chart(document.getElementById('floatChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Shares Outstanding', 'Float', 'Short Interest'],
+    datasets: [{
+      data: [
+        <%= (fd.sharesOutstanding || 0) / 1e6 %>,
+        <%= (fd.floatShares || 0) / 1e6 %>,
+        <%= (fd.sharesShort || 0) / 1e6 %>
+      ],
+      backgroundColor: ['#f59e0b', '#0ea5e9', '#ef4444'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false }
+    },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#94a3b8',
+          callback: function(value) { return value + 'M'; }
+        }
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

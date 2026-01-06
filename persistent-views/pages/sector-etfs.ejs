@@ -1,0 +1,183 @@
+<%- include('../partials/header', { pageTitle: 'Sector ETFs' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Sector ETFs</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Compare sector ETF performance & holdings</p></div>
+<div class="flex gap-2">
+<select class="form-input w-32"><option selected>SPDR Select</option><option>Vanguard</option><option>iShares</option></select>
+</div>
+</div>
+
+<!-- Sector Performance Overview -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-sky-50 to-purple-50' : 'from-sky-900/20 to-purple-900/20' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Sector ETF Performance (YTD)</h3>
+<div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-white' : 'bg-slate-800' %>">
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Best Sector</p>
+<p class="font-bold text-emerald-400">XLK</p>
+<p class="text-lg font-bold text-emerald-400">+42.8%</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-white' : 'bg-slate-800' %>">
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Worst Sector</p>
+<p class="font-bold text-red-400">XLE</p>
+<p class="text-lg font-bold text-red-400">-8.4%</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-white' : 'bg-slate-800' %>">
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">SPY</p>
+<p class="font-bold">S&P 500</p>
+<p class="text-lg font-bold text-emerald-400">+24.2%</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-white' : 'bg-slate-800' %>">
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total AUM</p>
+<p class="font-bold">All Sectors</p>
+<p class="text-lg font-bold">$248B</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-white' : 'bg-slate-800' %>">
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Avg Expense</p>
+<p class="font-bold">SPDR</p>
+<p class="text-lg font-bold">0.10%</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= theme === 'light' ? 'bg-white' : 'bg-slate-800' %>">
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Beating SPY</p>
+<p class="font-bold">Sectors</p>
+<p class="text-lg font-bold text-emerald-400">4/11</p>
+</div>
+</div>
+</div>
+
+<!-- Sector ETFs Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">SPDR Select Sector ETFs</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">ETF</th>
+<th class="px-4 py-3 text-center">Price</th>
+<th class="px-4 py-3 text-center">1D</th>
+<th class="px-4 py-3 text-center">1W</th>
+<th class="px-4 py-3 text-center">1M</th>
+<th class="px-4 py-3 text-center">YTD</th>
+<th class="px-4 py-3 text-center">AUM</th>
+<th class="px-4 py-3 text-center">Expense</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">XLK</div><div><span class="font-medium">Technology</span></div></div></td>
+<td class="px-4 py-3 text-center font-bold">$214.82</td>
+<td class="px-4 py-3 text-center text-emerald-400">+1.24%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+3.82%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+8.42%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">+42.8%</td>
+<td class="px-4 py-3 text-center">$62.4B</td>
+<td class="px-4 py-3 text-center">0.10%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">XLC</div><div><span class="font-medium">Communication</span></div></div></td>
+<td class="px-4 py-3 text-center font-bold">$84.26</td>
+<td class="px-4 py-3 text-center text-emerald-400">+0.92%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+2.48%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+6.24%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">+38.2%</td>
+<td class="px-4 py-3 text-center">$18.2B</td>
+<td class="px-4 py-3 text-center">0.10%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">XLY</div><div><span class="font-medium">Consumer Disc</span></div></div></td>
+<td class="px-4 py-3 text-center font-bold">$192.48</td>
+<td class="px-4 py-3 text-center text-emerald-400">+0.68%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+1.84%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+4.82%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">+28.4%</td>
+<td class="px-4 py-3 text-center">$21.8B</td>
+<td class="px-4 py-3 text-center">0.10%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">XLF</div><div><span class="font-medium">Financials</span></div></div></td>
+<td class="px-4 py-3 text-center font-bold">$42.86</td>
+<td class="px-4 py-3 text-center text-emerald-400">+0.48%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+1.24%</td>
+<td class="px-4 py-3 text-center text-emerald-400">+3.42%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">+18.2%</td>
+<td class="px-4 py-3 text-center">$38.4B</td>
+<td class="px-4 py-3 text-center">0.10%</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">XLE</div><div><span class="font-medium">Energy</span></div></div></td>
+<td class="px-4 py-3 text-center font-bold">$82.14</td>
+<td class="px-4 py-3 text-center text-red-400">-0.82%</td>
+<td class="px-4 py-3 text-center text-red-400">-2.14%</td>
+<td class="px-4 py-3 text-center text-red-400">-4.28%</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">-8.4%</td>
+<td class="px-4 py-3 text-center">$32.8B</td>
+<td class="px-4 py-3 text-center">0.10%</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Top Holdings Comparison -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Top Holdings Comparison</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-purple-50' : 'bg-purple-500/10' %>">
+<h4 class="font-bold text-purple-400 mb-3">XLK - Technology</h4>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between"><span>MSFT</span><span class="font-bold">22.4%</span></div>
+<div class="flex justify-between"><span>AAPL</span><span class="font-bold">21.8%</span></div>
+<div class="flex justify-between"><span>NVDA</span><span class="font-bold">6.2%</span></div>
+<div class="flex justify-between"><span>AVGO</span><span class="font-bold">4.8%</span></div>
+<div class="flex justify-between"><span>AMD</span><span class="font-bold">2.4%</span></div>
+</div>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<h4 class="font-bold text-sky-400 mb-3">XLC - Communication</h4>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between"><span>META</span><span class="font-bold">24.2%</span></div>
+<div class="flex justify-between"><span>GOOGL</span><span class="font-bold">12.8%</span></div>
+<div class="flex justify-between"><span>GOOG</span><span class="font-bold">11.4%</span></div>
+<div class="flex justify-between"><span>NFLX</span><span class="font-bold">5.2%</span></div>
+<div class="flex justify-between"><span>DIS</span><span class="font-bold">4.8%</span></div>
+</div>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<h4 class="font-bold text-emerald-400 mb-3">XLF - Financials</h4>
+<div class="space-y-2 text-sm">
+<div class="flex justify-between"><span>BRK.B</span><span class="font-bold">14.2%</span></div>
+<div class="flex justify-between"><span>JPM</span><span class="font-bold">10.8%</span></div>
+<div class="flex justify-between"><span>V</span><span class="font-bold">8.4%</span></div>
+<div class="flex justify-between"><span>MA</span><span class="font-bold">6.8%</span></div>
+<div class="flex justify-between"><span>BAC</span><span class="font-bold">4.2%</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">YTD Performance Comparison</h3>
+<div class="h-48"><canvas id="perfChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Sector Rotation (1M Flows)</h3>
+<div class="h-48"><canvas id="flowChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('perfChart'), {
+  type: 'bar',
+  data: { labels: ['XLK','XLC','XLY','XLV','XLF','XLI','XLP','XLRE','XLB','XLU','XLE'], datasets: [{ data: [42.8,38.2,28.4,24.8,18.2,14.2,8.4,6.2,4.8,-2.4,-8.4], backgroundColor: ctx => ctx.raw >= 0 ? '#10b981' : '#ef4444' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('flowChart'), {
+  type: 'bar',
+  data: { labels: ['XLK','XLF','XLV','XLC','XLI','XLE'], datasets: [{ label: 'Flows ($B)', data: [4.2,2.8,1.4,0.8,-0.4,-1.8], backgroundColor: ctx => ctx.raw >= 0 ? '#0ea5e9' : '#ef4444' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, indexAxis: 'y' }
+});
+</script>
+<%- include('../partials/footer') %>

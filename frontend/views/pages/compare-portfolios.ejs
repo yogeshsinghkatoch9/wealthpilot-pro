@@ -1,0 +1,253 @@
+<%
+// Safe defaults for undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Compare Portfolios';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-slate-900 border-b border-amber-400 px-6 py-4 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 tracking-tight">PORTFOLIO COMPARISON</h1>
+<p class="text-slate-400 text-sm mt-1">Compare your portfolios against benchmarks and peers</p>
+</div>
+</div>
+</div>
+
+<!-- Selection -->
+<div class="bloomberg-card">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-400 mb-2 block tracking-wider uppercase">Your Portfolio</label>
+<select class="form-input w-full bg-slate-800 border-slate-600 text-white focus:border-amber-400 focus:ring-amber-400">
+<option selected>Main Portfolio ($276,847)</option>
+<option>Retirement IRA ($142,500)</option>
+<option>Dividend Portfolio ($85,200)</option>
+</select>
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-400 mb-2 block tracking-wider uppercase">Compare Against</label>
+<select class="form-input w-full bg-slate-800 border-slate-600 text-white focus:border-amber-400 focus:ring-amber-400" onchange="updateComparison()">
+<option selected>S&P 500 (SPY)</option>
+<option>NASDAQ 100 (QQQ)</option>
+<option>Total Market (VTI)</option>
+<option>60/40 Portfolio</option>
+<option>Community Average</option>
+</select>
+</div>
+<div>
+<label class="text-xs font-semibold text-slate-400 mb-2 block tracking-wider uppercase">Time Period</label>
+<select class="form-input w-full bg-slate-800 border-slate-600 text-white focus:border-amber-400 focus:ring-amber-400">
+<option>1 Month</option>
+<option>3 Months</option>
+<option>6 Months</option>
+<option selected>1 Year</option>
+<option>3 Years</option>
+<option>All Time</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- Performance Chart -->
+<div class="bloomberg-card">
+<h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wider uppercase border-b border-slate-700 pb-2">Performance Comparison (1 Year)</h3>
+<div class="h-72"><canvas id="compChart"></canvas></div>
+<div class="flex justify-center gap-6 mt-4">
+<span class="flex items-center gap-2 text-sm text-slate-300"><span class="w-3 h-3 rounded-full bg-sky-500"></span>Your Portfolio</span>
+<span class="flex items-center gap-2 text-sm text-slate-300"><span class="w-3 h-3 rounded-full bg-amber-500"></span>S&P 500</span>
+</div>
+</div>
+
+<!-- Key Metrics Comparison -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card">
+<h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wider uppercase border-b border-slate-700 pb-2">Performance Metrics</h3>
+<table class="bloomberg-table">
+<thead>
+<tr>
+<th class="text-left py-2">METRIC</th>
+<th class="text-center py-2">YOU</th>
+<th class="text-center py-2">S&P 500</th>
+<th class="text-center py-2">Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="py-3">1Y Return</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">+32.4%</td>
+<td class="py-3 text-center font-mono tabular-nums">+28.2%</td>
+<td class="py-3 text-center font-mono positive tabular-nums">+4.2%</td>
+</tr>
+<tr>
+<td class="py-3">Volatility</td>
+<td class="py-3 text-center font-mono tabular-nums">18.4%</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">16.2%</td>
+<td class="py-3 text-center font-mono negative tabular-nums">+2.2%</td>
+</tr>
+<tr>
+<td class="py-3">Sharpe Ratio</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">1.42</td>
+<td class="py-3 text-center font-mono tabular-nums">1.38</td>
+<td class="py-3 text-center font-mono positive tabular-nums">+0.04</td>
+</tr>
+<tr>
+<td class="py-3">Max Drawdown</td>
+<td class="py-3 text-center font-mono tabular-nums">-12.4%</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">-10.1%</td>
+<td class="py-3 text-center font-mono negative tabular-nums">-2.3%</td>
+</tr>
+<tr>
+<td class="py-3">Beta</td>
+<td class="py-3 text-center font-mono tabular-nums">1.12</td>
+<td class="py-3 text-center font-mono tabular-nums">1.00</td>
+<td class="py-3 text-center font-mono text-amber-400 tabular-nums">+0.12</td>
+</tr>
+<tr>
+<td class="py-3">Dividend Yield</td>
+<td class="py-3 text-center font-mono font-bold positive tabular-nums">1.84%</td>
+<td class="py-3 text-center font-mono tabular-nums">1.42%</td>
+<td class="py-3 text-center font-mono positive tabular-nums">+0.42%</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="bloomberg-card">
+<h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wider uppercase border-b border-slate-700 pb-2">Sector Allocation Comparison</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-sm mb-1 text-slate-300"><span>Technology</span><span class="font-mono font-bold">You: 35% | SPY: 31%</span></div>
+<div class="flex gap-1 h-2">
+<div class="rounded-l bg-sky-500" style="width:35%"></div>
+<div class="rounded-r bg-amber-500" style="width:31%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1 text-slate-300"><span>Healthcare</span><span class="font-mono font-bold">You: 8% | SPY: 13%</span></div>
+<div class="flex gap-1 h-2">
+<div class="rounded-l bg-sky-500" style="width:8%"></div>
+<div class="rounded-r bg-amber-500" style="width:13%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1 text-slate-300"><span>Financials</span><span class="font-mono font-bold">You: 12% | SPY: 12%</span></div>
+<div class="flex gap-1 h-2">
+<div class="rounded-l bg-sky-500" style="width:12%"></div>
+<div class="rounded-r bg-amber-500" style="width:12%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1 text-slate-300"><span>Consumer</span><span class="font-mono font-bold">You: 15% | SPY: 10%</span></div>
+<div class="flex gap-1 h-2">
+<div class="rounded-l bg-sky-500" style="width:15%"></div>
+<div class="rounded-r bg-amber-500" style="width:10%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1 text-slate-300"><span>Other</span><span class="font-mono font-bold">You: 30% | SPY: 34%</span></div>
+<div class="flex gap-1 h-2">
+<div class="rounded-l bg-sky-500" style="width:30%"></div>
+<div class="rounded-r bg-amber-500" style="width:34%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Summary -->
+<div class="bloomberg-card">
+<h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wider uppercase border-b border-slate-700 pb-2">Analysis Summary</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+<p class="font-bold positive mb-2 tracking-wide">OUTPERFORMING</p>
+<p class="text-sm text-slate-300">Your portfolio beat the S&P 500 by <span class="font-mono positive tabular-nums">4.2%</span> over the past year with a better Sharpe ratio.</p>
+</div>
+<div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+<p class="font-bold text-amber-400 mb-2 tracking-wide">HIGHER RISK</p>
+<p class="text-sm text-slate-300">Your portfolio has higher volatility (<span class="font-mono tabular-nums">18.4%</span> vs <span class="font-mono tabular-nums">16.2%</span>) and larger drawdowns (<span class="font-mono tabular-nums">-12.4%</span> vs <span class="font-mono tabular-nums">-10.1%</span>).</p>
+</div>
+<div class="p-4 rounded-lg bg-sky-500/10 border border-sky-500/30">
+<p class="font-bold text-sky-400 mb-2 tracking-wide">SUGGESTION</p>
+<p class="text-sm text-slate-300">Consider increasing healthcare allocation to reduce sector concentration risk.</p>
+</div>
+</div>
+</div>
+
+<!-- Monthly Returns -->
+<div class="bloomberg-card">
+<h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wider uppercase border-b border-slate-700 pb-2">Monthly Returns Comparison</h3>
+<div class="overflow-x-auto">
+<table class="bloomberg-table">
+<thead>
+<tr>
+<th class="text-left py-2">MONTH</th>
+<th class="text-center">JAN</th>
+<th class="text-center">FEB</th>
+<th class="text-center">MAR</th>
+<th class="text-center">APR</th>
+<th class="text-center">MAY</th>
+<th class="text-center">JUN</th>
+<th class="text-center">JUL</th>
+<th class="text-center">AUG</th>
+<th class="text-center">SEP</th>
+<th class="text-center">OCT</th>
+<th class="text-center">NOV</th>
+<th class="text-center">DEC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="py-2 font-medium">You</td>
+<td class="text-center font-mono positive tabular-nums">+2.1</td>
+<td class="text-center font-mono positive tabular-nums">+4.2</td>
+<td class="text-center font-mono positive tabular-nums">+1.8</td>
+<td class="text-center font-mono negative tabular-nums">-2.4</td>
+<td class="text-center font-mono positive tabular-nums">+3.2</td>
+<td class="text-center font-mono positive tabular-nums">+2.8</td>
+<td class="text-center font-mono positive tabular-nums">+1.4</td>
+<td class="text-center font-mono negative tabular-nums">-1.2</td>
+<td class="text-center font-mono negative tabular-nums">-3.8</td>
+<td class="text-center font-mono positive tabular-nums">+5.2</td>
+<td class="text-center font-mono positive tabular-nums">+6.4</td>
+<td class="text-center font-mono positive tabular-nums">+2.1</td>
+</tr>
+<tr>
+<td class="py-2 font-medium">S&P</td>
+<td class="text-center font-mono positive tabular-nums">+1.6</td>
+<td class="text-center font-mono positive tabular-nums">+5.2</td>
+<td class="text-center font-mono positive tabular-nums">+3.1</td>
+<td class="text-center font-mono negative tabular-nums">-4.2</td>
+<td class="text-center font-mono positive tabular-nums">+4.8</td>
+<td class="text-center font-mono positive tabular-nums">+3.5</td>
+<td class="text-center font-mono positive tabular-nums">+1.1</td>
+<td class="text-center font-mono negative tabular-nums">-1.8</td>
+<td class="text-center font-mono negative tabular-nums">-4.9</td>
+<td class="text-center font-mono negative tabular-nums">-0.9</td>
+<td class="text-center font-mono positive tabular-nums">+8.9</td>
+<td class="text-center font-mono positive tabular-nums">+1.8</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function updateComparison() { showToast('Updating comparison...', 'info'); }
+
+new Chart(document.getElementById('compChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [
+      { label: 'Your Portfolio', data: [100,102.1,106.4,108.3,105.7,109.1,112.1,113.7,112.3,108.1,113.7,121.0,123.5], borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.1)', fill: true, tension: 0.3 },
+      { label: 'S&P 500', data: [100,101.6,106.9,110.2,105.6,110.7,114.6,115.8,113.7,108.1,107.1,116.7,118.8], borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

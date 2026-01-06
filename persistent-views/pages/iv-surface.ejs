@@ -1,0 +1,316 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const iv = ivSurface || {};
+const quote = iv.quote || {};
+const price = quote.price || iv.currentPrice || 0;
+const surface = iv.surface || [];
+const expirations = iv.expirations || [];
+const strikes = iv.strikes || [];
+const ivMetrics = iv.metrics || {};
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(1) + '%'; }
+function formatPctSigned(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%'; }
+
+// IV metrics with defaults
+const iv30d = ivMetrics.iv30d || iv.iv30d || 0;
+const iv60d = ivMetrics.iv60d || iv.iv60d || 0;
+const iv90d = ivMetrics.iv90d || iv.iv90d || 0;
+const ivRank = ivMetrics.ivRank || iv.ivRank || 0;
+const ivPercentile = ivMetrics.ivPercentile || iv.ivPercentile || 0;
+const hv30d = ivMetrics.hv30d || iv.hv30d || 0;
+const putSkew = ivMetrics.putSkew || iv.putSkew || 0;
+const termSpread = iv30d - iv90d;
+const ivHvSpread = iv30d - hv30d;
+
+// Get IV color based on value
+function getIvColor(ivVal, baseIv) {
+  const diff = ivVal - baseIv;
+  if (diff > 5) return 'rgba(239,68,68,0.4)';  // High - red
+  if (diff > 2) return 'rgba(249,115,22,0.3)'; // Medium-high - orange
+  if (diff < -5) return 'rgba(34,197,94,0.3)';  // Low - green
+  if (diff < -2) return 'rgba(132,204,22,0.25)'; // Medium-low - lime
+  return 'rgba(234,179,8,0.25)'; // Normal - amber
+}
+
+// Term structure status
+const termStructure = iv30d > iv90d ? 'Contango (Normal)' : 'Backwardation';
+const termColor = iv30d > iv90d ? 'amber' : 'red';
+%>
+<%- include('../partials/header', { pageTitle: 'IV Surface' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">IV SURFACE</h1>
+      <p class="text-slate-400">Implied volatility across strikes & expirations</p>
+    </div>
+    <form method="GET" action="/iv-surface" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<% if (!ivSurface) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No IV surface data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if options are available.</p>
+</div>
+<% } else { %>
+
+<!-- Stock IV Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-purple-900/20 to-sky-900/20">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+      <p class="text-slate-400">Current: <span class="font-mono"><%= formatPrice(price) %></span> • Options IV Analysis</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">30D IV</p>
+      <p class="text-2xl font-bold font-mono text-purple-400"><%= formatPct(iv30d) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">60D IV</p>
+      <p class="text-2xl font-bold font-mono text-sky-400"><%= formatPct(iv60d) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">90D IV</p>
+      <p class="text-2xl font-bold font-mono text-white"><%= formatPct(iv90d) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">IV Rank</p>
+      <p class="text-2xl font-bold font-mono text-<%= ivRank > 50 ? 'amber' : 'emerald' %>-400"><%= formatPct(ivRank) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">IV Percentile</p>
+      <p class="text-2xl font-bold font-mono text-emerald-400"><%= formatPct(ivPercentile) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">HV (30D)</p>
+      <p class="text-2xl font-bold font-mono text-white"><%= formatPct(hv30d) %></p>
+    </div>
+  </div>
+</div>
+
+<!-- IV Surface Heatmap -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">IV Surface Heatmap</h3>
+  <% if (surface.length > 0 && expirations.length > 0) { %>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-center text-slate-400">
+          <th class="p-2">Strike</th>
+          <% expirations.slice(0, 6).forEach(exp => {
+            const expDate = new Date(exp);
+            const monthStr = expDate.toLocaleString('en-US', { month: 'short' });
+            const dayStr = expDate.getDate();
+          %>
+          <th class="p-2"><%= monthStr %> <%= dayStr %></th>
+          <% }); %>
+        </tr>
+      </thead>
+      <tbody class="text-center font-mono">
+        <% surface.forEach((row, idx) => {
+          const strike = row.strike || strikes[idx] || 0;
+          const isATM = Math.abs(strike - price) < price * 0.02;
+        %>
+        <tr class="<%= isATM ? 'bg-sky-500/10' : '' %>">
+          <td class="p-2 font-bold <%= isATM ? 'text-sky-400' : '' %>">$<%= strike %><%= isATM ? ' ATM' : '' %></td>
+          <% (row.ivs || []).slice(0, 6).forEach(ivVal => { %>
+          <td class="p-2 rounded" style="background: <%= getIvColor(ivVal * 100, iv30d) %>">
+            <%= formatPct(ivVal * 100) %>
+          </td>
+          <% }); %>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <% } else { %>
+  <p class="text-slate-400 text-center py-8">No surface data available</p>
+  <% } %>
+  <div class="flex items-center justify-center gap-4 mt-4 text-xs">
+    <span class="flex items-center gap-1"><span class="w-4 h-4 rounded" style="background: rgba(34,197,94,0.3)"></span>Low IV</span>
+    <span class="flex items-center gap-1"><span class="w-4 h-4 rounded" style="background: rgba(234,179,8,0.3)"></span>Medium</span>
+    <span class="flex items-center gap-1"><span class="w-4 h-4 rounded" style="background: rgba(239,68,68,0.3)"></span>High IV</span>
+  </div>
+</div>
+
+<!-- Term Structure & Skew Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Term Structure (ATM)</h3>
+    <p class="text-xs text-slate-400 mb-4">IV by expiration at current price</p>
+    <div class="h-48"><canvas id="termChart"></canvas></div>
+    <div class="mt-4 text-center">
+      <span class="px-3 py-1 rounded-full bg-<%= termColor %>-500/20 text-<%= termColor %>-400 text-sm"><%= termStructure %></span>
+      <p class="text-xs text-slate-400 mt-1">
+        <%= iv30d > iv90d ? 'Near-term IV higher than far-term' : 'Far-term IV higher than near-term' %>
+      </p>
+    </div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-white mb-4">Volatility Skew</h3>
+    <p class="text-xs text-slate-400 mb-4">IV by strike for nearest expiration</p>
+    <div class="h-48"><canvas id="skewChart"></canvas></div>
+    <div class="mt-4 text-center">
+      <span class="px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 text-sm">Put Skew: <%= formatPctSigned(putSkew) %></span>
+      <p class="text-xs text-slate-400 mt-1">
+        <%= putSkew > 0 ? 'OTM puts priced higher (normal)' : 'OTM calls priced higher (unusual)' %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Key IV Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <div class="bloomberg-card p-4 text-center">
+    <h4 class="font-bold text-purple-400 mb-2">Put Skew</h4>
+    <p class="text-2xl font-bold font-mono"><%= formatPctSigned(putSkew) %></p>
+    <p class="text-xs text-slate-400">25Δ Put - 25Δ Call</p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <h4 class="font-bold text-sky-400 mb-2">Term Spread</h4>
+    <p class="text-2xl font-bold font-mono"><%= formatPctSigned(termSpread) %></p>
+    <p class="text-xs text-slate-400">30D IV - 90D IV</p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <h4 class="font-bold text-emerald-400 mb-2">IV vs HV</h4>
+    <p class="text-2xl font-bold font-mono text-<%= ivHvSpread > 0 ? 'amber' : 'emerald' %>-400"><%= formatPctSigned(ivHvSpread) %></p>
+    <p class="text-xs text-slate-400"><%= ivHvSpread > 0 ? 'IV premium over HV' : 'IV discount to HV' %></p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <h4 class="font-bold text-amber-400 mb-2">Trading Signal</h4>
+    <%
+      let ivSignal = 'Neutral';
+      let ivSignalColor = 'sky';
+      if (ivRank > 60 && ivHvSpread > 5) {
+        ivSignal = 'Sell Premium';
+        ivSignalColor = 'emerald';
+      } else if (ivRank < 30 && ivHvSpread < 0) {
+        ivSignal = 'Buy Premium';
+        ivSignalColor = 'purple';
+      }
+    %>
+    <p class="text-2xl font-bold text-<%= ivSignalColor %>-400"><%= ivSignal %></p>
+    <p class="text-xs text-slate-400">Based on IV rank & HV spread</p>
+  </div>
+</div>
+
+<!-- IV Analysis -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">IV Analysis</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 rounded-lg bg-slate-800">
+      <h4 class="font-bold text-amber-400 mb-2">IV Rank Interpretation</h4>
+      <p class="text-sm text-slate-300">
+        <% if (ivRank > 70) { %>
+          <strong class="text-red-400">High IV Environment:</strong> Current IV is in the upper range of its 52-week range. Options are relatively expensive. Consider selling premium strategies.
+        <% } else if (ivRank > 40) { %>
+          <strong class="text-amber-400">Normal IV Environment:</strong> Current IV is in the middle of its range. Both buying and selling strategies may be appropriate depending on outlook.
+        <% } else { %>
+          <strong class="text-emerald-400">Low IV Environment:</strong> Current IV is in the lower range. Options are relatively cheap. Consider buying premium strategies.
+        <% } %>
+      </p>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-800">
+      <h4 class="font-bold text-amber-400 mb-2">Volatility Skew Analysis</h4>
+      <p class="text-sm text-slate-300">
+        <% if (putSkew > 5) { %>
+          <strong class="text-purple-400">Steep Put Skew:</strong> Downside protection is expensive. Market is pricing in significant downside risk. Consider put spreads instead of outright puts.
+        <% } else if (putSkew > 0) { %>
+          <strong class="text-sky-400">Normal Put Skew:</strong> Typical market conditions with slight premium for downside protection. Standard options strategies apply.
+        <% } else { %>
+          <strong class="text-amber-400">Flat/Inverted Skew:</strong> Unusual market conditions. Calls may be expensive relative to puts. Could indicate strong bullish sentiment.
+        <% } %>
+      </p>
+    </div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (ivSurface) { %>
+// Term Structure Chart
+const termLabels = <%- JSON.stringify(expirations.slice(0, 6).map(exp => {
+  const d = new Date(exp);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+})) %>;
+
+const termData = [<%= iv30d %>, <%= iv60d %>, <%= iv90d %>, <%= iv90d * 0.95 %>, <%= iv90d * 0.92 %>, <%= iv90d * 0.9 %>].slice(0, termLabels.length || 1);
+
+new Chart(document.getElementById('termChart'), {
+  type: 'line',
+  data: {
+    labels: termLabels.length ? termLabels : ['30D', '60D', '90D'],
+    datasets: [{
+      label: 'ATM IV',
+      data: termData,
+      borderColor: '#8b5cf6',
+      backgroundColor: 'rgba(139,92,246,0.1)',
+      fill: true,
+      tension: 0.3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8', callback: v => v.toFixed(0) + '%' }
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+
+// Skew Chart
+<% if (surface.length > 0) { %>
+const skewLabels = <%- JSON.stringify(surface.map(row => '$' + (row.strike || 0))) %>;
+const skewData = <%- JSON.stringify(surface.map(row => ((row.ivs || [])[0] || 0) * 100)) %>;
+<% } else { %>
+const skewLabels = ['OTM Put', 'ATM', 'OTM Call'];
+const skewData = [<%= iv30d * 1.1 %>, <%= iv30d %>, <%= iv30d * 1.05 %>];
+<% } %>
+
+new Chart(document.getElementById('skewChart'), {
+  type: 'line',
+  data: {
+    labels: skewLabels,
+    datasets: [{
+      label: 'IV',
+      data: skewData,
+      borderColor: '#0ea5e9',
+      backgroundColor: 'rgba(14,165,233,0.1)',
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8', callback: v => v.toFixed(0) + '%' }
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

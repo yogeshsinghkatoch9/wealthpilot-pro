@@ -1,0 +1,842 @@
+<%
+// Safe defaults for undefined variables
+const safeData = data || {};
+const safeTheme = theme || 'dark';
+const safeFmt = fmt || { compact: (n) => n?.toLocaleString() || '0' };
+const safePortfolios = portfolios || [];
+const safeSelectedPortfolioId = selectedPortfolioId || '';
+const riskScore = safeData.riskScore || 50;
+const beta = safeData.beta || 1.0;
+const sharpeRatio = safeData.sharpeRatio || 0;
+const volatility = safeData.volatility || 15;
+const maxDrawdown = safeData.maxDrawdown || 0;
+const var95Value = safeData.var95Value || 0;
+const var90Value = safeData.var90Value || var95Value * 0.7;
+const var99Value = safeData.var99Value || var95Value * 1.4;
+const portfolioValue = safeData.portfolioValue || 100000;
+const hhi = safeData.hhi || 0;
+const topPositions = safeData.topPositions || [];
+const sortinoRatio = safeData.sortinoRatio || 0;
+const alpha = safeData.alpha || 0;
+const informationRatio = safeData.informationRatio || 0;
+const drawdownHistory = safeData.drawdownHistory || [];
+const riskContribution = safeData.riskContribution || topPositions;
+const alerts = safeData.alerts || [];
+const stressTests = safeData.stressTests || [
+  { name: '2008 Crisis', impact: -38.2 },
+  { name: 'COVID Crash', impact: -28.5 },
+  { name: 'Tech Bubble', impact: -45.8 },
+  { name: 'Rate Hike', impact: -18.2 }
+];
+
+// Correlation matrix data
+const correlationAssets = safeData.correlationAssets || ['AAPL', 'MSFT', 'TSLA', 'GLD', 'BTC'];
+const correlationMatrix = safeData.correlationMatrix || [
+  [1.0, 0.85, 0.42, 0.05, 0.62],
+  [0.85, 1.0, 0.48, 0.02, 0.55],
+  [0.42, 0.48, 1.0, -0.12, 0.72],
+  [0.05, 0.02, -0.12, 1.0, 0.15],
+  [0.62, 0.55, 0.72, 0.15, 1.0]
+];
+%>
+<%- include('../partials/header', { pageTitle: 'Risk Analytics' }) %>
+
+<main class="flex-1 flex flex-col min-h-screen overflow-y-auto bg-background-dark scroll-smooth">
+  <div class="flex flex-col w-full max-w-[1440px] mx-auto p-6 md:p-8 lg:p-10 gap-8">
+
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="flex flex-col gap-1">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Risk Analytics</h2>
+        <p class="text-text-secondary text-base">Assess portfolio vulnerability, correlations, and manage risk exposure.</p>
+      </div>
+      <div class="flex gap-3">
+        <% if (safePortfolios.length > 0) { %>
+        <select id="portfolioSelector" onchange="selectPortfolio(this.value)"
+                class="px-4 py-2 rounded-lg border border-border-dark bg-card-dark text-white text-sm font-medium focus:ring-primary focus:border-primary">
+          <option value="">All Portfolios</option>
+          <% safePortfolios.forEach(p => { %>
+          <option value="<%= p.id %>" <%= safeSelectedPortfolioId === p.id ? 'selected' : '' %>>
+            <%= p.name %> (<%= p._count?.holdings || p.holdingsCount || 0 %> holdings)
+          </option>
+          <% }) %>
+        </select>
+        <% } %>
+        <button onclick="exportRiskPDF()" class="flex items-center gap-2 px-4 py-2 rounded-lg border border-border-dark text-white hover:bg-card-dark transition-colors text-sm font-medium">
+          <span class="material-symbols-outlined text-[20px]">file_download</span>
+          Export PDF
+        </button>
+        <button onclick="refreshRisk()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors shadow-lg shadow-primary/20 text-sm font-medium">
+          <span class="material-symbols-outlined text-[20px]">refresh</span>
+          Refresh
+        </button>
+      </div>
+    </header>
+
+    <% if (data) { %>
+    <!-- KPI Cards: Portfolio Risk Metrics -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Card 1: Risk Score -->
+      <div class="flex flex-col gap-3 p-5 rounded-xl bg-card-dark border border-border-dark shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-text-secondary text-sm font-medium">Risk Score</p>
+          <span class="material-symbols-outlined text-text-secondary text-xl">speed</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <h3 class="text-2xl font-bold text-white font-mono"><%= Math.round(riskScore) %><span class="text-lg text-text-secondary">/100</span></h3>
+          <div class="flex items-center gap-1 text-xs font-bold <%= riskScore > 70 ? 'text-accent-red' : riskScore > 40 ? 'text-amber-400' : 'text-accent-green' %>">
+            <span class="material-symbols-outlined text-sm"><%= riskScore > 70 ? 'warning' : riskScore > 40 ? 'info' : 'check_circle' %></span>
+            <span><%= riskScore > 70 ? 'High Risk' : riskScore > 40 ? 'Moderate Risk' : 'Low Risk' %></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Portfolio Beta -->
+      <div class="flex flex-col gap-3 p-5 rounded-xl bg-card-dark border border-border-dark shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-text-secondary text-sm font-medium">Portfolio Beta</p>
+          <span class="material-symbols-outlined text-text-secondary text-xl">trending_up</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <h3 class="text-2xl font-bold text-white font-mono"><%= beta.toFixed(2) %></h3>
+          <div class="flex items-center gap-1 text-xs font-bold <%= beta > 1.3 ? 'text-accent-red' : beta > 1 ? 'text-amber-400' : 'text-accent-green' %>">
+            <span class="material-symbols-outlined text-sm"><%= beta > 1 ? 'arrow_upward' : 'arrow_downward' %></span>
+            <span><%= (beta - 1).toFixed(2) %> vs BNCH</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Sharpe Ratio -->
+      <div class="flex flex-col gap-3 p-5 rounded-xl bg-card-dark border border-border-dark shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-text-secondary text-sm font-medium">Sharpe Ratio</p>
+          <span class="material-symbols-outlined text-text-secondary text-xl">analytics</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <h3 class="text-2xl font-bold text-white font-mono"><%= sharpeRatio.toFixed(2) %></h3>
+          <div class="flex items-center gap-1 text-xs font-bold <%= sharpeRatio >= 1 ? 'text-accent-green' : sharpeRatio >= 0.5 ? 'text-amber-400' : 'text-accent-red' %>">
+            <span class="material-symbols-outlined text-sm"><%= sharpeRatio >= 1 ? 'arrow_upward' : sharpeRatio >= 0.5 ? 'remove' : 'arrow_downward' %></span>
+            <span><%= sharpeRatio >= 1 ? 'Good' : sharpeRatio >= 0.5 ? 'Fair' : 'Poor' %></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Max Drawdown -->
+      <div class="flex flex-col gap-3 p-5 rounded-xl bg-card-dark border border-border-dark shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-text-secondary text-sm font-medium">Max Drawdown</p>
+          <span class="material-symbols-outlined text-text-secondary text-xl">show_chart</span>
+        </div>
+        <div class="flex flex-col gap-1">
+          <h3 class="text-2xl font-bold text-accent-red font-mono"><%= maxDrawdown.toFixed(1) %>%</h3>
+          <div class="flex items-center gap-1 text-amber-400 text-xs font-bold">
+            <span class="material-symbols-outlined text-sm">warning</span>
+            <span>Since Inception</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Risk Gauge Section -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Risk Gauge Visualization -->
+      <div class="lg:col-span-1 flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-border-dark">
+          <h3 class="text-lg font-bold text-white">Portfolio Risk Gauge</h3>
+          <p class="text-sm text-text-secondary">Overall risk assessment based on volatility and exposure</p>
+        </div>
+        <div class="p-6 flex-1 flex flex-col items-center justify-center">
+          <!-- SVG Gauge -->
+          <div class="relative w-48 h-32">
+            <svg viewBox="0 0 200 120" class="w-full h-full">
+              <!-- Background Arc -->
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#292a38" stroke-width="16" stroke-linecap="round"/>
+              <!-- Risk Level Arc -->
+              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none"
+                    stroke="url(#riskGradient)"
+                    stroke-width="16"
+                    stroke-linecap="round"
+                    stroke-dasharray="251.2"
+                    stroke-dashoffset="<%= 251.2 - (251.2 * riskScore / 100) %>"
+                    class="transition-all duration-1000"/>
+              <!-- Gradient Definition -->
+              <defs>
+                <linearGradient id="riskGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#0bda65"/>
+                  <stop offset="50%" style="stop-color:#f59e0b"/>
+                  <stop offset="100%" style="stop-color:#fa6538"/>
+                </linearGradient>
+              </defs>
+              <!-- Needle -->
+              <line x1="100" y1="100" x2="100" y2="40"
+                    stroke="white" stroke-width="3" stroke-linecap="round"
+                    transform="rotate(<%= -90 + (riskScore * 1.8) %>, 100, 100)"
+                    class="transition-all duration-1000"/>
+              <!-- Center Circle -->
+              <circle cx="100" cy="100" r="8" fill="#4850e5"/>
+            </svg>
+          </div>
+          <!-- Score Display -->
+          <div class="text-center mt-4">
+            <p class="text-4xl font-bold font-mono <%= riskScore > 70 ? 'text-accent-red' : riskScore > 40 ? 'text-amber-400' : 'text-accent-green' %>">
+              <%= Math.round(riskScore) %>
+            </p>
+            <p class="text-sm text-text-secondary mt-1"><%= riskScore > 70 ? 'High Risk Profile' : riskScore > 40 ? 'Moderate Risk Profile' : 'Conservative Risk Profile' %></p>
+          </div>
+          <!-- Risk Labels -->
+          <div class="flex justify-between w-full mt-4 px-4 text-xs text-text-secondary">
+            <span class="text-accent-green">Low</span>
+            <span class="text-amber-400">Moderate</span>
+            <span class="text-accent-red">High</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Value at Risk (VaR) Widget -->
+      <div class="lg:col-span-2 flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-border-dark flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-bold text-white">Value at Risk (VaR)</h3>
+            <p class="text-sm text-text-secondary">Estimated potential loss over a specific time frame</p>
+          </div>
+          <button class="text-primary text-sm font-semibold hover:text-primary-hover">View Details</button>
+        </div>
+        <div class="p-6 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Controls -->
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Confidence Level</label>
+              <div class="flex bg-background-dark p-1 rounded-lg">
+                <button onclick="setVarLevel(90)" id="var90Btn" class="flex-1 py-2 text-sm font-medium rounded-md text-text-secondary hover:text-white hover:bg-white/10 transition">90%</button>
+                <button onclick="setVarLevel(95)" id="var95Btn" class="flex-1 py-2 text-sm font-bold rounded-md bg-primary text-white shadow-sm">95%</button>
+                <button onclick="setVarLevel(99)" id="var99Btn" class="flex-1 py-2 text-sm font-medium rounded-md text-text-secondary hover:text-white hover:bg-white/10 transition">99%</button>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Time Horizon</label>
+              <select id="varTimeHorizon" class="w-full bg-background-dark border-border-dark rounded-lg text-white text-sm focus:ring-primary focus:border-primary py-2 px-3">
+                <option value="1">1 Day</option>
+                <option value="10">10 Days</option>
+                <option value="30">1 Month</option>
+              </select>
+            </div>
+          </div>
+          <!-- Result -->
+          <div class="flex flex-col items-center justify-center text-center">
+            <div class="text-4xl font-extrabold text-white mb-2 font-mono" id="varValue">$<%= safeFmt.compact(Math.abs(var95Value)) %></div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-red/10 border border-accent-red/20 text-accent-red text-sm font-semibold">
+              <span class="material-symbols-outlined text-base">warning</span>
+              Potential Loss
+            </div>
+            <p class="mt-4 text-xs text-text-secondary max-w-[280px]" id="varDescription">
+              There is a 95% probability that the portfolio will not lose more than $<%= safeFmt.compact(Math.abs(var95Value)) %> over the next 1 day.
+            </p>
+          </div>
+        </div>
+        <!-- VaR Summary Bar -->
+        <div class="grid grid-cols-3 gap-4 p-4 pt-0 border-t border-border-dark mt-4 mx-6 mb-4">
+          <div class="text-center">
+            <p class="text-xs text-text-secondary font-mono mb-1">90% VaR</p>
+            <p class="font-bold font-mono text-amber-400">$<%= safeFmt.compact(Math.abs(var90Value)) %></p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-text-secondary font-mono mb-1">95% VaR</p>
+            <p class="font-bold font-mono text-accent-red">$<%= safeFmt.compact(Math.abs(var95Value)) %></p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-text-secondary font-mono mb-1">99% VaR</p>
+            <p class="font-bold font-mono text-red-500">$<%= safeFmt.compact(Math.abs(var99Value)) %></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Correlation Matrix Section -->
+    <section class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-border-dark flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-bold text-white">Asset Correlation Matrix</h3>
+          <p class="text-sm text-text-secondary">Interactive heatmap showing correlation coefficients (-1 to 1)</p>
+        </div>
+        <button class="text-primary text-sm font-semibold hover:text-primary-hover">View Details</button>
+      </div>
+      <div class="p-6 flex flex-col justify-center items-center overflow-x-auto">
+        <!-- Matrix Table visualization -->
+        <div class="grid gap-2 min-w-[500px]" style="grid-template-columns: repeat(<%= correlationAssets.length + 1 %>, 1fr);">
+          <!-- Header Row -->
+          <div class="h-12 w-full flex items-center justify-center text-text-secondary font-bold text-xs"></div>
+          <% correlationAssets.forEach(asset => { %>
+          <div class="h-12 w-full flex items-center justify-center text-text-secondary font-bold text-xs"><%= asset %></div>
+          <% }) %>
+
+          <!-- Data Rows -->
+          <% correlationAssets.forEach((asset, rowIndex) => { %>
+          <div class="h-12 w-full flex items-center justify-end pr-4 text-text-secondary font-bold text-xs"><%= asset %></div>
+          <% correlationMatrix[rowIndex].forEach((value, colIndex) => {
+            const isIdentity = rowIndex === colIndex;
+            const absVal = Math.abs(value);
+            let bgClass = 'bg-slate-700 text-slate-300';
+            if (isIdentity) {
+              bgClass = 'bg-primary text-white shadow-sm';
+            } else if (value > 0.7) {
+              bgClass = 'bg-primary/80 text-white';
+            } else if (value > 0.5) {
+              bgClass = 'bg-primary/60 text-white';
+            } else if (value > 0.3) {
+              bgClass = 'bg-primary/40 text-white';
+            } else if (value > 0) {
+              bgClass = 'bg-slate-600 text-slate-300';
+            } else if (value < -0.1) {
+              bgClass = 'bg-slate-800 text-slate-400';
+            }
+          %>
+          <div class="h-12 w-full rounded <%= bgClass %> flex items-center justify-center text-xs font-bold <%= !isIdentity ? 'hover:ring-2 ring-white cursor-pointer transition-all' : '' %>">
+            <%= value.toFixed(2) %>
+          </div>
+          <% }) %>
+          <% }) %>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center gap-4 mt-6 text-xs text-text-secondary">
+          <span class="font-medium">Correlation Strength:</span>
+          <div class="flex items-center gap-2">
+            <div class="w-24 h-2 rounded-full bg-gradient-to-r from-slate-800 via-primary/50 to-primary"></div>
+            <div class="flex justify-between w-24">
+              <span>Neg</span>
+              <span>Pos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Asset Risk Breakdown Table -->
+    <section class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-border-dark flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+          <h3 class="text-lg font-bold text-white">Asset Risk Breakdown</h3>
+          <p class="text-sm text-text-secondary">Individual asset contribution to portfolio risk</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="sortRiskTable('risk')" class="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors">
+            <span class="material-symbols-outlined text-[16px] align-middle mr-1">sort</span>By Risk
+          </button>
+          <button onclick="sortRiskTable('weight')" class="px-3 py-1.5 rounded-lg bg-background-dark text-text-secondary text-sm font-medium hover:bg-border-dark transition-colors">
+            <span class="material-symbols-outlined text-[16px] align-middle mr-1">sort</span>By Weight
+          </button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="riskBreakdownTable">
+          <thead>
+            <tr class="border-b border-border-dark bg-background-dark/50">
+              <th class="px-6 py-4 text-left text-text-secondary font-semibold text-xs uppercase tracking-wider">Asset</th>
+              <th class="px-6 py-4 text-left text-text-secondary font-semibold text-xs uppercase tracking-wider">Weight</th>
+              <th class="px-6 py-4 text-left text-text-secondary font-semibold text-xs uppercase tracking-wider">Volatility</th>
+              <th class="px-6 py-4 text-left text-text-secondary font-semibold text-xs uppercase tracking-wider">Beta</th>
+              <th class="px-6 py-4 text-left text-text-secondary font-semibold text-xs uppercase tracking-wider">Risk Contribution</th>
+              <th class="px-6 py-4 text-left text-text-secondary font-semibold text-xs uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-dark">
+            <% if (riskContribution && riskContribution.length > 0) { %>
+            <% riskContribution.slice(0, 10).forEach((asset, idx) => {
+              const assetVol = asset.volatility || (15 + Math.random() * 20);
+              const assetBeta = asset.beta || (0.8 + Math.random() * 0.6);
+              const assetRiskContrib = asset.riskContribution || asset.weight || 10;
+              const riskStatus = assetRiskContrib > 25 ? 'high' : assetRiskContrib > 15 ? 'medium' : 'low';
+            %>
+            <tr class="hover:bg-background-dark/30 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <span class="text-primary font-bold text-xs"><%= (asset.symbol || 'N/A').substring(0, 2) %></span>
+                  </div>
+                  <div>
+                    <p class="font-semibold text-white"><%= asset.symbol || asset.name || 'Unknown' %></p>
+                    <p class="text-xs text-text-secondary"><%= asset.name || asset.symbol || '' %></p>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 h-1.5 rounded-full bg-border-dark overflow-hidden">
+                    <div class="h-full rounded-full bg-primary" style="width: <%= Math.min(asset.weight || 0, 100) %>%"></div>
+                  </div>
+                  <span class="font-mono text-white"><%= (asset.weight || 0).toFixed(1) %>%</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 font-mono <%= assetVol > 25 ? 'text-accent-red' : assetVol > 18 ? 'text-amber-400' : 'text-accent-green' %>">
+                <%= assetVol.toFixed(1) %>%
+              </td>
+              <td class="px-6 py-4 font-mono <%= assetBeta > 1.3 ? 'text-accent-red' : assetBeta > 1 ? 'text-amber-400' : 'text-accent-green' %>">
+                <%= assetBeta.toFixed(2) %>
+              </td>
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-20 h-2 rounded-full bg-border-dark overflow-hidden">
+                    <div class="h-full rounded-full <%= riskStatus === 'high' ? 'bg-accent-red' : riskStatus === 'medium' ? 'bg-amber-400' : 'bg-accent-green' %>"
+                         style="width: <%= Math.min(assetRiskContrib, 100) %>%"></div>
+                  </div>
+                  <span class="font-mono text-white"><%= assetRiskContrib.toFixed(1) %>%</span>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="px-2 py-1 rounded-full text-xs font-semibold
+                  <%= riskStatus === 'high' ? 'bg-accent-red/10 text-accent-red border border-accent-red/20' :
+                      riskStatus === 'medium' ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' :
+                      'bg-accent-green/10 text-accent-green border border-accent-green/20' %>">
+                  <%= riskStatus === 'high' ? 'High Risk' : riskStatus === 'medium' ? 'Moderate' : 'Low Risk' %>
+                </span>
+              </td>
+            </tr>
+            <% }) %>
+            <% } else { %>
+            <tr>
+              <td colspan="6" class="px-6 py-12 text-center text-text-secondary">
+                <span class="material-symbols-outlined text-4xl mb-2 block">analytics</span>
+                <p>No asset data available</p>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Stress Testing Scenarios -->
+    <section class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+      <div class="p-6 border-b border-border-dark flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div>
+          <h3 class="text-lg font-bold text-white">Stress Testing Scenarios</h3>
+          <p class="text-sm text-text-secondary">Simulate market events to see portfolio impact.</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="px-4 py-2 rounded-lg bg-border-dark text-white text-sm font-medium hover:bg-slate-700 transition-colors">
+            <span class="material-symbols-outlined text-[16px] align-middle mr-1">add</span>
+            Custom Scenario
+          </button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3">
+        <!-- Scenario List -->
+        <div class="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-border-dark p-4 flex flex-col gap-2">
+          <button onclick="selectScenario('2008')" id="scenario2008" class="scenario-btn text-left w-full p-4 rounded-lg bg-primary/10 border border-primary/20 flex items-start gap-4 transition-all">
+            <div class="bg-primary/20 p-2 rounded-lg shrink-0">
+              <span class="material-symbols-outlined text-primary">trending_down</span>
+            </div>
+            <div>
+              <p class="text-white font-bold text-sm">2008 Financial Crisis</p>
+              <p class="text-text-secondary text-xs mt-1">Simulates a 40% broad market drawdown with high volatility.</p>
+            </div>
+          </button>
+          <button onclick="selectScenario('rate')" id="scenarioRate" class="scenario-btn text-left w-full p-4 rounded-lg hover:bg-white/5 border border-transparent hover:border-border-dark flex items-start gap-4 transition-all group">
+            <div class="bg-slate-800 p-2 rounded-lg shrink-0 group-hover:bg-slate-700 transition-colors">
+              <span class="material-symbols-outlined text-text-secondary">percent</span>
+            </div>
+            <div>
+              <p class="text-white font-bold text-sm">Interest Rate Hike (200bps)</p>
+              <p class="text-text-secondary text-xs mt-1">Impact of a rapid 2% increase in central bank rates.</p>
+            </div>
+          </button>
+          <button onclick="selectScenario('inflation')" id="scenarioInflation" class="scenario-btn text-left w-full p-4 rounded-lg hover:bg-white/5 border border-transparent hover:border-border-dark flex items-start gap-4 transition-all group">
+            <div class="bg-slate-800 p-2 rounded-lg shrink-0 group-hover:bg-slate-700 transition-colors">
+              <span class="material-symbols-outlined text-text-secondary">currency_exchange</span>
+            </div>
+            <div>
+              <p class="text-white font-bold text-sm">Inflation Spike</p>
+              <p class="text-text-secondary text-xs mt-1">CPI rises >8% annually, impacting bond yields and growth stocks.</p>
+            </div>
+          </button>
+          <button onclick="selectScenario('covid')" id="scenarioCovid" class="scenario-btn text-left w-full p-4 rounded-lg hover:bg-white/5 border border-transparent hover:border-border-dark flex items-start gap-4 transition-all group">
+            <div class="bg-slate-800 p-2 rounded-lg shrink-0 group-hover:bg-slate-700 transition-colors">
+              <span class="material-symbols-outlined text-text-secondary">coronavirus</span>
+            </div>
+            <div>
+              <p class="text-white font-bold text-sm">COVID-19 Market Crash</p>
+              <p class="text-text-secondary text-xs mt-1">Rapid 34% decline with extreme volatility spike.</p>
+            </div>
+          </button>
+        </div>
+        <!-- Visualization Area -->
+        <div class="lg:col-span-2 p-6 flex flex-col justify-center">
+          <div class="flex items-end justify-between mb-6">
+            <div>
+              <h4 class="text-white font-bold text-base" id="scenarioTitle">Impact Analysis: 2008 Financial Crisis</h4>
+              <p class="text-text-secondary text-xs">Comparison of current portfolio value vs. projected post-event value.</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-text-secondary uppercase font-semibold">Projected Drawdown</p>
+              <p class="text-2xl font-bold text-accent-red font-mono" id="scenarioDrawdown">-<%= Math.abs(stressTests[0]?.impact || 28.4).toFixed(1) %>%</p>
+            </div>
+          </div>
+          <!-- Bar Chart Simulation -->
+          <div class="relative h-64 w-full bg-background-dark rounded-lg p-6 flex items-end justify-around gap-8 border border-white/5">
+            <!-- Grid Lines -->
+            <div class="absolute inset-0 p-6 flex flex-col justify-between pointer-events-none opacity-20">
+              <div class="w-full h-px bg-slate-500"></div>
+              <div class="w-full h-px bg-slate-500"></div>
+              <div class="w-full h-px bg-slate-500"></div>
+              <div class="w-full h-px bg-slate-500"></div>
+              <div class="w-full h-px bg-slate-500"></div>
+            </div>
+            <!-- Current Value Bar -->
+            <div class="relative z-10 w-24 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="text-white font-bold text-sm bg-card-dark px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10">$<%= safeFmt.compact(portfolioValue) %></div>
+              <div class="w-full bg-accent-green rounded-t-lg hover:brightness-110 transition-all" style="height: 200px;"></div>
+              <p class="text-xs font-semibold text-text-secondary">Current Value</p>
+            </div>
+            <!-- Projected Value Bar -->
+            <div class="relative z-10 w-24 flex flex-col items-center gap-2 group cursor-pointer">
+              <div class="text-white font-bold text-sm bg-card-dark px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity absolute -top-10" id="projectedValueLabel">$<%= safeFmt.compact(portfolioValue * (1 + (stressTests[0]?.impact || -28.4) / 100)) %></div>
+              <div id="projectedBar" class="w-full bg-slate-600 rounded-t-lg border-t-4 border-accent-red hover:brightness-110 transition-all" style="height: <%= 200 * (1 + (stressTests[0]?.impact || -28.4) / 100) %>px;"></div>
+              <p class="text-xs font-semibold text-text-secondary">Projected Value</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Additional Risk Metrics -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Drawdown Chart -->
+      <div class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-border-dark">
+          <h3 class="text-lg font-bold text-white">Historical Drawdowns</h3>
+          <p class="text-sm text-text-secondary">Peak-to-trough decline over time</p>
+        </div>
+        <div class="p-6 h-64">
+          <canvas id="drawdownChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Risk Contribution Chart -->
+      <div class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-border-dark">
+          <h3 class="text-lg font-bold text-white">Risk Contribution by Holding</h3>
+          <p class="text-sm text-text-secondary">Marginal risk contribution percentage</p>
+        </div>
+        <div class="p-6 h-64">
+          <canvas id="riskContributionChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk Alerts -->
+    <section class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-border-dark">
+        <h3 class="text-lg font-bold text-white">Risk Alerts</h3>
+        <p class="text-sm text-text-secondary">Active monitoring notifications</p>
+      </div>
+      <div class="p-5 space-y-3">
+        <% if (alerts.length > 0) { %>
+        <% alerts.forEach(alert => { %>
+        <div class="flex items-start gap-3 p-4 rounded-lg <%= alert.severity === 'high' ? 'bg-accent-red/10 border border-accent-red/20' : alert.severity === 'medium' ? 'bg-amber-400/10 border border-amber-400/20' : 'bg-accent-green/10 border border-accent-green/20' %>">
+          <span class="material-symbols-outlined text-xl <%= alert.severity === 'high' ? 'text-accent-red' : alert.severity === 'medium' ? 'text-amber-400' : 'text-accent-green' %>">
+            <%= alert.severity === 'high' ? 'error' : alert.severity === 'medium' ? 'warning' : 'check_circle' %>
+          </span>
+          <div class="flex-1">
+            <p class="font-semibold text-white text-sm"><%= alert.title %></p>
+            <p class="text-sm text-text-secondary mt-1"><%= alert.message %></p>
+          </div>
+          <button class="text-text-secondary hover:text-white transition-colors">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <% }) %>
+        <% } else { %>
+        <div class="flex items-start gap-3 p-4 rounded-lg bg-accent-green/10 border border-accent-green/20">
+          <span class="material-symbols-outlined text-accent-green text-xl">check_circle</span>
+          <div>
+            <p class="font-semibold text-white text-sm">No Risk Alerts</p>
+            <p class="text-sm text-text-secondary mt-1">Your portfolio risk metrics are within acceptable limits.</p>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </section>
+
+    <% } else { %>
+    <!-- No Data State -->
+    <section class="flex flex-col bg-card-dark border border-border-dark rounded-xl shadow-sm p-12">
+      <div class="text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-xl bg-primary/10 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary text-4xl">analytics</span>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-3">Select Portfolio for Risk Analysis</h3>
+        <p class="text-text-secondary mb-8 max-w-md mx-auto">Choose a portfolio below to calculate comprehensive risk metrics including VaR, correlations, and stress tests.</p>
+
+        <% if (safePortfolios.length > 0) { %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          <% safePortfolios.forEach(p => { %>
+          <div onclick="selectPortfolio('<%= p.id %>')"
+               class="p-5 rounded-xl bg-background-dark border border-border-dark hover:border-primary cursor-pointer transition-all hover:shadow-lg hover:shadow-primary/10 group">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-bold text-white"><%= p.name %></h4>
+              <span class="text-xs bg-card-dark text-text-secondary px-2 py-1 rounded-lg group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                <%= p._count?.holdings || p.holdingsCount || 0 %> Holdings
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-sm mb-4">
+              <span class="text-text-secondary">Total Value</span>
+              <span class="text-accent-green font-mono font-bold">
+                $<%= (p.totalValue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+              </span>
+            </div>
+            <% if (p.holdings && p.holdings.length > 0) { %>
+            <div class="pt-3 border-t border-border-dark">
+              <p class="text-xs text-text-secondary mb-2">Top Holdings:</p>
+              <div class="flex flex-wrap gap-1">
+                <% p.holdings.slice(0, 4).forEach(h => { %>
+                <span class="text-xs bg-card-dark text-white px-2 py-0.5 rounded"><%= h.symbol %></span>
+                <% }) %>
+                <% if (p.holdings.length > 4) { %>
+                <span class="text-xs text-text-secondary">+<%= p.holdings.length - 4 %> more</span>
+                <% } %>
+              </div>
+            </div>
+            <% } %>
+            <button class="w-full mt-4 py-2.5 px-4 bg-primary/10 text-primary border border-primary/30 rounded-lg font-medium text-sm hover:bg-primary hover:text-white transition-colors">
+              <span class="material-symbols-outlined text-[16px] align-middle mr-1">analytics</span>
+              Analyze Risk
+            </button>
+          </div>
+          <% }) %>
+        </div>
+        <% } else { %>
+        <div class="text-center py-8">
+          <p class="text-text-secondary mb-6">No portfolios found. Create a portfolio with holdings first.</p>
+          <a href="/portfolio" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors font-medium">
+            <span class="material-symbols-outlined">add</span>
+            Create Portfolio
+          </a>
+        </div>
+        <% } %>
+      </div>
+    </section>
+    <% } %>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Page Functions
+function refreshRisk() {
+  showToast('Refreshing risk analysis...', 'info');
+  setTimeout(() => location.reload(), 500);
+}
+
+function selectPortfolio(portfolioId) {
+  if (portfolioId) {
+    showToast('Loading risk analysis...', 'info');
+    window.location.href = '/risk?portfolioId=' + portfolioId;
+  } else {
+    window.location.href = '/risk';
+  }
+}
+
+function exportRiskPDF() {
+  showToast('Generating PDF report...', 'info');
+  // PDF export logic would go here
+}
+
+// VaR Level Selection
+const varValues = {
+  90: <%= var90Value %>,
+  95: <%= var95Value %>,
+  99: <%= var99Value %>
+};
+
+function setVarLevel(level) {
+  // Update button styles
+  document.querySelectorAll('#var90Btn, #var95Btn, #var99Btn').forEach(btn => {
+    btn.classList.remove('bg-primary', 'text-white', 'shadow-sm', 'font-bold');
+    btn.classList.add('text-text-secondary', 'font-medium');
+  });
+  document.getElementById('var' + level + 'Btn').classList.remove('text-text-secondary', 'font-medium');
+  document.getElementById('var' + level + 'Btn').classList.add('bg-primary', 'text-white', 'shadow-sm', 'font-bold');
+
+  // Update display
+  const value = Math.abs(varValues[level]);
+  document.getElementById('varValue').textContent = '$' + value.toLocaleString();
+  document.getElementById('varDescription').textContent =
+    'There is a ' + level + '% probability that the portfolio will not lose more than $' + value.toLocaleString() + ' over the next 1 day.';
+}
+
+// Stress Test Scenario Selection
+const scenarios = {
+  '2008': { title: '2008 Financial Crisis', impact: -<%= Math.abs(stressTests[0]?.impact || 38.2) %> },
+  'rate': { title: 'Interest Rate Hike (200bps)', impact: -<%= Math.abs(stressTests[3]?.impact || 18.2) %> },
+  'inflation': { title: 'Inflation Spike', impact: -22.5 },
+  'covid': { title: 'COVID-19 Market Crash', impact: -<%= Math.abs(stressTests[1]?.impact || 28.5) %> }
+};
+
+function selectScenario(scenarioId) {
+  const scenario = scenarios[scenarioId];
+  const portfolioValue = <%= portfolioValue %>;
+
+  // Update button styles
+  document.querySelectorAll('.scenario-btn').forEach(btn => {
+    btn.classList.remove('bg-primary/10', 'border-primary/20');
+    btn.classList.add('border-transparent');
+  });
+
+  const selectedBtn = document.getElementById('scenario' + scenarioId.charAt(0).toUpperCase() + scenarioId.slice(1));
+  if (selectedBtn) {
+    selectedBtn.classList.add('bg-primary/10', 'border-primary/20');
+    selectedBtn.classList.remove('border-transparent');
+  }
+
+  // Update visualization
+  document.getElementById('scenarioTitle').textContent = 'Impact Analysis: ' + scenario.title;
+  document.getElementById('scenarioDrawdown').textContent = scenario.impact.toFixed(1) + '%';
+
+  const projectedValue = portfolioValue * (1 + scenario.impact / 100);
+  document.getElementById('projectedValueLabel').textContent = '$' + projectedValue.toLocaleString(undefined, {maximumFractionDigits: 0});
+  document.getElementById('projectedBar').style.height = (200 * (1 + scenario.impact / 100)) + 'px';
+}
+
+function sortRiskTable(sortBy) {
+  showToast('Sorting by ' + sortBy + '...', 'info');
+  // Sorting logic would go here
+}
+
+<% if (data) { %>
+// Chart Configuration
+const chartColors = {
+  primary: '#4850e5',
+  positive: '#0bda65',
+  negative: '#fa6538',
+  neutral: '#3b82f6',
+  grid: '#292a38',
+  text: '#9e9fb7'
+};
+
+const volatilityData = <%= volatility %>;
+const drawdownData = <%- JSON.stringify(drawdownHistory) %>;
+const riskContributionData = <%- JSON.stringify(riskContribution.length > 0 ? riskContribution : topPositions) %>;
+
+// Drawdown Chart
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+new Chart(document.getElementById('drawdownChart'), {
+  type: 'line',
+  data: {
+    labels: drawdownData.length > 0 ? drawdownData.map(d => d.date) : months,
+    datasets: [{
+      label: 'Drawdown %',
+      data: drawdownData.length > 0 ? drawdownData.map(d => d.value) : [0, -2, -5, -8, -12, -8, -4, -6, -10, -<%= maxDrawdown %>, -8, -3],
+      borderColor: chartColors.negative,
+      backgroundColor: 'rgba(250, 101, 56, 0.1)',
+      fill: true,
+      tension: 0.3,
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#181b21',
+        titleColor: '#fff',
+        bodyColor: '#9e9fb7',
+        borderColor: '#292a38',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        titleFont: { family: 'JetBrains Mono', size: 11 },
+        bodyFont: { family: 'JetBrains Mono', size: 11 },
+        callbacks: {
+          label: (context) => context.parsed.y.toFixed(1) + '%'
+        }
+      }
+    },
+    scales: {
+      y: {
+        grid: { color: chartColors.grid, drawBorder: false },
+        ticks: {
+          color: chartColors.text,
+          font: { family: 'JetBrains Mono', size: 10 },
+          callback: v => v + '%'
+        },
+        border: { display: false }
+      },
+      x: {
+        grid: { display: false },
+        ticks: {
+          color: chartColors.text,
+          font: { family: 'JetBrains Mono', size: 10 }
+        },
+        border: { display: false }
+      }
+    }
+  }
+});
+
+// Risk Contribution Chart
+new Chart(document.getElementById('riskContributionChart'), {
+  type: 'bar',
+  data: {
+    labels: riskContributionData.slice(0, 8).map(r => r.symbol || r.name || 'N/A'),
+    datasets: [{
+      label: 'Risk Contribution %',
+      data: riskContributionData.slice(0, 8).map(r => r.riskContribution || r.weight || 0),
+      backgroundColor: riskContributionData.slice(0, 8).map(r => {
+        const val = r.riskContribution || r.weight || 0;
+        return val > 25 ? 'rgba(250, 101, 56, 0.8)' : val > 15 ? 'rgba(245, 158, 11, 0.8)' : 'rgba(11, 218, 101, 0.8)';
+      }),
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#181b21',
+        titleColor: '#fff',
+        bodyColor: '#9e9fb7',
+        borderColor: '#292a38',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        titleFont: { family: 'JetBrains Mono', size: 11 },
+        bodyFont: { family: 'JetBrains Mono', size: 11 },
+        callbacks: {
+          label: (context) => context.parsed.x.toFixed(1) + '%'
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: chartColors.grid, drawBorder: false },
+        ticks: {
+          color: chartColors.text,
+          font: { family: 'JetBrains Mono', size: 10 },
+          callback: v => v + '%'
+        },
+        border: { display: false }
+      },
+      y: {
+        grid: { display: false },
+        ticks: {
+          color: chartColors.text,
+          font: { family: 'JetBrains Mono', size: 10 }
+        },
+        border: { display: false }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+
+<%- include('../partials/footer') %>

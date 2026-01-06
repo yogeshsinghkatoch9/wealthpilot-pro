@@ -1,0 +1,482 @@
+<%- include('../partials/header', { pageTitle: 'Market Dashboard' }) %>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-white">Market Overview</h1>
+        <div class="flex items-center gap-4 text-sm font-mono">
+          <span class="text-slate-400">Last Updated:</span>
+          <span id="lastUpdate" class="text-slate-300"><%= new Date().toLocaleTimeString() %></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="status-live" id="ws-status">LIVE</span>
+        <button onclick="refreshMarketData()" class="bloomberg-btn bloomberg-btn-ghost" id="refreshBtn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          REFRESH
+        </button>
+      </div>
+    </div>
+
+    <!-- Major Indices -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+      <!-- S&P 500 -->
+      <div class="bloomberg-card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="text-xs text-slate-500 font-mono">S&P 500</div>
+            <div class="text-2xl font-mono font-bold text-white" id="spy-price">681.76</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">SPY</div>
+            <div class="text-sm font-mono text-emerald-400" id="spy-change">+0.45%</div>
+          </div>
+        </div>
+        <canvas id="spyMiniChart" height="40"></canvas>
+      </div>
+
+      <!-- NASDAQ -->
+      <div class="bloomberg-card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="text-xs text-slate-500 font-mono">NASDAQ</div>
+            <div class="text-2xl font-mono font-bold text-white" id="qqq-price">613.62</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">QQQ</div>
+            <div class="text-sm font-mono text-emerald-400" id="qqq-change">+0.72%</div>
+          </div>
+        </div>
+        <canvas id="qqqMiniChart" height="40"></canvas>
+      </div>
+
+      <!-- DOW JONES -->
+      <div class="bloomberg-card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="text-xs text-slate-500 font-mono">DOW JONES</div>
+            <div class="text-2xl font-mono font-bold text-white" id="dia-price">436.89</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">DIA</div>
+            <div class="text-sm font-mono text-red-400" id="dia-change">-0.12%</div>
+          </div>
+        </div>
+        <canvas id="diaMiniChart" height="40"></canvas>
+      </div>
+
+      <!-- RUSSELL 2000 -->
+      <div class="bloomberg-card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="text-xs text-slate-500 font-mono">RUSSELL 2000</div>
+            <div class="text-2xl font-mono font-bold text-white" id="iwm-price">253.85</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">IWM</div>
+            <div class="text-sm font-mono text-red-400" id="iwm-change">-0.35%</div>
+          </div>
+        </div>
+        <canvas id="iwmMiniChart" height="40"></canvas>
+      </div>
+
+      <!-- VIX -->
+      <div class="bloomberg-card p-4">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="text-xs text-slate-500 font-mono">VOLATILITY</div>
+            <div class="text-2xl font-mono font-bold text-white" id="vix-price">14.23</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-slate-500">VIX</div>
+            <div class="text-sm font-mono text-emerald-400" id="vix-change">-2.15%</div>
+          </div>
+        </div>
+        <canvas id="vixMiniChart" height="40"></canvas>
+      </div>
+    </div>
+
+    <!-- Market Stats & Sector Heatmap -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <!-- Market Statistics -->
+      <div class="bloomberg-card">
+        <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+          <span class="bloomberg-card-title">Market Statistics</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Market Status</span>
+            <span class="text-sm font-mono text-emerald-400">● OPEN</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Adv / Dec</span>
+            <span class="text-sm font-mono text-white" id="advDec">1,234 / 789</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">New Highs / Lows</span>
+            <span class="text-sm font-mono text-white" id="highsLows">89 / 23</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Volume vs Avg</span>
+            <span class="text-sm font-mono text-emerald-400" id="volumeVsAvg">+12.5%</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-slate-400">Breadth Score</span>
+            <div class="flex items-center gap-2">
+              <div class="w-24 h-2 bg-bloomberg-bg rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-500" style="width: 68%"></div>
+              </div>
+              <span class="text-sm font-mono text-white">68%</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-2 border-t border-bloomberg-border">
+            <span class="text-sm text-slate-400">Fear & Greed Index</span>
+            <span class="text-sm font-mono text-amber-400">54 - Neutral</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sector Heatmap -->
+      <div class="bloomberg-card xl:col-span-2">
+        <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+          <span class="bloomberg-card-title">Sector Performance</span>
+          <div class="flex gap-2">
+            <button class="text-xs px-2 py-1 rounded bloomberg-btn-ghost" onclick="setSectorPeriod('1D')">1D</button>
+            <button class="text-xs px-2 py-1 rounded bloomberg-btn-ghost" onclick="setSectorPeriod('1W')">1W</button>
+            <button class="text-xs px-2 py-1 rounded bloomberg-btn-ghost" onclick="setSectorPeriod('1M')">1M</button>
+          </div>
+        </div>
+        <div class="p-4">
+          <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Technology</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+1.24%</div>
+              <div class="text-xs text-slate-500">XLK</div>
+            </div>
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Healthcare</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+0.87%</div>
+              <div class="text-xs text-slate-500">XLV</div>
+            </div>
+            <div class="sector-box bg-red-900/30 border border-red-500/30 rounded p-3 hover:bg-red-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Financials</div>
+              <div class="text-lg font-mono font-bold text-red-400">-0.45%</div>
+              <div class="text-xs text-slate-500">XLF</div>
+            </div>
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Consumer</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+0.56%</div>
+              <div class="text-xs text-slate-500">XLP</div>
+            </div>
+            <div class="sector-box bg-red-900/30 border border-red-500/30 rounded p-3 hover:bg-red-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Energy</div>
+              <div class="text-lg font-mono font-bold text-red-400">-0.98%</div>
+              <div class="text-xs text-slate-500">XLE</div>
+            </div>
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Industrials</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+0.34%</div>
+              <div class="text-xs text-slate-500">XLI</div>
+            </div>
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Materials</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+0.67%</div>
+              <div class="text-xs text-slate-500">XLB</div>
+            </div>
+            <div class="sector-box bg-red-900/30 border border-red-500/30 rounded p-3 hover:bg-red-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Real Estate</div>
+              <div class="text-lg font-mono font-bold text-red-400">-0.23%</div>
+              <div class="text-xs text-slate-500">XLRE</div>
+            </div>
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Utilities</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+0.45%</div>
+              <div class="text-xs text-slate-500">XLU</div>
+            </div>
+            <div class="sector-box bg-emerald-900/30 border border-emerald-500/30 rounded p-3 hover:bg-emerald-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Comm Services</div>
+              <div class="text-lg font-mono font-bold text-emerald-400">+0.89%</div>
+              <div class="text-xs text-slate-500">XLC</div>
+            </div>
+            <div class="sector-box bg-red-900/30 border border-red-500/30 rounded p-3 hover:bg-red-900/50 cursor-pointer">
+              <div class="text-xs text-slate-400">Cons Discret</div>
+              <div class="text-lg font-mono font-bold text-red-400">-0.34%</div>
+              <div class="text-xs text-slate-500">XLY</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market Movers -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Top Gainers -->
+      <div class="bloomberg-card">
+        <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+          <span class="bloomberg-card-title">Top Gainers</span>
+          <a href="/market-movers" class="text-xs text-bloomberg-accent hover:text-bloomberg-accent-hover">View All →</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="border-b border-bloomberg-border">
+              <tr>
+                <th class="text-left p-3 text-xs text-slate-500 font-mono">SYMBOL</th>
+                <th class="text-right p-3 text-xs text-slate-500 font-mono">PRICE</th>
+                <th class="text-right p-3 text-xs text-slate-500 font-mono">CHANGE</th>
+                <th class="text-right p-3 text-xs text-slate-500 font-mono">% CHG</th>
+              </tr>
+            </thead>
+            <tbody id="topGainers">
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">NVDA</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$175.02</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+8.45</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+5.08%</td>
+              </tr>
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">TSLA</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$242.84</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+11.23</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+4.85%</td>
+              </tr>
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">AMD</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$138.67</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+6.12</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+4.62%</td>
+              </tr>
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">META</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$598.23</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+24.12</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+4.20%</td>
+              </tr>
+              <tr class="hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">GOOGL</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$309.29</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+12.34</td>
+                <td class="p-3 text-right font-mono text-sm text-emerald-400">+4.15%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top Losers -->
+      <div class="bloomberg-card">
+        <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+          <span class="bloomberg-card-title">Top Losers</span>
+          <a href="/market-movers" class="text-xs text-bloomberg-accent hover:text-bloomberg-accent-hover">View All →</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="border-b border-bloomberg-border">
+              <tr>
+                <th class="text-left p-3 text-xs text-slate-500 font-mono">SYMBOL</th>
+                <th class="text-right p-3 text-xs text-slate-500 font-mono">PRICE</th>
+                <th class="text-right p-3 text-xs text-slate-500 font-mono">CHANGE</th>
+                <th class="text-right p-3 text-xs text-slate-500 font-mono">% CHG</th>
+              </tr>
+            </thead>
+            <tbody id="topLosers">
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">BA</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$168.45</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-7.23</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-4.12%</td>
+              </tr>
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">DIS</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$112.34</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-4.56</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-3.90%</td>
+              </tr>
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">NFLX</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$95.19</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-3.45</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-3.50%</td>
+              </tr>
+              <tr class="border-b border-bloomberg-border/30 hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">PYPL</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$87.92</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-2.89</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-3.18%</td>
+              </tr>
+              <tr class="hover:bg-bloomberg-elevated">
+                <td class="p-3"><span class="font-mono text-sm text-white font-semibold">INTC</span></td>
+                <td class="p-3 text-right font-mono text-sm text-white">$42.67</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-1.34</td>
+                <td class="p-3 text-right font-mono text-sm text-red-400">-3.05%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Market Breadth -->
+      <div class="bloomberg-card">
+        <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+          <span class="bloomberg-card-title">Market Breadth</span>
+          <a href="/market-breadth" class="text-xs text-bloomberg-accent hover:text-bloomberg-accent-hover">Details →</a>
+        </div>
+        <div class="p-4">
+          <canvas id="breadthChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Volatility Trend -->
+      <div class="bloomberg-card">
+        <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
+          <span class="bloomberg-card-title">Volatility (VIX)</span>
+        </div>
+        <div class="p-4">
+          <canvas id="vixChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// Auto-refresh
+let refreshInterval;
+
+async function refreshMarketData() {
+  const refreshBtn = document.getElementById('refreshBtn');
+  refreshBtn.disabled = true;
+  refreshBtn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2" stroke-dasharray="31.416" stroke-dashoffset="10"></circle></svg> LOADING';
+
+  try {
+    // Fetch indices data
+    const indicesRes = await fetch('/market/indices');
+    const indicesData = await indicesRes.json();
+
+    if (indicesData.indices) {
+      indicesData.indices.forEach(idx => {
+        const changeClass = idx.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400';
+        const changePrefix = idx.changePercent >= 0 ? '+' : '';
+
+        if (idx.displayName === 'S&P 500') {
+          document.getElementById('spy-price').textContent = idx.price.toFixed(2);
+          document.getElementById('spy-change').textContent = changePrefix + idx.changePercent.toFixed(2) + '%';
+          document.getElementById('spy-change').className = 'text-sm font-mono ' + changeClass;
+        } else if (idx.displayName === 'NASDAQ') {
+          document.getElementById('qqq-price').textContent = idx.price.toFixed(2);
+          document.getElementById('qqq-change').textContent = changePrefix + idx.changePercent.toFixed(2) + '%';
+          document.getElementById('qqq-change').className = 'text-sm font-mono ' + changeClass;
+        } else if (idx.displayName === 'Dow Jones') {
+          document.getElementById('dia-price').textContent = idx.price.toFixed(2);
+          document.getElementById('dia-change').textContent = changePrefix + idx.changePercent.toFixed(2) + '%';
+          document.getElementById('dia-change').className = 'text-sm font-mono ' + changeClass;
+        } else if (idx.displayName === 'Russell 2000') {
+          document.getElementById('iwm-price').textContent = idx.price.toFixed(2);
+          document.getElementById('iwm-change').textContent = changePrefix + idx.changePercent.toFixed(2) + '%';
+          document.getElementById('iwm-change').className = 'text-sm font-mono ' + changeClass;
+        } else if (idx.displayName === 'VIX') {
+          document.getElementById('vix-price').textContent = idx.price.toFixed(2);
+          document.getElementById('vix-change').textContent = changePrefix + idx.changePercent.toFixed(2) + '%';
+          document.getElementById('vix-change').className = 'text-sm font-mono ' + changeClass;
+        }
+      });
+    }
+
+    // Fetch sectors data
+    const sectorsRes = await fetch('/market/sectors');
+    const sectorsData = await sectorsRes.json();
+
+    if (sectorsData.sectors) {
+      updateSectorDisplay(sectorsData.sectors);
+    }
+
+    // Fetch movers data
+    const moversRes = await fetch('/market/movers');
+    const moversData = await moversRes.json();
+
+    if (moversData.gainers) {
+      updateMoversDisplay(moversData);
+    }
+
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    document.getElementById('ws-status').textContent = 'LIVE';
+    document.getElementById('ws-status').className = 'status-live';
+
+  } catch (error) {
+    console.error('Error refreshing market data:', error);
+    document.getElementById('ws-status').textContent = 'ERROR';
+    document.getElementById('ws-status').className = 'status-offline';
+  }
+
+  refreshBtn.disabled = false;
+  refreshBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> REFRESH';
+}
+
+function updateSectorDisplay(sectors) {
+  const sectorContainer = document.getElementById('sector-performance');
+  if (sectorContainer && sectors.length > 0) {
+    let html = '';
+    sectors.forEach(s => {
+      const changeClass = s.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400';
+      const changePrefix = s.changePercent >= 0 ? '+' : '';
+      html += `<div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+        <span class="text-white">${s.name}</span>
+        <span class="${changeClass} font-mono">${changePrefix}${s.changePercent.toFixed(2)}%</span>
+      </div>`;
+    });
+    sectorContainer.innerHTML = html;
+  }
+}
+
+function updateMoversDisplay(movers) {
+  const gainersList = document.getElementById('top-gainers');
+  const losersList = document.getElementById('top-losers');
+
+  if (gainersList && movers.gainers) {
+    gainersList.innerHTML = movers.gainers.slice(0, 5).map(s =>
+      `<div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+        <span class="text-white font-mono">${s.symbol}</span>
+        <span class="text-emerald-400 font-mono">+${s.changePercent.toFixed(2)}%</span>
+      </div>`
+    ).join('');
+  }
+
+  if (losersList && movers.losers) {
+    losersList.innerHTML = movers.losers.slice(0, 5).map(s =>
+      `<div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+        <span class="text-white font-mono">${s.symbol}</span>
+        <span class="text-red-400 font-mono">${s.changePercent.toFixed(2)}%</span>
+      </div>`
+    ).join('');
+  }
+}
+
+function setSectorPeriod(period) {
+  console.log('Setting sector period to:', period);
+  // Fetch sector data with period filter
+  fetch('/market/sectors?period=' + period)
+    .then(res => res.json())
+    .then(data => {
+      if (data.sectors) updateSectorDisplay(data.sectors);
+    });
+}
+
+// Start auto-refresh every 30 seconds
+refreshInterval = setInterval(refreshMarketData, 30000);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Fetch initial data immediately
+  refreshMarketData();
+});
+</script>
+
+<%- include('../partials/footer') %>

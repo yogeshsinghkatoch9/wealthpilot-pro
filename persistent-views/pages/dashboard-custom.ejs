@@ -1,0 +1,519 @@
+<%- include('../partials/header', { pageTitle: 'Customizable Dashboard' }) %>
+
+<!-- Stitch Theme: Customizable Dashboard -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#4850e5",
+        "background-light": "#f6f6f8",
+        "background-dark": "#111217",
+        "surface-dark": "#1e1f2b",
+        "border-dark": "#292a38",
+        "text-secondary": "#9e9fb7"
+      },
+      fontFamily: { "display": ["Manrope", "sans-serif"] },
+    },
+  },
+}
+</script>
+<style>
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #111217; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3d3e52; }
+.bg-grid-pattern {
+  background-image: radial-gradient(#292a38 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+.resize-handle {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid #4850e5;
+  border-bottom: 2px solid #4850e5;
+  cursor: nwse-resize;
+  border-bottom-right-radius: 2px;
+}
+</style>
+
+<%
+const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0 };
+const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+const safeWatchlist = typeof watchlist !== 'undefined' && watchlist ? watchlist : [];
+%>
+
+<div class="bg-background-dark text-white font-display overflow-hidden flex flex-col h-screen dark">
+  <!-- Top Navigation -->
+  <header class="flex-none flex items-center justify-between whitespace-nowrap border-b border-solid border-border-dark px-6 py-3 bg-[#111217] z-20">
+    <div class="flex items-center gap-4 text-white">
+      <div class="size-8 text-primary">
+        <svg class="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z" fill="currentColor"></path>
+          <path clip-rule="evenodd" d="M39.998 12.236C39.9944 12.2537 39.9875 12.2845 39.9748 12.3294C39.9436 12.4399 39.8949 12.5741 39.8346 12.7175C39.8168 12.7597 39.7989 12.8007 39.7813 12.8398C38.5103 13.7113 35.9788 14.9393 33.7095 15.4811C30.9875 16.131 27.6413 16.5217 24 16.5217C20.3587 16.5217 17.0125 16.131 14.2905 15.4811C12.0012 14.9346 9.44505 13.6897 8.18538 12.8168C8.17384 12.7925 8.16216 12.767 8.15052 12.7408C8.09919 12.6249 8.05721 12.5114 8.02977 12.411C8.00356 12.3152 8.00039 12.2667 8.00004 12.2612C8.00004 12.261 8 12.2607 8.00004 12.2612C8.00004 12.2359 8.0104 11.9233 8.68485 11.3686C9.34546 10.8254 10.4222 10.2469 11.9291 9.72276C14.9242 8.68098 19.1919 8 24 8C28.8081 8 33.0758 8.68098 36.0709 9.72276C37.5778 10.2469 38.6545 10.8254 39.3151 11.3686C39.9006 11.8501 39.9857 12.1489 39.998 12.236Z" fill="currentColor" fill-rule="evenodd"></path>
+        </svg>
+      </div>
+      <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">WealthPilot Pro</h2>
+    </div>
+    <div class="flex flex-1 justify-end gap-8">
+      <div class="flex gap-2">
+        <button id="saveLayoutBtn" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-primary/90 transition-colors text-white text-sm font-bold leading-normal tracking-[0.015em]">
+          <span class="truncate">Save Layout</span>
+        </button>
+        <a href="/dashboard" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-surface-dark hover:bg-[#3d3e52] border border-border-dark text-white text-sm font-bold leading-normal tracking-[0.015em] transition-colors">
+          <span class="truncate">Cancel</span>
+        </a>
+      </div>
+      <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 ring-2 ring-border-dark bg-primary/30 flex items-center justify-center">
+        <span class="material-symbols-outlined text-primary">person</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="flex flex-1 overflow-hidden h-full">
+    <!-- Sidebar: Widget Library -->
+    <aside class="w-80 flex-none flex flex-col bg-[#111217] border-r border-border-dark z-10">
+      <!-- Sidebar Header -->
+      <div class="px-5 pt-6 pb-2">
+        <h3 class="text-white text-lg font-bold">Widget Library</h3>
+        <p class="text-text-secondary text-sm mt-1">Drag widgets to the dashboard</p>
+      </div>
+      <!-- Search -->
+      <div class="px-5 py-4">
+        <label class="flex flex-col h-10 w-full">
+          <div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-border-dark bg-surface-dark focus-within:border-primary transition-colors">
+            <div class="text-text-secondary flex items-center justify-center pl-3 pr-2">
+              <span class="material-symbols-outlined text-[20px]">search</span>
+            </div>
+            <input class="flex w-full min-w-0 flex-1 bg-transparent text-white focus:outline-none placeholder:text-text-secondary text-sm font-normal" placeholder="Search modules..." id="widgetSearch">
+          </div>
+        </label>
+      </div>
+      <!-- Library Categories -->
+      <div class="flex-1 overflow-y-auto custom-scrollbar px-5 pb-6 space-y-3">
+        <!-- Market Data -->
+        <details class="flex flex-col rounded-lg border border-border-dark bg-[#16171d] group" open>
+          <summary class="flex cursor-pointer items-center justify-between px-4 py-3 select-none hover:bg-surface-dark transition-colors rounded-t-lg group-open:rounded-b-none">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">candlestick_chart</span>
+              <p class="text-white text-sm font-bold">Market Data</p>
+            </div>
+            <span class="material-symbols-outlined text-text-secondary group-open:rotate-180 transition-transform text-[20px]">expand_more</span>
+          </summary>
+          <div class="p-2 pt-0 space-y-1 bg-[#16171d] rounded-b-lg">
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="market-overview">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">show_chart</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Market Overview</p>
+                <p class="text-xs text-text-secondary">Major indices graph</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="forex-rates">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">currency_exchange</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Forex Rates</p>
+                <p class="text-xs text-text-secondary">Real-time pairs</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+          </div>
+        </details>
+        <!-- Portfolio -->
+        <details class="flex flex-col rounded-lg border border-border-dark bg-[#16171d] group" open>
+          <summary class="flex cursor-pointer items-center justify-between px-4 py-3 select-none hover:bg-surface-dark transition-colors rounded-t-lg group-open:rounded-b-none">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">pie_chart</span>
+              <p class="text-white text-sm font-bold">Portfolio Analysis</p>
+            </div>
+            <span class="material-symbols-outlined text-text-secondary group-open:rotate-180 transition-transform text-[20px]">expand_more</span>
+          </summary>
+          <div class="p-2 pt-0 space-y-1 bg-[#16171d] rounded-b-lg">
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="asset-allocation">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">donut_small</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Asset Allocation</p>
+                <p class="text-xs text-text-secondary">Sector breakdown</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="total-balance">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Total Balance</p>
+                <p class="text-xs text-text-secondary">Aggregated value</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="performance-chart">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">trending_up</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Performance Chart</p>
+                <p class="text-xs text-text-secondary">Historical returns</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+          </div>
+        </details>
+        <!-- Tools & AI -->
+        <details class="flex flex-col rounded-lg border border-border-dark bg-[#16171d] group">
+          <summary class="flex cursor-pointer items-center justify-between px-4 py-3 select-none hover:bg-surface-dark transition-colors rounded-t-lg group-open:rounded-b-none">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">psychology</span>
+              <p class="text-white text-sm font-bold">AI Insights</p>
+            </div>
+            <span class="material-symbols-outlined text-text-secondary group-open:rotate-180 transition-transform text-[20px]">expand_more</span>
+          </summary>
+          <div class="p-2 pt-0 space-y-1 bg-[#16171d] rounded-b-lg">
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="ai-assistant">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">smart_toy</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">AI Assistant</p>
+                <p class="text-xs text-text-secondary">Ask questions</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+          </div>
+        </details>
+        <!-- News & Feeds -->
+        <details class="flex flex-col rounded-lg border border-border-dark bg-[#16171d] group">
+          <summary class="flex cursor-pointer items-center justify-between px-4 py-3 select-none hover:bg-surface-dark transition-colors rounded-t-lg group-open:rounded-b-none">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">newspaper</span>
+              <p class="text-white text-sm font-bold">News & Feeds</p>
+            </div>
+            <span class="material-symbols-outlined text-text-secondary group-open:rotate-180 transition-transform text-[20px]">expand_more</span>
+          </summary>
+          <div class="p-2 pt-0 space-y-1 bg-[#16171d] rounded-b-lg">
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="global-news">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">rss_feed</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Global News</p>
+                <p class="text-xs text-text-secondary">Top headlines</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+          </div>
+        </details>
+        <!-- Calendar -->
+        <details class="flex flex-col rounded-lg border border-border-dark bg-[#16171d] group">
+          <summary class="flex cursor-pointer items-center justify-between px-4 py-3 select-none hover:bg-surface-dark transition-colors rounded-t-lg group-open:rounded-b-none">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">event</span>
+              <p class="text-white text-sm font-bold">Calendars</p>
+            </div>
+            <span class="material-symbols-outlined text-text-secondary group-open:rotate-180 transition-transform text-[20px]">expand_more</span>
+          </summary>
+          <div class="p-2 pt-0 space-y-1 bg-[#16171d] rounded-b-lg">
+            <div class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-dark cursor-grab active:cursor-grabbing group/item border border-transparent hover:border-border-dark transition-all draggable-widget" data-widget="economic-calendar">
+              <div class="size-8 rounded bg-surface-dark border border-border-dark flex items-center justify-center text-text-secondary group-hover/item:text-white">
+                <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-sm font-medium">Economic Calendar</p>
+                <p class="text-xs text-text-secondary">Key events</p>
+              </div>
+              <span class="material-symbols-outlined text-text-secondary text-[16px]">drag_indicator</span>
+            </div>
+          </div>
+        </details>
+      </div>
+    </aside>
+
+    <!-- Main Canvas -->
+    <main class="flex-1 flex flex-col relative bg-[#0f1115]">
+      <!-- Header for Canvas -->
+      <div class="flex-none px-8 py-6 flex justify-between items-end border-b border-border-dark/50 bg-[#0f1115]/80 backdrop-blur-sm z-10">
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-white text-2xl font-bold leading-tight">Editing 'Main Trading'</h1>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/20 text-primary border border-primary/30">Edit Mode Active</span>
+          </div>
+          <p class="text-text-secondary text-sm font-normal mt-1">Drag and drop widgets to customize your view.</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <button id="resetLayoutBtn" class="flex items-center gap-2 text-text-secondary hover:text-white text-sm font-medium transition-colors">
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+            Reset Layout
+          </button>
+          <div class="h-4 w-px bg-border-dark"></div>
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-text-secondary text-[18px]">grid_view</span>
+            <span class="text-sm text-text-secondary">Grid Snap: On</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid Area -->
+      <div class="flex-1 overflow-y-auto overflow-x-hidden p-8 bg-grid-pattern relative" id="dashboardGrid">
+        <!-- CSS Grid Container -->
+        <div class="grid grid-cols-12 gap-6 min-h-[800px] auto-rows-[minmax(180px,auto)] pb-20" id="widgetGrid">
+          <!-- WIDGET 1: Portfolio Summary -->
+          <div class="col-span-12 md:col-span-4 row-span-1 flex flex-col rounded-xl border-2 border-primary/50 bg-surface-dark shadow-lg relative group cursor-move widget" data-widget-id="1">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-border-dark bg-[#232431] rounded-t-[10px] handle">
+              <div class="flex items-center gap-2 text-text-secondary">
+                <span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-white">Portfolio Value</span>
+              </div>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1 hover:text-white text-text-secondary"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+                <button class="p-1 hover:text-red-400 text-text-secondary remove-widget"><span class="material-symbols-outlined text-[16px]">close</span></button>
+              </div>
+            </div>
+            <div class="flex-1 p-5 flex flex-col justify-center">
+              <p class="text-text-secondary text-sm font-medium mb-1">Total Balance</p>
+              <h2 class="text-3xl font-bold text-white tracking-tight"><%= typeof fmt !== 'undefined' ? fmt.money(safeTotals.value || 0) : '$0.00' %></h2>
+              <div class="flex items-center gap-2 mt-2">
+                <% const gainPct = ((safeTotals.gain || 0) / (safeTotals.cost || 1) * 100); %>
+                <span class="<%= gainPct >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20' %> border px-1.5 py-0.5 rounded text-xs font-bold flex items-center gap-0.5">
+                  <span class="material-symbols-outlined text-[12px]"><%= gainPct >= 0 ? 'trending_up' : 'trending_down' %></span>
+                  <%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(2) %>%
+                </span>
+                <span class="text-text-secondary text-xs">vs last week</span>
+              </div>
+            </div>
+            <div class="resize-handle"></div>
+          </div>
+
+          <!-- WIDGET 2: Watchlist -->
+          <div class="col-span-12 md:col-span-8 row-span-2 flex flex-col rounded-xl border border-border-dark bg-surface-dark shadow-lg relative group cursor-move hover:border-primary/50 transition-colors widget" data-widget-id="2">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-border-dark bg-[#232431] rounded-t-[10px] handle">
+              <div class="flex items-center gap-2 text-text-secondary">
+                <span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-white">Watchlist</span>
+              </div>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1 hover:text-white text-text-secondary"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+                <button class="p-1 hover:text-red-400 text-text-secondary remove-widget"><span class="material-symbols-outlined text-[16px]">close</span></button>
+              </div>
+            </div>
+            <div class="flex-1 overflow-hidden flex flex-col">
+              <!-- List Header -->
+              <div class="flex items-center px-4 py-2 border-b border-border-dark/50 text-xs font-medium text-text-secondary uppercase">
+                <div class="w-1/3">Asset</div>
+                <div class="w-1/4 text-right">Price</div>
+                <div class="w-1/4 text-right">24h Change</div>
+                <div class="flex-1"></div>
+              </div>
+              <!-- List Items -->
+              <div class="overflow-y-auto">
+                <% if (safeWatchlist && safeWatchlist.length > 0) { %>
+                  <% safeWatchlist.slice(0, 5).forEach(w => {
+                    const change = w.changePercent || (Math.random() * 6 - 2);
+                  %>
+                  <div class="flex items-center px-4 py-3 hover:bg-[#292a38]/50 border-b border-border-dark/30 transition-colors">
+                    <div class="w-1/3 flex items-center gap-3">
+                      <div class="size-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white"><%= (w.symbol || 'XX').substring(0, 3) %></div>
+                      <div>
+                        <p class="text-sm font-bold text-white"><%= w.name || w.symbol %></p>
+                        <p class="text-xs text-text-secondary"><%= w.symbol %>/USD</p>
+                      </div>
+                    </div>
+                    <div class="w-1/4 text-right text-sm font-medium text-white">$<%= (w.price || 0).toFixed(2) %></div>
+                    <div class="w-1/4 text-right text-sm font-medium <%= change >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= change >= 0 ? '+' : '' %><%= change.toFixed(2) %>%</div>
+                    <div class="flex-1 flex justify-end">
+                      <span class="material-symbols-outlined text-text-secondary text-[16px] cursor-pointer">more_vert</span>
+                    </div>
+                  </div>
+                  <% }) %>
+                <% } else { %>
+                  <% const demoStocks = [{symbol: 'BTC', name: 'Bitcoin', price: 64230.50, change: 1.25}, {symbol: 'ETH', name: 'Ethereum', price: 3450.20, change: -0.45}, {symbol: 'NVDA', name: 'NVIDIA', price: 890.12, change: 3.12}, {symbol: 'AAPL', name: 'Apple Inc.', price: 172.50, change: 0.0}]; %>
+                  <% demoStocks.forEach(s => { %>
+                  <div class="flex items-center px-4 py-3 hover:bg-[#292a38]/50 border-b border-border-dark/30 transition-colors">
+                    <div class="w-1/3 flex items-center gap-3">
+                      <div class="size-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white"><%= s.symbol %></div>
+                      <div>
+                        <p class="text-sm font-bold text-white"><%= s.name %></p>
+                        <p class="text-xs text-text-secondary"><%= s.symbol %>/USD</p>
+                      </div>
+                    </div>
+                    <div class="w-1/4 text-right text-sm font-medium text-white">$<%= s.price.toLocaleString() %></div>
+                    <div class="w-1/4 text-right text-sm font-medium <%= s.change >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= s.change >= 0 ? '+' : '' %><%= s.change.toFixed(2) %>%</div>
+                    <div class="flex-1 flex justify-end">
+                      <span class="material-symbols-outlined text-text-secondary text-[16px] cursor-pointer">more_vert</span>
+                    </div>
+                  </div>
+                  <% }) %>
+                <% } %>
+              </div>
+            </div>
+            <div class="resize-handle"></div>
+          </div>
+
+          <!-- WIDGET 3: Allocation -->
+          <div class="col-span-12 md:col-span-4 row-span-1 flex flex-col rounded-xl border border-border-dark bg-surface-dark shadow-lg relative group cursor-move hover:border-primary/50 transition-colors widget" data-widget-id="3">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-border-dark bg-[#232431] rounded-t-[10px] handle">
+              <div class="flex items-center gap-2 text-text-secondary">
+                <span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-white">Allocation</span>
+              </div>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1 hover:text-white text-text-secondary"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+                <button class="p-1 hover:text-red-400 text-text-secondary remove-widget"><span class="material-symbols-outlined text-[16px]">close</span></button>
+              </div>
+            </div>
+            <div class="flex-1 p-5 flex items-center justify-center relative">
+              <div class="size-32 rounded-full relative" style="background: conic-gradient(#4850e5 0% 45%, #8b5cf6 45% 70%, #10b981 70% 85%, #3f3f46 85% 100%);">
+                <div class="absolute inset-4 bg-surface-dark rounded-full flex items-center justify-center flex-col">
+                  <span class="text-xs text-text-secondary">Top</span>
+                  <span class="text-sm font-bold text-white">Tech</span>
+                </div>
+              </div>
+              <div class="ml-6 space-y-2">
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-primary"></div>
+                  <span class="text-xs text-text-secondary">Tech (45%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-purple-500"></div>
+                  <span class="text-xs text-text-secondary">Crypto (25%)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="size-2 rounded-full bg-emerald-500"></div>
+                  <span class="text-xs text-text-secondary">Energy (15%)</span>
+                </div>
+              </div>
+            </div>
+            <div class="resize-handle"></div>
+          </div>
+
+          <!-- WIDGET 4: Economic Calendar -->
+          <div class="col-span-12 md:col-span-4 row-span-1 flex flex-col rounded-xl border border-border-dark bg-surface-dark shadow-lg relative group cursor-move hover:border-primary/50 transition-colors widget" data-widget-id="4">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-border-dark bg-[#232431] rounded-t-[10px] handle">
+              <div class="flex items-center gap-2 text-text-secondary">
+                <span class="material-symbols-outlined text-[16px]">drag_indicator</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-white">Calendar</span>
+              </div>
+              <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1 hover:text-white text-text-secondary"><span class="material-symbols-outlined text-[16px]">settings</span></button>
+                <button class="p-1 hover:text-red-400 text-text-secondary remove-widget"><span class="material-symbols-outlined text-[16px]">close</span></button>
+              </div>
+            </div>
+            <div class="flex-1 p-4 space-y-3">
+              <div class="flex gap-3">
+                <div class="w-12 h-12 rounded-lg bg-[#292a38] flex flex-col items-center justify-center shrink-0 border border-border-dark">
+                  <span class="text-[10px] uppercase text-text-secondary font-bold">Jan</span>
+                  <span class="text-lg font-bold text-white">15</span>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-white leading-tight">FOMC Meeting</p>
+                  <p class="text-xs text-text-secondary mt-0.5">High Impact - 14:00 EST</p>
+                </div>
+              </div>
+              <div class="flex gap-3 opacity-60">
+                <div class="w-12 h-12 rounded-lg bg-[#292a38] flex flex-col items-center justify-center shrink-0 border border-border-dark">
+                  <span class="text-[10px] uppercase text-text-secondary font-bold">Jan</span>
+                  <span class="text-lg font-bold text-white">20</span>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-white leading-tight">GDP Growth Rate</p>
+                  <p class="text-xs text-text-secondary mt-0.5">Medium Impact - 08:30 EST</p>
+                </div>
+              </div>
+            </div>
+            <div class="resize-handle"></div>
+          </div>
+
+          <!-- Placeholder Drop Zone -->
+          <div class="col-span-12 md:col-span-8 row-span-1 border-2 border-dashed border-border-dark rounded-xl flex items-center justify-center min-h-[180px] bg-[#14151a] hover:bg-[#1a1c23] hover:border-primary/40 transition-all cursor-pointer group drop-zone" id="dropZone">
+            <div class="flex flex-col items-center gap-2">
+              <div class="size-10 rounded-full bg-[#292a38] flex items-center justify-center text-text-secondary group-hover:text-primary group-hover:scale-110 transition-all">
+                <span class="material-symbols-outlined">add</span>
+              </div>
+              <p class="text-text-secondary font-medium text-sm group-hover:text-white">Drop widget here</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const widgetGrid = document.getElementById('widgetGrid');
+
+  // Initialize Sortable for widget grid
+  if (widgetGrid) {
+    new Sortable(widgetGrid, {
+      animation: 150,
+      ghostClass: 'opacity-50',
+      chosenClass: 'ring-2 ring-primary',
+      dragClass: 'shadow-2xl',
+      handle: '.handle',
+      filter: '.drop-zone',
+      onEnd: function(evt) {
+        console.log('Widget moved from', evt.oldIndex, 'to', evt.newIndex);
+      }
+    });
+  }
+
+  // Remove widget functionality
+  document.querySelectorAll('.remove-widget').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const widget = this.closest('.widget');
+      if (widget && confirm('Remove this widget?')) {
+        widget.style.transform = 'scale(0.9)';
+        widget.style.opacity = '0';
+        setTimeout(() => widget.remove(), 200);
+      }
+    });
+  });
+
+  // Save layout
+  document.getElementById('saveLayoutBtn').addEventListener('click', function() {
+    const layout = [];
+    document.querySelectorAll('.widget').forEach(w => {
+      layout.push({
+        id: w.dataset.widgetId,
+        position: Array.from(w.parentNode.children).indexOf(w)
+      });
+    });
+    localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+    alert('Layout saved successfully!');
+  });
+
+  // Reset layout
+  document.getElementById('resetLayoutBtn').addEventListener('click', function() {
+    if (confirm('Reset to default layout?')) {
+      localStorage.removeItem('dashboardLayout');
+      location.reload();
+    }
+  });
+
+  // Widget search
+  document.getElementById('widgetSearch').addEventListener('input', function(e) {
+    const query = e.target.value.toLowerCase();
+    document.querySelectorAll('.draggable-widget').forEach(w => {
+      const text = w.textContent.toLowerCase();
+      w.style.display = text.includes(query) ? 'flex' : 'none';
+    });
+  });
+});
+</script>
+
+<%- include('../partials/footer') %>

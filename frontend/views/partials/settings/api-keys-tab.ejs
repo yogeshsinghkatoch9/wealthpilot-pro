@@ -1,0 +1,155 @@
+<div class="bloomberg-card">
+  <div class="border-b border-slate-700 pb-3 mb-6 flex items-center justify-between">
+    <div>
+      <h3 class="text-lg font-mono font-semibold text-amber-400">API KEYS</h3>
+      <p class="text-slate-400 text-sm mt-1">Manage your API keys for programmatic access</p>
+    </div>
+    <button onclick="showCreateApiKeyModal()" class="bloomberg-btn bloomberg-btn-primary text-sm">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      CREATE API KEY
+    </button>
+  </div>
+
+  <!-- API Keys List -->
+  <% if (apiKeys.length === 0) { %>
+    <div class="text-center py-12">
+      <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+      </svg>
+      <p class="text-slate-400 font-mono">No API keys created yet</p>
+      <p class="text-sm text-slate-500 font-mono mt-2">Create your first API key to access WealthPilot Pro programmatically</p>
+    </div>
+  <% } else { %>
+    <div class="space-y-3">
+      <% apiKeys.forEach(key => { %>
+        <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <h4 class="text-white font-mono font-semibold"><%= key.name %></h4>
+                <% if (key.isActive) { %>
+                  <span class="px-2 py-0.5 text-xs font-mono bg-emerald-500/20 text-emerald-400 rounded">ACTIVE</span>
+                <% } else { %>
+                  <span class="px-2 py-0.5 text-xs font-mono bg-slate-500/20 text-slate-400 rounded">INACTIVE</span>
+                <% } %>
+              </div>
+              <div class="text-sm font-mono text-slate-400 space-y-1">
+                <p>Created: <%= new Date(key.createdAt).toLocaleDateString() %></p>
+                <% if (key.lastUsedAt) { %>
+                  <p>Last used: <%= new Date(key.lastUsedAt).toLocaleDateString() %></p>
+                <% } %>
+                <% if (key.expiresAt) { %>
+                  <p>Expires: <%= new Date(key.expiresAt).toLocaleDateString() %></p>
+                <% } %>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick="toggleApiKey('<%= key.id %>', <%= !key.isActive %>)"
+                class="bloomberg-btn <%= key.isActive ? 'bloomberg-btn-secondary' : 'bloomberg-btn-primary' %> text-sm">
+                <%= key.isActive ? 'Deactivate' : 'Activate' %>
+              </button>
+              <button
+                onclick="deleteApiKey('<%= key.id %>', '<%= key.name %>')"
+                class="bloomberg-btn bloomberg-btn-danger text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <!-- API Documentation Link -->
+  <div class="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div>
+        <p class="text-amber-400 font-mono font-semibold mb-1">API Documentation</p>
+        <p class="text-sm text-slate-400 font-mono">Learn how to use the WealthPilot Pro API</p>
+        <a href="/help/api-docs" class="text-amber-400 hover:text-amber-300 text-sm font-mono underline mt-2 inline-block">
+          View API Documentation →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create API Key Modal -->
+<div id="create-api-key-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+  <div class="bloomberg-card max-w-md w-full">
+    <div class="border-b border-slate-700 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-amber-400">CREATE NEW API KEY</h3>
+    </div>
+
+    <form id="create-api-key-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Key Name
+        </label>
+        <input
+          type="text"
+          name="name"
+          required
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors"
+          placeholder="e.g., Production API Key">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Expires In (Days)
+        </label>
+        <input
+          type="number"
+          name="expiresIn"
+          min="1"
+          max="365"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors"
+          placeholder="90">
+        <p class="text-xs text-slate-500 mt-1 font-mono">Leave empty for no expiration</p>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <button type="submit" class="bloomberg-btn bloomberg-btn-primary flex-1">
+          CREATE KEY
+        </button>
+        <button type="button" onclick="hideCreateApiKeyModal()" class="bloomberg-btn bloomberg-btn-secondary">
+          CANCEL
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Show API Key Modal (shown once after creation) -->
+<div id="show-api-key-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+  <div class="bloomberg-card max-w-md w-full">
+    <div class="border-b border-slate-700 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-amber-400">API KEY CREATED</h3>
+    </div>
+
+    <div class="mb-6">
+      <p class="text-amber-400 font-mono text-sm mb-4">⚠️ Save this key now. You won't be able to see it again!</p>
+      <div class="p-4 bg-slate-900 rounded-lg border border-slate-700">
+        <code id="new-api-key" class="text-emerald-400 font-mono text-sm break-all"></code>
+      </div>
+      <button onclick="copyApiKey()" class="bloomberg-btn bloomberg-btn-secondary w-full mt-3">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        COPY TO CLIPBOARD
+      </button>
+    </div>
+
+    <button onclick="hideShowApiKeyModal()" class="bloomberg-btn bloomberg-btn-primary w-full">
+      I'VE SAVED THE KEY
+    </button>
+  </div>
+</div>

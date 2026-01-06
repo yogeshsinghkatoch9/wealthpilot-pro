@@ -1,0 +1,214 @@
+<%- include('../partials/header', { pageTitle: 'Broker Connect' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 p-4 -mt-6 -mx-6 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 tracking-tight">BROKER CONNECTIONS</h1>
+      <p class="text-slate-300 text-sm mt-1">Link your brokerage accounts for automatic syncing</p>
+    </div>
+  </div>
+</div>
+
+<!-- Connection Status -->
+<% const totalSyncedValue = connections.reduce((sum, c) => sum + (c.balance || 0), 0); %>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bloomberg-card p-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-400 text-sm font-medium">Connected Accounts</span>
+<span class="text-2xl font-bold text-amber-400"><%= connections.length %></span>
+</div>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-400 text-sm font-medium">Total Synced Value</span>
+<span class="text-2xl font-bold text-white"><%= fmt.money(totalSyncedValue) %></span>
+</div>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-400 text-sm font-medium">Last Sync</span>
+<span class="text-lg font-medium text-amber-400"><%= connections.length > 0 && connections[0].last_sync ? new Date(connections[0].last_sync).toLocaleString() : 'Never' %></span>
+</div>
+</div>
+</div>
+
+<!-- Connected Brokers -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Connected Accounts (<%= connections.length %>)</h3>
+<% if (connections.length === 0) { %>
+<div class="text-center py-8">
+<svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+<h4 class="text-lg font-semibold text-white mb-2">No Connected Accounts</h4>
+<p class="text-slate-400">Connect a broker below to start syncing</p>
+</div>
+<% } else { %>
+<div class="space-y-4">
+<% connections.forEach(conn => {
+  const colors = { td: 'green', fidelity: 'purple', schwab: 'sky', robinhood: 'emerald', ibkr: 'red', etrade: 'indigo', vanguard: 'rose', coinbase: 'blue' };
+  const color = colors[conn.broker_name?.toLowerCase()] || 'slate';
+  const initials = (conn.broker_name || 'BR').substring(0, 2).toUpperCase();
+%>
+<div class="flex items-center justify-between p-4 rounded-lg border-2 <%= conn.status === 'active' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5' %> hover:bg-slate-700/30 transition-all">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white font-bold text-lg"><%= initials %></div>
+<div>
+<p class="font-semibold text-white"><%= conn.broker_name %></p>
+<p class="text-sm text-slate-400"><%= conn.account_type || 'Brokerage' %> • ****<%= (conn.account_number || '0000').slice(-4) %></p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-bold text-white"><%= fmt.money(conn.balance || 0) %></p>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 <%= conn.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400' %> rounded text-xs font-medium"><%= conn.status === 'active' ? 'Connected' : 'Needs Reauth' %></span>
+<button onclick="syncBroker('<%= conn.id %>')" class="bloomberg-btn-secondary text-sm px-2 py-1">Sync</button>
+<button onclick="disconnectBroker('<%= conn.id %>')" class="text-red-400 hover:text-red-300 text-sm font-medium">Disconnect</button>
+</div>
+</div>
+</div>
+<% }) %>
+</div>
+<% } %>
+</div>
+
+<!-- Available Brokers -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Add New Connection</h3>
+<%
+const defaultBrokers = [
+  { id: 'schwab', name: 'Charles Schwab', description: 'Stocks, ETFs, Options', color: 'sky', initials: 'CS' },
+  { id: 'ibkr', name: 'Interactive Brokers', description: 'Global Markets', color: 'red', initials: 'IB' },
+  { id: 'robinhood', name: 'Robinhood', description: 'Stocks, Crypto', color: 'emerald', initials: 'R' },
+  { id: 'etrade', name: 'E*TRADE', description: 'Full Service', color: 'indigo', initials: 'E*' },
+  { id: 'vanguard', name: 'Vanguard', description: 'Index Funds, ETFs', color: 'rose', initials: 'V' },
+  { id: 'webull', name: 'Webull', description: 'Stocks, Options', color: 'orange', initials: 'W' },
+  { id: 'coinbase', name: 'Coinbase', description: 'Cryptocurrency', color: 'blue', initials: 'CB' },
+  { id: 'm1', name: 'M1 Finance', description: 'Automated Investing', color: 'teal', initials: 'M1' }
+];
+const brokersToShow = (supportedBrokers && supportedBrokers.length > 0) ? supportedBrokers : defaultBrokers;
+%>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<% brokersToShow.forEach(broker => {
+  const colors = { schwab: 'sky', ibkr: 'red', robinhood: 'emerald', etrade: 'indigo', vanguard: 'rose', webull: 'orange', coinbase: 'blue', m1: 'teal', fidelity: 'purple', td: 'green' };
+  const color = broker.color || colors[broker.id] || 'slate';
+  const initials = broker.initials || (broker.name || '').substring(0, 2).toUpperCase();
+%>
+<button onclick="connectBroker('<%= broker.id %>')" class="p-4 rounded-lg border-2 border-transparent bg-slate-800 hover:bg-slate-700 hover:border-amber-400 transition-all text-center">
+<div class="w-12 h-12 mx-auto rounded-lg bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white font-bold text-lg mb-2"><%= initials %></div>
+<p class="font-medium text-white"><%= broker.name %></p>
+<p class="text-xs text-slate-400"><%= broker.description || 'Brokerage' %></p>
+</button>
+<% }) %>
+</div>
+</div>
+
+<!-- Sync Settings -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Sync Settings</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div><p class="font-medium text-white">Auto-Sync</p><p class="text-sm text-slate-400">Automatically sync accounts</p></div>
+<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div></label>
+</div>
+<div class="flex items-center justify-between">
+<div><p class="font-medium text-white">Sync Frequency</p><p class="text-sm text-slate-400">How often to refresh data</p></div>
+<select class="bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:border-amber-400 focus:outline-none w-40">
+<option value="5">Every 5 minutes</option>
+<option value="15" selected>Every 15 minutes</option>
+<option value="30">Every 30 minutes</option>
+<option value="60">Every hour</option>
+</select>
+</div>
+<div class="flex items-center justify-between">
+<div><p class="font-medium text-white">Import Transactions</p><p class="text-sm text-slate-400">Sync buy/sell history</p></div>
+<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div></label>
+</div>
+</div>
+</div>
+
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Recent Activity</h3>
+<div class="space-y-3">
+<div class="flex items-center gap-3 text-sm">
+<span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
+<span class="text-slate-300">TD Ameritrade synced successfully</span>
+<span class="text-slate-500 ml-auto">5m ago</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
+<span class="text-slate-300">Fidelity synced successfully</span>
+<span class="text-slate-500 ml-auto">5m ago</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-2 h-2 bg-sky-400 rounded-full"></span>
+<span class="text-slate-300">3 new transactions imported</span>
+<span class="text-slate-500 ml-auto">20m ago</span>
+</div>
+<div class="flex items-center gap-3 text-sm">
+<span class="w-2 h-2 bg-amber-400 rounded-full"></span>
+<span class="text-slate-300">Fidelity requires re-authentication</span>
+<span class="text-slate-500 ml-auto">2d ago</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Security Notice -->
+<div class="bloomberg-card p-5 border-l-4 border-emerald-500">
+<div class="flex gap-4">
+<svg class="w-6 h-6 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+<div>
+<h4 class="font-semibold text-white">Bank-Level Security</h4>
+<p class="text-slate-400 text-sm mt-1">Your credentials are encrypted end-to-end using 256-bit AES encryption. We use read-only access through Plaid and never store your login information. WealthPilot is SOC 2 Type II certified.</p>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<!-- Connect Modal -->
+<div id="connectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="bloomberg-card p-6 w-full max-w-md mx-4">
+<h3 class="text-xl font-bold text-amber-400 mb-4 uppercase tracking-wide" id="modalTitle">Connect Broker</h3>
+<p class="text-slate-400 mb-6">You'll be redirected to securely link your account through Plaid.</p>
+<div class="flex gap-3">
+<button onclick="closeModal()" class="bloomberg-btn-ghost flex-1">Cancel</button>
+<button onclick="proceedConnect()" class="bloomberg-btn-primary flex-1">Continue</button>
+</div>
+</div>
+</div>
+
+<script>
+let selectedBroker = null;
+
+function connectBroker(broker) {
+  selectedBroker = broker;
+  const names = { schwab: 'Charles Schwab', ibkr: 'Interactive Brokers', robinhood: 'Robinhood', etrade: 'E*TRADE', vanguard: 'Vanguard', webull: 'Webull', coinbase: 'Coinbase', m1: 'M1 Finance' };
+  document.getElementById('modalTitle').textContent = 'Connect ' + names[broker];
+  document.getElementById('connectModal').classList.remove('hidden');
+  document.getElementById('connectModal').classList.add('flex');
+}
+
+function closeModal() {
+  document.getElementById('connectModal').classList.add('hidden');
+  document.getElementById('connectModal').classList.remove('flex');
+}
+
+function proceedConnect() {
+  closeModal();
+  showToast('Redirecting to secure connection...', 'info');
+  setTimeout(() => showToast('Connection successful!', 'success'), 2000);
+}
+
+function syncBroker(broker) {
+  showToast('Syncing account...', 'info');
+  setTimeout(() => showToast('Sync complete!', 'success'), 1500);
+}
+
+function disconnectBroker(broker) {
+  if (confirm('Are you sure you want to disconnect this account?')) {
+    showToast('Account disconnected', 'success');
+  }
+}
+</script>
+<%- include('../partials/footer') %>

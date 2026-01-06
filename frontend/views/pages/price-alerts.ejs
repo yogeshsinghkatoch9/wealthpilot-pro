@@ -1,0 +1,591 @@
+<%- include('../partials/header', { pageTitle: 'Price Alerts & Notifications' }) %>
+<%
+  // Ensure all variables have defaults
+  const safeAlerts = typeof alerts !== 'undefined' && alerts ? alerts : [];
+  const safeNotifications = typeof notifications !== 'undefined' && notifications ? notifications : [];
+  const safeUser = typeof user !== 'undefined' && user ? user : { name: 'User', membership: 'Pro Member' };
+
+  // Sample data for demonstration (will be replaced with actual data from backend)
+  const sampleAlerts = safeAlerts.length > 0 ? safeAlerts : [
+    { id: 1, symbol: 'BTC', name: 'Bitcoin', pair: 'BTC/USD', condition: 'Price drops below', target: 42500, status: 'active', logo: 'https://cryptologos.cc/logos/bitcoin-btc-logo.png' },
+    { id: 2, symbol: 'NVDA', name: 'NVIDIA', pair: 'NVDA', condition: 'Price rises above', target: 500, status: 'active', logo: '' },
+    { id: 3, symbol: 'ETH', name: 'Ethereum', pair: 'ETH/USD', condition: 'Volume spike', target: 100000, status: 'paused', logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
+    { id: 4, symbol: 'TSLA', name: 'Tesla', pair: 'TSLA', condition: '% Change (24h)', target: -5, status: 'triggered', logo: '' }
+  ];
+
+  const sampleNotifications = safeNotifications.length > 0 ? safeNotifications : [
+    { id: 1, type: 'alert', icon: 'bolt', iconColor: 'primary', title: 'Tesla (TSLA) dropped below target', description: 'Price hit $210.50 (-5.2%)', time: '24 mins ago', unread: true },
+    { id: 2, type: 'portfolio', icon: 'trending_up', iconColor: 'green', title: 'Portfolio value up 2.4%', description: 'Your weekly performance summary is ready.', time: 'Yesterday, 9:00 AM', unread: false },
+    { id: 3, type: 'warning', icon: 'warning', iconColor: 'orange', title: 'Price Alert Expired', description: 'AAPL > $200 alert has expired without triggering.', time: '2 Days ago', unread: false },
+    { id: 4, type: 'announcement', icon: 'campaign', iconColor: 'blue', title: 'New Feature Available', description: 'Try the new advanced charting tools now.', time: '3 Days ago', unread: false }
+  ];
+%>
+
+<style>
+  /* Stitch Design System Custom Styles */
+  .stitch-input {
+    width: 100%;
+    background: #111217;
+    border: 1px solid #292a38;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: white;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+  }
+
+  .stitch-input:focus {
+    outline: none;
+    border-color: #4850e5;
+    box-shadow: 0 0 0 1px #4850e5;
+  }
+
+  .stitch-input::placeholder {
+    color: #9e9fb7;
+  }
+
+  .stitch-select {
+    width: 100%;
+    background: #111217;
+    border: 1px solid #292a38;
+    border-radius: 0.5rem;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    color: white;
+    font-size: 0.875rem;
+    appearance: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .stitch-select:focus {
+    outline: none;
+    border-color: #4850e5;
+    box-shadow: 0 0 0 1px #4850e5;
+  }
+
+  .stitch-card {
+    background: #1c1d26;
+    border: 1px solid #292a38;
+    border-radius: 0.75rem;
+  }
+
+  .stitch-btn-primary {
+    background: #4850e5;
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .stitch-btn-primary:hover {
+    background: #3a42d1;
+  }
+
+  .stitch-btn-secondary {
+    background: #1c1d26;
+    border: 1px solid #292a38;
+    color: white;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .stitch-btn-secondary:hover {
+    background: #252632;
+  }
+
+  .stitch-checkbox {
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    background: #111217;
+    border: 1px solid #292a38;
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+
+  .stitch-checkbox:checked {
+    background: #4850e5;
+    border-color: #4850e5;
+    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .status-active {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+  }
+
+  .status-paused {
+    background: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+  }
+
+  .status-triggered {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+
+  .notification-item {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  .notification-item:hover {
+    background: #111217;
+  }
+
+  .icon-bg-primary { background: rgba(72, 80, 229, 0.2); color: #4850e5; }
+  .icon-bg-green { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+  .icon-bg-orange { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+  .icon-bg-blue { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+  .icon-bg-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+</style>
+
+<main class="p-4 lg:p-6 min-h-screen">
+  <div class="max-w-full mx-auto space-y-8">
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold tracking-tight text-white mb-1">Manage Alerts</h1>
+        <p class="text-text-secondary">Stay ahead of market movements with real-time notifications.</p>
+      </div>
+      <button id="pauseAllBtn" class="stitch-btn-secondary flex items-center gap-2 text-sm">
+        <span class="material-symbols-outlined text-[20px]">pause_circle</span>
+        Pause All Alerts
+      </button>
+    </div>
+
+    <!-- Create New Alert Section -->
+    <section class="stitch-card p-6 shadow-sm">
+      <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">add_alert</span>
+        Create New Alert
+      </h3>
+
+      <form id="createAlertForm" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Asset Search -->
+        <div class="md:col-span-4">
+          <label class="block text-xs font-medium text-text-secondary mb-2 uppercase tracking-wider">Asset</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">search</span>
+            <input
+              type="text"
+              name="asset"
+              id="assetSearch"
+              class="stitch-input pl-10"
+              placeholder="Search asset (e.g., BTC, AAPL)"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <!-- Condition Type -->
+        <div class="md:col-span-3">
+          <label class="block text-xs font-medium text-text-secondary mb-2 uppercase tracking-wider">Condition</label>
+          <div class="relative">
+            <select name="condition" id="alertCondition" class="stitch-select">
+              <option value="above">Price moves above</option>
+              <option value="below">Price moves below</option>
+              <option value="percent_change">% Change (24h)</option>
+              <option value="volume_spike">Volume Spike</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none">expand_more</span>
+          </div>
+        </div>
+
+        <!-- Target Value -->
+        <div class="md:col-span-3">
+          <label class="block text-xs font-medium text-text-secondary mb-2 uppercase tracking-wider">Target Value</label>
+          <div class="relative">
+            <span id="targetPrefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm font-bold">$</span>
+            <input
+              type="number"
+              name="target"
+              id="targetValue"
+              class="stitch-input pl-8"
+              placeholder="0.00"
+              step="0.01"
+            />
+          </div>
+        </div>
+
+        <!-- Create Button -->
+        <div class="md:col-span-2 flex items-end">
+          <button type="submit" class="stitch-btn-primary w-full h-[50px] flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">check</span>
+            Set Alert
+          </button>
+        </div>
+      </form>
+
+      <!-- Notification Methods -->
+      <div class="mt-6 flex flex-wrap items-center gap-4 border-t border-border-dark pt-4">
+        <span class="text-sm font-medium text-text-secondary">Notify me via:</span>
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" name="notify_inapp" checked class="stitch-checkbox" />
+          <span class="text-sm text-white group-hover:text-primary transition-colors">In-App</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" name="notify_email" checked class="stitch-checkbox" />
+          <span class="text-sm text-white group-hover:text-primary transition-colors">Email</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" name="notify_sms" class="stitch-checkbox" />
+          <span class="text-sm text-white group-hover:text-primary transition-colors">SMS</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Alerts & History Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+      <!-- Current Alerts Table (Takes up 2/3 width on large screens) -->
+      <section class="lg:col-span-2 stitch-card shadow-sm flex flex-col">
+        <div class="p-6 border-b border-border-dark flex justify-between items-center">
+          <h3 class="text-lg font-bold text-white">Active Alerts</h3>
+          <div class="flex gap-2">
+            <button class="p-1.5 rounded-md hover:bg-[#111217] text-text-secondary hover:text-white transition-colors" title="Filter">
+              <span class="material-symbols-outlined text-[20px]">filter_list</span>
+            </button>
+            <button class="p-1.5 rounded-md hover:bg-[#111217] text-text-secondary hover:text-white transition-colors" title="Sort">
+              <span class="material-symbols-outlined text-[20px]">sort</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse" id="alertsTable">
+            <thead>
+              <tr class="border-b border-border-dark text-xs uppercase text-text-secondary">
+                <th class="px-6 py-4 font-medium tracking-wider">Asset</th>
+                <th class="px-6 py-4 font-medium tracking-wider">Condition</th>
+                <th class="px-6 py-4 font-medium tracking-wider">Target</th>
+                <th class="px-6 py-4 font-medium tracking-wider">Status</th>
+                <th class="px-6 py-4 font-medium tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-dark text-sm" id="alertsTableBody">
+              <% sampleAlerts.forEach((alert, index) => { %>
+              <tr class="group hover:bg-[#111217] transition-colors" data-alert-id="<%= alert.id %>">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <% if (alert.logo) { %>
+                    <div class="size-8 rounded-full bg-<%= alert.symbol === 'BTC' ? 'orange' : alert.symbol === 'ETH' ? 'blue' : 'gray' %>-500/10 flex items-center justify-center p-1.5">
+                      <img src="<%= alert.logo %>" alt="<%= alert.symbol %>" class="w-full h-full object-contain" />
+                    </div>
+                    <% } else { %>
+                    <div class="size-8 rounded-full bg-black/50 flex items-center justify-center p-1.5 border border-border-dark">
+                      <span class="text-[10px] font-bold"><%= alert.symbol %></span>
+                    </div>
+                    <% } %>
+                    <div>
+                      <p class="font-bold text-white"><%= alert.name %></p>
+                      <p class="text-xs text-text-secondary"><%= alert.pair %></p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-white"><%= alert.condition %></td>
+                <td class="px-6 py-4 text-white font-mono">
+                  <% if (alert.condition === '% Change (24h)') { %>
+                    <%= alert.target %>%
+                  <% } else if (alert.condition === 'Volume spike') { %>
+                    > <%= (alert.target / 1000).toFixed(0) %>K
+                  <% } else { %>
+                    $<%= alert.target.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>
+                  <% } %>
+                </td>
+                <td class="px-6 py-4">
+                  <% if (alert.status === 'active') { %>
+                  <span class="status-badge status-active">
+                    <span class="size-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                    Active
+                  </span>
+                  <% } else if (alert.status === 'paused') { %>
+                  <span class="status-badge status-paused">
+                    <span class="size-1.5 rounded-full bg-yellow-500"></span>
+                    Paused
+                  </span>
+                  <% } else { %>
+                  <span class="status-badge status-triggered">
+                    <span class="material-symbols-outlined text-[14px]">history</span>
+                    Triggered
+                  </span>
+                  <% } %>
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="text-text-secondary hover:text-primary transition-colors" title="Edit alert" onclick="editAlert(<%= alert.id %>)">
+                      <span class="material-symbols-outlined text-[20px]">edit</span>
+                    </button>
+                    <button class="text-text-secondary hover:text-red-500 transition-colors" title="Delete alert" onclick="deleteAlert(<%= alert.id %>)">
+                      <span class="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <% }); %>
+
+              <% if (sampleAlerts.length === 0) { %>
+              <tr>
+                <td colspan="5" class="px-6 py-12 text-center text-text-secondary">
+                  <div class="flex flex-col items-center gap-3">
+                    <span class="material-symbols-outlined text-[48px] text-text-secondary/50">notifications_off</span>
+                    <p>No alerts configured yet.</p>
+                    <p class="text-sm">Create your first alert above to get started.</p>
+                  </div>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-4 border-t border-border-dark flex justify-center mt-auto">
+          <button class="text-sm text-primary font-bold hover:underline">View All Alerts</button>
+        </div>
+      </section>
+
+      <!-- Notification History (Takes up 1/3 width on large screens) -->
+      <section class="stitch-card shadow-sm flex flex-col h-full">
+        <div class="p-6 border-b border-border-dark">
+          <h3 class="text-lg font-bold text-white">Notification History</h3>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-2" id="notificationHistory">
+          <% sampleNotifications.forEach((notification) => { %>
+          <div class="notification-item relative">
+            <% if (notification.unread) { %>
+            <div class="absolute top-4 right-4 size-2 bg-primary rounded-full"></div>
+            <% } %>
+            <div class="flex gap-4">
+              <div class="size-10 rounded-full icon-bg-<%= notification.iconColor %> flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined"><%= notification.icon %></span>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-white mb-1"><%= notification.title %></p>
+                <p class="text-xs text-text-secondary mb-2"><%= notification.description %></p>
+                <span class="text-[10px] font-medium text-text-secondary uppercase tracking-wide"><%= notification.time %></span>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+
+          <% if (sampleNotifications.length === 0) { %>
+          <div class="p-6 text-center text-text-secondary">
+            <span class="material-symbols-outlined text-[48px] text-text-secondary/50 mb-3 block">inbox</span>
+            <p>No notifications yet.</p>
+          </div>
+          <% } %>
+        </div>
+
+        <div class="p-4 border-t border-border-dark flex justify-center">
+          <button id="clearHistoryBtn" class="text-sm text-text-secondary hover:text-white font-medium transition-colors">Clear History</button>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Create Alert Form Handler
+  const createAlertForm = document.getElementById('createAlertForm');
+  const conditionSelect = document.getElementById('alertCondition');
+  const targetPrefix = document.getElementById('targetPrefix');
+
+  // Update target prefix based on condition
+  conditionSelect.addEventListener('change', function() {
+    const condition = this.value;
+    if (condition === 'percent_change') {
+      targetPrefix.textContent = '%';
+    } else if (condition === 'volume_spike') {
+      targetPrefix.textContent = '>';
+    } else {
+      targetPrefix.textContent = '$';
+    }
+  });
+
+  // Form submission
+  createAlertForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const alertData = {
+      asset: formData.get('asset'),
+      condition: formData.get('condition'),
+      target: parseFloat(formData.get('target')),
+      notify_inapp: formData.get('notify_inapp') === 'on',
+      notify_email: formData.get('notify_email') === 'on',
+      notify_sms: formData.get('notify_sms') === 'on'
+    };
+
+    // Validate
+    if (!alertData.asset) {
+      showToast('Please enter an asset symbol', 'error');
+      return;
+    }
+    if (!alertData.target || isNaN(alertData.target)) {
+      showToast('Please enter a valid target value', 'error');
+      return;
+    }
+
+    // Send to API
+    fetch('/api/alerts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(alertData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else {
+        showToast('Alert created successfully!', 'success');
+        // Reset form
+        createAlertForm.reset();
+        // Optionally reload to show new alert
+        setTimeout(() => location.reload(), 1000);
+      }
+    })
+    .catch(err => {
+      console.error('Error creating alert:', err);
+      showToast('Failed to create alert', 'error');
+    });
+  });
+
+  // Pause All Alerts
+  document.getElementById('pauseAllBtn').addEventListener('click', function() {
+    const btn = this;
+    const isPaused = btn.textContent.includes('Resume');
+
+    fetch('/api/alerts/toggle-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ paused: !isPaused })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else {
+        if (isPaused) {
+          btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">pause_circle</span> Pause All Alerts';
+          showToast('All alerts resumed', 'success');
+        } else {
+          btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">play_circle</span> Resume All Alerts';
+          showToast('All alerts paused', 'success');
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Error toggling alerts:', err);
+      showToast('Failed to toggle alerts', 'error');
+    });
+  });
+
+  // Clear History
+  document.getElementById('clearHistoryBtn').addEventListener('click', function() {
+    if (!confirm('Are you sure you want to clear all notification history?')) return;
+
+    fetch('/api/notifications/clear', {
+      method: 'POST',
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+        showToast(data.error, 'error');
+      } else {
+        document.getElementById('notificationHistory').innerHTML = `
+          <div class="p-6 text-center text-text-secondary">
+            <span class="material-symbols-outlined text-[48px] text-text-secondary/50 mb-3 block">inbox</span>
+            <p>No notifications yet.</p>
+          </div>
+        `;
+        showToast('History cleared', 'success');
+      }
+    })
+    .catch(err => {
+      console.error('Error clearing history:', err);
+      showToast('Failed to clear history', 'error');
+    });
+  });
+});
+
+// Edit Alert Function
+function editAlert(alertId) {
+  // Open edit modal or redirect to edit page
+  console.log('Edit alert:', alertId);
+  showToast('Edit functionality coming soon', 'info');
+}
+
+// Delete Alert Function
+function deleteAlert(alertId) {
+  if (!confirm('Are you sure you want to delete this alert?')) return;
+
+  fetch(`/api/alerts/${alertId}`, {
+    method: 'DELETE',
+    credentials: 'include'
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      showToast(data.error, 'error');
+    } else {
+      // Remove row from table
+      const row = document.querySelector(`tr[data-alert-id="${alertId}"]`);
+      if (row) {
+        row.remove();
+      }
+      showToast('Alert deleted successfully', 'success');
+    }
+  })
+  .catch(err => {
+    console.error('Error deleting alert:', err);
+    showToast('Failed to delete alert', 'error');
+  });
+}
+
+// Asset search autocomplete (basic implementation)
+const assetSearch = document.getElementById('assetSearch');
+let searchTimeout;
+
+assetSearch.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const query = this.value.trim();
+
+  if (query.length < 2) return;
+
+  searchTimeout = setTimeout(() => {
+    fetch(`/api/search/assets?q=${encodeURIComponent(query)}`, {
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      // Could implement autocomplete dropdown here
+      console.log('Search results:', data);
+    })
+    .catch(err => console.error('Search error:', err));
+  }, 300);
+});
+</script>
+
+<%- include('../partials/footer') %>

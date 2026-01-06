@@ -1,0 +1,630 @@
+<%- include('../partials/header', { pageTitle: 'Technical Indicators' }) %>
+<div class="flex"><%- include('../partials/sidebar') %><main class="flex-1 ml-64 p-8 lg:ml-64 ml-0"><div class="max-w-7xl mx-auto space-y-6">
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Technical Indicators</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">RSI, MACD, Bollinger Bands & more</p></div>
+<div class="flex gap-2">
+<input type="text" placeholder="Ticker" value="AAPL" class="form-input w-24 font-mono">
+<select class="form-input w-28"><option>1 Day</option><option>1 Week</option><option selected>1 Month</option><option>3 Months</option></select>
+</div>
+</div>
+
+<!-- Technical Summary -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-sky-50 to-purple-50' : 'from-sky-900/20 to-purple-900/20' %>">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
+<div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Overall Signal</p>
+<p class="text-2xl font-bold text-emerald-500">BUY</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">8 of 12 bullish</p>
+</div>
+<div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Trend</p>
+<p class="text-2xl font-bold text-emerald-400">BULLISH</p>
+<p class="text-xs text-emerald-400">↑ Strong uptrend</p>
+</div>
+<div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Momentum</p>
+<p class="text-2xl font-bold text-sky-400">POSITIVE</p>
+<p class="text-xs text-sky-400">RSI: 62</p>
+</div>
+<div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Volatility</p>
+<p class="text-2xl font-bold text-amber-400">MODERATE</p>
+<p class="text-xs text-amber-400">ATR: 3.2%</p>
+</div>
+<div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Volume</p>
+<p class="text-2xl font-bold text-purple-400">ABOVE AVG</p>
+<p class="text-xs text-purple-400">+24% vs 20-day</p>
+</div>
+</div>
+</div>
+
+<!-- Enhanced Price Chart with TradingView -->
+<div class="card p-0 overflow-hidden" id="chartCard">
+<!-- Chart Header with Controls -->
+<div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+  <!-- Left: Title & Symbol -->
+  <div class="flex items-center gap-3">
+    <h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">AAPL</h3>
+    <span class="text-emerald-400 font-bold text-lg" id="currentPrice">$189.65</span>
+    <span class="text-emerald-400 text-sm">+2.34 (+1.25%)</span>
+  </div>
+
+  <!-- Center: Timeframe Buttons -->
+  <div class="flex gap-1 bg-slate-800/50 rounded-lg p-1">
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="1D">1D</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="5D">5D</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="1W">1W</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all active" data-period="1M">1M</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="3M">3M</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="6M">6M</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="1Y">1Y</button>
+    <button class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="5Y">5Y</button>
+  </div>
+
+  <!-- Right: Chart Type & Fullscreen -->
+  <div class="flex items-center gap-2">
+    <!-- Chart Type Toggle -->
+    <div class="flex gap-1 bg-slate-800/50 rounded-lg p-1">
+      <button class="chart-type-btn px-2 py-1.5 rounded-md transition-all active" data-type="candlestick" title="Candlestick">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="4" width="6" height="16" rx="1"/>
+          <line x1="12" y1="1" x2="12" y2="4"/>
+          <line x1="12" y1="20" x2="12" y2="23"/>
+        </svg>
+      </button>
+      <button class="chart-type-btn px-2 py-1.5 rounded-md transition-all" data-type="line" title="Line Chart">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22,6 13,15 8,10 2,16"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Fullscreen Button -->
+    <button id="fullscreenBtn" class="p-2 rounded-lg <%= theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-slate-700' %> transition-colors" title="Fullscreen">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- Indicator Toggles -->
+<div class="flex flex-wrap items-center gap-2 px-4 py-2 border-b <%= theme === 'light' ? 'border-gray-200 bg-gray-50' : 'border-slate-700 bg-slate-800/30' %>">
+  <span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mr-2">Indicators:</span>
+  <button class="indicator-btn px-3 py-1 text-xs font-medium rounded-full transition-all active" data-indicator="sma20" style="--indicator-color: #0ea5e9;">
+    <span class="w-2 h-2 rounded-full bg-sky-400 inline-block mr-1.5"></span>SMA 20
+  </button>
+  <button class="indicator-btn px-3 py-1 text-xs font-medium rounded-full transition-all active" data-indicator="sma50" style="--indicator-color: #eab308;">
+    <span class="w-2 h-2 rounded-full bg-yellow-500 inline-block mr-1.5"></span>SMA 50
+  </button>
+  <button class="indicator-btn px-3 py-1 text-xs font-medium rounded-full transition-all active" data-indicator="bollinger" style="--indicator-color: #8b5cf6;">
+    <span class="w-2 h-2 rounded-full bg-purple-500 inline-block mr-1.5"></span>Bollinger
+  </button>
+  <button class="indicator-btn px-3 py-1 text-xs font-medium rounded-full transition-all" data-indicator="volume" style="--indicator-color: #10b981;">
+    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1.5"></span>Volume
+  </button>
+</div>
+
+<!-- Chart Container -->
+<div class="relative">
+  <div id="tradingviewChart" class="h-96"></div>
+  <!-- Volume Label -->
+  <div id="volumeLabel" class="absolute bottom-2 left-4 text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> hidden">
+    Vol: <span class="font-medium text-emerald-400">42.5M</span>
+  </div>
+</div>
+
+<!-- Interactive Hints -->
+<div class="flex justify-center gap-6 py-3 border-t <%= theme === 'light' ? 'border-gray-200 bg-gray-50' : 'border-slate-700 bg-slate-800/30' %>">
+  <span class="text-xs <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> flex items-center gap-1">
+    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8m-4-4h8"/></svg>
+    Scroll to zoom
+  </span>
+  <span class="text-xs <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> flex items-center gap-1">
+    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/></svg>
+    Drag to pan
+  </span>
+  <span class="text-xs <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> flex items-center gap-1">
+    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    Click to see data
+  </span>
+  <span class="text-xs <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> flex items-center gap-1">
+    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    Double-click to reset
+  </span>
+</div>
+</div>
+
+<!-- Indicator Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- RSI -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">RSI (14)</h3>
+<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BULLISH</span>
+</div>
+<div class="relative h-8 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> overflow-hidden">
+<div class="absolute inset-y-0 left-0 w-[30%] bg-emerald-500/30"></div>
+<div class="absolute inset-y-0 left-[30%] w-[40%] bg-amber-500/30"></div>
+<div class="absolute inset-y-0 right-0 w-[30%] bg-red-500/30"></div>
+<div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow" style="left:calc(62% - 8px)"></div>
+</div>
+<div class="flex justify-between text-xs mt-2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">
+<span>Oversold (0-30)</span>
+<span class="font-bold text-sky-400">62</span>
+<span>Overbought (70-100)</span>
+</div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-3">Neutral zone, trending up. Not overbought.</p>
+</div>
+
+<!-- MACD -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">MACD</h3>
+<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY SIGNAL</span>
+</div>
+<div class="h-32"><canvas id="macdChart"></canvas></div>
+<div class="grid grid-cols-3 gap-2 mt-3 text-center text-sm">
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">MACD</p><p class="font-bold text-emerald-400">2.45</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Signal</p><p class="font-bold text-amber-400">1.82</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">Histogram</p><p class="font-bold text-emerald-400">+0.63</p></div>
+</div>
+</div>
+
+<!-- Stochastic -->
+<div class="card p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Stochastic (14,3,3)</h3>
+<span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-bold">NEUTRAL</span>
+</div>
+<div class="h-32"><canvas id="stochChart"></canvas></div>
+<div class="grid grid-cols-2 gap-2 mt-3 text-center text-sm">
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">%K</p><p class="font-bold text-sky-400">58.4</p></div>
+<div><p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-xs">%D</p><p class="font-bold text-purple-400">54.2</p></div>
+</div>
+</div>
+</div>
+
+<!-- Moving Averages Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Moving Averages</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Period</th>
+<th class="px-4 py-3 text-center">SMA</th>
+<th class="px-4 py-3 text-center">EMA</th>
+<th class="px-4 py-3 text-center">Price vs MA</th>
+<th class="px-4 py-3 text-center">Signal</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">10-day</td>
+<td class="px-4 py-3 text-center">$187.42</td>
+<td class="px-4 py-3 text-center">$187.85</td>
+<td class="px-4 py-3 text-center text-emerald-400">+1.2% above</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">20-day</td>
+<td class="px-4 py-3 text-center">$185.20</td>
+<td class="px-4 py-3 text-center">$185.94</td>
+<td class="px-4 py-3 text-center text-emerald-400">+2.4% above</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">50-day</td>
+<td class="px-4 py-3 text-center">$180.45</td>
+<td class="px-4 py-3 text-center">$181.22</td>
+<td class="px-4 py-3 text-center text-emerald-400">+5.1% above</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">100-day</td>
+<td class="px-4 py-3 text-center">$175.80</td>
+<td class="px-4 py-3 text-center">$176.45</td>
+<td class="px-4 py-3 text-center text-emerald-400">+7.8% above</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">200-day</td>
+<td class="px-4 py-3 text-center">$168.50</td>
+<td class="px-4 py-3 text-center">$170.12</td>
+<td class="px-4 py-3 text-center text-emerald-400">+12.5% above</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">BUY</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Support & Resistance -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Support & Resistance Levels</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-2 rounded <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<span class="text-red-400 font-medium">R3</span><span class="font-bold">$205.00</span><span class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">+8.1%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<span class="text-red-400 font-medium">R2</span><span class="font-bold">$198.50</span><span class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">+4.7%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<span class="text-red-400 font-medium">R1</span><span class="font-bold">$194.20</span><span class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">+2.4%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-sky-500/20 border-2 border-sky-500">
+<span class="text-sky-400 font-bold">Current</span><span class="font-bold text-sky-400">$189.65</span><span class="text-sm text-sky-400">—</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="text-emerald-400 font-medium">S1</span><span class="font-bold">$185.00</span><span class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">-2.5%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="text-emerald-400 font-medium">S2</span><span class="font-bold">$180.40</span><span class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">-4.9%</span>
+</div>
+</div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Pivot Points (Daily)</h3>
+<div class="grid grid-cols-3 gap-4 text-center">
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Classic</p><p class="font-bold">$188.42</p></div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Fibonacci</p><p class="font-bold">$188.85</p></div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Camarilla</p><p class="font-bold">$189.12</p></div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Woodie</p><p class="font-bold">$188.65</p></div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">DeMark</p><p class="font-bold">$189.28</p></div>
+<div class="p-3 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>"><p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">ATR (14)</p><p class="font-bold">$6.24</p></div>
+</div>
+</div>
+</div>
+</div></main></div>
+
+<style>
+/* Timeframe & Chart Type Button Styles */
+.timeframe-btn {
+  color: #94a3b8;
+  background: transparent;
+}
+.timeframe-btn:hover {
+  color: #e2e8f0;
+  background: rgba(100, 116, 139, 0.3);
+}
+.timeframe-btn.active {
+  color: #fff;
+  background: #0ea5e9;
+}
+
+.chart-type-btn {
+  color: #94a3b8;
+  background: transparent;
+}
+.chart-type-btn:hover {
+  color: #e2e8f0;
+  background: rgba(100, 116, 139, 0.3);
+}
+.chart-type-btn.active {
+  color: #fff;
+  background: #0ea5e9;
+}
+
+/* Indicator Button Styles */
+.indicator-btn {
+  color: #94a3b8;
+  background: rgba(100, 116, 139, 0.2);
+  border: 1px solid transparent;
+}
+.indicator-btn:hover {
+  background: rgba(100, 116, 139, 0.4);
+}
+.indicator-btn.active {
+  color: #fff;
+  background: rgba(14, 165, 233, 0.2);
+  border-color: var(--indicator-color, #0ea5e9);
+}
+
+/* Fullscreen Styles */
+#chartCard.fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  max-width: none !important;
+}
+#chartCard.fullscreen #tradingviewChart {
+  height: calc(100vh - 160px) !important;
+}
+
+/* Light theme overrides */
+<% if (theme === 'light') { %>
+.timeframe-btn { color: #64748b; }
+.timeframe-btn:hover { color: #334155; background: rgba(148, 163, 184, 0.2); }
+.chart-type-btn { color: #64748b; }
+.chart-type-btn:hover { color: #334155; background: rgba(148, 163, 184, 0.2); }
+.indicator-btn { color: #64748b; background: rgba(148, 163, 184, 0.15); }
+.indicator-btn:hover { background: rgba(148, 163, 184, 0.3); }
+<% } %>
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+(function() {
+  // Chart state
+  let chart = null;
+  let mainSeries = null;
+  let sma20Series = null;
+  let sma50Series = null;
+  let bbUpperSeries = null;
+  let bbLowerSeries = null;
+  let volumeSeries = null;
+  let currentChartType = 'candlestick';
+  let currentPeriod = '1M';
+
+  // Indicators visibility state
+  const indicators = {
+    sma20: true,
+    sma50: true,
+    bollinger: true,
+    volume: false
+  };
+
+  // Generate sample OHLC data
+  function generateOHLCData(days, startPrice = 175) {
+    const data = [];
+    let price = startPrice;
+    const now = new Date();
+
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+
+      const volatility = 0.02;
+      const change = (Math.random() - 0.48) * volatility * price;
+      const open = price;
+      const close = price + change;
+      const high = Math.max(open, close) + Math.random() * volatility * price * 0.5;
+      const low = Math.min(open, close) - Math.random() * volatility * price * 0.5;
+
+      data.push({
+        time: date.toISOString().split('T')[0],
+        open: parseFloat(open.toFixed(2)),
+        high: parseFloat(high.toFixed(2)),
+        low: parseFloat(low.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume: Math.floor(30000000 + Math.random() * 20000000)
+      });
+
+      price = close;
+    }
+    return data;
+  }
+
+  // Calculate SMA
+  function calculateSMA(data, period) {
+    const sma = [];
+    for (let i = period - 1; i < data.length; i++) {
+      let sum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += data[i - j].close;
+      }
+      sma.push({
+        time: data[i].time,
+        value: parseFloat((sum / period).toFixed(2))
+      });
+    }
+    return sma;
+  }
+
+  // Calculate Bollinger Bands
+  function calculateBollinger(data, period = 20, stdDev = 2) {
+    const upper = [], lower = [];
+    for (let i = period - 1; i < data.length; i++) {
+      let sum = 0, sqSum = 0;
+      for (let j = 0; j < period; j++) {
+        sum += data[i - j].close;
+        sqSum += data[i - j].close ** 2;
+      }
+      const mean = sum / period;
+      const variance = sqSum / period - mean ** 2;
+      const std = Math.sqrt(variance);
+
+      upper.push({ time: data[i].time, value: parseFloat((mean + stdDev * std).toFixed(2)) });
+      lower.push({ time: data[i].time, value: parseFloat((mean - stdDev * std).toFixed(2)) });
+    }
+    return { upper, lower };
+  }
+
+  // Get days for period
+  function getDaysForPeriod(period) {
+    const map = { '1D': 1, '5D': 5, '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '5Y': 1825 };
+    return map[period] || 30;
+  }
+
+  // Initialize chart
+  function initChart() {
+    const container = document.getElementById('tradingviewChart');
+    const isDark = '<%= theme %>' !== 'light';
+
+    chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: container.clientHeight,
+      layout: {
+        background: { type: 'solid', color: isDark ? '#1e293b' : '#ffffff' },
+        textColor: isDark ? '#94a3b8' : '#64748b'
+      },
+      grid: {
+        vertLines: { color: isDark ? 'rgba(100, 116, 139, 0.1)' : 'rgba(148, 163, 184, 0.2)' },
+        horzLines: { color: isDark ? 'rgba(100, 116, 139, 0.1)' : 'rgba(148, 163, 184, 0.2)' }
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+        vertLine: { color: isDark ? '#475569' : '#94a3b8', width: 1, style: 2 },
+        horzLine: { color: isDark ? '#475569' : '#94a3b8', width: 1, style: 2 }
+      },
+      rightPriceScale: { borderColor: isDark ? '#334155' : '#e2e8f0' },
+      timeScale: { borderColor: isDark ? '#334155' : '#e2e8f0', timeVisible: true }
+    });
+
+    updateChart();
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+      chart.applyOptions({ width: container.clientWidth });
+    });
+  }
+
+  // Update chart with current settings
+  function updateChart() {
+    if (!chart) return;
+
+    // Remove existing series
+    if (mainSeries) chart.removeSeries(mainSeries);
+    if (sma20Series) chart.removeSeries(sma20Series);
+    if (sma50Series) chart.removeSeries(sma50Series);
+    if (bbUpperSeries) chart.removeSeries(bbUpperSeries);
+    if (bbLowerSeries) chart.removeSeries(bbLowerSeries);
+    if (volumeSeries) chart.removeSeries(volumeSeries);
+
+    const days = getDaysForPeriod(currentPeriod);
+    const data = generateOHLCData(days);
+
+    // Main price series
+    if (currentChartType === 'candlestick') {
+      mainSeries = chart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#ef4444',
+        borderUpColor: '#10b981',
+        borderDownColor: '#ef4444',
+        wickUpColor: '#10b981',
+        wickDownColor: '#ef4444'
+      });
+      mainSeries.setData(data);
+    } else {
+      mainSeries = chart.addLineSeries({
+        color: '#0ea5e9',
+        lineWidth: 2
+      });
+      mainSeries.setData(data.map(d => ({ time: d.time, value: d.close })));
+    }
+
+    // SMA 20
+    if (indicators.sma20) {
+      sma20Series = chart.addLineSeries({ color: '#0ea5e9', lineWidth: 1 });
+      sma20Series.setData(calculateSMA(data, 20));
+    }
+
+    // SMA 50
+    if (indicators.sma50) {
+      sma50Series = chart.addLineSeries({ color: '#eab308', lineWidth: 1 });
+      sma50Series.setData(calculateSMA(data, 50));
+    }
+
+    // Bollinger Bands
+    if (indicators.bollinger) {
+      const bb = calculateBollinger(data);
+      bbUpperSeries = chart.addLineSeries({ color: '#8b5cf6', lineWidth: 1, lineStyle: 2 });
+      bbLowerSeries = chart.addLineSeries({ color: '#8b5cf6', lineWidth: 1, lineStyle: 2 });
+      bbUpperSeries.setData(bb.upper);
+      bbLowerSeries.setData(bb.lower);
+    }
+
+    // Volume
+    if (indicators.volume) {
+      volumeSeries = chart.addHistogramSeries({
+        color: '#10b981',
+        priceFormat: { type: 'volume' },
+        priceScaleId: '',
+        scaleMargins: { top: 0.8, bottom: 0 }
+      });
+      volumeSeries.setData(data.map(d => ({
+        time: d.time,
+        value: d.volume,
+        color: d.close >= d.open ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)'
+      })));
+      document.getElementById('volumeLabel').classList.remove('hidden');
+    } else {
+      document.getElementById('volumeLabel').classList.add('hidden');
+    }
+
+    // Update current price display
+    const lastBar = data[data.length - 1];
+    const priceChange = lastBar.close - data[0].open;
+    const pctChange = (priceChange / data[0].open * 100).toFixed(2);
+    document.getElementById('currentPrice').textContent = `$${lastBar.close.toFixed(2)}`;
+
+    chart.timeScale().fitContent();
+  }
+
+  // Event Listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+
+    // Timeframe buttons
+    document.querySelectorAll('.timeframe-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPeriod = btn.dataset.period;
+        updateChart();
+      });
+    });
+
+    // Chart type buttons
+    document.querySelectorAll('.chart-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentChartType = btn.dataset.type;
+        updateChart();
+      });
+    });
+
+    // Indicator buttons
+    document.querySelectorAll('.indicator-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        indicators[btn.dataset.indicator] = btn.classList.contains('active');
+        updateChart();
+      });
+    });
+
+    // Fullscreen button
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+      const chartCard = document.getElementById('chartCard');
+      chartCard.classList.toggle('fullscreen');
+      setTimeout(() => {
+        const container = document.getElementById('tradingviewChart');
+        chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
+        chart.timeScale().fitContent();
+      }, 100);
+    });
+
+    // Double-click to reset zoom
+    document.getElementById('tradingviewChart').addEventListener('dblclick', () => {
+      chart.timeScale().fitContent();
+    });
+  });
+})();
+
+// Other charts (MACD, Stochastic)
+new Chart(document.getElementById('macdChart'), {
+  type: 'bar',
+  data: { labels: Array.from({length: 15}, (_, i) => i + 1), datasets: [{ data: [-0.5,-0.3,-0.1,0.2,0.4,0.3,0.5,0.6,0.4,0.5,0.7,0.5,0.6,0.5,0.63], backgroundColor: ctx => ctx.raw >= 0 ? '#10b981' : '#ef4444' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('stochChart'), {
+  type: 'line',
+  data: { labels: Array.from({length: 15}, (_, i) => i + 1), datasets: [
+    { label: '%K', data: [35,42,48,52,45,55,62,58,54,60,65,58,62,56,58], borderColor: '#0ea5e9', fill: false },
+    { label: '%D', data: [32,38,44,48,48,52,56,58,56,58,62,60,58,58,54], borderColor: '#8b5cf6', fill: false }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,1113 @@
+<%
+// Safe defaults for tax-loss harvesting data
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const taxData = typeof taxHarvestingData !== 'undefined' ? taxHarvestingData : {};
+const opportunities = taxData.opportunities || [];
+const summary = taxData.summary || {};
+const washSaleWindows = taxData.washSaleWindows || [];
+const replacementSuggestions = taxData.replacementSuggestions || {};
+
+// Helper functions
+function formatMoney(val) {
+  const num = parseFloat(val) || 0;
+  return '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatPercent(val) {
+  return (parseFloat(val) || 0).toFixed(2) + '%';
+}
+
+function formatDate(date) {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Get wash sale status for a symbol
+function getWashSaleStatus(symbol) {
+  const washSale = washSaleWindows.find(ws => ws.symbol === symbol);
+  return washSale ? { inWindow: true, endsAt: washSale.wash_sale_window_end } : { inWindow: false };
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Tax-Loss Harvesting' }) %>
+
+<style>
+  /* Stitch Dark Theme - Tax-Loss Harvesting Styles */
+  .tlh-page {
+    background: #111217;
+    min-height: 100vh;
+  }
+
+  /* Stats Cards */
+  .stat-card {
+    background: rgba(28, 29, 38, 0.5);
+    border: 1px solid #3d3e52;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .stat-card:hover {
+    border-color: #4850e5;
+    background: rgba(28, 29, 38, 0.7);
+  }
+
+  .stat-icon {
+    font-size: 24px;
+    font-variation-settings: 'FILL' 0, 'wght' 400;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9e9fb7;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  /* Filter Chips */
+  .filter-chip {
+    display: flex;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .filter-chip.active {
+    background: #4850e5;
+    color: white;
+  }
+
+  .filter-chip:not(.active) {
+    background: #292a38;
+    color: #9e9fb7;
+  }
+
+  .filter-chip:not(.active):hover {
+    background: #3d3e52;
+    color: white;
+  }
+
+  /* Table Styles */
+  .tlh-table-wrapper {
+    background: rgba(28, 29, 38, 0.3);
+    border: 1px solid #3d3e52;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .tlh-table {
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  .tlh-table thead {
+    background: #1c1d26;
+  }
+
+  .tlh-table th {
+    padding: 1rem 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9e9fb7;
+  }
+
+  .tlh-table tbody tr {
+    border-top: 1px solid #292a38;
+    transition: background 0.15s ease;
+  }
+
+  .tlh-table tbody tr:hover {
+    background: rgba(41, 42, 56, 0.5);
+  }
+
+  .tlh-table td {
+    padding: 1rem 1.5rem;
+  }
+
+  /* Asset Symbol Badge */
+  .asset-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+
+  /* Status Badges */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid;
+  }
+
+  .status-badge.harvestable {
+    background: rgba(11, 218, 101, 0.1);
+    color: #0bda65;
+    border-color: rgba(11, 218, 101, 0.2);
+  }
+
+  .status-badge.wash-sale {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.2);
+  }
+
+  .status-badge.long-term {
+    background: rgba(11, 218, 101, 0.15);
+    color: #0bda65;
+  }
+
+  .status-badge.short-term {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+
+  /* Action Buttons */
+  .harvest-btn {
+    background: #4850e5;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .harvest-btn:hover:not(:disabled) {
+    background: #3a42d1;
+  }
+
+  .harvest-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .view-btn {
+    background: #292a38;
+    color: #9e9fb7;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #3d3e52;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .view-btn:hover {
+    background: #3d3e52;
+    color: white;
+  }
+
+  /* Replacement Suggestions */
+  .replacement-card {
+    background: rgba(28, 29, 38, 0.5);
+    border: 1px solid #3d3e52;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+  }
+
+  .replacement-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 0.5rem;
+    transition: all 0.15s ease;
+  }
+
+  .replacement-item:hover {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .etf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 0.375rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #60a5fa;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .etf-chip:hover {
+    background: rgba(59, 130, 246, 0.25);
+    transform: scale(1.02);
+  }
+
+  .etf-chip.recommended {
+    background: rgba(11, 218, 101, 0.15);
+    border-color: rgba(11, 218, 101, 0.3);
+    color: #0bda65;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #292a38;
+    background: #1c1d26;
+  }
+
+  .pagination-btn {
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    color: #9e9fb7;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .pagination-btn:hover:not(:disabled) {
+    background: #3d3e52;
+    color: white;
+  }
+
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Wash Sale Warning Banner */
+  .wash-sale-banner {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    color: #9e9fb7;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    max-width: 56rem;
+  }
+
+  /* Custom scrollbar */
+  .tlh-table-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .tlh-table-scroll::-webkit-scrollbar-track {
+    background: #111217;
+  }
+
+  .tlh-table-scroll::-webkit-scrollbar-thumb {
+    background: #3d3e52;
+    border-radius: 3px;
+  }
+</style>
+
+<div class="tlh-page p-4 md:p-8 lg:p-10">
+  <div class="max-w-[1200px] mx-auto flex flex-col gap-8">
+
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+      <div class="flex flex-col gap-2 max-w-xl">
+        <a href="/portfolio<%= typeof selectedPid !== 'undefined' && selectedPid ? '?id=' + selectedPid : '' %>"
+           class="flex items-center gap-2 text-primary text-sm font-medium mb-1 hover:opacity-80 transition-opacity">
+          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <span>Back to Portfolio Overview</span>
+        </a>
+        <h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">Tax-Loss Harvesting</h1>
+        <p class="text-[#9e9fb7] text-base font-normal leading-relaxed">
+          Identify and execute strategic asset sales to offset capital gains tax liabilities.
+        </p>
+      </div>
+
+      <!-- Portfolio Selector -->
+      <div class="w-full md:w-auto min-w-[300px]">
+        <label class="block text-sm font-medium text-[#9e9fb7] mb-2">Analyzing Portfolio</label>
+        <div class="relative">
+          <form method="GET" id="portfolioForm">
+            <select name="portfolio" onchange="this.form.submit()"
+                    class="appearance-none w-full bg-[#1c1d26] border border-[#3d3e52] text-white text-base rounded-lg p-3 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer">
+              <% if (typeof portfolios !== 'undefined' && portfolios && portfolios.length > 0) { %>
+                <% portfolios.forEach(p => { %>
+                  <option value="<%= p.id %>" <%= (typeof selectedPid !== 'undefined' && selectedPid == p.id) ? 'selected' : '' %>><%= p.name %></option>
+                <% }); %>
+              <% } else { %>
+                <option value="">Select Portfolio</option>
+              <% } %>
+            </select>
+          </form>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#9e9fb7]">
+            <span class="material-symbols-outlined">expand_more</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Potential Tax Savings -->
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined stat-icon text-[#0bda65]">savings</span>
+          <p class="stat-label">Potential Tax Savings</p>
+        </div>
+        <p class="stat-value text-white"><%= formatMoney(summary.potentialTaxSavings || summary.totalTaxSavings || 12450) %></p>
+        <div class="flex items-center gap-2 mt-1">
+          <% if (summary.savingsChange) { %>
+            <span class="bg-[#0bda65]/10 text-[#0bda65] text-xs font-medium px-2 py-0.5 rounded">
+              <%= summary.savingsChange > 0 ? '+' : '' %><%= summary.savingsChange %>% vs Last Quarter
+            </span>
+          <% } else { %>
+            <span class="bg-[#0bda65]/10 text-[#0bda65] text-xs font-medium px-2 py-0.5 rounded">
+              Based on <%= summary.taxBracket || 32 %>% bracket
+            </span>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Total Unrealized Losses -->
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined stat-icon text-red-500">trending_down</span>
+          <p class="stat-label">Total Unrealized Losses</p>
+        </div>
+        <p class="stat-value text-white">-<%= formatMoney(summary.totalUnrealizedLosses || summary.totalAvailableLosses || 45200) %></p>
+        <p class="text-[#9e9fb7] text-sm mt-1">Across <%= summary.assetsWithLosses || opportunities.length || 12 %> assets</p>
+      </div>
+
+      <!-- Harvested YTD -->
+      <div class="stat-card">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="material-symbols-outlined stat-icon text-primary">check_circle</span>
+          <p class="stat-label">Harvested YTD</p>
+        </div>
+        <p class="stat-value text-white"><%= formatMoney(summary.harvestedYTD || summary.harvestedThisYear || 0) %></p>
+        <p class="text-[#9e9fb7] text-sm mt-1"><%= summary.harvestCount || 0 %> harvests completed</p>
+      </div>
+    </div>
+
+    <!-- Wash Sale Risk Indicator -->
+    <% if (washSaleWindows && washSaleWindows.length > 0) { %>
+    <div class="wash-sale-banner flex items-center gap-3">
+      <span class="material-symbols-outlined text-amber-500">warning</span>
+      <div>
+        <p class="text-amber-500 font-medium text-sm">Wash Sale Risk Active</p>
+        <p class="text-[#9e9fb7] text-xs mt-0.5"><%= washSaleWindows.length %> asset(s) currently in wash sale window - harvesting restricted</p>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Filters & Toolbar -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-[#292a38] pb-6">
+      <!-- Filter Chips -->
+      <div class="flex gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0">
+        <button class="filter-chip active" onclick="filterOpportunities('all', this)">
+          <p>All Opportunities</p>
+        </button>
+        <button class="filter-chip" onclick="filterOpportunities('short-term', this)">
+          <p>Short Term Losses</p>
+        </button>
+        <button class="filter-chip" onclick="filterOpportunities('long-term', this)">
+          <p>Long Term Losses</p>
+        </button>
+        <button class="filter-chip" onclick="filterOpportunities('wash-safe', this)">
+          <p>Wash-Sale Safe</p>
+        </button>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 w-full sm:w-auto">
+        <button onclick="exportReport()" class="flex-1 sm:flex-none h-9 flex items-center justify-center gap-2 rounded-lg border border-[#3d3e52] text-white px-4 text-sm font-medium hover:bg-[#292a38] transition-colors">
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          Export Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Opportunities Table -->
+    <div class="flex flex-col gap-4">
+      <div class="tlh-table-wrapper">
+        <div class="overflow-x-auto tlh-table-scroll">
+          <table class="tlh-table">
+            <thead>
+              <tr>
+                <th class="text-left">Asset</th>
+                <th class="text-right">Qty / Basis</th>
+                <th class="text-right">Price / Value</th>
+                <th class="text-right">Unrealized Loss</th>
+                <th class="text-right">Est. Tax Savings</th>
+                <th class="text-center">Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="opportunitiesTable">
+              <% if (opportunities && opportunities.length > 0) { %>
+                <% opportunities.forEach((opp, index) => {
+                  const washStatus = getWashSaleStatus(opp.symbol);
+                  const isHarvestable = !washStatus.inWindow;
+                  const holdingPeriod = opp.holdingPeriod || 'short-term';
+                  const unrealizedLoss = Math.abs(opp.unrealizedLoss || opp.loss || 0);
+                  const taxSavings = opp.taxSavings || (unrealizedLoss * 0.32);
+                  const lossPercent = opp.lossPercent || ((opp.costBasis - opp.currentValue) / opp.costBasis * 100);
+                %>
+                <tr class="opportunity-row"
+                    data-holding-period="<%= holdingPeriod %>"
+                    data-wash-safe="<%= isHarvestable %>"
+                    data-symbol="<%= opp.symbol %>">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="asset-badge <%= opp.badgeColor || 'bg-white text-black' %>"
+                           style="<%= opp.badgeBg ? 'background:' + opp.badgeBg + ';color:' + (opp.badgeText || '#fff') : '' %>">
+                        <%= (opp.symbol || '????').slice(0, 4) %>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-white font-bold"><%= opp.symbol %></span>
+                        <span class="text-[#9e9fb7] text-xs"><%= opp.name || opp.companyName || 'Unknown' %></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono"><%= (opp.shares || opp.quantity || 0).toFixed(2) %></span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$<%= (opp.avgCost || opp.costBasisPerShare || 0).toFixed(2) %> avg</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono"><%= formatMoney(opp.currentValue || opp.marketValue || 0) %></span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$<%= (opp.currentPrice || opp.price || 0).toFixed(2) %> curr</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-red-500 font-bold font-mono">-<%= formatMoney(unrealizedLoss) %></span>
+                      <span class="text-red-400/70 text-xs font-mono">-<%= Math.abs(lossPercent).toFixed(2) %>%</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <% if (isHarvestable) { %>
+                      <span class="text-[#0bda65] font-bold font-mono">+<%= formatMoney(taxSavings) %></span>
+                    <% } else { %>
+                      <span class="text-[#9e9fb7] font-medium decoration-dashed underline decoration-gray-500 cursor-help"
+                            title="Reduced due to Wash Sale rules">--</span>
+                    <% } %>
+                  </td>
+                  <td class="text-center">
+                    <% if (isHarvestable) { %>
+                      <span class="status-badge harvestable">
+                        Harvestable
+                      </span>
+                    <% } else { %>
+                      <span class="status-badge wash-sale">
+                        <span class="material-symbols-outlined text-[14px]">warning</span>
+                        Wash Sale Risk
+                      </span>
+                    <% } %>
+                  </td>
+                  <td class="text-right">
+                    <% if (isHarvestable) { %>
+                      <button class="harvest-btn" onclick="previewHarvest('<%= opp.symbol %>', '<%= (opp.etfAlternatives && opp.etfAlternatives.recommended) || 'VTI' %>')">
+                        Harvest Loss
+                      </button>
+                    <% } else { %>
+                      <button class="view-btn" onclick="viewWashSaleDetails('<%= opp.symbol %>')">
+                        View Details
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+                <% }); %>
+              <% } else { %>
+                <!-- Sample Data for Demo -->
+                <tr class="opportunity-row" data-holding-period="short-term" data-wash-safe="true" data-symbol="TSLA">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="asset-badge bg-white text-black">TSLA</div>
+                      <div class="flex flex-col">
+                        <span class="text-white font-bold">TSLA</span>
+                        <span class="text-[#9e9fb7] text-xs">Tesla Inc.</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">150.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$240.00 avg</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">$27,000.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$180.00 curr</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-red-500 font-bold font-mono">-$9,000.00</span>
+                      <span class="text-red-400/70 text-xs font-mono">-25.00%</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <span class="text-[#0bda65] font-bold font-mono">+$2,100.00</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="status-badge harvestable">Harvestable</span>
+                  </td>
+                  <td class="text-right">
+                    <button class="harvest-btn" onclick="previewHarvest('TSLA', 'ARKK')">Harvest Loss</button>
+                  </td>
+                </tr>
+                <tr class="opportunity-row" data-holding-period="long-term" data-wash-safe="false" data-symbol="ZM">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="asset-badge" style="background: #3b82f6; color: white;">ZM</div>
+                      <div class="flex flex-col">
+                        <span class="text-white font-bold">ZM</span>
+                        <span class="text-[#9e9fb7] text-xs">Zoom Video Comm.</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">500.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$85.50 avg</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">$31,250.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$62.50 curr</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-red-500 font-bold font-mono">-$11,500.00</span>
+                      <span class="text-red-400/70 text-xs font-mono">-26.90%</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <span class="text-[#9e9fb7] font-medium decoration-dashed underline decoration-gray-500 cursor-help" title="Reduced due to Wash Sale rules">--</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="status-badge wash-sale">
+                      <span class="material-symbols-outlined text-[14px]">warning</span>
+                      Wash Sale Risk
+                    </span>
+                  </td>
+                  <td class="text-right">
+                    <button class="view-btn" onclick="viewWashSaleDetails('ZM')">View Details</button>
+                  </td>
+                </tr>
+                <tr class="opportunity-row" data-holding-period="short-term" data-wash-safe="true" data-symbol="SQ">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="asset-badge" style="background: #f1f5f9; color: black;">SQ</div>
+                      <div class="flex flex-col">
+                        <span class="text-white font-bold">SQ</span>
+                        <span class="text-[#9e9fb7] text-xs">Block Inc.</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">85.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$72.00 avg</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">$4,760.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$56.00 curr</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-red-500 font-bold font-mono">-$1,360.00</span>
+                      <span class="text-red-400/70 text-xs font-mono">-22.22%</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <span class="text-[#0bda65] font-bold font-mono">+$320.00</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="status-badge harvestable">Harvestable</span>
+                  </td>
+                  <td class="text-right">
+                    <button class="harvest-btn" onclick="previewHarvest('SQ', 'PYPL')">Harvest Loss</button>
+                  </td>
+                </tr>
+                <tr class="opportunity-row" data-holding-period="long-term" data-wash-safe="true" data-symbol="NVDA">
+                  <td>
+                    <div class="flex items-center gap-3">
+                      <div class="asset-badge" style="background: #10b981; color: white;">NVDA</div>
+                      <div class="flex flex-col">
+                        <span class="text-white font-bold">NVDA</span>
+                        <span class="text-[#9e9fb7] text-xs">NVIDIA Corp.</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">40.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$940.00 avg</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium font-mono">$34,800.00</span>
+                      <span class="text-[#9e9fb7] text-xs font-mono">$870.00 curr</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex flex-col">
+                      <span class="text-red-500 font-bold font-mono">-$2,800.00</span>
+                      <span class="text-red-400/70 text-xs font-mono">-7.45%</span>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <span class="text-[#0bda65] font-bold font-mono">+$650.00</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="status-badge harvestable">Harvestable</span>
+                  </td>
+                  <td class="text-right">
+                    <button class="harvest-btn" onclick="previewHarvest('NVDA', 'SMH')">Harvest Loss</button>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+          <p class="text-xs text-[#9e9fb7]">
+            Showing <span class="text-white font-medium">1-<%= Math.min(opportunities.length || 4, 10) %></span>
+            of <span class="text-white font-medium"><%= opportunities.length || 12 %></span> opportunities
+          </p>
+          <div class="flex gap-2">
+            <button class="pagination-btn" disabled>
+              <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+            </button>
+            <button class="pagination-btn">
+              <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Similar Replacement Suggestions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="replacement-card">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="material-symbols-outlined text-primary">swap_horiz</span>
+          <h3 class="text-white font-bold">Similar Replacement Suggestions</h3>
+        </div>
+        <p class="text-[#9e9fb7] text-sm mb-4">
+          Maintain market exposure while avoiding wash sale rules with these ETF alternatives.
+        </p>
+        <div class="space-y-3">
+          <div class="replacement-item">
+            <div class="flex items-center gap-3">
+              <span class="text-white font-mono font-bold">TSLA</span>
+              <span class="material-symbols-outlined text-[#9e9fb7] text-base">arrow_forward</span>
+            </div>
+            <div class="flex gap-2">
+              <span class="etf-chip recommended" onclick="selectReplacement('TSLA', 'ARKK')">
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+                ARKK
+              </span>
+              <span class="etf-chip" onclick="selectReplacement('TSLA', 'QCLN')">QCLN</span>
+              <span class="etf-chip" onclick="selectReplacement('TSLA', 'DRIV')">DRIV</span>
+            </div>
+          </div>
+          <div class="replacement-item">
+            <div class="flex items-center gap-3">
+              <span class="text-white font-mono font-bold">SQ</span>
+              <span class="material-symbols-outlined text-[#9e9fb7] text-base">arrow_forward</span>
+            </div>
+            <div class="flex gap-2">
+              <span class="etf-chip recommended" onclick="selectReplacement('SQ', 'FINX')">
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+                FINX
+              </span>
+              <span class="etf-chip" onclick="selectReplacement('SQ', 'ARKF')">ARKF</span>
+              <span class="etf-chip" onclick="selectReplacement('SQ', 'IPAY')">IPAY</span>
+            </div>
+          </div>
+          <div class="replacement-item">
+            <div class="flex items-center gap-3">
+              <span class="text-white font-mono font-bold">NVDA</span>
+              <span class="material-symbols-outlined text-[#9e9fb7] text-base">arrow_forward</span>
+            </div>
+            <div class="flex gap-2">
+              <span class="etf-chip recommended" onclick="selectReplacement('NVDA', 'SMH')">
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+                SMH
+              </span>
+              <span class="etf-chip" onclick="selectReplacement('NVDA', 'SOXX')">SOXX</span>
+              <span class="etf-chip" onclick="selectReplacement('NVDA', 'XSD')">XSD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wash Sale Windows Info -->
+      <div class="replacement-card">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="material-symbols-outlined text-amber-500">schedule</span>
+          <h3 class="text-white font-bold">Active Wash Sale Windows</h3>
+        </div>
+        <p class="text-[#9e9fb7] text-sm mb-4">
+          Securities with recent trades that may trigger wash sale rules if harvested.
+        </p>
+        <div class="space-y-3">
+          <% if (washSaleWindows && washSaleWindows.length > 0) { %>
+            <% washSaleWindows.slice(0, 3).forEach(ws => { %>
+            <div class="replacement-item border-l-2 border-amber-500">
+              <div class="flex items-center gap-3">
+                <span class="text-white font-mono font-bold"><%= ws.symbol %></span>
+                <span class="text-xs text-[#9e9fb7]">Sold <%= formatDate(ws.sale_date) %></span>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-[#9e9fb7]">Window ends</p>
+                <p class="text-amber-500 font-mono text-sm"><%= formatDate(ws.wash_sale_window_end) %></p>
+              </div>
+            </div>
+            <% }); %>
+          <% } else { %>
+            <div class="replacement-item border-l-2 border-amber-500">
+              <div class="flex items-center gap-3">
+                <span class="text-white font-mono font-bold">ZM</span>
+                <span class="text-xs text-[#9e9fb7]">Sold Dec 15, 2025</span>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-[#9e9fb7]">Window ends</p>
+                <p class="text-amber-500 font-mono text-sm">Jan 14, 2026</p>
+              </div>
+            </div>
+            <div class="replacement-item border-l-2 border-amber-500">
+              <div class="flex items-center gap-3">
+                <span class="text-white font-mono font-bold">META</span>
+                <span class="text-xs text-[#9e9fb7]">Sold Dec 20, 2025</span>
+              </div>
+              <div class="text-right">
+                <p class="text-xs text-[#9e9fb7]">Window ends</p>
+                <p class="text-amber-500 font-mono text-sm">Jan 19, 2026</p>
+              </div>
+            </div>
+          <% } %>
+        </div>
+        <div class="mt-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+          <p class="text-amber-400 text-xs">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+            The wash sale rule prevents claiming a loss if you buy a "substantially identical" security within 30 days before or after the sale.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Disclaimer -->
+    <div class="pb-10 pt-4 border-t border-[#292a38]">
+      <p class="disclaimer">
+        Disclaimer: Potential tax savings are estimates based on assumed tax rates and do not constitute professional tax advice. Wash sale analysis is based on available transaction data within WealthPilot Pro and may not include external holdings. Please consult a qualified tax professional before executing trades for tax purposes.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Harvest Preview Modal -->
+<div id="harvestModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50" onclick="if(event.target === this) closeHarvestModal()">
+  <div class="bg-[#1c1d26] border border-[#3d3e52] rounded-xl p-6 w-full max-w-lg mx-4">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold text-white">Preview Harvest</h3>
+      <button onclick="closeHarvestModal()" class="text-[#9e9fb7] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="harvestPreviewContent">
+      <div class="flex items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Wash Sale Details Modal -->
+<div id="washSaleModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50" onclick="if(event.target === this) closeWashSaleModal()">
+  <div class="bg-[#1c1d26] border border-[#3d3e52] rounded-xl p-6 w-full max-w-md mx-4">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold text-white">Wash Sale Details</h3>
+      <button onclick="closeWashSaleModal()" class="text-[#9e9fb7] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="washSaleContent">
+      <!-- Content populated by JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+const portfolioId = '<%= typeof selectedPid !== "undefined" ? selectedPid : "" %>';
+
+// Filter opportunities
+function filterOpportunities(filter, btn) {
+  // Update active filter
+  document.querySelectorAll('.filter-chip').forEach(chip => chip.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Filter rows
+  const rows = document.querySelectorAll('.opportunity-row');
+  rows.forEach(row => {
+    const holdingPeriod = row.dataset.holdingPeriod;
+    const washSafe = row.dataset.washSafe === 'true';
+
+    let show = true;
+    switch(filter) {
+      case 'short-term':
+        show = holdingPeriod === 'short-term';
+        break;
+      case 'long-term':
+        show = holdingPeriod === 'long-term';
+        break;
+      case 'wash-safe':
+        show = washSafe;
+        break;
+      default:
+        show = true;
+    }
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Preview harvest
+async function previewHarvest(symbol, replacement) {
+  document.getElementById('harvestModal').classList.remove('hidden');
+  document.getElementById('harvestModal').classList.add('flex');
+  document.getElementById('harvestPreviewContent').innerHTML = `
+    <div class="flex items-center justify-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/tax/harvest/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ portfolioId, symbol, replacementSymbol: replacement })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const data = result.data;
+      document.getElementById('harvestPreviewContent').innerHTML = `
+        <div class="space-y-4">
+          <div class="p-4 bg-black/30 rounded-lg">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-lg font-bold text-white font-mono">${symbol}</span>
+              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-[#0bda65]/15 text-[#0bda65]' : 'bg-amber-500/15 text-amber-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div><span class="text-[#9e9fb7]">Shares:</span> <span class="text-white font-mono">${data.holding?.shares?.toFixed(2) || '0'}</span></div>
+              <div><span class="text-[#9e9fb7]">Cost Basis:</span> <span class="text-white font-mono">$${(data.holding?.totalCostBasis || 0).toFixed(2)}</span></div>
+              <div><span class="text-[#9e9fb7]">Current Value:</span> <span class="text-white font-mono">$${(data.holding?.currentValue || 0).toFixed(2)}</span></div>
+              <div><span class="text-[#9e9fb7]">Tax Rate:</span> <span class="text-white font-mono">${(data.harvest?.effectiveTaxRate || 32).toFixed(1)}%</span></div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+            <span class="text-red-400 font-semibold">Realized Loss</span>
+            <span class="text-2xl font-bold text-red-400 font-mono">-$${Math.abs(data.harvest?.realizedLoss || 0).toFixed(2)}</span>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-[#0bda65]/10 rounded-lg border border-[#0bda65]/20">
+            <span class="text-[#0bda65] font-semibold">Tax Savings</span>
+            <span class="text-2xl font-bold text-[#0bda65] font-mono">$${(data.harvest?.taxSavings || 0).toFixed(2)}</span>
+          </div>
+
+          ${data.replacement ? `
+          <div class="p-4 bg-primary/10 rounded-lg border border-primary/20">
+            <p class="text-sm text-[#9e9fb7] mb-2">Replacement Security</p>
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-primary text-lg">${data.replacement.symbol}</span>
+              <div class="text-right text-sm">
+                <p class="text-white font-mono">${data.replacement.shares?.toFixed(2)} shares</p>
+                <p class="text-[#9e9fb7]">@ $${data.replacement.price?.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          ${data.warnings?.length ? `
+          <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <p class="text-amber-400 text-sm">${data.warnings.join(', ')}</p>
+          </div>
+          ` : ''}
+
+          <div class="flex gap-3 mt-6">
+            <button onclick="closeHarvestModal()" class="flex-1 px-4 py-2 bg-[#292a38] text-white font-medium rounded-lg hover:bg-[#3d3e52] transition-colors">Cancel</button>
+            <button onclick="executeHarvest('${symbol}', '${replacement}')" class="flex-1 px-4 py-2 bg-primary text-white font-bold rounded-lg hover:bg-[#3a42d1] transition-colors" ${!data.canExecute ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>
+              Execute Harvest
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      document.getElementById('harvestPreviewContent').innerHTML = `
+        <div class="text-center py-8">
+          <p class="text-red-400">${result.error || 'Failed to load preview'}</p>
+          <button onclick="closeHarvestModal()" class="mt-4 px-4 py-2 bg-[#292a38] text-white font-medium rounded-lg hover:bg-[#3d3e52]">Close</button>
+        </div>
+      `;
+    }
+  } catch (err) {
+    document.getElementById('harvestPreviewContent').innerHTML = `
+      <div class="text-center py-8">
+        <span class="material-symbols-outlined text-4xl text-[#9e9fb7] mb-3">cloud_off</span>
+        <p class="text-[#9e9fb7]">Unable to load preview</p>
+        <p class="text-xs text-[#9e9fb7] mt-1">Please check your connection and try again</p>
+        <button onclick="closeHarvestModal()" class="mt-4 px-4 py-2 bg-[#292a38] text-white font-medium rounded-lg hover:bg-[#3d3e52]">Close</button>
+      </div>
+    `;
+  }
+}
+
+// Execute harvest
+async function executeHarvest(symbol, replacement) {
+  if (!confirm(`Are you sure you want to harvest ${symbol} and replace with ${replacement}?`)) return;
+
+  try {
+    const res = await fetch('/api/tax/harvest/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ portfolioId, symbol, replacementSymbol: replacement })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      if (typeof showToast === 'function') showToast(`Successfully harvested ${symbol}!`, 'success');
+      closeHarvestModal();
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      if (typeof showToast === 'function') showToast(result.error || 'Harvest failed', 'error');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast('Error executing harvest', 'error');
+  }
+}
+
+// Close harvest modal
+function closeHarvestModal() {
+  document.getElementById('harvestModal').classList.add('hidden');
+  document.getElementById('harvestModal').classList.remove('flex');
+}
+
+// View wash sale details
+function viewWashSaleDetails(symbol) {
+  document.getElementById('washSaleModal').classList.remove('hidden');
+  document.getElementById('washSaleModal').classList.add('flex');
+
+  document.getElementById('washSaleContent').innerHTML = `
+    <div class="space-y-4">
+      <div class="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="material-symbols-outlined text-amber-500">warning</span>
+          <span class="text-white font-bold font-mono text-lg">${symbol}</span>
+        </div>
+        <p class="text-[#9e9fb7] text-sm">
+          This security is currently in a wash sale window due to a recent transaction.
+          Harvesting losses now may result in the loss being disallowed by the IRS.
+        </p>
+      </div>
+
+      <div class="p-4 bg-black/30 rounded-lg">
+        <h4 class="text-white font-semibold mb-3">What is a Wash Sale?</h4>
+        <p class="text-[#9e9fb7] text-sm leading-relaxed">
+          The wash sale rule prevents investors from claiming a tax deduction for a security sold at a loss
+          if they purchase a "substantially identical" security within 30 days before or after the sale.
+        </p>
+      </div>
+
+      <div class="p-4 bg-black/30 rounded-lg">
+        <h4 class="text-white font-semibold mb-3">Your Options</h4>
+        <ul class="text-[#9e9fb7] text-sm space-y-2">
+          <li class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+            Wait until the wash sale window expires
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+            Harvest now and replace with a non-identical ETF
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-primary text-sm mt-0.5">check_circle</span>
+            Consult your tax advisor for personalized guidance
+          </li>
+        </ul>
+      </div>
+
+      <button onclick="closeWashSaleModal()" class="w-full px-4 py-2 bg-[#292a38] text-white font-medium rounded-lg hover:bg-[#3d3e52] transition-colors">
+        Close
+      </button>
+    </div>
+  `;
+}
+
+// Close wash sale modal
+function closeWashSaleModal() {
+  document.getElementById('washSaleModal').classList.add('hidden');
+  document.getElementById('washSaleModal').classList.remove('flex');
+}
+
+// Select replacement
+function selectReplacement(symbol, etf) {
+  previewHarvest(symbol, etf);
+}
+
+// Export report
+function exportReport() {
+  const pid = portfolioId || 'all';
+  window.open(`/api/tax/export?portfolio=${pid}&type=harvesting`, '_blank');
+  if (typeof showToast === 'function') showToast('Generating report...', 'info');
+}
+</script>
+
+<%- include('../partials/footer') %>

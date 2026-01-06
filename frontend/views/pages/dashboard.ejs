@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Dashboard - WealthPilot Pro</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4850e5",
+            "background-light": "#f6f6f8",
+            "background-dark": "#0f1115",
+            "card-dark": "#181b21",
+            "border-dark": "#292a38",
+            "text-secondary": "#9e9fb7",
+            "accent-green": "#0bda65",
+            "accent-red": "#fa6538",
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"]
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #111217; }
+    ::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d3e52; }
+    .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1; }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex overflow-hidden">
+
+<%
+  // Data processing - preserve existing logic
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeWatchlist = typeof watchlist !== 'undefined' && watchlist ? watchlist : [];
+  const safeAlerts = typeof alerts !== 'undefined' && alerts ? alerts : [];
+  const safeTransactions = typeof transactions !== 'undefined' && transactions ? transactions : [];
+  const safeRisk = typeof risk !== 'undefined' && risk ? risk : { beta: 1.0, sharpe: 0, volatility: 0, maxDrawdown: 0 };
+  const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0, dayChange: 0, ytdReturn: 0, income: 0, cash: 0, holdingsCount: 0 };
+  const gainPct = safeTotals.cost > 0 ? (safeTotals.gain / safeTotals.cost) * 100 : 0;
+  const dayChangePct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0;
+
+  // Format currency helper
+  const formatCurrency = (val) => {
+    if (val === undefined || val === null || isNaN(val)) return '$0.00';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+  };
+
+  // Format percent helper
+  const formatPercent = (val) => {
+    if (val === undefined || val === null || isNaN(val)) return '0.00%';
+    return (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
+  };
+
+  // Get user info
+  const userName = typeof user !== 'undefined' && user ? (user.firstName || user.email?.split('@')[0] || 'User') : 'User';
+  const userInitial = userName.charAt(0).toUpperCase();
+
+  // Market data
+  const safeIndices = typeof indices !== 'undefined' && indices ? indices : [];
+
+  // News data
+  const safeNews = typeof news !== 'undefined' && news ? news : [];
+
+  // Get top holdings (limit to 5)
+  const topHoldings = safeHoldings
+    .map(h => ({
+      ...h,
+      value: (h.shares || 0) * (h.currentPrice || h.price || 0),
+      change: h.changePercent || h.change_percent || 0
+    }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+%>
+
+<!-- Sidebar -->
+<aside class="w-64 flex-shrink-0 border-r border-border-dark bg-card-dark flex flex-col h-screen overflow-y-auto fixed left-0 top-0 z-40 transform transition-transform duration-300 lg:translate-x-0 -translate-x-full" id="sidebar">
+  <div class="p-6 pb-2">
+    <!-- Logo -->
+    <a href="/dashboard" class="flex items-center gap-3 mb-8">
+      <div class="bg-primary/20 p-2 rounded-lg">
+        <span class="material-symbols-outlined text-primary" style="font-size: 28px;">flight_takeoff</span>
+      </div>
+      <div class="flex flex-col">
+        <h1 class="text-white text-lg font-bold leading-tight">WealthPilot</h1>
+        <p class="text-text-secondary text-xs font-medium">PRO TERMINAL</p>
+      </div>
+    </a>
+
+    <!-- Navigation -->
+    <div class="flex flex-col gap-1">
+      <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white cursor-pointer">
+        <span class="material-symbols-outlined filled">dashboard</span>
+        <p class="text-sm font-medium">Dashboard</p>
+      </a>
+      <a href="/portfolios" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <p class="text-sm font-medium">Portfolios</p>
+      </a>
+      <a href="/market-overview" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">bar_chart</span>
+        <p class="text-sm font-medium">Market Data</p>
+      </a>
+      <a href="/technical-analysis" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">show_chart</span>
+        <p class="text-sm font-medium">Technical Analysis</p>
+      </a>
+      <a href="/fundamental-analysis" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">pie_chart</span>
+        <p class="text-sm font-medium">Fundamental Analysis</p>
+      </a>
+      <a href="/dividends" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">payments</span>
+        <p class="text-sm font-medium">Dividends</p>
+      </a>
+      <a href="/risk" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">shield</span>
+        <p class="text-sm font-medium">Risk Analytics</p>
+      </a>
+      <a href="/options" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">candlestick_chart</span>
+        <p class="text-sm font-medium">Options Trading</p>
+      </a>
+      <a href="/ai-chat" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">smart_toy</span>
+        <p class="text-sm font-medium">AI & Research</p>
+      </a>
+      <a href="/tax-loss-harvesting" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+        <span class="material-symbols-outlined">description</span>
+        <p class="text-sm font-medium">Tax Tools</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="mt-auto p-6 border-t border-border-dark">
+    <a href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+      <span class="material-symbols-outlined">settings</span>
+      <p class="text-sm font-medium">Settings</p>
+    </a>
+    <a href="/logout" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+      <span class="material-symbols-outlined">logout</span>
+      <p class="text-sm font-medium">Log Out</p>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden lg:ml-64">
+  <!-- Header -->
+  <header class="h-16 border-b border-border-dark bg-background-dark/95 backdrop-blur flex items-center justify-between px-4 lg:px-8 flex-shrink-0 z-10">
+    <!-- Mobile Menu Button -->
+    <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-card-dark text-text-secondary">
+      <span class="material-symbols-outlined">menu</span>
+    </button>
+
+    <div class="flex items-center gap-4 flex-1">
+      <h2 class="text-white text-lg font-bold hidden sm:block">Dashboard Overview</h2>
+      <div class="h-6 w-px bg-border-dark mx-2 hidden sm:block"></div>
+      <div class="relative w-full max-w-md group">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="material-symbols-outlined text-text-secondary group-focus-within:text-primary transition-colors">search</span>
+        </div>
+        <input class="block w-full pl-10 pr-3 py-2 border-none rounded-lg leading-5 bg-card-dark text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm" placeholder="Search ticker, company..." type="text" id="globalSearch"/>
+        <div class="absolute inset-y-0 right-0 pr-2 flex items-center hidden sm:flex">
+          <kbd class="inline-flex items-center border border-border-dark rounded px-2 text-xs font-sans font-medium text-text-secondary">⌘K</kbd>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 lg:gap-4">
+      <button onclick="window.location.href='/paper-trading'" class="hidden md:flex items-center justify-center h-10 px-4 bg-primary hover:bg-primary/90 transition-colors text-white text-sm font-bold rounded-lg shadow-[0_0_15px_rgba(72,80,229,0.3)]">
+        <span class="material-symbols-outlined mr-2 text-lg">bolt</span>
+        Quick Trade
+      </button>
+      <a href="/alerts" class="flex items-center justify-center size-10 rounded-lg hover:bg-card-dark text-text-secondary hover:text-white transition-colors relative">
+        <span class="material-symbols-outlined">notifications</span>
+        <% if (safeAlerts.length > 0) { %>
+        <span class="absolute top-2 right-2 size-2 bg-accent-red rounded-full border-2 border-background-dark"></span>
+        <% } %>
+      </a>
+      <a href="/help" class="hidden sm:flex items-center justify-center size-10 rounded-lg hover:bg-card-dark text-text-secondary hover:text-white transition-colors">
+        <span class="material-symbols-outlined">help</span>
+      </a>
+      <div class="h-8 w-px bg-border-dark mx-2 hidden lg:block"></div>
+      <a href="/settings" class="flex items-center gap-3 cursor-pointer hover:bg-card-dark p-1.5 rounded-lg transition-colors pr-3">
+        <div class="bg-gradient-to-br from-primary to-purple-600 rounded-full size-8 flex items-center justify-center text-white font-bold text-sm ring-2 ring-border-dark">
+          <%= userInitial %>
+        </div>
+        <div class="flex-col hidden xl:flex">
+          <span class="text-xs font-medium text-white leading-none mb-1"><%= userName %></span>
+          <span class="text-[10px] text-text-secondary leading-none">Pro Account</span>
+        </div>
+        <span class="material-symbols-outlined text-text-secondary text-sm hidden xl:block">expand_more</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Dashboard Content -->
+  <div class="flex-1 overflow-y-auto p-4 lg:p-8">
+    <div class="max-w-[1600px] mx-auto flex flex-col gap-6">
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Portfolio Value -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors group">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Total Portfolio Value</p>
+            <span class="material-symbols-outlined text-primary bg-primary/10 p-1.5 rounded-lg text-lg">account_balance</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= formatCurrency(safeTotals.value) %></h3>
+          <div class="flex items-center gap-2">
+            <span class="<%= gainPct >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-1.5 py-0.5 rounded text-xs font-bold flex items-center">
+              <span class="material-symbols-outlined text-sm mr-0.5"><%= gainPct >= 0 ? 'trending_up' : 'trending_down' %></span>
+              <%= formatPercent(gainPct) %>
+            </span>
+            <span class="text-text-secondary text-xs">all time</span>
+          </div>
+        </div>
+
+        <!-- Day's Gain/Loss -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Day's Gain/Loss</p>
+            <span class="material-symbols-outlined <%= safeTotals.dayChange >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> p-1.5 rounded-lg text-lg">attach_money</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= safeTotals.dayChange >= 0 ? '+' : '' %><%= formatCurrency(safeTotals.dayChange) %></h3>
+          <div class="flex items-center gap-2">
+            <span class="<%= dayChangePct >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-1.5 py-0.5 rounded text-xs font-bold">
+              <%= formatPercent(dayChangePct) %>
+            </span>
+            <span class="text-text-secondary text-xs">vs yesterday</span>
+          </div>
+        </div>
+
+        <!-- Alpha vs SPY -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Alpha vs SPY (YTD)</p>
+            <span class="material-symbols-outlined text-purple-400 bg-purple-400/10 p-1.5 rounded-lg text-lg">query_stats</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= formatPercent(safeTotals.ytdReturn || 0) %></h3>
+          <div class="flex items-center gap-2">
+            <span class="text-text-secondary text-xs font-medium">Beta: <%= (safeRisk.beta || 1.0).toFixed(2) %></span>
+            <span class="h-1 w-1 bg-text-secondary rounded-full"></span>
+            <span class="text-text-secondary text-xs font-medium">Sharpe: <%= (safeRisk.sharpe || 0).toFixed(2) %></span>
+          </div>
+        </div>
+
+        <!-- Cash / Buying Power -->
+        <div class="bg-card-dark rounded-xl p-5 border border-border-dark hover:border-primary/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <p class="text-text-secondary text-sm font-medium">Available Cash</p>
+            <span class="material-symbols-outlined text-orange-400 bg-orange-400/10 p-1.5 rounded-lg text-lg">bolt</span>
+          </div>
+          <h3 class="text-white text-2xl font-bold tracking-tight mb-1"><%= formatCurrency(safeTotals.cash || 0) %></h3>
+          <div class="flex items-center gap-2">
+            <a href="/add-holding" class="text-primary text-xs font-bold hover:underline">Add Position</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart & Market Overview -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Portfolio Performance Chart -->
+        <div class="lg:col-span-2 bg-card-dark border border-border-dark rounded-xl p-6 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between mb-6 gap-4">
+            <div>
+              <h3 class="text-white text-lg font-bold">Portfolio Performance</h3>
+              <p class="text-text-secondary text-sm">Net Asset Value over time</p>
+            </div>
+            <div class="flex bg-background-dark p-1 rounded-lg border border-border-dark">
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="1D">1D</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="1W">1W</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-bold text-white bg-card-dark shadow-sm rounded border border-border-dark active" data-period="1M">1M</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="3M">3M</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="YTD">YTD</button>
+              <button class="timeframe-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-white/5 transition-colors" data-period="ALL">ALL</button>
+            </div>
+          </div>
+          <div class="flex-1 min-h-[300px]">
+            <canvas id="portfolioChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Market Overview -->
+        <div class="bg-card-dark border border-border-dark rounded-xl flex flex-col overflow-hidden">
+          <div class="p-4 border-b border-border-dark bg-background-dark/30">
+            <h3 class="text-white text-base font-bold">Market Overview</h3>
+          </div>
+          <div class="flex-1 overflow-y-auto p-4 space-y-2" id="marketOverview">
+            <!-- Populated by JavaScript -->
+            <div class="text-center py-8 text-text-secondary">
+              <span class="material-symbols-outlined text-4xl mb-2 animate-pulse">sync</span>
+              <p class="text-sm">Loading market data...</p>
+            </div>
+          </div>
+          <div class="p-4 border-t border-border-dark bg-background-dark/30">
+            <a href="/market-overview" class="block w-full text-center text-xs text-primary font-bold hover:underline">View All Markets</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- News Feed -->
+      <div class="bg-card-dark border border-border-dark rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-border-dark flex flex-wrap justify-between items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">feed</span>
+            <div>
+              <h3 class="text-white text-lg font-bold">Personalized News Feed</h3>
+              <p class="text-xs text-text-secondary">Tailored to your watchlist and holdings</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="/news" class="text-sm text-primary font-medium hover:text-white transition-colors">View All News</a>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-border-dark divide-border-dark" id="newsFeed">
+          <% if (safeNews.length > 0) { %>
+            <% safeNews.slice(0, 3).forEach(article => { %>
+            <div class="p-5 hover:bg-white/5 transition-colors group cursor-pointer">
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-2">
+                  <% if (article.symbol) { %>
+                  <span class="bg-border-dark text-text-secondary text-[10px] font-bold px-1.5 py-0.5 rounded"><%= article.symbol %></span>
+                  <% } %>
+                  <span class="text-xs text-text-secondary"><%= article.source || 'News' %></span>
+                </div>
+                <span class="material-symbols-outlined text-text-secondary text-lg group-hover:text-primary transition-colors">open_in_new</span>
+              </div>
+              <h4 class="text-white font-bold text-sm leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2"><%= article.title %></h4>
+              <p class="text-text-secondary text-xs line-clamp-2"><%= article.summary || article.description || '' %></p>
+            </div>
+            <% }); %>
+          <% } else { %>
+            <div class="p-5 col-span-3 text-center">
+              <span class="material-symbols-outlined text-text-secondary text-4xl mb-2">article</span>
+              <p class="text-text-secondary text-sm">No news available. Add stocks to your watchlist to see personalized news.</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Holdings & AI Insights -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Top Holdings -->
+        <div class="lg:col-span-2 bg-card-dark border border-border-dark rounded-xl overflow-hidden">
+          <div class="p-6 border-b border-border-dark flex justify-between items-center">
+            <h3 class="text-white text-lg font-bold">Top Holdings</h3>
+            <a href="/holdings" class="text-sm text-primary font-medium hover:text-white transition-colors">View All</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-background-dark/50 text-xs text-text-secondary font-medium uppercase tracking-wider">
+                <tr>
+                  <th class="px-6 py-4 font-semibold">Asset</th>
+                  <th class="px-6 py-4 font-semibold text-right">Price</th>
+                  <th class="px-6 py-4 font-semibold text-right hidden sm:table-cell">Shares</th>
+                  <th class="px-6 py-4 font-semibold text-right">Value</th>
+                  <th class="px-6 py-4 font-semibold text-right">Change</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border-dark text-sm">
+                <% if (topHoldings.length > 0) { %>
+                  <% topHoldings.forEach(h => {
+                    const price = h.currentPrice || h.price || 0;
+                    const change = h.change || 0;
+                  %>
+                  <tr class="group hover:bg-white/5 transition-colors">
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="bg-gradient-to-br from-primary to-purple-600 rounded-full w-8 h-8 flex items-center justify-center text-white font-bold text-xs">
+                          <%= (h.symbol || '?').substring(0, 2) %>
+                        </div>
+                        <div>
+                          <p class="font-bold text-white"><%= h.symbol %></p>
+                          <p class="text-xs text-text-secondary truncate max-w-[120px]"><%= h.name || h.symbol %></p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-right text-white"><%= formatCurrency(price) %></td>
+                    <td class="px-6 py-4 text-right hidden sm:table-cell">
+                      <p class="text-white"><%= (h.shares || 0).toFixed(2) %></p>
+                    </td>
+                    <td class="px-6 py-4 text-right font-medium text-white"><%= formatCurrency(h.value) %></td>
+                    <td class="px-6 py-4 text-right">
+                      <span class="<%= change >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-2 py-1 rounded text-xs font-bold">
+                        <%= formatPercent(change) %>
+                      </span>
+                    </td>
+                  </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                      <span class="material-symbols-outlined text-text-secondary text-4xl mb-2">inventory_2</span>
+                      <p class="text-text-secondary">No holdings yet. <a href="/add-holding" class="text-primary hover:underline">Add your first position</a></p>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="bg-gradient-to-br from-[#1c1f2e] to-[#12141a] border border-border-dark rounded-xl p-6 relative overflow-hidden flex flex-col">
+          <div class="absolute -top-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="flex items-center gap-2 mb-6 relative z-10">
+            <span class="material-symbols-outlined text-primary">auto_awesome</span>
+            <h3 class="text-white text-lg font-bold">WealthPilot AI Insights</h3>
+          </div>
+          <div class="flex-1 flex flex-col gap-4 relative z-10">
+            <div class="bg-white/5 rounded-lg p-4 border border-white/5 hover:border-primary/30 transition-colors cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">PORTFOLIO TIP</span>
+                <span class="text-[10px] text-text-secondary">Just now</span>
+              </div>
+              <p class="text-white text-sm font-medium mb-1">Your portfolio has <%= safeTotals.holdingsCount || 0 %> holdings.</p>
+              <p class="text-xs text-text-secondary">Consider diversifying across more sectors for better risk management.</p>
+            </div>
+            <% if (safeRisk.sharpe > 1.5) { %>
+            <div class="bg-white/5 rounded-lg p-4 border border-white/5 hover:border-primary/30 transition-colors cursor-pointer">
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-xs font-bold text-accent-green bg-accent-green/10 px-2 py-0.5 rounded">PERFORMANCE</span>
+                <span class="text-[10px] text-text-secondary">Today</span>
+              </div>
+              <p class="text-white text-sm font-medium mb-1">Strong risk-adjusted returns!</p>
+              <p class="text-xs text-text-secondary">Your Sharpe ratio of <%= safeRisk.sharpe.toFixed(2) %> indicates excellent performance.</p>
+            </div>
+            <% } %>
+            <a href="/ai-chat" class="mt-auto w-full py-2.5 rounded-lg bg-border-dark hover:bg-white/10 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2">
+              Ask AI Assistant
+              <span class="material-symbols-outlined text-sm">send</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+  // Toggle sidebar for mobile
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+  }
+
+  // Portfolio chart
+  const ctx = document.getElementById('portfolioChart');
+  if (ctx) {
+    const portfolioValue = <%= safeTotals.value || 100000 %>;
+    const dates = [];
+    const values = [];
+    const today = new Date();
+
+    // Generate mock historical data based on current value
+    for (let i = 30; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      dates.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+      // Random walk around current value
+      const variance = 0.02 * (30 - i) / 30;
+      const randomFactor = 1 + (Math.random() - 0.5) * variance;
+      values.push(portfolioValue * randomFactor * (0.95 + i * 0.0015));
+    }
+    values[values.length - 1] = portfolioValue;
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [{
+          label: 'Portfolio Value',
+          data: values,
+          borderColor: '#4850e5',
+          backgroundColor: 'rgba(72, 80, 229, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#4850e5',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#181b21',
+            titleColor: '#9e9fb7',
+            bodyColor: '#fff',
+            borderColor: '#292a38',
+            borderWidth: 1,
+            padding: 12,
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return '$' + context.raw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(41, 42, 56, 0.5)', drawBorder: false },
+            ticks: { color: '#9e9fb7', maxTicksLimit: 6 }
+          },
+          y: {
+            grid: { color: 'rgba(41, 42, 56, 0.5)', drawBorder: false },
+            ticks: {
+              color: '#9e9fb7',
+              callback: function(value) {
+                return '$' + (value / 1000).toFixed(0) + 'k';
+              }
+            }
+          }
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        }
+      }
+    });
+  }
+
+  // Load market data
+  async function loadMarketData() {
+    const container = document.getElementById('marketOverview');
+    try {
+      const response = await fetch('/api/market/indices');
+      if (response.ok) {
+        const data = await response.json();
+        const indices = data.indices || data || [];
+
+        if (indices.length > 0) {
+          container.innerHTML = indices.slice(0, 5).map(idx => `
+            <div class="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-white font-bold text-sm">${idx.name || idx.symbol}</span>
+                  <span class="text-[10px] bg-border-dark text-text-secondary px-1 rounded">${idx.symbol}</span>
+                </div>
+                <p class="text-text-secondary text-xs mt-1">$${(idx.price || idx.value || 0).toLocaleString()}</p>
+              </div>
+              <div class="text-right">
+                <p class="${(idx.changePercent || idx.change || 0) >= 0 ? 'text-accent-green' : 'text-accent-red'} text-sm font-bold">
+                  ${(idx.changePercent || idx.change || 0) >= 0 ? '+' : ''}${(idx.changePercent || idx.change || 0).toFixed(2)}%
+                </p>
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load market data:', error);
+    }
+  }
+
+  // Initialize
+  loadMarketData();
+
+  // Timeframe buttons
+  document.querySelectorAll('.timeframe-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.timeframe-btn').forEach(b => {
+        b.classList.remove('active', 'text-white', 'bg-card-dark', 'shadow-sm', 'border', 'border-border-dark');
+        b.classList.add('text-text-secondary');
+      });
+      this.classList.add('active', 'text-white', 'bg-card-dark', 'shadow-sm', 'border', 'border-border-dark');
+      this.classList.remove('text-text-secondary');
+    });
+  });
+
+  // Global search
+  document.getElementById('globalSearch')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && this.value.trim()) {
+      window.location.href = `/market/quote/${this.value.trim().toUpperCase()}`;
+    }
+  });
+
+  // Keyboard shortcut for search
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('globalSearch')?.focus();
+    }
+  });
+</script>
+
+</body>
+</html>

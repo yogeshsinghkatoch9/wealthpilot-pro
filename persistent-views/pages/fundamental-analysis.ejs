@@ -1,0 +1,526 @@
+<%- include('../partials/header', { pageTitle: 'Fundamental Analysis' }) %>
+
+<%
+  // Default values for dynamic data
+  const defaultCompany = {
+    name: 'Apple Inc.',
+    symbol: 'AAPL',
+    exchange: 'NAS',
+    logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDpkgd0tim4kYwSK6OfcTiEB6c1CKTkSIkMG4UAtGqfJmxzb0w0Kx1HuAKjJzkTZYb2p5LQ4N2LKJ6eAdyQAr8kjaukqjZPJKnF-FpfNwTHKy-NGTLoqqbHj5tLnyJ9DGF9C3AxTH-sE4SPh2Y16h3YvXBn4DGyZvsnAcUL5uX9Ner-QDUMUfVQ3BllzQDbogATUvSud-uuYWNL1amVhHadrTBfNC8WgMC8sXh0VrZWqvCYGxVIYaDSLSMnyIIrmjRNpmszDJx0SsY',
+    price: 182.63,
+    changePercent: 1.25,
+    marketCap: '2.84T',
+    peRatio: 28.4,
+    eps: 6.43,
+    divYield: 0.52
+  };
+
+  const company = typeof fundamentalData !== 'undefined' && fundamentalData ? fundamentalData : defaultCompany;
+
+  // Income Statement Data
+  const incomeStatement = typeof incomeData !== 'undefined' && incomeData ? incomeData : [
+    { label: 'Total Revenue', isBold: true, ttm: '385,706', y2023: '383,285', y2022: '394,328', y2021: '365,817' },
+    { label: 'Cost of Revenue', isIndented: true, ttm: '214,136', y2023: '214,136', y2022: '223,546', y2021: '212,981' },
+    { label: 'Gross Profit', isBold: true, ttm: '171,570', y2023: '169,149', y2022: '170,782', y2021: '152,836' },
+    { label: 'Operating Expenses', isIndented: true, ttm: '54,847', y2023: '54,847', y2022: '51,345', y2021: '43,887' },
+    { label: 'Operating Income', isBold: true, ttm: '116,723', y2023: '114,302', y2022: '119,437', y2021: '108,949' },
+    { label: 'Net Interest Income', isIndented: true, ttm: '(183)', y2023: '(183)', y2022: '(106)', y2021: '258' },
+    { label: 'Net Income', isBold: true, isHighlight: true, ttm: '100,389', y2023: '96,995', y2022: '99,803', y2021: '94,680' }
+  ];
+
+  // Margins Data
+  const margins = typeof marginsData !== 'undefined' && marginsData ? marginsData : {
+    grossMargin: 44.8,
+    operatingMargin: 30.5,
+    netMargin: 26.1,
+    years: [
+      { year: '2020', value: 45 },
+      { year: '2021', value: 52 },
+      { year: '2022', value: 48 },
+      { year: '2023', value: 50 },
+      { year: 'TTM', value: 54 }
+    ]
+  };
+
+  // Debt & Liquidity Data
+  const debtData = typeof debtAnalysis !== 'undefined' && debtAnalysis ? debtAnalysis : {
+    currentRatio: 1.07,
+    currentRatioStatus: 'Healthy',
+    debtEquity: 1.45,
+    totalDebt: '111.09B',
+    cashOnHand: '61.56B',
+    freeCashFlow: '99.59B'
+  };
+
+  // Valuation Data
+  const valuation = typeof valuationData !== 'undefined' && valuationData ? valuationData : {
+    peRatio: 28.4,
+    pbRatio: 42.1,
+    evEbitda: 21.8,
+    pegRatio: 2.45,
+    dcfValue: 195.40,
+    upside: 7.2
+  };
+
+  // Analyst Data
+  const analyst = typeof analystData !== 'undefined' && analystData ? analystData : {
+    rating: 4.2,
+    buyCount: 24,
+    holdCount: 8,
+    sellCount: 2,
+    targetLow: 145,
+    targetAvg: 205,
+    targetHigh: 240
+  };
+
+  // Peers Data
+  const peers = typeof peersData !== 'undefined' && peersData ? peersData : [
+    { symbol: 'MSFT', name: 'Microsoft', logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCL_NYAfAr0cqu8R_j3UWGyDuZbYTSLvwHDYHyEr9j6k6J2-dVP4YRiXt92Ws2ogDDUyFv_7FL1PVwX4LrJbVOSVZd5CL61PH2RQCJfPXHXpR_4jr4xKnLCA__47r_VApFTfIj8QrRB79JldNQJt56rhhseTPOmMpxcagWbdC7LzQ8MaTwP-IUTQ82XJuvjJldT_yRv8qTnX441Ze1XpophXggfIj7x0yXQZWWodR2ZB7_gIdDVwnVXrDyQYFK4YiZt0ilmIcKjZU4', pe: 35.2 },
+    { symbol: 'GOOGL', name: 'Google', logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmQsEK8IMysdwlzCg0W0blaa9Akwsmq-GfPcBFdvjY4ieGoKcEApgosq6UeE4Z8Q01CZ18u9rk8PZtYiRxGI0LuMyAoFdIW_BY98eBGHqeyYsg4v-1XYQ3Ava8ynQr-Q0NnI_rV9JLUC1a2yOLUuNPTwPAsiEjlOVlvJgVbpodYQqUMdMmfwJQdtZEIh0Zc07moAOWEv-CmdObuMXaDlsnRpy_V78O8SLR5Zt8qlmGiaTPRsAQHlee3GuTNLe_M20H469_A0yz7gA', pe: 24.1 },
+    { symbol: 'NVDA', name: 'Nvidia', logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA5_OPl0pV68trtBIgX8FksFhoVICQhhIUm4chJA5_9VKJ6fQ9vyDzBD4CpingRDYc030AgGQlK4KX6HrGIwP1Nx-fY2YcbYI3gtmgcyP2cYsWRIxLAc9fibEzdMjEzfh7q2__8-Da1q5Q9tuzQxhlelmH_ny2AvID466BPUSdcaXPnrMqpiwoQPW0o7cAxW4VZb7EEjKExWDta1UEBrJcZxZDaIV6WNQd7wgNP_RWModdNcPGm-rV1twenruXGAsahaYGEC491bcU', pe: 65.8 }
+  ];
+%>
+
+<style>
+  /* Custom Scrollbar for tables */
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #111221;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #2d2e3f;
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #4850e5;
+  }
+
+  /* Stitch Theme Variables */
+  .fa-bg-dark { background-color: #111221; }
+  .fa-card-dark { background-color: #1e1f2e; }
+  .fa-border-dark { border-color: #2d2e3f; }
+  .fa-text-secondary { color: #9e9fb7; }
+</style>
+
+<main class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+  <!-- Top Bar: Title & Search -->
+  <header class="shrink-0 border-b border-[#2d2e3f] bg-[#111217]/95 backdrop-blur-md z-20">
+    <div class="flex flex-col md:flex-row md:items-center justify-between p-6 gap-4">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight text-white">Fundamental Analysis</h2>
+        <p class="text-text-secondary text-sm mt-1">Deep dive into company financials and valuation models.</p>
+      </div>
+      <!-- Search Component -->
+      <div class="w-full md:w-[400px]">
+        <div class="relative group">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-[#9e9fb7] group-focus-within:text-primary transition-colors">search</span>
+          </div>
+          <input id="tickerSearch" class="block w-full pl-10 pr-3 py-2.5 border border-[#2d2e3f] rounded-lg leading-5 bg-[#1e1f2e] text-white placeholder-[#9e9fb7] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all" placeholder="Search ticker or company (e.g. AAPL, Tesla)" type="text" value="<%= company.symbol %>"/>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <span class="text-xs text-[#9e9fb7] border border-[#2d2e3f] rounded px-1.5 py-0.5">CMD+K</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selected Company Summary Bar -->
+    <div class="px-6 pb-4 pt-0 flex flex-wrap items-center gap-6 md:gap-12 border-t border-[#2d2e3f]/50 mt-2">
+      <div class="flex items-center gap-4 mt-4">
+        <div class="w-12 h-12 rounded-lg bg-white flex items-center justify-center p-1 overflow-hidden">
+          <img alt="<%= company.name %>" class="w-full h-full object-contain" src="<%= company.logo %>"/>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-xl font-bold text-white"><%= company.name %></h3>
+            <span class="px-2 py-0.5 rounded text-xs font-medium bg-[#2d2e3f] text-text-secondary"><%= company.exchange %>: <%= company.symbol %></span>
+          </div>
+          <div class="flex items-center gap-3 mt-1">
+            <span class="text-2xl font-bold text-white font-mono">$<%= typeof company.price === 'number' ? company.price.toFixed(2) : company.price %></span>
+            <span class="flex items-center <%= company.changePercent >= 0 ? 'text-emerald-400 bg-emerald-400/10' : 'text-red-400 bg-red-400/10' %> text-sm font-medium px-1.5 rounded">
+              <span class="material-symbols-outlined text-[16px] mr-0.5"><%= company.changePercent >= 0 ? 'arrow_upward' : 'arrow_downward' %></span>
+              <%= Math.abs(company.changePercent).toFixed(2) %>%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden md:flex gap-8 mt-4">
+        <div class="flex flex-col">
+          <span class="text-xs text-text-secondary">Market Cap</span>
+          <span class="text-sm font-bold text-white font-mono">$<%= company.marketCap %></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xs text-text-secondary">P/E (TTM)</span>
+          <span class="text-sm font-bold text-white font-mono"><%= company.peRatio %></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xs text-text-secondary">EPS (TTM)</span>
+          <span class="text-sm font-bold text-white font-mono">$<%= company.eps %></span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xs text-text-secondary">Div Yield</span>
+          <span class="text-sm font-bold text-white font-mono"><%= company.divYield %>%</span>
+        </div>
+      </div>
+
+      <div class="ml-auto mt-4 flex gap-2">
+        <button class="flex items-center gap-2 px-4 py-2 bg-[#2d2e3f] hover:bg-[#3d3e52] text-white text-sm font-medium rounded-lg transition-colors">
+          <span class="material-symbols-outlined text-[18px]">star</span>
+          Watch
+        </button>
+        <button class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-primary/20">
+          <span class="material-symbols-outlined text-[18px]">download</span>
+          Report
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scrollable Content Area -->
+  <div class="p-6">
+    <div class="flex flex-col xl:flex-row gap-6">
+      <!-- Left Column: Financial Statements (Wider) -->
+      <div class="flex-1 flex flex-col gap-6 min-w-0">
+        <!-- Tabs Navigation -->
+        <div class="border-b border-[#2d2e3f]">
+          <nav aria-label="Tabs" class="-mb-px flex gap-6">
+            <button id="incomeTab" class="tab-btn border-b-2 border-primary py-3 px-1 text-sm font-bold text-white flex items-center gap-2" data-tab="income">
+              <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+              Income Statement
+            </button>
+            <button id="balanceTab" class="tab-btn border-b-2 border-transparent py-3 px-1 text-sm font-medium text-text-secondary hover:text-white hover:border-gray-300 flex items-center gap-2 transition-colors" data-tab="balance">
+              <span class="material-symbols-outlined text-[18px]">balance</span>
+              Balance Sheet
+            </button>
+            <button id="cashflowTab" class="tab-btn border-b-2 border-transparent py-3 px-1 text-sm font-medium text-text-secondary hover:text-white hover:border-gray-300 flex items-center gap-2 transition-colors" data-tab="cashflow">
+              <span class="material-symbols-outlined text-[18px]">payments</span>
+              Cash Flow
+            </button>
+          </nav>
+        </div>
+
+        <!-- Financial Table Card -->
+        <div class="bg-[#1e1f2e] rounded-xl border border-[#2d2e3f] overflow-hidden">
+          <div class="p-4 border-b border-[#2d2e3f] flex justify-between items-center">
+            <h3 class="text-white font-bold text-lg" id="statementTitle">Income Statement</h3>
+            <div class="flex gap-2">
+              <span class="text-xs text-text-secondary px-2 py-1 bg-[#111217] rounded border border-[#2d2e3f]">Currency: USD</span>
+              <span class="text-xs text-text-secondary px-2 py-1 bg-[#111217] rounded border border-[#2d2e3f]">Scale: Millions</span>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+              <thead class="bg-[#111217] text-text-secondary uppercase text-xs font-semibold">
+                <tr>
+                  <th class="px-6 py-4" scope="col">Breakdown</th>
+                  <th class="px-6 py-4 text-right" scope="col">TTM</th>
+                  <th class="px-6 py-4 text-right" scope="col">2023</th>
+                  <th class="px-6 py-4 text-right" scope="col">2022</th>
+                  <th class="px-6 py-4 text-right" scope="col">2021</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#2d2e3f]" id="financialTableBody">
+                <% incomeStatement.forEach((row, index) => { %>
+                <tr class="hover:bg-[#2d2e3f]/30 transition-colors <%= row.isBold ? 'bg-[#292a38]/30' : '' %> <%= row.isHighlight ? 'border-t-2 border-primary/20' : '' %>">
+                  <td class="px-6 py-<%= row.isBold ? '4' : '3' %> <%= row.isIndented ? 'pl-10 text-text-secondary' : '' %> <%= row.isBold ? 'font-bold text-white' : '' %>"><%= row.label %></td>
+                  <td class="px-6 py-<%= row.isBold ? '4' : '3' %> text-right <%= row.isHighlight ? 'text-emerald-400 font-bold' : (row.isBold ? 'text-white font-medium' : 'text-white') %>"><%= row.ttm %></td>
+                  <td class="px-6 py-<%= row.isBold ? '4' : '3' %> text-right text-text-secondary"><%= row.y2023 %></td>
+                  <td class="px-6 py-<%= row.isBold ? '4' : '3' %> text-right text-text-secondary"><%= row.y2022 %></td>
+                  <td class="px-6 py-<%= row.isBold ? '4' : '3' %> text-right text-text-secondary"><%= row.y2021 %></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Margins & Efficiency Charts Area -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Margins -->
+          <div class="bg-[#1e1f2e] rounded-xl border border-[#2d2e3f] p-5">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">waterfall_chart</span>
+                Margin Trends
+              </h3>
+            </div>
+            <!-- Bar Chart using CSS -->
+            <div class="flex items-end justify-between h-32 gap-2 mt-4">
+              <% margins.years.forEach((item, index) => { %>
+              <div class="w-full bg-[#2d2e3f] rounded-t-sm relative group h-full <%= index === margins.years.length - 1 ? 'border border-primary/50' : '' %>">
+                <div class="absolute bottom-0 w-full <%= index === margins.years.length - 1 ? 'bg-primary shadow-[0_0_15px_rgba(72,80,229,0.5)]' : 'bg-primary/80 group-hover:bg-primary' %> transition-all rounded-t-sm" style="height: <%= item.value %>%;"></div>
+                <div class="absolute -bottom-6 w-full text-center text-[10px] <%= index === margins.years.length - 1 ? 'text-white font-bold' : 'text-text-secondary' %>"><%= item.year %></div>
+              </div>
+              <% }); %>
+            </div>
+            <div class="flex justify-between mt-8 text-sm">
+              <div>
+                <p class="text-text-secondary text-xs">Gross Margin</p>
+                <p class="text-white font-bold font-mono"><%= margins.grossMargin %>%</p>
+              </div>
+              <div>
+                <p class="text-text-secondary text-xs">Operating Margin</p>
+                <p class="text-white font-bold font-mono"><%= margins.operatingMargin %>%</p>
+              </div>
+              <div>
+                <p class="text-text-secondary text-xs">Net Margin</p>
+                <p class="text-white font-bold font-mono"><%= margins.netMargin %>%</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Debt Analysis -->
+          <div class="bg-[#1e1f2e] rounded-xl border border-[#2d2e3f] p-5">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-white font-bold text-sm uppercase tracking-wider flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-400 text-[20px]">warning</span>
+                Debt & Liquidity
+              </h3>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <div class="p-3 bg-[#111217] rounded-lg border border-[#2d2e3f]">
+                <p class="text-text-secondary text-xs mb-1">Current Ratio</p>
+                <div class="flex items-baseline gap-2">
+                  <p class="text-white text-xl font-bold font-mono"><%= debtData.currentRatio %></p>
+                  <span class="text-emerald-400 text-xs font-medium"><%= debtData.currentRatioStatus %></span>
+                </div>
+                <div class="w-full bg-[#2d2e3f] h-1.5 rounded-full mt-2">
+                  <div class="bg-emerald-400 h-1.5 rounded-full" style="width: 70%"></div>
+                </div>
+              </div>
+              <div class="p-3 bg-[#111217] rounded-lg border border-[#2d2e3f]">
+                <p class="text-text-secondary text-xs mb-1">Debt/Equity</p>
+                <p class="text-white text-xl font-bold font-mono"><%= debtData.debtEquity %></p>
+                <div class="w-full bg-[#2d2e3f] h-1.5 rounded-full mt-2">
+                  <div class="bg-orange-400 h-1.5 rounded-full" style="width: 45%"></div>
+                </div>
+              </div>
+              <div class="p-3 bg-[#111217] rounded-lg border border-[#2d2e3f] col-span-2 flex justify-between items-center">
+                <div>
+                  <p class="text-text-secondary text-xs">Total Debt</p>
+                  <p class="text-white font-bold font-mono">$<%= debtData.totalDebt %></p>
+                </div>
+                <div class="h-8 w-[1px] bg-[#2d2e3f]"></div>
+                <div>
+                  <p class="text-text-secondary text-xs">Cash on Hand</p>
+                  <p class="text-white font-bold font-mono">$<%= debtData.cashOnHand %></p>
+                </div>
+                <div class="h-8 w-[1px] bg-[#2d2e3f]"></div>
+                <div>
+                  <p class="text-text-secondary text-xs">Free Cash Flow</p>
+                  <p class="text-white font-bold text-emerald-400 font-mono">$<%= debtData.freeCashFlow %></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Metrics & Ratings (Narrower) -->
+      <div class="w-full xl:w-[350px] shrink-0 flex flex-col gap-6">
+        <!-- Valuation Metrics Grid -->
+        <div class="bg-[#1e1f2e] rounded-xl border border-[#2d2e3f] p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-white font-bold text-sm uppercase tracking-wider">Valuation</h3>
+            <span class="material-symbols-outlined text-[#9e9fb7] text-[20px]">info</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-3 rounded bg-[#292a38]/50">
+              <p class="text-[#9e9fb7] text-xs">P/E Ratio</p>
+              <p class="text-white text-lg font-bold font-mono"><%= valuation.peRatio %>x</p>
+              <span class="text-xs text-red-400">High vs. Ind.</span>
+            </div>
+            <div class="p-3 rounded bg-[#292a38]/50">
+              <p class="text-[#9e9fb7] text-xs">P/B Ratio</p>
+              <p class="text-white text-lg font-bold font-mono"><%= valuation.pbRatio %>x</p>
+            </div>
+            <div class="p-3 rounded bg-[#292a38]/50">
+              <p class="text-[#9e9fb7] text-xs">EV/EBITDA</p>
+              <p class="text-white text-lg font-bold font-mono"><%= valuation.evEbitda %>x</p>
+            </div>
+            <div class="p-3 rounded bg-[#292a38]/50">
+              <p class="text-[#9e9fb7] text-xs">PEG Ratio</p>
+              <p class="text-white text-lg font-bold font-mono"><%= valuation.pegRatio %></p>
+            </div>
+          </div>
+          <!-- DCF Section -->
+          <div class="mt-4 pt-4 border-t border-[#2d2e3f]">
+            <div class="flex justify-between items-end">
+              <div>
+                <p class="text-text-secondary text-xs">Intrinsic Value (DCF)</p>
+                <p class="text-emerald-400 text-xl font-bold font-mono">$<%= valuation.dcfValue.toFixed(2) %></p>
+              </div>
+              <span class="bg-emerald-400/20 text-emerald-400 text-xs px-2 py-1 rounded font-medium">+<%= valuation.upside %>% Upside</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyst Ratings -->
+        <div class="bg-[#1e1f2e] rounded-xl border border-[#2d2e3f] p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-white font-bold text-sm uppercase tracking-wider">Analyst Consensus</h3>
+          </div>
+          <!-- Rating Gauge -->
+          <div class="flex items-center gap-4 mb-6">
+            <div class="relative w-24 h-24 shrink-0 flex items-center justify-center rounded-full border-4 border-l-emerald-500 border-t-emerald-500 border-r-emerald-500 border-b-[#2d2e3f]">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-white font-mono"><%= analyst.rating %></p>
+                <p class="text-[10px] text-text-secondary">out of 5</p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1 w-full">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-white">Buy</span>
+                <span class="text-text-secondary"><%= analyst.buyCount %></span>
+              </div>
+              <div class="w-full bg-[#2d2e3f] h-1.5 rounded-full mb-1">
+                <div class="bg-emerald-500 h-1.5 rounded-full" style="width: <%= (analyst.buyCount / (analyst.buyCount + analyst.holdCount + analyst.sellCount) * 100) %>%"></div>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-white">Hold</span>
+                <span class="text-text-secondary"><%= analyst.holdCount %></span>
+              </div>
+              <div class="w-full bg-[#2d2e3f] h-1.5 rounded-full mb-1">
+                <div class="bg-yellow-500 h-1.5 rounded-full" style="width: <%= (analyst.holdCount / (analyst.buyCount + analyst.holdCount + analyst.sellCount) * 100) %>%"></div>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-white">Sell</span>
+                <span class="text-text-secondary"><%= analyst.sellCount %></span>
+              </div>
+              <div class="w-full bg-[#2d2e3f] h-1.5 rounded-full">
+                <div class="bg-red-500 h-1.5 rounded-full" style="width: <%= (analyst.sellCount / (analyst.buyCount + analyst.holdCount + analyst.sellCount) * 100) %>%"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Price Target -->
+          <div class="pt-4 border-t border-[#2d2e3f]">
+            <p class="text-text-secondary text-xs mb-3">Price Target (12Mo)</p>
+            <div class="relative h-2 bg-[#2d2e3f] rounded-full my-2">
+              <!-- Range Bar -->
+              <div class="absolute top-0 bottom-0 left-[20%] right-[10%] bg-[#3d3e52] rounded-full"></div>
+              <!-- Current Price Marker -->
+              <div class="absolute -top-1.5 w-1 h-5 bg-white left-[45%] rounded-full shadow border border-[#111217]" title="Current: $<%= company.price %>"></div>
+              <!-- Target Marker -->
+              <div class="absolute -top-1.5 w-1 h-5 bg-primary left-[60%] rounded-full shadow border border-[#111217]" title="Avg Target: $<%= analyst.targetAvg %>"></div>
+            </div>
+            <div class="flex justify-between text-xs text-text-secondary mt-2">
+              <span>Low: $<%= analyst.targetLow %></span>
+              <span class="text-primary font-bold">Avg: $<%= analyst.targetAvg %></span>
+              <span>High: $<%= analyst.targetHigh %></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Peers Comparison Mini Table -->
+        <div class="bg-[#1e1f2e] rounded-xl border border-[#2d2e3f] p-5 flex-1">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-white font-bold text-sm uppercase tracking-wider">Peers Comparison</h3>
+          </div>
+          <div class="flex flex-col gap-3">
+            <% peers.forEach((peer, index) => { %>
+            <div class="flex items-center justify-between py-2 <%= index < peers.length - 1 ? 'border-b border-[#2d2e3f]/50' : '' %>">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-white p-0.5 flex items-center justify-center">
+                  <img class="w-full h-full object-contain" src="<%= peer.logo %>" alt="<%= peer.name %> Logo"/>
+                </div>
+                <span class="text-sm font-medium text-white"><%= peer.symbol %></span>
+              </div>
+              <div class="text-right">
+                <p class="text-sm text-white font-mono"><%= peer.pe %>x</p>
+                <p class="text-[10px] text-text-secondary">P/E</p>
+              </div>
+            </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="mt-8 text-center text-xs text-[#9e9fb7] pb-8">
+      <p>Data provided by Financial Data Services. Last updated: <%= new Date().toLocaleTimeString() %></p>
+      <p>WealthPilot Pro. All rights reserved.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Tab switching functionality
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      // Remove active state from all tabs
+      document.querySelectorAll('.tab-btn').forEach(tab => {
+        tab.classList.remove('border-primary', 'font-bold', 'text-white');
+        tab.classList.add('border-transparent', 'font-medium', 'text-text-secondary');
+      });
+
+      // Add active state to clicked tab
+      this.classList.remove('border-transparent', 'font-medium', 'text-text-secondary');
+      this.classList.add('border-primary', 'font-bold', 'text-white');
+
+      // Update title based on tab
+      const tabType = this.dataset.tab;
+      const titleMap = {
+        'income': 'Income Statement',
+        'balance': 'Balance Sheet',
+        'cashflow': 'Cash Flow Statement'
+      };
+      document.getElementById('statementTitle').textContent = titleMap[tabType] || 'Income Statement';
+
+      // Here you would typically fetch and update the table data
+      // For now, we'll just log the tab change
+      console.log('Switched to tab:', tabType);
+    });
+  });
+
+  // Keyboard shortcut for search (CMD+K)
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('tickerSearch').focus();
+      document.getElementById('tickerSearch').select();
+    }
+  });
+
+  // Search functionality
+  document.getElementById('tickerSearch').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      const symbol = this.value.trim().toUpperCase();
+      if (symbol) {
+        window.location.href = '/fundamental-analysis?symbol=' + encodeURIComponent(symbol);
+      }
+    }
+  });
+
+  // Watch button functionality
+  document.querySelector('button:has(.material-symbols-outlined:contains("star"))').addEventListener('click', function() {
+    const icon = this.querySelector('.material-symbols-outlined');
+    if (icon.textContent === 'star') {
+      icon.textContent = 'star';
+      icon.style.fontVariationSettings = "'FILL' 1";
+      this.classList.add('bg-primary', 'text-white');
+      this.classList.remove('bg-[#2d2e3f]');
+      showToast && showToast('Added to watchlist', 'success');
+    } else {
+      icon.style.fontVariationSettings = "'FILL' 0";
+      this.classList.remove('bg-primary', 'text-white');
+      this.classList.add('bg-[#2d2e3f]');
+      showToast && showToast('Removed from watchlist', 'info');
+    }
+  });
+
+  // Report download functionality
+  document.querySelector('button:has(.material-symbols-outlined:contains("download"))').addEventListener('click', function() {
+    showToast && showToast('Generating report...', 'info');
+    // Simulate report generation
+    setTimeout(() => {
+      showToast && showToast('Report downloaded successfully', 'success');
+    }, 2000);
+  });
+</script>
+
+<%- include('../partials/footer') %>

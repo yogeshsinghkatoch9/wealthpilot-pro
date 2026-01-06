@@ -1,0 +1,295 @@
+<%
+  const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+  const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+  const safeSharedPortfolios = typeof sharedPortfolios !== 'undefined' ? sharedPortfolios : [];
+%>
+<%- include('../partials/header', { pageTitle: 'Share Portfolio' }) %>
+
+<div class="max-w-6xl mx-auto p-6">
+  <div class="text-center mb-8">
+    <h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Share Your Portfolio</h1>
+    <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Create public portfolio pages with customizable privacy settings</p>
+  </div>
+
+  <!-- Create New Share -->
+  <div class="card p-6 mb-6">
+    <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Create Share Link</h3>
+
+    <% if (safePortfolios.length === 0) { %>
+      <div class="text-center py-8">
+        <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No portfolios found. Create a portfolio first to share it.</p>
+        <a href="/portfolios" class="btn-primary mt-4 inline-block">Create Portfolio</a>
+      </div>
+    <% } else { %>
+      <form id="createShareForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Select Portfolio</label>
+          <select id="portfolioId" name="portfolioId" class="w-full p-3 rounded-lg border <%= safeTheme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-800 border-slate-600' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+            <% safePortfolios.forEach(p => { %>
+              <option value="<%= p.id %>"><%= p.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-2">Expiration (Optional)</label>
+            <input type="datetime-local" id="expiresAt" name="expiresAt" class="w-full p-3 rounded-lg border <%= safeTheme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-800 border-slate-600' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+          </div>
+          <div class="flex items-end">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="isPublic" name="isPublic" class="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Make portfolio discoverable</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="border-t <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %> pt-4 mt-4">
+          <h4 class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Privacy Settings</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="showValues" name="showValues" checked class="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Show dollar values</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" id="showQuantities" name="showQuantities" checked class="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Show share quantities</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="border-t <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %> pt-4 mt-4">
+          <h4 class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-3">Visible Sections</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="allowedFields" value="holdings" checked class="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Holdings</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="allowedFields" value="performance" checked class="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Performance</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="allowedFields" value="allocation" checked class="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500">
+              <span class="<%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>">Allocation</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+          <button type="submit" class="btn-primary px-6 py-3">
+            Create Share Link
+          </button>
+        </div>
+      </form>
+    <% } %>
+  </div>
+
+  <!-- Generated Share Link -->
+  <div id="shareLinkResult" class="card p-6 mb-6 hidden">
+    <h3 class="text-lg font-semibold text-emerald-400 mb-4">Share Link Created!</h3>
+    <div class="flex items-center gap-3">
+      <input type="text" id="shareUrlInput" readonly class="flex-1 p-3 rounded-lg border <%= safeTheme === 'light' ? 'bg-gray-100 border-gray-300 text-gray-900' : 'bg-slate-800 border-slate-600 text-white' %>">
+      <button onclick="copyShareUrl()" class="btn-primary px-4 py-3">Copy</button>
+    </div>
+    <div class="flex gap-4 mt-4">
+      <button onclick="shareTwitter()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1DA1F2]/20 hover:bg-[#1DA1F2]/30 text-[#1DA1F2]">
+        <span>Share on X</span>
+      </button>
+      <button onclick="shareLinkedIn()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0077B5]/20 hover:bg-[#0077B5]/30 text-[#0077B5]">
+        <span>Share on LinkedIn</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Current Shares -->
+  <div class="card p-6">
+    <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Your Shared Portfolios</h3>
+
+    <% if (safeSharedPortfolios.length === 0) { %>
+      <div class="text-center py-8">
+        <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">No shared portfolios yet. Create your first share link above.</p>
+      </div>
+    <% } else { %>
+      <div class="space-y-4">
+        <% safeSharedPortfolios.forEach(sp => { %>
+          <div class="flex items-center justify-between p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold">
+                <%= sp.name.substring(0, 2).toUpperCase() %>
+              </div>
+              <div>
+                <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= sp.name %></p>
+                <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= sp.shareSettings.shareUrl %></p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Views</p>
+                <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= sp.shareSettings.viewCount || 0 %></p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="copyToClipboard('<%= sp.shareSettings.shareUrl %>')" class="btn-ghost btn-sm">Copy</button>
+                <button onclick="viewAnalytics('<%= sp.id %>')" class="btn-ghost btn-sm">Stats</button>
+                <button onclick="deleteShare('<%= sp.id %>')" class="btn-ghost btn-sm text-red-400">Delete</button>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Analytics Modal -->
+<div id="analyticsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+  <div class="card max-w-lg w-full mx-4 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Share Analytics</h3>
+      <button onclick="closeAnalyticsModal()" class="text-slate-400 hover:text-white">&times;</button>
+    </div>
+    <div id="analyticsContent">
+      <p class="text-slate-400">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentShareUrl = '';
+
+document.getElementById('createShareForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const portfolioId = document.getElementById('portfolioId').value;
+  const expiresAt = document.getElementById('expiresAt').value || null;
+  const isPublic = document.getElementById('isPublic').checked;
+  const showValues = document.getElementById('showValues').checked;
+  const showQuantities = document.getElementById('showQuantities').checked;
+
+  const allowedFields = [];
+  document.querySelectorAll('input[name="allowedFields"]:checked').forEach(cb => {
+    allowedFields.push(cb.value);
+  });
+
+  try {
+    const response = await fetch(`/api/sharing/${portfolioId}/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublic, expiresAt, allowedFields, showValues, showQuantities })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      currentShareUrl = data.shareUrl;
+      document.getElementById('shareUrlInput').value = data.shareUrl;
+      document.getElementById('shareLinkResult').classList.remove('hidden');
+      showToast('Share link created!', 'success');
+    } else {
+      showToast(data.error || 'Failed to create share link', 'error');
+    }
+  } catch (error) {
+    console.error('Create share error:', error);
+    showToast('Failed to create share link', 'error');
+  }
+});
+
+function copyShareUrl() {
+  navigator.clipboard.writeText(currentShareUrl).then(() => {
+    showToast('Link copied to clipboard!', 'success');
+  });
+}
+
+function copyToClipboard(url) {
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Link copied to clipboard!', 'success');
+  });
+}
+
+async function deleteShare(portfolioId) {
+  if (!confirm('Are you sure you want to disable sharing for this portfolio?')) return;
+
+  try {
+    const response = await fetch(`/api/sharing/${portfolioId}`, {
+      method: 'DELETE'
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showToast('Sharing disabled', 'success');
+      location.reload();
+    } else {
+      showToast(data.error || 'Failed to disable sharing', 'error');
+    }
+  } catch (error) {
+    console.error('Delete share error:', error);
+    showToast('Failed to disable sharing', 'error');
+  }
+}
+
+async function viewAnalytics(portfolioId) {
+  const modal = document.getElementById('analyticsModal');
+  const content = document.getElementById('analyticsContent');
+
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  content.innerHTML = '<p class="text-slate-400">Loading...</p>';
+
+  try {
+    const response = await fetch(`/api/sharing/${portfolioId}/analytics`);
+    const data = await response.json();
+
+    if (data.success) {
+      content.innerHTML = `
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 rounded-lg bg-slate-800">
+              <p class="text-sm text-slate-400">Total Views</p>
+              <p class="text-2xl font-bold text-white">${data.totalViews}</p>
+            </div>
+            <div class="p-4 rounded-lg bg-slate-800">
+              <p class="text-sm text-slate-400">Recent Events</p>
+              <p class="text-2xl font-bold text-white">${data.recentEvents?.length || 0}</p>
+            </div>
+          </div>
+          ${data.dailyViews?.length > 0 ? `
+            <div>
+              <h4 class="font-medium text-white mb-2">Daily Views (Last 30 Days)</h4>
+              <div class="flex items-end gap-1 h-24">
+                ${data.dailyViews.map(d => `
+                  <div class="flex-1 bg-sky-500 rounded-t" style="height: ${Math.max(10, (d.views / Math.max(...data.dailyViews.map(x => x.views))) * 100)}%"></div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    } else {
+      content.innerHTML = `<p class="text-red-400">${data.error || 'Failed to load analytics'}</p>`;
+    }
+  } catch (error) {
+    console.error('Analytics error:', error);
+    content.innerHTML = '<p class="text-red-400">Failed to load analytics</p>';
+  }
+}
+
+function closeAnalyticsModal() {
+  const modal = document.getElementById('analyticsModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function shareTwitter() {
+  const text = encodeURIComponent('Check out my investment portfolio on WealthPilot!');
+  const url = encodeURIComponent(currentShareUrl);
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+}
+
+function shareLinkedIn() {
+  const url = encodeURIComponent(currentShareUrl);
+  window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,222 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Insider Transactions' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Insider Transactions</h1><p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Detailed buy/sell activity by executives & directors</p></div>
+<div class="flex gap-2">
+<select class="form-input w-36"><option selected>My Holdings</option><option>All Stocks</option></select>
+<select class="form-input w-28"><option>Last 7D</option><option selected>Last 30D</option><option>Last 90D</option></select>
+</div>
+</div>
+
+<!-- Insider Summary -->
+<div class="tufte-stat-card p-5 <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Insider Activity Summary (30D)</h3>
+<div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Total Buys</p>
+<p class="text-3xl font-bold text-emerald-400">$48.2M</p>
+<p class="text-xs">124 transactions</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Total Sells</p>
+<p class="text-3xl font-bold text-red-400">$284.6M</p>
+<p class="text-xs">342 transactions</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Net Activity</p>
+<p class="text-3xl font-bold negative">-$236.4M</p>
+<p class="text-xs">net selling</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Buy/Sell Ratio</p>
+<p class="text-3xl font-bold text-amber-400">0.36</p>
+<p class="text-xs">bearish signal</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Cluster Buys</p>
+<p class="text-3xl font-bold text-emerald-400">4</p>
+<p class="text-xs">3+ insiders buying</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">10b5-1 Plans</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">68%</p>
+<p class="text-xs">scheduled sales</p>
+</div>
+</div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="tufte-stat-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Recent Insider Transactions</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Date</th>
+<th class="px-4 py-3">Company</th>
+<th class="px-4 py-3">Insider</th>
+<th class="px-4 py-3 text-center">Type</th>
+<th class="px-4 py-3 text-center">Shares</th>
+<th class="px-4 py-3 text-center">Price</th>
+<th class="px-4 py-3 text-center">Value</th>
+<th class="px-4 py-3 text-center">% Ownership</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 text-sm">Dec 10</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gray-100" : "bg-slate-800 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3"><span class="font-medium">Jensen Huang</span><br><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs font-bold">SELL</span></td>
+<td class="px-4 py-3 text-center">120,000</td>
+<td class="px-4 py-3 text-center">$142.84</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">$17.1M</td>
+<td class="px-4 py-3 text-center"><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">10b5-1</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 text-sm">Dec 9</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3"><span class="font-medium">Tim Cook</span><br><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs font-bold">SELL</span></td>
+<td class="px-4 py-3 text-center">48,000</td>
+<td class="px-4 py-3 text-center">$189.42</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">$9.1M</td>
+<td class="px-4 py-3 text-center"><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">10b5-1</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %> <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>/50' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/5' %>">
+<td class="px-4 py-3 text-sm">Dec 8</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center text-white text-xs font-bold">JPM</div><span class="font-medium">JPMorgan</span></div></td>
+<td class="px-4 py-3"><span class="font-medium">Jamie Dimon</span><br><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs font-bold">BUY</span></td>
+<td class="px-4 py-3 text-center">50,000</td>
+<td class="px-4 py-3 text-center">$198.24</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$9.9M</td>
+<td class="px-4 py-3 text-center positive">+0.8%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %> <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>/50' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/5' %>">
+<td class="px-4 py-3 text-sm">Dec 6</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center text-white text-xs font-bold">INTC</div><span class="font-medium">Intel</span></div></td>
+<td class="px-4 py-3"><span class="font-medium">David Zinsner</span><br><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CFO</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs font-bold">BUY</span></td>
+<td class="px-4 py-3 text-center">25,000</td>
+<td class="px-4 py-3 text-center">$24.18</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">$604K</td>
+<td class="px-4 py-3 text-center positive">+42%</td>
+</tr>
+<tr>
+<td class="px-4 py-3 text-sm">Dec 5</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center text-white text-xs font-bold">TSLA</div><span class="font-medium">Tesla</span></div></td>
+<td class="px-4 py-3"><span class="font-medium">Elon Musk</span><br><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO</span></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs font-bold">SELL</span></td>
+<td class="px-4 py-3 text-center">2,400,000</td>
+<td class="px-4 py-3 text-center">$248.62</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">$596.7M</td>
+<td class="px-4 py-3 text-center"><span class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Tax planning</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Cluster Buys -->
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Cluster Buy Signals (3+ Insiders Buying)</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="p-4 rounded-lg border-l-4 border-emerald-500 <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<div class="flex items-center gap-2 mb-2">
+<span class="font-bold">JPM</span>
+<span class="text-xs px-2 py-0.5 rounded <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0 text-white">4 Buyers</span>
+</div>
+<p class="positive font-bold">$24.8M bought</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO, CFO, 2 Directors</p>
+</div>
+<div class="p-4 rounded-lg border-l-4 border-emerald-500 <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<div class="flex items-center gap-2 mb-2">
+<span class="font-bold">INTC</span>
+<span class="text-xs px-2 py-0.5 rounded <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0 text-white">3 Buyers</span>
+</div>
+<p class="positive font-bold">$2.4M bought</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CFO, 2 Directors</p>
+</div>
+<div class="p-4 rounded-lg border-l-4 border-emerald-500 <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<div class="flex items-center gap-2 mb-2">
+<span class="font-bold">BAC</span>
+<span class="text-xs px-2 py-0.5 rounded <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0 text-white">3 Buyers</span>
+</div>
+<p class="positive font-bold">$8.2M bought</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO, CFO, COO</p>
+</div>
+<div class="p-4 rounded-lg border-l-4 border-emerald-500 <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<div class="flex items-center gap-2 mb-2">
+<span class="font-bold">CVS</span>
+<span class="text-xs px-2 py-0.5 rounded <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0 text-white">3 Buyers</span>
+</div>
+<p class="positive font-bold">$4.6M bought</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO, 2 Directors</p>
+</div>
+</div>
+</div>
+
+<!-- Buy/Sell Insights -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="tufte-stat-card p-5">
+<h4 class="font-bold text-emerald-400 mb-3">Largest Buys (30D)</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>JPM - J. Dimon</span><span class="font-bold text-emerald-400">$9.9M</span></div>
+<div class="flex justify-between"><span>BAC - B. Moynihan</span><span class="font-bold text-emerald-400">$4.2M</span></div>
+<div class="flex justify-between"><span>WFC - C. Scharf</span><span class="font-bold text-emerald-400">$2.8M</span></div>
+</div>
+</div>
+<div class="tufte-stat-card p-5">
+<h4 class="font-bold text-red-400 mb-3">Largest Sells (30D)</h4>
+<div class="space-y-2">
+<div class="flex justify-between"><span>TSLA - E. Musk</span><span class="font-bold text-red-400">$596.7M</span></div>
+<div class="flex justify-between"><span>NVDA - J. Huang</span><span class="font-bold text-red-400">$17.1M</span></div>
+<div class="flex justify-between"><span>AAPL - T. Cook</span><span class="font-bold text-red-400">$9.1M</span></div>
+</div>
+</div>
+<div class="tufte-stat-card p-5">
+<h4 class="font-bold text-purple-400 mb-3">Most Active</h4>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-3">By transaction count</p>
+<div class="space-y-2">
+<div class="flex justify-between"><span>NVDA</span><span class="font-bold">42 transactions</span></div>
+<div class="flex justify-between"><span>MSFT</span><span class="font-bold">38 transactions</span></div>
+<div class="flex justify-between"><span>AMZN</span><span class="font-bold">28 transactions</span></div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Buy/Sell Volume (12 Months)</h3>
+<div class="h-48"><canvas id="volumeChart"></canvas></div>
+</div>
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Transaction Type Distribution</h3>
+<div class="h-48"><canvas id="typeChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('volumeChart'), {
+  type: 'bar',
+  data: { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets: [
+    { label: 'Buys', data: [42,38,52,48,36,44,58,42,38,52,48,48], backgroundColor: '#10b981' },
+    { label: 'Sells', data: [-124,-142,-168,-152,-184,-148,-162,-178,-192,-248,-284,-284], backgroundColor: '#ef4444' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+});
+new Chart(document.getElementById('typeChart'), {
+  type: 'doughnut',
+  data: { labels: ['10b5-1 Planned','Open Market Sell','Open Market Buy','Option Exercise','Gift'], datasets: [{ data: [68,18,8,4,2], backgroundColor: ['#0ea5e9','#ef4444','#10b981','#8b5cf6','#94a3b8'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+</script>
+<%- include('../partials/footer') %>

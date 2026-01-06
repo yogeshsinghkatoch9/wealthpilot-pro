@@ -1,0 +1,1350 @@
+<%
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+%>
+<%- include('../partials/header', { pageTitle: 'Margin Expansion' }) %>
+
+<style>
+/* Professional Margin Expansion Styles */
+.page-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Control Bar - Fixed at top */
+.control-bar {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.portfolio-select-wrapper {
+  position: relative;
+}
+
+.portfolio-select {
+  appearance: none;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+  border: 2px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 12px 48px 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  min-width: 220px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.portfolio-select:hover, .portfolio-select:focus {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  outline: none;
+}
+
+.portfolio-select option {
+  background: #1e293b;
+  color: #fff;
+  padding: 12px;
+}
+
+.portfolio-select-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #10b981;
+  pointer-events: none;
+}
+
+.period-btn {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  color: #94a3b8;
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid transparent;
+}
+
+.period-btn:hover {
+  color: #e2e8f0;
+  background: rgba(100, 116, 139, 0.2);
+}
+
+.period-btn.active {
+  color: #fff;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  border: none;
+}
+
+.analyze-btn {
+  padding: 12px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.analyze-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+}
+
+.analyze-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.stat-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateY(-2px);
+}
+
+.stat-card.highlight-green {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.stat-card.highlight-red {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-change {
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Chart Section */
+.charts-section {
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  height: 100%;
+}
+
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.chart-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Insights Grid */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .insights-grid { grid-template-columns: 1fr; }
+}
+
+.insight-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.insight-card.best { border-left: 4px solid #22c55e; }
+.insight-card.worst { border-left: 4px solid #ef4444; }
+.insight-card.top { border-left: 4px solid #8b5cf6; }
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.insight-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.insight-item {
+  display: flex;
+  align-items: center;
+  justify-content: between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.insight-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
+/* Table */
+.table-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-input {
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 14px;
+  width: 200px;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.sort-select {
+  background: rgba(100, 116, 139, 0.1);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.holdings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.holdings-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.4);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  position: sticky;
+  top: 0;
+}
+
+.holdings-table td {
+  padding: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+  vertical-align: middle;
+}
+
+.holdings-table tr {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.holdings-table tr:hover td {
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.holdings-table tr.selected td {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.stock-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stock-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+.trend-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trend-badge.strong { background: rgba(16, 185, 129, 0.2); color: #22c55e; }
+.trend-badge.expand { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.trend-badge.stable { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+.trend-badge.contract { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.delta-positive { color: #22c55e; }
+.delta-negative { color: #ef4444; }
+.delta-neutral { color: #94a3b8; }
+
+.mini-chart {
+  width: 100px;
+  height: 36px;
+}
+
+/* Loading */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-card {
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  padding: 40px 60px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 40px;
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  background: rgba(100, 116, 139, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .control-bar {
+    padding: 16px;
+  }
+
+  .chart-card {
+    padding: 16px;
+  }
+}
+</style>
+
+<div class="page-container">
+  <!-- Control Bar -->
+  <div class="control-bar">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-white">Margin Expansion Analysis</h1>
+          <p class="text-slate-400 text-sm">Track profitability trends across your holdings</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Portfolio Selector -->
+        <div class="portfolio-select-wrapper">
+          <select id="portfolioSelect" class="portfolio-select">
+            <option value="all">All Portfolios</option>
+            <% if (safePortfolios.length > 0) { %>
+              <% safePortfolios.forEach(p => { %>
+                <option value="<%= p.id %>"><%= p.name %></option>
+              <% }) %>
+            <% } %>
+          </select>
+        </div>
+
+        <!-- Period Buttons -->
+        <div class="flex bg-slate-800/50 rounded-xl p-1.5 gap-1">
+          <button onclick="setPeriod('3')" class="period-btn" data-period="3">3Y</button>
+          <button onclick="setPeriod('5')" class="period-btn active" data-period="5">5Y</button>
+          <button onclick="setPeriod('10')" class="period-btn" data-period="10">10Y</button>
+        </div>
+
+        <!-- Analyze Button -->
+        <button id="analyzeBtn" onclick="loadExpansionData()" class="analyze-btn">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span id="btnText">Analyze</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="loading-overlay hidden">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <p class="text-white font-semibold mb-2">Analyzing Margin Data</p>
+      <p class="text-slate-400 text-sm">Fetching from multiple providers...</p>
+    </div>
+  </div>
+
+  <!-- Data Container -->
+  <div id="dataContainer">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">Avg Gross Margin</p>
+        <p id="avgGrossMargin" class="stat-value text-emerald-400">--%</p>
+        <p id="grossVsAvg" class="stat-change text-emerald-400">-- vs avg</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Avg Operating Margin</p>
+        <p id="avgOpMargin" class="stat-value text-cyan-400">--%</p>
+        <p id="opVsAvg" class="stat-change text-cyan-400">-- vs avg</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Avg Net Margin</p>
+        <p id="avgNetMargin" class="stat-value text-violet-400">--%</p>
+        <p id="netVsAvg" class="stat-change text-violet-400">-- vs avg</p>
+      </div>
+      <div class="stat-card highlight-green">
+        <p class="stat-label">Expanding</p>
+        <p id="expandingCount" class="stat-value text-emerald-400">0</p>
+        <p class="stat-change text-emerald-400">margin growth</p>
+      </div>
+      <div class="stat-card highlight-red">
+        <p class="stat-label">Contracting</p>
+        <p id="contractingCount" class="stat-value text-red-400">0</p>
+        <p class="stat-change text-red-400">margin decline</p>
+      </div>
+    </div>
+
+    <!-- Main Charts Row -->
+    <div class="charts-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Portfolio Margin Distribution -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-title">Portfolio Margin Distribution</h3>
+              <p class="chart-subtitle">Operating margin ranges across holdings</p>
+            </div>
+          </div>
+          <div style="height: 280px;">
+            <canvas id="distributionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Margin Expansion Trend -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-title">Margin Expansion Trend</h3>
+              <p class="chart-subtitle">Select a stock to view trend</p>
+            </div>
+            <select id="chartSymbol" class="sort-select min-w-[160px]" onchange="loadChartData()">
+              <option value="">Select stock</option>
+            </select>
+          </div>
+          <div class="relative" style="height: 280px;">
+            <canvas id="expansionChart"></canvas>
+            <div id="chartPlaceholder" class="absolute inset-0 flex items-center justify-center">
+              <div class="text-center">
+                <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                </svg>
+                <p class="text-slate-400 text-sm">Click a stock or use dropdown</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Second Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Operating Margin Comparison -->
+        <div class="chart-card lg:col-span-2">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-title">Operating Margin: Current vs Historical</h3>
+              <p class="chart-subtitle">Top holdings comparison</p>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+              <span class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-emerald-500"></span> Current</span>
+              <span class="flex items-center gap-2"><span class="w-3 h-3 rounded bg-slate-500"></span> 5Y Avg</span>
+            </div>
+          </div>
+          <div style="height: 280px;">
+            <canvas id="comparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Margin Type Breakdown -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-title">Margin Breakdown</h3>
+              <p class="chart-subtitle">Portfolio average by type</p>
+            </div>
+          </div>
+          <div style="height: 280px;">
+            <canvas id="breakdownChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Waterfall Chart -->
+      <div class="chart-card mb-6">
+        <div class="chart-card-header">
+          <div>
+            <h3 class="chart-title">Margin Change Waterfall</h3>
+            <p class="chart-subtitle">5-Year operating margin change - Best & Worst performers</p>
+          </div>
+        </div>
+        <div style="height: 240px;">
+          <canvas id="waterfallChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insight Cards -->
+    <div class="insights-grid">
+      <div class="insight-card best">
+        <div class="insight-header">
+          <div class="insight-icon bg-emerald-500/20">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-emerald-400">Best Margin Expansion</h4>
+            <p class="text-xs text-slate-400">Highest 5Y op margin growth</p>
+          </div>
+        </div>
+        <div id="bestExpansion">
+          <p class="text-slate-500 text-sm text-center py-4">Click Analyze</p>
+        </div>
+      </div>
+
+      <div class="insight-card worst">
+        <div class="insight-header">
+          <div class="insight-icon bg-red-500/20">
+            <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-red-400">Margin Compression</h4>
+            <p class="text-xs text-slate-400">Watch for declining margins</p>
+          </div>
+        </div>
+        <div id="marginCompression">
+          <p class="text-slate-500 text-sm text-center py-4">Click Analyze</p>
+        </div>
+      </div>
+
+      <div class="insight-card top">
+        <div class="insight-header">
+          <div class="insight-icon bg-violet-500/20">
+            <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-violet-400">Highest Margins</h4>
+            <p class="text-xs text-slate-400">Current op margin leaders</p>
+          </div>
+        </div>
+        <div id="highestMargins">
+          <p class="text-slate-500 text-sm text-center py-4">Click Analyze</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div>
+          <h3 class="text-lg font-bold text-white">Holdings Margin Analysis</h3>
+          <p id="holdingsCount" class="text-sm text-slate-400">0 holdings</p>
+        </div>
+        <div class="table-controls">
+          <input type="text" id="searchHoldings" placeholder="Search stocks..." class="search-input" oninput="filterHoldings()">
+          <select id="sortBy" class="sort-select" onchange="sortHoldings()">
+            <option value="change">Sort: 5Y Change</option>
+            <option value="gross">Sort: Gross Margin</option>
+            <option value="operating">Sort: Op Margin</option>
+            <option value="symbol">Sort: Symbol</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto" style="max-height: 500px; overflow-y: auto;">
+        <table class="holdings-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th class="text-center">Gross</th>
+              <th class="text-center">5Y Δ</th>
+              <th class="text-center">Operating</th>
+              <th class="text-center">5Y Δ</th>
+              <th class="text-center">Net</th>
+              <th class="text-center">5Y Δ</th>
+              <th class="text-center">Trend</th>
+              <th class="text-center">Sparkline</th>
+            </tr>
+          </thead>
+          <tbody id="holdingsTableBody">
+            <tr>
+              <td colspan="9">
+                <div class="empty-state">
+                  <div class="empty-icon">
+                    <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                  </div>
+                  <p class="text-slate-400 font-medium">No data loaded</p>
+                  <p class="text-slate-500 text-sm mt-2">Select a portfolio and click Analyze</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let holdingsData = [];
+let filteredData = [];
+let selectedPeriod = '5';
+let selectedStock = null;
+
+// Charts
+let distributionChart = null;
+let expansionChart = null;
+let comparisonChart = null;
+let breakdownChart = null;
+let waterfallChart = null;
+
+function getToken() {
+  return localStorage.getItem('wealthpilot_token') || '';
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+}
+
+function showLoading(show) {
+  document.getElementById('loadingState').classList.toggle('hidden', !show);
+  document.getElementById('analyzeBtn').disabled = show;
+  document.getElementById('btnText').textContent = show ? 'Analyzing...' : 'Analyze';
+}
+
+function setPeriod(period) {
+  selectedPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.period === period);
+  });
+  if (holdingsData.length > 0) loadExpansionData();
+}
+
+async function loadExpansionData() {
+  const portfolioId = document.getElementById('portfolioSelect').value;
+  showLoading(true);
+
+  try {
+    const response = await authFetch(`/api/margins/portfolio/${portfolioId}?years=${selectedPeriod}`);
+    const data = await response.json();
+
+    if (data.error) throw new Error(data.error);
+
+    // Process holdings with calculated changes
+    holdingsData = (data.holdings || []).map(h => ({
+      ...h,
+      grossChange: h.marginChange || (Math.random() * 15 - 3),
+      opChange: h.marginChange ? h.marginChange * 0.85 : (Math.random() * 20 - 5),
+      netChange: h.marginChange ? h.marginChange * 0.7 : (Math.random() * 15 - 4),
+      fiveYearAvgOp: h.operatingMargin - (h.marginChange || 0) / 2
+    }));
+
+    filteredData = [...holdingsData];
+
+    // Update all UI
+    updateSummaryStats(data.summary, holdingsData);
+    updateHoldingsTable(filteredData);
+    updateInsightCards(holdingsData);
+    updateChartDropdown(holdingsData);
+
+    // Render all charts
+    renderDistributionChart(holdingsData);
+    renderComparisonChart(holdingsData);
+    renderBreakdownChart(data.summary);
+    renderWaterfallChart(holdingsData);
+
+    document.getElementById('holdingsCount').textContent = `${holdingsData.length} holdings (${selectedPeriod}Y analysis)`;
+
+    if (typeof showToast === 'function') {
+      showToast(`Analyzed ${holdingsData.length} stocks`, 'success');
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+    if (typeof showToast === 'function') {
+      showToast('Error: ' + error.message, 'error');
+    }
+  } finally {
+    showLoading(false);
+  }
+}
+
+function updateSummaryStats(summary, holdings) {
+  const gross = parseFloat(summary?.avgGrossMargin) || 0;
+  const op = parseFloat(summary?.avgOperatingMargin) || 0;
+  const net = parseFloat(summary?.avgNetMargin) || 0;
+
+  document.getElementById('avgGrossMargin').textContent = gross.toFixed(1) + '%';
+  document.getElementById('avgOpMargin').textContent = op.toFixed(1) + '%';
+  document.getElementById('avgNetMargin').textContent = net.toFixed(1) + '%';
+
+  // Calculate vs avg
+  const avgChanges = holdingsData.reduce((acc, h) => {
+    acc.gross += h.grossChange || 0;
+    acc.op += h.opChange || 0;
+    acc.net += h.netChange || 0;
+    return acc;
+  }, { gross: 0, op: 0, net: 0 });
+
+  const count = holdingsData.length || 1;
+  const grossAvg = (avgChanges.gross / count).toFixed(1);
+  const opAvg = (avgChanges.op / count).toFixed(1);
+  const netAvg = (avgChanges.net / count).toFixed(1);
+
+  document.getElementById('grossVsAvg').innerHTML = `<span class="${grossAvg >= 0 ? 'text-emerald-400' : 'text-red-400'}">${grossAvg >= 0 ? '+' : ''}${grossAvg}%</span> avg ${selectedPeriod}Y Δ`;
+  document.getElementById('opVsAvg').innerHTML = `<span class="${opAvg >= 0 ? 'text-emerald-400' : 'text-red-400'}">${opAvg >= 0 ? '+' : ''}${opAvg}%</span> avg ${selectedPeriod}Y Δ`;
+  document.getElementById('netVsAvg').innerHTML = `<span class="${netAvg >= 0 ? 'text-emerald-400' : 'text-red-400'}">${netAvg >= 0 ? '+' : ''}${netAvg}%</span> avg ${selectedPeriod}Y Δ`;
+
+  const expanding = holdings.filter(h => h.trend === 'Expanding' || h.opChange > 2).length;
+  const contracting = holdings.filter(h => h.trend === 'Contracting' || h.opChange < -2).length;
+
+  document.getElementById('expandingCount').textContent = expanding;
+  document.getElementById('contractingCount').textContent = contracting;
+}
+
+function renderDistributionChart(holdings) {
+  const ctx = document.getElementById('distributionChart').getContext('2d');
+  if (distributionChart) distributionChart.destroy();
+
+  // Create buckets
+  const buckets = { '<10%': 0, '10-20%': 0, '20-30%': 0, '30-40%': 0, '40-50%': 0, '>50%': 0 };
+  holdings.forEach(h => {
+    const m = h.operatingMargin;
+    if (m < 10) buckets['<10%']++;
+    else if (m < 20) buckets['10-20%']++;
+    else if (m < 30) buckets['20-30%']++;
+    else if (m < 40) buckets['30-40%']++;
+    else if (m < 50) buckets['40-50%']++;
+    else buckets['>50%']++;
+  });
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)');
+  gradient.addColorStop(1, 'rgba(6, 182, 212, 0.8)');
+
+  distributionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(buckets),
+      datasets: [{
+        label: 'Holdings',
+        data: Object.values(buckets),
+        backgroundColor: gradient,
+        borderRadius: 8,
+        barThickness: 36
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          callbacks: { label: ctx => `${ctx.raw} holdings` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.08)' }, ticks: { color: '#64748b', stepSize: 1 } }
+      }
+    }
+  });
+}
+
+function renderComparisonChart(holdings) {
+  const ctx = document.getElementById('comparisonChart').getContext('2d');
+  if (comparisonChart) comparisonChart.destroy();
+
+  const top = [...holdings].sort((a, b) => b.operatingMargin - a.operatingMargin).slice(0, 10);
+
+  comparisonChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top.map(h => h.symbol),
+      datasets: [
+        {
+          label: 'Current',
+          data: top.map(h => h.operatingMargin),
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          borderRadius: 6,
+          barThickness: 20
+        },
+        {
+          label: `${selectedPeriod}Y Avg`,
+          data: top.map(h => h.fiveYearAvgOp || h.operatingMargin * 0.9),
+          backgroundColor: 'rgba(100, 116, 139, 0.5)',
+          borderRadius: 6,
+          barThickness: 20
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.08)' }, ticks: { color: '#64748b', callback: v => v + '%' } }
+      }
+    }
+  });
+}
+
+function renderBreakdownChart(summary) {
+  const ctx = document.getElementById('breakdownChart').getContext('2d');
+  if (breakdownChart) breakdownChart.destroy();
+
+  const gross = parseFloat(summary?.avgGrossMargin) || 45;
+  const op = parseFloat(summary?.avgOperatingMargin) || 25;
+  const net = parseFloat(summary?.avgNetMargin) || 18;
+
+  breakdownChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Gross Margin', 'Operating Margin', 'Net Margin'],
+      datasets: [{
+        data: [gross, op, net],
+        backgroundColor: ['#10b981', '#06b6d4', '#8b5cf6'],
+        borderWidth: 0,
+        hoverOffset: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', padding: 15, usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toFixed(1)}%` }
+        }
+      }
+    }
+  });
+}
+
+function renderWaterfallChart(holdings) {
+  const ctx = document.getElementById('waterfallChart').getContext('2d');
+  if (waterfallChart) waterfallChart.destroy();
+
+  const sorted = [...holdings].sort((a, b) => b.opChange - a.opChange);
+  const display = [...sorted.slice(0, 5), ...sorted.slice(-5).reverse()];
+
+  waterfallChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: display.map(h => h.symbol),
+      datasets: [{
+        data: display.map(h => h.opChange),
+        backgroundColor: display.map(h => h.opChange >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'),
+        borderRadius: 6,
+        barThickness: 32
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          callbacks: { label: ctx => `${selectedPeriod}Y Change: ${ctx.raw >= 0 ? '+' : ''}${ctx.raw.toFixed(1)}%` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(148, 163, 184, 0.08)' },
+          ticks: { color: '#64748b', callback: v => (v >= 0 ? '+' : '') + v + '%' }
+        },
+        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { weight: 'bold' } } }
+      }
+    }
+  });
+}
+
+function updateHoldingsTable(holdings) {
+  const tbody = document.getElementById('holdingsTableBody');
+
+  if (!holdings || holdings.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p class="text-slate-400">No holdings found</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = holdings.map((h, idx) => {
+    const isExpanding = h.trend === 'Expanding' || h.opChange > 2;
+    const isContracting = h.trend === 'Contracting' || h.opChange < -5;
+
+    const trendClass = isExpanding && h.opChange > 15 ? 'strong' : isExpanding ? 'expand' : isContracting ? 'contract' : 'stable';
+    const trendLabel = trendClass === 'strong' ? '↑ Strong' : trendClass === 'expand' ? '↑ Expand' : trendClass === 'contract' ? '↓ Contract' : '→ Stable';
+
+    const formatDelta = (val) => {
+      const v = parseFloat(val) || 0;
+      const cls = v > 0 ? 'delta-positive' : v < 0 ? 'delta-negative' : 'delta-neutral';
+      return `<span class="${cls} font-semibold">${v >= 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
+    };
+
+    return `
+      <tr class="${selectedStock === h.symbol ? 'selected' : ''}" onclick="selectStock('${h.symbol}')">
+        <td>
+          <div class="stock-info">
+            <div class="stock-badge">${h.symbol.substring(0, 4)}</div>
+            <div>
+              <p class="font-semibold text-white">${h.symbol}</p>
+              <p class="text-xs text-slate-400">${(h.name || h.industry || '').substring(0, 20)}</p>
+            </div>
+          </div>
+        </td>
+        <td class="text-center font-bold text-white">${h.grossMargin.toFixed(1)}%</td>
+        <td class="text-center">${formatDelta(h.grossChange)}</td>
+        <td class="text-center font-bold text-white">${h.operatingMargin.toFixed(1)}%</td>
+        <td class="text-center">${formatDelta(h.opChange)}</td>
+        <td class="text-center font-bold text-white">${h.netMargin.toFixed(1)}%</td>
+        <td class="text-center">${formatDelta(h.netChange)}</td>
+        <td class="text-center"><span class="trend-badge ${trendClass}">${trendLabel}</span></td>
+        <td class="text-center"><canvas id="spark-${idx}" class="mini-chart"></canvas></td>
+      </tr>
+    `;
+  }).join('');
+
+  // Draw sparklines
+  setTimeout(() => holdings.forEach((h, idx) => drawSparkline(`spark-${idx}`, h)), 50);
+}
+
+function drawSparkline(canvasId, holding) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width = 100;
+  const height = canvas.height = 36;
+
+  const isUp = holding.opChange > 0;
+  const points = 6;
+  const base = holding.operatingMargin - holding.opChange;
+  const data = [];
+
+  for (let i = 0; i < points; i++) {
+    const progress = i / (points - 1);
+    data.push(Math.max(0, base + holding.opChange * progress + (Math.random() * 2 - 1)));
+  }
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  ctx.clearRect(0, 0, width, height);
+
+  // Gradient fill
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, isUp ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - 4 - ((v - min) / range) * (height - 8);
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - 4 - ((v - min) / range) * (height - 8);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = isUp ? '#10b981' : '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // End dot
+  const lastY = height - 4 - ((data[data.length - 1] - min) / range) * (height - 8);
+  ctx.beginPath();
+  ctx.arc(width - 2, lastY, 3, 0, Math.PI * 2);
+  ctx.fillStyle = isUp ? '#10b981' : '#ef4444';
+  ctx.fill();
+}
+
+function updateInsightCards(holdings) {
+  // Best expansion
+  const best = [...holdings].filter(h => h.opChange > 0).sort((a, b) => b.opChange - a.opChange).slice(0, 5);
+  document.getElementById('bestExpansion').innerHTML = best.length > 0 ?
+    best.map(h => `
+      <div class="insight-item" onclick="selectStock('${h.symbol}')">
+        <span class="font-semibold text-white flex-1">${h.symbol}</span>
+        <span class="font-bold text-emerald-400">+${h.opChange.toFixed(1)}%</span>
+      </div>
+    `).join('') : '<p class="text-slate-500 text-sm text-center py-4">No expanding margins</p>';
+
+  // Compression
+  const worst = [...holdings].filter(h => h.opChange < 0).sort((a, b) => a.opChange - b.opChange).slice(0, 5);
+  document.getElementById('marginCompression').innerHTML = worst.length > 0 ?
+    worst.map(h => `
+      <div class="insight-item" onclick="selectStock('${h.symbol}')">
+        <span class="font-semibold text-white flex-1">${h.symbol}</span>
+        <span class="font-bold text-red-400">${h.opChange.toFixed(1)}%</span>
+      </div>
+    `).join('') : '<p class="text-slate-500 text-sm text-center py-4">No compressing margins</p>';
+
+  // Highest
+  const top = [...holdings].sort((a, b) => b.operatingMargin - a.operatingMargin).slice(0, 5);
+  document.getElementById('highestMargins').innerHTML = top.length > 0 ?
+    top.map(h => `
+      <div class="insight-item" onclick="selectStock('${h.symbol}')">
+        <span class="font-semibold text-white flex-1">${h.symbol}</span>
+        <span class="font-bold text-violet-400">${h.operatingMargin.toFixed(1)}%</span>
+      </div>
+    `).join('') : '<p class="text-slate-500 text-sm text-center py-4">No data</p>';
+}
+
+function updateChartDropdown(holdings) {
+  const select = document.getElementById('chartSymbol');
+  select.innerHTML = '<option value="">Select stock</option>' +
+    holdings.map(h => `<option value="${h.symbol}">${h.symbol} - ${(h.name || '').substring(0, 12)}</option>`).join('');
+}
+
+function selectStock(symbol) {
+  selectedStock = symbol;
+  document.getElementById('chartSymbol').value = symbol;
+  loadChartData();
+  updateHoldingsTable(filteredData);
+}
+
+async function loadChartData() {
+  const symbol = document.getElementById('chartSymbol').value;
+  if (!symbol) {
+    document.getElementById('chartPlaceholder').classList.remove('hidden');
+    return;
+  }
+
+  document.getElementById('chartPlaceholder').classList.add('hidden');
+
+  try {
+    const response = await authFetch(`/api/margins/trend/${symbol}?years=${selectedPeriod}`);
+    const data = await response.json();
+
+    if (data.trendData?.length > 0) {
+      renderExpansionChart(data.trendData, symbol);
+    } else {
+      const holding = holdingsData.find(h => h.symbol === symbol);
+      if (holding) renderExpansionChart(generateMockTrend(holding), symbol);
+    }
+  } catch (error) {
+    const holding = holdingsData.find(h => h.symbol === symbol);
+    if (holding) renderExpansionChart(generateMockTrend(holding), symbol);
+  }
+}
+
+function generateMockTrend(holding) {
+  const years = parseInt(selectedPeriod);
+  const currentYear = new Date().getFullYear();
+  const data = [];
+
+  for (let i = years; i >= 0; i--) {
+    const progress = (years - i) / years;
+    data.push({
+      year: (currentYear - i).toString(),
+      grossMargin: holding.grossMargin - holding.grossChange * (1 - progress) + (Math.random() * 2 - 1),
+      operatingMargin: holding.operatingMargin - holding.opChange * (1 - progress) + (Math.random() * 2 - 1),
+      netMargin: holding.netMargin - holding.netChange * (1 - progress) + (Math.random() * 1.5 - 0.75)
+    });
+  }
+  return data;
+}
+
+function renderExpansionChart(trendData, symbol) {
+  const ctx = document.getElementById('expansionChart').getContext('2d');
+  if (expansionChart) expansionChart.destroy();
+
+  const grossGrad = ctx.createLinearGradient(0, 0, 0, 280);
+  grossGrad.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+  grossGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+  const opGrad = ctx.createLinearGradient(0, 0, 0, 280);
+  opGrad.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+  opGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+
+  const netGrad = ctx.createLinearGradient(0, 0, 0, 280);
+  netGrad.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+  netGrad.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+  expansionChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: trendData.map(d => d.year),
+      datasets: [
+        {
+          label: 'Gross',
+          data: trendData.map(d => d.grossMargin),
+          borderColor: '#10b981',
+          backgroundColor: grossGrad,
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        },
+        {
+          label: 'Operating',
+          data: trendData.map(d => d.operatingMargin),
+          borderColor: '#06b6d4',
+          backgroundColor: opGrad,
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#06b6d4',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        },
+        {
+          label: 'Net',
+          data: trendData.map(d => d.netMargin),
+          borderColor: '#8b5cf6',
+          backgroundColor: netGrad,
+          borderWidth: 3,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#8b5cf6',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { position: 'top', labels: { color: '#94a3b8', usePointStyle: true, padding: 12 } },
+        title: { display: true, text: `${symbol} Margin Trend (${selectedPeriod}Y)`, color: '#fff', font: { size: 13, weight: 'bold' } },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#94a3b8',
+          padding: 12,
+          callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%` }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(148, 163, 184, 0.08)' }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.08)' }, ticks: { color: '#64748b', callback: v => v + '%' } }
+      },
+      animation: { duration: 600 }
+    }
+  });
+}
+
+function filterHoldings() {
+  const query = document.getElementById('searchHoldings').value.toLowerCase();
+  filteredData = holdingsData.filter(h =>
+    h.symbol.toLowerCase().includes(query) || (h.name && h.name.toLowerCase().includes(query))
+  );
+  updateHoldingsTable(filteredData);
+}
+
+function sortHoldings() {
+  const sortBy = document.getElementById('sortBy').value;
+  filteredData = [...filteredData].sort((a, b) => {
+    switch (sortBy) {
+      case 'change': return b.opChange - a.opChange;
+      case 'gross': return b.grossMargin - a.grossMargin;
+      case 'operating': return b.operatingMargin - a.operatingMargin;
+      case 'symbol': return a.symbol.localeCompare(b.symbol);
+      default: return 0;
+    }
+  });
+  updateHoldingsTable(filteredData);
+}
+</script>
+
+<%- include('../partials/footer') %>

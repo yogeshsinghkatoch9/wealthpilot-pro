@@ -1,0 +1,218 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Margin Calculator' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">MARGIN CALCULATOR</h1>
+<p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Track margin usage, buying power, and risk levels</p>
+</div>
+<button onclick="refreshMargin()" class="bloomberg-btn bloomberg-btn-primary">Refresh Data</button>
+</div>
+</div>
+
+<!-- Margin Overview -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+<div class="bloomberg-card p-4">
+<p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Account Value</p>
+<p class="text-2xl font-bold font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$276,847</p>
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Total equity</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Margin Used</p>
+<p class="text-2xl font-bold font-mono text-amber-400">$45,000</p>
+<p class="text-sm font-mono <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">16.3% of equity</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Buying Power</p>
+<p class="text-2xl font-bold font-mono text-emerald-400">$508,694</p>
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">2x leverage</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Margin Interest</p>
+<p class="text-2xl font-bold font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">12.5%</p>
+<p class="text-sm font-mono text-red-400">$468/mo at current</p>
+</div>
+<div class="bloomberg-card p-4">
+<p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Maintenance Req</p>
+<p class="text-2xl font-bold font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$80,462</p>
+<p class="text-sm text-emerald-400">Well above</p>
+</div>
+</div>
+
+<!-- Risk Level -->
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Margin Utilization</h3>
+<div class="mb-4">
+<div class="flex justify-between text-sm mb-2">
+<span class="font-mono">Current: 16.3%</span>
+<span class="font-mono <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Warning: 50% | Margin Call: 75%</span>
+</div>
+<div class="w-full h-6 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> relative overflow-hidden">
+<div class="h-6 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400" style="width:16.3%"></div>
+<div class="absolute top-0 bottom-0 w-0.5 bg-amber-500" style="left:50%"></div>
+<div class="absolute top-0 bottom-0 w-0.5 bg-red-500" style="left:75%"></div>
+</div>
+<div class="flex justify-between text-xs mt-1 font-mono <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">
+<span>0%</span>
+<span class="text-amber-500">50%</span>
+<span class="text-red-500">75%</span>
+<span>100%</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="text-center p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<p class="text-emerald-500 font-bold">✓ Safe Zone</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">0-50% utilization</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-amber-50' : 'bg-amber-500/10' %>">
+<p class="text-amber-500 font-bold">⚠ Warning Zone</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">50-75% utilization</p>
+</div>
+<div class="text-center p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<p class="text-red-500 font-bold">🚨 Danger Zone</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">75%+ margin call risk</p>
+</div>
+</div>
+</div>
+
+<!-- Calculator -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Margin Call Calculator</h3>
+<div class="space-y-4">
+<div>
+<label class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Current Portfolio Value</label>
+<input type="text" value="$276,847" class="form-input w-full font-mono" readonly>
+</div>
+<div>
+<label class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Margin Borrowed</label>
+<input type="text" value="$45,000" class="form-input w-full font-mono">
+</div>
+<div>
+<label class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Maintenance Requirement (%)</label>
+<input type="text" value="25%" class="form-input w-full font-mono">
+</div>
+<div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-red-50 border border-red-200' : 'bg-red-500/10 border border-red-500/20' %>">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Margin Call Triggered At:</p>
+<p class="text-2xl font-bold font-mono text-red-500">$60,000</p>
+<p class="text-xs font-mono <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">Portfolio would need to drop -78.3% from current value</p>
+</div>
+<button onclick="calculate()" class="bloomberg-btn bloomberg-btn-primary w-full">Calculate</button>
+</div>
+</div>
+
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">What-If Scenarios</h3>
+<div class="space-y-4">
+<div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<p class="font-medium mb-2 <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">If market drops 10%:</p>
+<div class="grid grid-cols-2 gap-2 text-sm">
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Value:</span> <span class="font-bold font-mono">$249,162</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Equity:</span> <span class="font-bold font-mono">$204,162</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Utilization:</span> <span class="font-bold font-mono text-emerald-400">22.0%</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Status:</span> <span class="text-emerald-400">Safe</span></div>
+</div>
+</div>
+<div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<p class="font-medium mb-2 <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">If market drops 30%:</p>
+<div class="grid grid-cols-2 gap-2 text-sm">
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Value:</span> <span class="font-bold font-mono">$193,793</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Equity:</span> <span class="font-bold font-mono">$148,793</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Utilization:</span> <span class="font-bold font-mono text-amber-400">30.2%</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Status:</span> <span class="text-emerald-400">Safe</span></div>
+</div>
+</div>
+<div class="p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<p class="font-medium mb-2 <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">If market drops 50%:</p>
+<div class="grid grid-cols-2 gap-2 text-sm">
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Value:</span> <span class="font-bold font-mono">$138,424</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">New Equity:</span> <span class="font-bold font-mono">$93,424</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Utilization:</span> <span class="font-bold font-mono text-amber-400">48.2%</span></div>
+<div><span class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Status:</span> <span class="text-amber-400">Warning</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Margin Positions -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Positions Bought on Margin</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Position</th>
+<th class="px-4 py-3">Value</th>
+<th class="px-4 py-3">Margin Used</th>
+<th class="px-4 py-3">Maint. Req</th>
+<th class="px-4 py-3">P/L</th>
+<th class="px-4 py-3">Interest Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">NVIDIA</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">25 shares (margin)</p></div>
+</div>
+</td>
+<td class="px-4 py-4 font-medium font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$12,130</td>
+<td class="px-4 py-4 font-mono">$6,065</td>
+<td class="px-4 py-4 font-mono">$3,033</td>
+<td class="px-4 py-4 font-mono text-emerald-400">+$2,840</td>
+<td class="px-4 py-4 font-mono text-red-400">$63/mo</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">TSLA</div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Tesla</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">40 shares (margin)</p></div>
+</div>
+</td>
+<td class="px-4 py-4 font-medium font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$15,680</td>
+<td class="px-4 py-4 font-mono">$7,840</td>
+<td class="px-4 py-4 font-mono">$3,920</td>
+<td class="px-4 py-4 font-mono text-emerald-400">+$4,120</td>
+<td class="px-4 py-4 font-mono text-red-400">$82/mo</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">AMD</div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">AMD</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">80 shares (margin)</p></div>
+</div>
+</td>
+<td class="px-4 py-4 font-medium font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$12,240</td>
+<td class="px-4 py-4 font-mono">$6,120</td>
+<td class="px-4 py-4 font-mono">$3,060</td>
+<td class="px-4 py-4 font-mono text-red-400">-$840</td>
+<td class="px-4 py-4 font-mono text-red-400">$64/mo</td>
+</tr>
+</tbody>
+<tfoot class="<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<tr>
+<td class="px-4 py-3 font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Total</td>
+<td class="px-4 py-3 font-bold font-mono <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">$40,050</td>
+<td class="px-4 py-3 font-bold font-mono text-amber-400">$20,025</td>
+<td class="px-4 py-3 font-bold font-mono">$10,013</td>
+<td class="px-4 py-3 font-bold font-mono text-emerald-400">+$6,120</td>
+<td class="px-4 py-3 font-bold font-mono text-red-400">$209/mo</td>
+</tr>
+</tfoot>
+</table>
+</div>
+</div></div></main>
+
+<script>
+function refreshMargin() { showToast('Refreshing margin data...', 'info'); }
+function calculate() { showToast('Calculating margin call threshold...', 'info'); }
+</script>
+<%- include('../partials/footer') %>

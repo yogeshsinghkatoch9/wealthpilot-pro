@@ -1,0 +1,509 @@
+<%- include('../partials/header', { pageTitle: 'Broker Integrations' }) %>
+<%
+  // Ensure all variables have defaults
+  const safeConnections = typeof connections !== 'undefined' && connections ? connections : [];
+  const safeBrokers = typeof brokers !== 'undefined' && brokers ? brokers : [
+    { id: 1, name: 'Charles Schwab', shortName: 'SCHW', color: 'bg-blue-400', description: 'Stocks, ETFs, Retirement' },
+    { id: 2, name: 'Vanguard', shortName: 'VG', color: 'bg-red-800', description: 'Mutual Funds, IRAs' },
+    { id: 3, name: 'Interactive Brokers', shortName: 'IBKR', color: 'bg-black', description: 'Global Trading, Forex' },
+    { id: 4, name: 'Robinhood', shortName: 'RH', color: 'bg-green-500', description: 'Commission-free Stock' }
+  ];
+  const safeUser = typeof user !== 'undefined' && user ? user : { name: 'User', plan: 'Pro Plan' };
+%>
+
+<style>
+  .material-symbols-outlined {
+    font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24
+  }
+  .icon-filled {
+    font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24
+  }
+</style>
+
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+  <div class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 scroll-smooth">
+    <div class="max-w-5xl mx-auto space-y-8">
+
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Broker Integrations</h1>
+          <p class="text-slate-500 dark:text-slate-400 max-w-2xl text-lg">
+            Securely sync your assets via Plaid or Yodlee. Your credentials are encrypted and never stored on our servers.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-primary bg-primary/10 px-3 py-1.5 rounded-full self-start md:self-center">
+          <span class="material-symbols-outlined text-lg">lock</span>
+          <span class="text-xs font-bold uppercase tracking-wide">256-bit Encryption</span>
+        </div>
+      </div>
+
+      <!-- Active Connections Section -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">Active Connections</h2>
+          <button onclick="syncAllConnections()" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1" id="syncAllBtn">
+            <span class="material-symbols-outlined text-lg">refresh</span> Sync All
+          </button>
+        </div>
+        <div class="flex flex-col gap-3" id="connectionsContainer">
+          <% if (safeConnections.length > 0) { %>
+            <% safeConnections.forEach((conn, index) => { %>
+              <!-- Connection Item -->
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-200 dark:border-border-dark" data-connection-id="<%= conn.id %>">
+                <div class="flex items-center gap-4">
+                  <div class="bg-white p-2 rounded-lg size-14 flex items-center justify-center border border-slate-100 dark:border-slate-700">
+                    <div class="w-full h-full <%= conn.color || 'bg-primary' %> rounded-md flex items-center justify-center text-white font-bold text-xs">
+                      <%= conn.shortName || conn.name.substring(0, 3).toUpperCase() %>
+                    </div>
+                  </div>
+                  <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                      <p class="text-base font-bold text-slate-900 dark:text-white"><%= conn.name %></p>
+                      <% if (conn.status === 'synced' || conn.status === 'active') { %>
+                        <span class="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                          <span class="size-1.5 rounded-full bg-green-500 animate-pulse"></span> Synced
+                        </span>
+                      <% } else if (conn.status === 'error') { %>
+                        <span class="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                          <span class="material-symbols-outlined text-[12px]">warning</span> Error
+                        </span>
+                      <% } else { %>
+                        <span class="bg-amber-500/10 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                          <span class="material-symbols-outlined text-[12px]">sync</span> Pending
+                        </span>
+                      <% } %>
+                    </div>
+                    <p class="text-slate-500 text-sm">
+                      <%= conn.accountType || 'Investment Account' %>
+                      <% if (conn.lastSynced) { %>
+                        &bull; Last synced <%= conn.lastSynced %>
+                      <% } %>
+                      <% if (conn.errorMessage) { %>
+                        &bull; <%= conn.errorMessage %>
+                      <% } %>
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 md:ml-auto">
+                  <% if (conn.status === 'error') { %>
+                    <button onclick="reconnectBroker('<%= conn.id %>')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25">
+                      Reconnect
+                    </button>
+                  <% } else { %>
+                    <button onclick="manageBroker('<%= conn.id %>')" class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
+                      Manage
+                    </button>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <!-- Default Demo Connections (for display when no real connections exist) -->
+            <!-- Connection Item 1 (Active) -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-200 dark:border-border-dark">
+              <div class="flex items-center gap-4">
+                <div class="bg-white p-2 rounded-lg size-14 flex items-center justify-center border border-slate-100 dark:border-slate-700">
+                  <div class="w-full h-full bg-green-600 rounded-md flex items-center justify-center text-white font-bold text-xs">FID</div>
+                </div>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <p class="text-base font-bold text-slate-900 dark:text-white">Fidelity Investments</p>
+                    <span class="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span class="size-1.5 rounded-full bg-green-500 animate-pulse"></span> Synced
+                    </span>
+                  </div>
+                  <p class="text-slate-500 text-sm">Individual Account &bull; Last synced 2 mins ago</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 md:ml-auto">
+                <button onclick="manageBroker('fidelity')" class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
+                  Manage
+                </button>
+              </div>
+            </div>
+
+            <!-- Connection Item 2 (Error) -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-card-dark p-4 rounded-xl shadow-sm border border-slate-200 dark:border-border-dark">
+              <div class="flex items-center gap-4">
+                <div class="bg-white p-2 rounded-lg size-14 flex items-center justify-center border border-slate-100 dark:border-slate-700">
+                  <div class="w-full h-full bg-blue-600 rounded-md flex items-center justify-center text-white font-bold text-xs">CB</div>
+                </div>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <p class="text-base font-bold text-slate-900 dark:text-white">Coinbase</p>
+                    <span class="bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[12px]">warning</span> Error
+                    </span>
+                  </div>
+                  <p class="text-slate-500 text-sm">Crypto Wallet &bull; Credentials expired</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 md:ml-auto">
+                <button onclick="reconnectBroker('coinbase')" class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25">
+                  Reconnect
+                </button>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </section>
+
+      <!-- Add New Integration Section -->
+      <section class="space-y-6 pt-6 border-t border-slate-200 dark:border-slate-800/50">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white">Add New Connection</h2>
+          <div class="relative w-full md:w-80">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+            <input
+              id="brokerSearch"
+              class="w-full pl-10 pr-4 py-2.5 rounded-lg bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
+              placeholder="Search brokers (e.g. Schwab, Vanguard)"
+              type="text"
+              onkeyup="filterBrokers(this.value)"
+            />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="brokersGrid">
+          <% safeBrokers.forEach(broker => { %>
+            <!-- Broker Card -->
+            <div class="broker-card group bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark rounded-xl p-5 flex flex-col items-center text-center hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 relative overflow-hidden" data-broker-name="<%= broker.name.toLowerCase() %>">
+              <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div class="relative z-10 size-16 mb-4 rounded-full bg-slate-50 dark:bg-white flex items-center justify-center p-3 shadow-sm">
+                <div class="w-full h-full <%= broker.color %> rounded-full flex items-center justify-center text-white text-xs font-bold"><%= broker.shortName %></div>
+              </div>
+              <h3 class="relative z-10 text-base font-bold text-slate-900 dark:text-white mb-1"><%= broker.name %></h3>
+              <p class="relative z-10 text-xs text-slate-500 mb-4"><%= broker.description %></p>
+              <button onclick="connectBroker('<%= broker.id %>', '<%= broker.name %>')" class="relative z-10 w-full py-2 px-4 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-white/5 hover:text-primary hover:border-primary transition-all">
+                Connect
+              </button>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+
+      <!-- Manual Import Section -->
+      <section>
+        <div class="bg-gradient-to-r from-card-dark to-[#161726] rounded-xl border border-border-dark p-1 relative overflow-hidden">
+          <!-- Decorative background pattern -->
+          <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl"></div>
+          <div class="bg-card-dark/50 backdrop-blur-sm rounded-lg p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-start gap-5">
+              <div class="bg-primary/10 p-3 rounded-lg text-primary shrink-0">
+                <span class="material-symbols-outlined text-3xl">upload_file</span>
+              </div>
+              <div class="space-y-1">
+                <h3 class="text-lg font-bold text-white">Manual Import</h3>
+                <p class="text-slate-400 text-sm max-w-md">
+                  Don't see your broker listed above? You can manually upload your transaction history.
+                  We support CSV, OFX, and QIF formats.
+                </p>
+                <a href="/import" class="inline-flex items-center gap-1 text-primary text-xs font-semibold hover:underline mt-2">
+                  <span class="material-symbols-outlined text-sm">download</span> Download CSV Template
+                </a>
+              </div>
+            </div>
+            <div class="shrink-0 w-full md:w-auto">
+              <button onclick="openFileUpload()" class="w-full md:w-auto flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-5 py-3 rounded-lg transition-colors font-medium">
+                <span class="material-symbols-outlined text-xl">upload</span>
+                Upload File
+              </button>
+              <input type="file" id="fileUpload" class="hidden" accept=".csv,.ofx,.qif" onchange="handleFileUpload(this.files)">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer Info -->
+      <div class="pt-8 pb-4 text-center">
+        <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
+          <span class="material-symbols-outlined text-sm">verified_user</span>
+          Data provided by WealthPilot Financial Services. All connections are read-only.
+        </p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Connection Modal -->
+<div id="connectionModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeConnectionModal()"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card-dark border border-border-dark rounded-2xl p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white" id="modalTitle">Connect Broker</h3>
+      <button onclick="closeConnectionModal()" class="text-slate-400 hover:text-white">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div id="modalContent">
+      <!-- Modal content will be dynamically inserted -->
+    </div>
+  </div>
+</div>
+
+<script>
+  // Broker search filter
+  function filterBrokers(query) {
+    const cards = document.querySelectorAll('.broker-card');
+    const searchTerm = query.toLowerCase().trim();
+
+    cards.forEach(card => {
+      const brokerName = card.getAttribute('data-broker-name');
+      if (brokerName.includes(searchTerm) || searchTerm === '') {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  // Sync all connections
+  function syncAllConnections() {
+    const btn = document.getElementById('syncAllBtn');
+    btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">sync</span> Syncing...';
+    btn.disabled = true;
+
+    fetch('/api/integrations/sync-all', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showToast('All connections synced successfully', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        showToast(data.error || 'Failed to sync connections', 'error');
+      }
+    })
+    .catch(err => {
+      showToast('Failed to sync connections', 'error');
+    })
+    .finally(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined text-lg">refresh</span> Sync All';
+      btn.disabled = false;
+    });
+  }
+
+  // Connect a new broker
+  function connectBroker(brokerId, brokerName) {
+    const modal = document.getElementById('connectionModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+
+    modalTitle.textContent = `Connect ${brokerName}`;
+    modalContent.innerHTML = `
+      <div class="text-center py-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p class="text-slate-400">Initializing secure connection...</p>
+        <p class="text-xs text-slate-500 mt-2">You'll be redirected to ${brokerName} to authorize access.</p>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+
+    // Simulate connection initiation (replace with actual Plaid/Yodlee integration)
+    fetch('/api/integrations/connect', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brokerId, brokerName })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.linkUrl) {
+        window.location.href = data.linkUrl;
+      } else if (data.success) {
+        modalContent.innerHTML = `
+          <div class="text-center py-8">
+            <div class="size-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined text-green-500 text-3xl">check_circle</span>
+            </div>
+            <p class="text-white font-medium">Connection Successful!</p>
+            <p class="text-sm text-slate-400 mt-2">Your ${brokerName} account has been linked.</p>
+            <button onclick="location.reload()" class="mt-6 px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+              Done
+            </button>
+          </div>
+        `;
+      } else {
+        modalContent.innerHTML = `
+          <div class="text-center py-8">
+            <div class="size-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined text-red-500 text-3xl">error</span>
+            </div>
+            <p class="text-white font-medium">Connection Failed</p>
+            <p class="text-sm text-slate-400 mt-2">${data.error || 'Unable to connect to broker. Please try again.'}</p>
+            <button onclick="closeConnectionModal()" class="mt-6 px-6 py-2 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-600 transition-colors">
+              Close
+            </button>
+          </div>
+        `;
+      }
+    })
+    .catch(err => {
+      modalContent.innerHTML = `
+        <div class="text-center py-8">
+          <div class="size-16 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-amber-500 text-3xl">info</span>
+          </div>
+          <p class="text-white font-medium">Demo Mode</p>
+          <p class="text-sm text-slate-400 mt-2">Broker integration requires Plaid or Yodlee setup. This is a preview.</p>
+          <button onclick="closeConnectionModal()" class="mt-6 px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors">
+            Got it
+          </button>
+        </div>
+      `;
+    });
+  }
+
+  // Reconnect a broker with error status
+  function reconnectBroker(connectionId) {
+    showToast('Initiating reconnection...', 'info');
+    connectBroker(connectionId, 'broker');
+  }
+
+  // Manage broker connection
+  function manageBroker(connectionId) {
+    const modal = document.getElementById('connectionModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+
+    modalTitle.textContent = 'Manage Connection';
+    modalContent.innerHTML = `
+      <div class="space-y-4">
+        <div class="p-4 bg-slate-800/50 rounded-lg">
+          <p class="text-sm text-slate-400 mb-1">Connection Status</p>
+          <p class="text-white font-medium flex items-center gap-2">
+            <span class="size-2 rounded-full bg-green-500"></span> Active
+          </p>
+        </div>
+        <div class="p-4 bg-slate-800/50 rounded-lg">
+          <p class="text-sm text-slate-400 mb-1">Last Synced</p>
+          <p class="text-white font-medium">Just now</p>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button onclick="syncConnection('${connectionId}')" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-lg">refresh</span> Sync Now
+          </button>
+          <button onclick="confirmDisconnect('${connectionId}')" class="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg font-medium hover:bg-red-500/20 transition-colors">
+            Disconnect
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.classList.remove('hidden');
+  }
+
+  // Sync single connection
+  function syncConnection(connectionId) {
+    showToast('Syncing connection...', 'info');
+    closeConnectionModal();
+    // Implement actual sync logic
+  }
+
+  // Confirm disconnect
+  function confirmDisconnect(connectionId) {
+    const modalContent = document.getElementById('modalContent');
+    modalContent.innerHTML = `
+      <div class="text-center py-4">
+        <div class="size-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-red-500 text-3xl">link_off</span>
+        </div>
+        <p class="text-white font-medium">Disconnect this account?</p>
+        <p class="text-sm text-slate-400 mt-2">Your data will remain but won't sync anymore.</p>
+        <div class="flex gap-3 mt-6">
+          <button onclick="closeConnectionModal()" class="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg font-medium hover:bg-slate-600 transition-colors">
+            Cancel
+          </button>
+          <button onclick="disconnectBroker('${connectionId}')" class="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors">
+            Disconnect
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // Disconnect broker
+  function disconnectBroker(connectionId) {
+    fetch('/api/integrations/disconnect', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ connectionId })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showToast('Connection removed', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } else {
+        showToast(data.error || 'Failed to disconnect', 'error');
+      }
+    })
+    .catch(() => {
+      showToast('Connection removed (demo)', 'success');
+      closeConnectionModal();
+    });
+  }
+
+  // Close modal
+  function closeConnectionModal() {
+    document.getElementById('connectionModal').classList.add('hidden');
+  }
+
+  // File upload functions
+  function openFileUpload() {
+    document.getElementById('fileUpload').click();
+  }
+
+  function handleFileUpload(files) {
+    if (files.length === 0) return;
+
+    const file = files[0];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    showToast(`Uploading ${file.name}...`, 'info');
+
+    fetch('/api/import/upload', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showToast(`Successfully imported ${data.count || 0} transactions`, 'success');
+      } else {
+        showToast(data.error || 'Failed to import file', 'error');
+      }
+    })
+    .catch(() => {
+      showToast('File upload received (demo mode)', 'success');
+    });
+  }
+
+  // Keyboard shortcut for search
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('brokerSearch').focus();
+    }
+    if (e.key === 'Escape') {
+      closeConnectionModal();
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

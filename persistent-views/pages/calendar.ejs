@@ -1,0 +1,196 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeEvents = typeof events !== 'undefined' ? events : [];
+const safeUser = typeof user !== 'undefined' ? user : {};
+%>
+<%- include('../partials/header', { pageTitle: 'Calendar' }) %>
+<main class="p-4 lg:p-6"><div class="max-w-7xl mx-auto space-y-6">
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+<div class="flex items-center justify-between">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">FINANCIAL CALENDAR</h1>
+<p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Dividends, earnings, and important dates</p>
+</div>
+<div class="flex gap-3">
+<button onclick="openAddModal()" class="bloomberg-btn">+ ADD EVENT</button>
+</div>
+</div>
+</div>
+
+<!-- Legend -->
+<div class="flex gap-4 flex-wrap">
+<span class="flex items-center gap-2 text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="w-3 h-3 rounded-full bg-emerald-500"></span>Dividend</span>
+<span class="flex items-center gap-2 text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="w-3 h-3 rounded-full bg-purple-500"></span>Earnings</span>
+<span class="flex items-center gap-2 text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="w-3 h-3 rounded-full bg-sky-500"></span>Personal</span>
+<span class="flex items-center gap-2 text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="w-3 h-3 rounded-full bg-amber-500"></span>Economic</span>
+</div>
+
+<!-- Upcoming Events -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Your Events (<%= safeEvents.length %>)</h3>
+<% if (safeEvents.length === 0) { %>
+<div class="text-center py-8">
+<svg class="w-16 h-16 mx-auto <%= safeTheme === 'light' ? 'text-gray-300' : 'text-slate-600' %> mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+</svg>
+<h4 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">No events</h4>
+<p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mb-4">Add your first financial event to track</p>
+<button onclick="openAddModal()" class="bloomberg-btn">ADD EVENT</button>
+</div>
+<% } else { %>
+<div class="space-y-3">
+<% safeEvents.forEach(event => {
+  const eventDate = new Date(event.event_date);
+  const colors = { dividend: 'emerald', earnings: 'purple', personal: 'sky', economic: 'amber' };
+  const color = colors[event.event_type] || 'slate';
+%>
+<div class="flex items-center justify-between p-4 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-<%= color %>-500/20 flex items-center justify-center">
+<span class="text-<%= color %>-400 font-bold text-sm font-mono"><%= eventDate.getDate() %></span>
+</div>
+<div>
+<p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= event.title %></p>
+<div class="flex items-center gap-2 mt-1">
+<span class="px-2 py-0.5 bg-<%= color %>-500/20 text-<%= color %>-400 rounded text-xs"><%= event.event_type %></span>
+<% if (event.symbol) { %><span class="text-xs font-mono <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= event.symbol %></span><% } %>
+<span class="text-xs font-mono <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= eventDate.toLocaleDateString() %></span>
+</div>
+</div>
+</div>
+<button onclick="deleteEvent('<%= event.id %>')" class="bloomberg-btn-ghost text-red-400 hover:text-red-300">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+</button>
+</div>
+<% }) %>
+</div>
+<% } %>
+</div>
+
+<!-- Quick Add Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div class="bloomberg-card p-4 cursor-pointer hover:border-emerald-500/50 transition-all" onclick="quickAdd('dividend')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center"><span class="text-emerald-400">$</span></div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Dividend</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Track dividend dates</p></div>
+</div>
+</div>
+<div class="bloomberg-card p-4 cursor-pointer hover:border-purple-500/50 transition-all" onclick="quickAdd('earnings')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center"><span class="text-purple-400">E</span></div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Earnings</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Earnings reports</p></div>
+</div>
+</div>
+<div class="bloomberg-card p-4 cursor-pointer hover:border-sky-500/50 transition-all" onclick="quickAdd('personal')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center"><span class="text-sky-400">P</span></div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Personal</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Custom reminders</p></div>
+</div>
+</div>
+<div class="bloomberg-card p-4 cursor-pointer hover:border-amber-500/50 transition-all" onclick="quickAdd('economic')">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center"><span class="text-amber-400">E</span></div>
+<div><p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Economic</p><p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Fed meetings, CPI</p></div>
+</div>
+</div>
+</div>
+
+</div></div></main>
+
+<!-- Add Event Modal -->
+<div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="bloomberg-card p-6 w-full max-w-md mx-4">
+<h3 class="text-xl font-bold text-amber-400 mb-4">ADD EVENT</h3>
+<form id="addForm" class="space-y-4">
+<div>
+<label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Title</label>
+<input type="text" name="title" class="form-input font-mono" placeholder="AAPL Dividend" required>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Type</label>
+<select name="eventType" class="form-input" id="eventTypeSelect">
+<option value="dividend">Dividend</option>
+<option value="earnings">Earnings</option>
+<option value="personal">Personal</option>
+<option value="economic">Economic</option>
+</select>
+</div>
+<div>
+<label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Symbol (Optional)</label>
+<input type="text" name="symbol" class="form-input font-mono" placeholder="AAPL">
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Date</label>
+<input type="datetime-local" name="eventDate" class="form-input font-mono" required>
+</div>
+<div>
+<label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Description</label>
+<textarea name="description" class="form-input" rows="2" placeholder="Optional notes..."></textarea>
+</div>
+</form>
+<div class="flex gap-3 mt-6">
+<button onclick="closeAddModal()" class="bloomberg-btn-ghost flex-1">CANCEL</button>
+<button onclick="submitAdd()" class="bloomberg-btn flex-1">ADD EVENT</button>
+</div>
+</div>
+</div>
+
+<script>
+function openAddModal() {
+  document.getElementById('addModal').classList.remove('hidden');
+  document.getElementById('addModal').classList.add('flex');
+}
+
+function closeAddModal() {
+  document.getElementById('addModal').classList.add('hidden');
+  document.getElementById('addModal').classList.remove('flex');
+}
+
+function quickAdd(type) {
+  document.getElementById('eventTypeSelect').value = type;
+  openAddModal();
+}
+
+async function submitAdd() {
+  const form = document.getElementById('addForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  try {
+    const res = await fetch('/api/calendar/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showToast('Event added!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to add', 'error');
+    }
+  } catch (e) {
+    showToast('Error adding event', 'error');
+  }
+  closeAddModal();
+}
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event?')) return;
+  try {
+    const res = await fetch('/api/calendar/events/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Deleted!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error deleting', 'error');
+  }
+}
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,403 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const g = greeks || {};
+const calls = g.calls || [];
+const puts = g.puts || [];
+const quote = g.quote || {};
+const price = quote.price || g.currentPrice || 0;
+const ivRank = g.ivRank || 0;
+const hv = g.historicalVolatility || 0;
+const avgIV = g.avgImpliedVolatility || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(1) + '%'; }
+function formatGreek(v, decimals) { return (v || 0).toFixed(decimals || 3); }
+
+// Sort and filter around ATM
+const allStrikes = [...new Set([...calls.map(c => c.strike), ...puts.map(p => p.strike)])].sort((a, b) => a - b);
+const atmIndex = allStrikes.findIndex(s => s >= price);
+const displayStrikes = allStrikes.slice(Math.max(0, atmIndex - 3), atmIndex + 4);
+
+// Build maps for quick lookup
+const callMap = {};
+calls.forEach(c => { callMap[c.strike] = c; });
+const putMap = {};
+puts.forEach(p => { putMap[p.strike] = p; });
+
+// Demo values
+const demoPrice = price || 435.00;
+const demoIV = avgIV || 0.185;
+const demoIVRank = ivRank || 18.5;
+%>
+<%- include('../partials/header', { pageTitle: 'Options Greeks Calculator' }) %>
+
+<!-- Stitch Design System -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#4850e5",
+        "background-dark": "#111221",
+        "surface-dark": "#1a1d2d",
+        "surface-darker": "#151725",
+        "text-secondary": "#9e9fb7"
+      },
+      fontFamily: {
+        "display": ["Manrope", "sans-serif"]
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Manrope', sans-serif; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #111221; }
+  ::-webkit-scrollbar-thumb { background: #3d3e52; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4850e5; }
+  input[type=range] { -webkit-appearance: none; background: transparent; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    background: #4850e5; border-radius: 50%; cursor: pointer;
+    margin-top: -6px; box-shadow: 0 2px 6px rgba(72,80,229,0.3);
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    width: 100%; height: 4px; background: #292a38; border-radius: 2px;
+  }
+</style>
+
+<div class="flex min-h-screen w-full overflow-hidden bg-[#111221]">
+  <!-- Side Navigation -->
+  <div class="hidden lg:flex w-72 flex-col border-r border-[#292a38] bg-[#151725]">
+    <div class="flex h-full flex-col justify-between p-6">
+      <div class="flex flex-col gap-8">
+        <!-- User Profile -->
+        <div class="flex gap-4 items-center">
+          <div class="size-12 rounded-full bg-gradient-to-br from-[#4850e5] to-[#6366f1] flex items-center justify-center text-white font-bold text-lg">W</div>
+          <div class="flex flex-col">
+            <h1 class="text-white text-lg font-bold leading-tight">WealthPilot</h1>
+            <p class="text-[#9e9fb7] text-xs font-medium tracking-wide uppercase">Pro Account</p>
+          </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex flex-col gap-2">
+          <a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-[#292a38] transition-colors group" href="/dashboard">
+            <span class="material-symbols-outlined text-[#9e9fb7] group-hover:text-white transition-colors">dashboard</span>
+            <p class="text-[#9e9fb7] group-hover:text-white text-sm font-medium transition-colors">Dashboard</p>
+          </a>
+          <a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-[#292a38] transition-colors group" href="/portfolio">
+            <span class="material-symbols-outlined text-[#9e9fb7] group-hover:text-white transition-colors">work</span>
+            <p class="text-[#9e9fb7] group-hover:text-white text-sm font-medium transition-colors">Portfolio</p>
+          </a>
+          <a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-[#292a38] transition-colors group" href="/market-overview">
+            <span class="material-symbols-outlined text-[#9e9fb7] group-hover:text-white transition-colors">trending_up</span>
+            <p class="text-[#9e9fb7] group-hover:text-white text-sm font-medium transition-colors">Market</p>
+          </a>
+          <a class="flex items-center gap-4 px-4 py-3 rounded-xl bg-[#4850e5]/10 border border-[#4850e5]/20 text-white" href="#">
+            <span class="material-symbols-outlined text-[#4850e5]">calculate</span>
+            <p class="text-white text-sm font-bold">Tools</p>
+          </a>
+          <a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-[#292a38] transition-colors group" href="/research">
+            <span class="material-symbols-outlined text-[#9e9fb7] group-hover:text-white transition-colors">menu_book</span>
+            <p class="text-[#9e9fb7] group-hover:text-white text-sm font-medium transition-colors">Research</p>
+          </a>
+        </nav>
+      </div>
+
+      <div class="px-4 py-4 rounded-xl bg-gradient-to-br from-[#292a38] to-transparent border border-[#292a38]">
+        <p class="text-xs text-[#9e9fb7] mb-2">Market Status</p>
+        <div class="flex items-center gap-2">
+          <div class="size-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span class="text-sm font-bold text-white">Open</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col h-full overflow-y-auto bg-[#111221] relative">
+    <!-- Header & Breadcrumbs -->
+    <header class="w-full px-6 py-6 md:px-10 lg:px-12 border-b border-[#292a38] bg-[#1a1d2d]/50 backdrop-blur-sm sticky top-0 z-20">
+      <div class="max-w-7xl mx-auto w-full">
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <a class="text-[#9e9fb7] text-sm font-medium hover:text-white transition-colors" href="/">Home</a>
+          <span class="text-[#9e9fb7] text-sm font-medium">/</span>
+          <a class="text-[#9e9fb7] text-sm font-medium hover:text-white transition-colors" href="/options-chain">Options</a>
+          <span class="text-[#9e9fb7] text-sm font-medium">/</span>
+          <span class="text-[#4850e5] text-sm font-semibold">Greeks Calculator</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 class="text-white text-3xl md:text-4xl font-extrabold tracking-tight mb-2">Options Greeks Calculator</h1>
+            <p class="text-[#9e9fb7] text-base font-normal max-w-2xl">Analyze risk sensitivities (Delta, Gamma, Theta, Vega, Rho) for specific option contracts to optimize your hedging strategy.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#292a38] hover:bg-[#343546] text-white text-sm font-medium transition-colors border border-transparent hover:border-white/10">
+              <span class="material-symbols-outlined text-[18px]">file_download</span>
+              Export
+            </button>
+            <button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#292a38] hover:bg-[#343546] text-white text-sm font-medium transition-colors border border-transparent hover:border-white/10">
+              <span class="material-symbols-outlined text-[18px]">share</span>
+              Share
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Body -->
+    <main class="w-full px-6 py-8 md:px-10 lg:px-12 max-w-7xl mx-auto flex flex-col gap-8 pb-20">
+      <!-- Input Section -->
+      <section class="bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-6 shadow-xl">
+        <form method="GET" action="/options-greeks" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+          <label class="flex flex-col gap-2">
+            <span class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Underlying Asset</span>
+            <div class="relative">
+              <input name="symbol" class="w-full bg-[#151725] border border-[#3d3e52] rounded-lg px-4 py-3 text-white font-medium focus:outline-none focus:border-[#4850e5] focus:ring-1 focus:ring-[#4850e5] uppercase" placeholder="e.g. AAPL" type="text" value="<%= symbol || 'SPY' %>">
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[#9e9fb7] text-sm">ETF</span>
+            </div>
+          </label>
+          <label class="flex flex-col gap-2">
+            <span class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Expiration Date</span>
+            <div class="relative">
+              <select class="w-full bg-[#151725] border border-[#3d3e52] rounded-lg px-4 py-3 text-white font-medium focus:outline-none focus:border-[#4850e5] focus:ring-1 focus:ring-[#4850e5] appearance-none cursor-pointer">
+                <option>Oct 20, 2023 (14d)</option>
+                <option>Oct 27, 2023 (21d)</option>
+                <option>Nov 17, 2023 (42d)</option>
+              </select>
+              <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#9e9fb7] pointer-events-none">calendar_today</span>
+            </div>
+          </label>
+          <label class="flex flex-col gap-2">
+            <span class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Strike Price</span>
+            <input class="w-full bg-[#151725] border border-[#3d3e52] rounded-lg px-4 py-3 text-white font-medium focus:outline-none focus:border-[#4850e5] focus:ring-1 focus:ring-[#4850e5]" type="number" value="435.00">
+          </label>
+          <label class="flex flex-col gap-2">
+            <span class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Option Type</span>
+            <div class="flex bg-[#151725] rounded-lg p-1 border border-[#3d3e52] h-[50px]">
+              <button type="button" class="flex-1 rounded text-sm font-bold bg-[#4850e5] text-white shadow-sm">Call</button>
+              <button type="button" class="flex-1 rounded text-sm font-medium text-[#9e9fb7] hover:text-white transition-colors">Put</button>
+            </div>
+          </label>
+          <button type="submit" class="h-[50px] bg-[#4850e5] hover:bg-[#5a62f0] text-white font-bold rounded-lg shadow-lg shadow-[#4850e5]/20 transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined">calculate</span>
+            Calculate
+          </button>
+        </form>
+      </section>
+
+      <!-- Greeks Dashboard -->
+      <section class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <!-- Delta Card -->
+        <div class="group bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-5 relative overflow-hidden hover:border-[#4850e5]/50 transition-colors cursor-default">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="text-4xl font-serif text-white">Δ</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[#9e9fb7] text-sm font-bold uppercase tracking-wider">Delta</span>
+            <span class="material-symbols-outlined text-[#9e9fb7] text-[16px] cursor-help" title="Rate of change of option price with respect to underlying price">help</span>
+          </div>
+          <p class="text-3xl font-bold text-white mb-2 tabular-nums">0.542</p>
+          <div class="flex items-center gap-2">
+            <span class="text-emerald-400 text-xs font-medium bg-emerald-400/10 px-2 py-0.5 rounded flex items-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">arrow_upward</span> High
+            </span>
+            <span class="text-[#9e9fb7] text-xs">Sensitivity</span>
+          </div>
+        </div>
+
+        <!-- Gamma Card -->
+        <div class="group bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-5 relative overflow-hidden hover:border-[#4850e5]/50 transition-colors cursor-default">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="text-4xl font-serif text-white">Γ</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[#9e9fb7] text-sm font-bold uppercase tracking-wider">Gamma</span>
+            <span class="material-symbols-outlined text-[#9e9fb7] text-[16px] cursor-help" title="Rate of change of Delta">help</span>
+          </div>
+          <p class="text-3xl font-bold text-white mb-2 tabular-nums">0.031</p>
+          <div class="flex items-center gap-2">
+            <span class="text-[#9e9fb7] text-xs font-medium bg-[#292a38] px-2 py-0.5 rounded">Stable</span>
+            <span class="text-[#9e9fb7] text-xs">Acceleration</span>
+          </div>
+        </div>
+
+        <!-- Theta Card -->
+        <div class="group bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-5 relative overflow-hidden hover:border-[#4850e5]/50 transition-colors cursor-default">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="text-4xl font-serif text-white">Θ</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[#9e9fb7] text-sm font-bold uppercase tracking-wider">Theta</span>
+            <span class="material-symbols-outlined text-[#9e9fb7] text-[16px] cursor-help" title="Time decay">help</span>
+          </div>
+          <p class="text-3xl font-bold text-rose-400 mb-2 tabular-nums">-0.12</p>
+          <div class="flex items-center gap-2">
+            <span class="text-rose-400 text-xs font-medium bg-rose-400/10 px-2 py-0.5 rounded flex items-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">trending_down</span> Decay
+            </span>
+            <span class="text-[#9e9fb7] text-xs">Daily</span>
+          </div>
+        </div>
+
+        <!-- Vega Card -->
+        <div class="group bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-5 relative overflow-hidden hover:border-[#4850e5]/50 transition-colors cursor-default">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="text-4xl font-serif text-white">ν</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[#9e9fb7] text-sm font-bold uppercase tracking-wider">Vega</span>
+            <span class="material-symbols-outlined text-[#9e9fb7] text-[16px] cursor-help" title="Sensitivity to Volatility">help</span>
+          </div>
+          <p class="text-3xl font-bold text-white mb-2 tabular-nums">0.245</p>
+          <div class="flex items-center gap-2">
+            <span class="text-blue-400 text-xs font-medium bg-blue-400/10 px-2 py-0.5 rounded flex items-center gap-1">Vol</span>
+            <span class="text-[#9e9fb7] text-xs">Exposure</span>
+          </div>
+        </div>
+
+        <!-- Rho Card -->
+        <div class="group bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-5 relative overflow-hidden hover:border-[#4850e5]/50 transition-colors cursor-default">
+          <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="text-4xl font-serif text-white">ρ</span>
+          </div>
+          <div class="flex items-center gap-2 mb-3">
+            <span class="text-[#9e9fb7] text-sm font-bold uppercase tracking-wider">Rho</span>
+            <span class="material-symbols-outlined text-[#9e9fb7] text-[16px] cursor-help" title="Sensitivity to Interest Rates">help</span>
+          </div>
+          <p class="text-3xl font-bold text-white mb-2 tabular-nums">0.041</p>
+          <div class="flex items-center gap-2">
+            <span class="text-[#9e9fb7] text-xs font-medium bg-[#292a38] px-2 py-0.5 rounded">Low</span>
+            <span class="text-[#9e9fb7] text-xs">Interest</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analysis & Charts -->
+      <section class="flex flex-col lg:flex-row gap-6 min-h-[500px]">
+        <!-- Chart Area -->
+        <div class="flex-1 bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-6 flex flex-col">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h3 class="text-lg font-bold text-white">Sensitivity Analysis</h3>
+            <div class="flex p-1 bg-[#151725] rounded-lg border border-[#3d3e52] w-fit">
+              <button class="px-4 py-1.5 rounded bg-[#292a38] text-white text-xs font-bold shadow-sm">Price</button>
+              <button class="px-4 py-1.5 rounded text-[#9e9fb7] hover:text-white text-xs font-medium transition-colors">Time</button>
+              <button class="px-4 py-1.5 rounded text-[#9e9fb7] hover:text-white text-xs font-medium transition-colors">Volatility</button>
+            </div>
+          </div>
+
+          <!-- Chart Canvas -->
+          <div class="flex-1 w-full relative min-h-[300px]">
+            <canvas id="sensitivityChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Controls/Settings Panel -->
+        <div class="lg:w-80 w-full bg-[#1a1d2d] border border-[#292a38] rounded-2xl p-6 flex flex-col gap-6">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#4850e5]">tune</span>
+            <h3 class="text-lg font-bold text-white">Model Inputs</h3>
+          </div>
+          <div class="flex flex-col gap-5">
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between">
+                <label class="text-sm font-medium text-[#9e9fb7]">Implied Volatility (IV)</label>
+                <span class="text-sm font-bold text-white"><%= formatPct(demoIVRank) %></span>
+              </div>
+              <input class="w-full h-2 bg-[#292a38] rounded-lg cursor-pointer" max="100" min="0" type="range" value="18">
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between">
+                <label class="text-sm font-medium text-[#9e9fb7]">Risk-Free Rate</label>
+                <span class="text-sm font-bold text-white">4.5%</span>
+              </div>
+              <input class="w-full h-2 bg-[#292a38] rounded-lg cursor-pointer" max="10" min="0" type="range" value="4.5">
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between">
+                <label class="text-sm font-medium text-[#9e9fb7]">Dividend Yield</label>
+                <span class="text-sm font-bold text-white">1.2%</span>
+              </div>
+              <input class="w-full h-2 bg-[#292a38] rounded-lg cursor-pointer" max="10" min="0" type="range" value="1.2">
+            </div>
+            <div class="h-px bg-[#292a38] w-full my-1"></div>
+            <div class="bg-[#151725] p-4 rounded-xl border border-[#292a38]">
+              <h4 class="text-sm font-bold text-white mb-2">Simulated P/L</h4>
+              <div class="flex justify-between items-end">
+                <span class="text-xs text-[#9e9fb7]">If price moves +1%</span>
+                <span class="text-base font-bold text-emerald-400">+$124.50</span>
+              </div>
+            </div>
+          </div>
+          <button class="mt-auto w-full py-3 rounded-lg border border-[#4850e5]/20 text-[#4850e5] font-bold text-sm hover:bg-[#4850e5]/10 transition-colors">
+            Reset to Defaults
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Sensitivity Analysis Chart
+const ctx = document.getElementById('sensitivityChart').getContext('2d');
+const prices = [410, 420, 430, 440, 450, 460];
+const deltas = [0.15, 0.28, 0.42, 0.58, 0.72, 0.85];
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: prices.map(p => '$' + p),
+    datasets: [{
+      label: 'Delta',
+      data: deltas,
+      borderColor: '#4850e5',
+      backgroundColor: 'rgba(72, 80, 229, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#fff',
+      pointBorderColor: '#4850e5',
+      pointBorderWidth: 2,
+      pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1a1d2d',
+        borderColor: '#3d3e52',
+        borderWidth: 1,
+        titleColor: '#9e9fb7',
+        bodyColor: '#fff',
+        bodyFont: { weight: 'bold' },
+        padding: 12,
+        displayColors: false
+      }
+    },
+    scales: {
+      y: {
+        grid: { color: '#292a38', drawBorder: false },
+        ticks: { color: '#9e9fb7', font: { size: 11 } },
+        min: 0,
+        max: 1
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#9e9fb7', font: { size: 11 } }
+      }
+    }
+  }
+});
+</script>
+<%- include('../partials/footer') %>

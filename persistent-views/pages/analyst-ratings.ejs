@@ -1,0 +1,189 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Analyst Ratings' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 tracking-wide">ANALYST RATINGS</h1>
+<p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Wall Street consensus & rating changes</p>
+</div>
+<div class="flex gap-2">
+<select class="form-input w-32 text-xs uppercase"><option selected>My Holdings</option><option>Watchlist</option><option>S&P 500</option></select>
+<select class="form-input w-28 text-xs uppercase"><option selected>All Ratings</option><option>Upgrades</option><option>Downgrades</option></select>
+</div>
+</div>
+</div>
+
+<!-- Portfolio Consensus -->
+<div class="tufte-stat-card">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4 uppercase tracking-wide text-sm">Portfolio Analyst Consensus</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase tracking-wider mb-1">Avg Rating</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">BUY</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> tabular-nums">Score: 4.2/5</p>
+</div>
+<div class="text-center">
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase tracking-wider mb-1">Strong Buy</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">8</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase tracking-wider mb-1">Buy</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">5</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase tracking-wider mb-1">Hold</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">2</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase tracking-wider mb-1">Sell/Underperform</p>
+<p class="text-3xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">1</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holding</p>
+</div>
+</div>
+</div>
+
+<!-- Holdings Ratings Table -->
+<div class="tufte-stat-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> uppercase tracking-wide text-sm">Holdings Analyst Ratings</h3>
+</div>
+<table class="bloomberg-table">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider">Stock</th>
+<th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Consensus</th>
+<th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Score</th>
+<th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider"># Analysts</th>
+<th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider">Rating Distribution</th>
+<th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Avg Target</th>
+<th class="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Upside</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold uppercase">Strong Buy</span></td>
+<td class="px-4 py-3 text-center font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">4.8</td>
+<td class="px-4 py-3 text-center tabular-nums">48</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-800' : 'bg-slate-300' %> rounded-l" style="width:75%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-600' : 'bg-slate-500' %>" style="width:15%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-400' : 'bg-slate-600' %>" style="width:8%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-300' : 'bg-slate-700' %> rounded-r" style="width:2%"></div></div></td>
+<td class="px-4 py-3 text-center tabular-nums">$580</td>
+<td class="px-4 py-3 text-center positive font-bold tabular-nums">+19.6%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold uppercase">Buy</span></td>
+<td class="px-4 py-3 text-center font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">4.2</td>
+<td class="px-4 py-3 text-center tabular-nums">42</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-800' : 'bg-slate-300' %> rounded-l" style="width:45%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-600' : 'bg-slate-500' %>" style="width:35%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-400' : 'bg-slate-600' %>" style="width:15%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-300' : 'bg-slate-700' %> rounded-r" style="width:5%"></div></div></td>
+<td class="px-4 py-3 text-center tabular-nums">$215</td>
+<td class="px-4 py-3 text-center positive font-bold tabular-nums">+13.4%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold">MSFT</div><span class="font-medium">Microsoft</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold uppercase">Strong Buy</span></td>
+<td class="px-4 py-3 text-center font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">4.6</td>
+<td class="px-4 py-3 text-center tabular-nums">38</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-800' : 'bg-slate-300' %> rounded-l" style="width:65%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-600' : 'bg-slate-500' %>" style="width:28%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-400' : 'bg-slate-600' %>" style="width:5%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-300' : 'bg-slate-700' %> rounded-r" style="width:2%"></div></div></td>
+<td class="px-4 py-3 text-center tabular-nums">$475</td>
+<td class="px-4 py-3 text-center positive font-bold tabular-nums">+14.5%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold">TSLA</div><span class="font-medium">Tesla</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold uppercase">Hold</span></td>
+<td class="px-4 py-3 text-center font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">3.2</td>
+<td class="px-4 py-3 text-center tabular-nums">52</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-800' : 'bg-slate-300' %> rounded-l" style="width:25%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-600' : 'bg-slate-500' %>" style="width:20%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-400' : 'bg-slate-600' %>" style="width:30%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-300' : 'bg-slate-700' %> rounded-r" style="width:25%"></div></div></td>
+<td class="px-4 py-3 text-center tabular-nums">$320</td>
+<td class="px-4 py-3 text-center negative font-bold tabular-nums">-10.1%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold">JNJ</div><span class="font-medium">J&J</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold uppercase">Buy</span></td>
+<td class="px-4 py-3 text-center font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> tabular-nums">4.0</td>
+<td class="px-4 py-3 text-center tabular-nums">24</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-800' : 'bg-slate-300' %> rounded-l" style="width:35%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-600' : 'bg-slate-500' %>" style="width:40%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-400' : 'bg-slate-600' %>" style="width:20%"></div><div class="h-4 <%= safeTheme === 'light' ? 'bg-gray-300' : 'bg-slate-700' %> rounded-r" style="width:5%"></div></div></td>
+<td class="px-4 py-3 text-center tabular-nums">$175</td>
+<td class="px-4 py-3 text-center positive font-bold tabular-nums">+10.5%</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Recent Rating Changes -->
+<div class="tufte-stat-card">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4 uppercase tracking-wide text-sm">Recent Rating Changes</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
+<div class="flex items-center gap-3">
+<div><span class="font-bold tabular-nums">NVDA</span><span class="ml-2 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Morgan Stanley</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium">Hold → <span class="font-semibold">Overweight</span></p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">PT: <span class="tabular-nums">$520</span> → <span class="tabular-nums">$620</span> | Dec 9</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
+<div class="flex items-center gap-3">
+<div><span class="font-bold tabular-nums">AAPL</span><span class="ml-2 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">JP Morgan</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium">Neutral → <span class="font-semibold">Overweight</span></p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">PT: <span class="tabular-nums">$195</span> → <span class="tabular-nums">$240</span> | Dec 8</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
+<div class="flex items-center gap-3">
+<div><span class="font-bold tabular-nums">TSLA</span><span class="ml-2 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Goldman Sachs</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium">Buy → <span class="font-semibold">Neutral</span></p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">PT: <span class="tabular-nums">$380</span> → <span class="tabular-nums">$295</span> | Dec 6</p>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>">
+<div class="flex items-center gap-3">
+<div><span class="font-bold tabular-nums">MSFT</span><span class="ml-2 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Barclays</span></div>
+</div>
+<div class="text-right">
+<p class="font-medium">Overweight → <span class="font-semibold">Overweight</span></p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">PT: <span class="tabular-nums">$450</span> → <span class="tabular-nums">$500</span> | Dec 5</p>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="tufte-stat-card">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4 uppercase tracking-wide text-sm">Portfolio Rating Distribution</h3>
+<div class="h-48"><canvas id="ratingChart"></canvas></div>
+</div>
+<div class="tufte-stat-card">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4 uppercase tracking-wide text-sm">Rating Changes (30 Days)</h3>
+<div class="h-48"><canvas id="changesChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('ratingChart'), {
+  type: 'doughnut',
+  data: { labels: ['Strong Buy','Buy','Hold','Sell'], datasets: [{ data: [8,5,2,1], backgroundColor: ['#10b981','#0ea5e9','#f59e0b','#ef4444'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('changesChart'), {
+  type: 'bar',
+  data: { labels: ['Upgrades','Downgrades','Reiterations'], datasets: [{ data: [12,4,28], backgroundColor: ['#10b981','#ef4444','#0ea5e9'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

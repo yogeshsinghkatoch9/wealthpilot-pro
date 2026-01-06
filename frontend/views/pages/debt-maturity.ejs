@@ -1,0 +1,914 @@
+<%- include('../partials/header', { pageTitle: 'Debt Maturity Schedule' }) %>
+
+<style>
+/* Debt Maturity Dashboard Styles */
+:root {
+  --debt-primary: #f59e0b;
+  --debt-secondary: #0ea5e9;
+  --debt-success: #10b981;
+  --debt-warning: #f59e0b;
+  --debt-danger: #ef4444;
+  --debt-card-bg: rgba(15, 23, 42, 0.7);
+  --debt-border: rgba(148, 163, 184, 0.1);
+}
+
+.debt-dashboard {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.debt-hero {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(14, 165, 233, 0.1) 50%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
+
+.debt-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.debt-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.debt-select {
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 10px;
+  padding: 10px 36px 10px 14px;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f59e0b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  min-width: 160px;
+}
+
+/* Summary Cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .summary-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.summary-card {
+  background: var(--debt-card-bg);
+  border: 1px solid var(--debt-border);
+  border-radius: 14px;
+  padding: 18px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.summary-card:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  transform: translateY(-2px);
+}
+
+.summary-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.summary-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Main Content Grid */
+.debt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1200px) {
+  .debt-grid { grid-template-columns: 1fr; }
+}
+
+/* Cards */
+.debt-card {
+  background: var(--debt-card-bg);
+  border: 1px solid var(--debt-border);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.debt-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--debt-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debt-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: white;
+}
+
+.debt-card-body {
+  padding: 20px;
+}
+
+/* Table Styles */
+.debt-table-wrapper {
+  overflow-x: auto;
+  max-height: 400px;
+}
+
+.debt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.debt-table th {
+  position: sticky;
+  top: 0;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(30, 41, 59, 0.95);
+  z-index: 10;
+}
+
+.debt-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+}
+
+.debt-table tr:hover td {
+  background: rgba(245, 158, 11, 0.05);
+}
+
+/* Risk Badges */
+.risk-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.risk-badge.low {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.risk-badge.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.risk-badge.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* Risk Categories */
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 992px) {
+  .risk-grid { grid-template-columns: 1fr; }
+}
+
+.risk-category {
+  background: var(--debt-card-bg);
+  border: 1px solid var(--debt-border);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.risk-category-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.risk-category-title.low { color: #34d399; }
+.risk-category-title.medium { color: #fbbf24; }
+.risk-category-title.high { color: #f87171; }
+
+.risk-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+  font-size: 0.875rem;
+}
+
+.risk-item:last-child { border-bottom: none; }
+
+/* Interest Rate Chart */
+.rate-impact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.rate-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rate-bar {
+  width: 120px;
+  height: 8px;
+  background: rgba(51, 65, 85, 0.8);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rate-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* Chart Container */
+.chart-container {
+  height: 220px;
+  position: relative;
+}
+
+/* Loading State */
+.loading-skeleton {
+  background: linear-gradient(90deg, rgba(51, 65, 85, 0.3) 25%, rgba(71, 85, 105, 0.3) 50%, rgba(51, 65, 85, 0.3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Symbol Badge */
+.symbol-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: white;
+}
+
+.company-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+}
+</style>
+
+<div class="debt-dashboard">
+  <!-- Hero Section -->
+  <div class="debt-hero">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="debt-title">Debt Maturity Schedule</h1>
+        <p class="text-slate-400 text-sm mt-1">Corporate bond maturities & refinancing risk analysis</p>
+      </div>
+      <div class="debt-controls">
+        <select id="portfolioSelect" class="debt-select">
+          <option value="">Loading portfolios...</option>
+        </select>
+        <select id="yearFilter" class="debt-select" style="min-width: 120px;">
+          <option value="all" selected>All Years</option>
+          <option value="3">Next 3 Years</option>
+          <option value="5">Next 5 Years</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid" id="summaryCards">
+    <div class="summary-card">
+      <div class="summary-label">Total Debt Held</div>
+      <div class="summary-value text-white" id="totalDebt">--</div>
+      <div class="summary-sub">across holdings</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Maturing 2026</div>
+      <div class="summary-value text-amber-400" id="maturing2025">--</div>
+      <div class="summary-sub" id="maturing2025Pct">-- of total</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Maturing 2027</div>
+      <div class="summary-value text-sky-400" id="maturing2026">--</div>
+      <div class="summary-sub" id="maturing2026Pct">-- of total</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Avg Debt/EBITDA</div>
+      <div class="summary-value text-emerald-400" id="avgDebtEbitda">--</div>
+      <div class="summary-sub">portfolio average</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Refinance Risk</div>
+      <div class="summary-value" id="refinanceRisk">--</div>
+      <div class="summary-sub" id="riskCount">-- high risk</div>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="debt-grid">
+    <!-- Maturity Wall Chart -->
+    <div class="debt-card">
+      <div class="debt-card-header">
+        <div class="debt-card-title">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Maturity Wall
+        </div>
+      </div>
+      <div class="debt-card-body">
+        <div class="chart-container">
+          <canvas id="maturityChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debt Composition Chart -->
+    <div class="debt-card">
+      <div class="debt-card-header">
+        <div class="debt-card-title">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+          </svg>
+          Debt by Risk Level
+        </div>
+      </div>
+      <div class="debt-card-body">
+        <div class="chart-container">
+          <canvas id="riskChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Holdings Table -->
+  <div class="debt-card" style="margin-bottom: 20px;">
+    <div class="debt-card-header">
+      <div class="debt-card-title">
+        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        Holdings Debt Profile
+      </div>
+      <span class="text-sm text-slate-400" id="holdingsCount">0 holdings</span>
+    </div>
+    <div class="debt-table-wrapper">
+      <table class="debt-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th class="text-right">Total Debt</th>
+            <th class="text-right">Due 2026</th>
+            <th class="text-right">Due 2027</th>
+            <th class="text-right">Cash</th>
+            <th class="text-right">Debt/EBITDA</th>
+            <th class="text-center">Risk</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsTable">
+          <tr>
+            <td colspan="7" class="text-center py-8 text-slate-400">
+              Select a portfolio to analyze debt metrics
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Risk Categories -->
+  <div class="risk-grid">
+    <div class="risk-category">
+      <div class="risk-category-title low">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Low Risk
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Strong balance sheets, ample liquidity</p>
+      <div id="lowRiskList">
+        <div class="text-slate-500 text-sm text-center py-2">No data</div>
+      </div>
+    </div>
+
+    <div class="risk-category">
+      <div class="risk-category-title medium">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        Monitor
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Higher leverage, watch refinancing costs</p>
+      <div id="monitorList">
+        <div class="text-slate-500 text-sm text-center py-2">No data</div>
+      </div>
+    </div>
+
+    <div class="risk-category">
+      <div class="risk-category-title high">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Elevated Risk
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Near-term maturities, stress potential</p>
+      <div id="elevatedList">
+        <div class="text-slate-500 text-sm text-center py-2">No data</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interest Rate Impact -->
+  <div class="debt-card">
+    <div class="debt-card-header">
+      <div class="debt-card-title">
+        <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+        Interest Rate Impact Analysis
+      </div>
+    </div>
+    <div class="debt-card-body">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h4 class="font-medium text-slate-300 mb-4">Refinancing Cost Increase (if rates +100bp)</h4>
+          <div id="rateImpactList" class="space-y-3">
+            <div class="text-slate-500 text-sm">Select a portfolio to see impact analysis</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="rateChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global state
+let debtData = null;
+let maturityChart = null;
+let riskChart = null;
+let rateChart = null;
+
+// Auth functions
+function getToken() {
+  return localStorage.getItem('wealthpilot_token') || sessionStorage.getItem('wealthpilot_token');
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+}
+
+// Format currency
+function formatCurrency(value, inBillions = false) {
+  if (!value && value !== 0) return '--';
+  if (inBillions) {
+    if (value >= 1000) return `$${(value / 1000).toFixed(1)}T`;
+    return `$${value.toFixed(1)}B`;
+  }
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(0)}M`;
+  return `$${value.toLocaleString()}`;
+}
+
+// Symbol gradient colors
+function getSymbolGradient(symbol) {
+  const gradients = [
+    'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+    'linear-gradient(135deg, #10b981, #047857)',
+    'linear-gradient(135deg, #f59e0b, #d97706)',
+    'linear-gradient(135deg, #ef4444, #dc2626)',
+    'linear-gradient(135deg, #ec4899, #be185d)'
+  ];
+  let hash = 0;
+  for (let i = 0; i < symbol.length; i++) {
+    hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return gradients[Math.abs(hash) % gradients.length];
+}
+
+// Load portfolios
+async function loadPortfolios() {
+  const select = document.getElementById('portfolioSelect');
+  try {
+    const token = getToken();
+    if (!token) {
+      select.innerHTML = '<option value="">Please log in</option>';
+      return;
+    }
+
+    const response = await authFetch('/api/portfolios');
+    if (!response.ok) throw new Error('Failed to fetch portfolios');
+
+    const portfolios = await response.json();
+
+    select.innerHTML = '<option value="">Select Portfolio</option>';
+    if (portfolios.length > 0) {
+      select.innerHTML += '<option value="all">All Portfolios</option>';
+      portfolios.forEach(p => {
+        select.innerHTML += `<option value="${p.id}">${p.name} (${p.holdings?.length || 0})</option>`;
+      });
+    }
+  } catch (err) {
+    console.error('Error loading portfolios:', err);
+    select.innerHTML = '<option value="">Error loading portfolios</option>';
+  }
+}
+
+// Load debt data
+async function loadDebtData(portfolioId) {
+  if (!portfolioId) return;
+
+  // Show loading state
+  document.getElementById('holdingsTable').innerHTML = `
+    <tr><td colspan="7" class="text-center py-8">
+      <div class="flex items-center justify-center gap-2">
+        <svg class="animate-spin h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-slate-400">Analyzing debt metrics...</span>
+      </div>
+    </td></tr>
+  `;
+
+  try {
+    const response = await authFetch(`/api/fundamentals/portfolio/${portfolioId}/debt-analysis`);
+    if (!response.ok) throw new Error('Failed to fetch debt data');
+
+    debtData = await response.json();
+    updateUI(debtData);
+  } catch (err) {
+    console.error('Error loading debt data:', err);
+    document.getElementById('holdingsTable').innerHTML = `
+      <tr><td colspan="7" class="text-center py-8 text-red-400">
+        Failed to load debt data. Please try again.
+      </td></tr>
+    `;
+  }
+}
+
+// Update UI with data
+function updateUI(data) {
+  if (!data) return;
+
+  // Update summary cards
+  const summary = data.summary || {};
+  document.getElementById('totalDebt').textContent = formatCurrency(summary.totalDebt, true);
+  document.getElementById('maturing2025').textContent = formatCurrency(summary.maturing2025, true);
+  document.getElementById('maturing2025Pct').textContent = summary.totalDebt > 0
+    ? `${((summary.maturing2025 / summary.totalDebt) * 100).toFixed(1)}% of total` : '-- of total';
+  document.getElementById('maturing2026').textContent = formatCurrency(summary.maturing2026, true);
+  document.getElementById('maturing2026Pct').textContent = summary.totalDebt > 0
+    ? `${((summary.maturing2026 / summary.totalDebt) * 100).toFixed(1)}% of total` : '-- of total';
+  document.getElementById('avgDebtEbitda').textContent = summary.avgDebtToEbitda
+    ? `${summary.avgDebtToEbitda}x` : '--';
+
+  // Risk indicator
+  const riskEl = document.getElementById('refinanceRisk');
+  riskEl.textContent = summary.refinanceRisk || '--';
+  riskEl.className = 'summary-value ' + (summary.refinanceRisk === 'High' ? 'text-red-400' :
+    summary.refinanceRisk === 'Medium' ? 'text-amber-400' : 'text-emerald-400');
+  document.getElementById('riskCount').textContent = `${summary.highRiskCount || 0} high risk`;
+
+  // Update holdings table
+  updateHoldingsTable(data.holdings || []);
+
+  // Update risk categories
+  updateRiskCategories(data.riskCategories || {});
+
+  // Update interest rate impact
+  updateRateImpact(data.interestRateImpact || []);
+
+  // Update charts
+  updateCharts(data);
+}
+
+// Update holdings table
+function updateHoldingsTable(holdings) {
+  const tbody = document.getElementById('holdingsTable');
+  document.getElementById('holdingsCount').textContent = `${holdings.length} holdings`;
+
+  if (holdings.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-slate-400">No holdings with debt data</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = holdings.map(h => `
+    <tr>
+      <td>
+        <div class="company-cell">
+          <div class="symbol-badge" style="background: ${getSymbolGradient(h.symbol)}">${h.symbol.slice(0, 4)}</div>
+          <div>
+            <div class="font-medium text-white">${h.symbol}</div>
+            <div class="text-xs text-slate-400">${(h.name || '').slice(0, 20)}</div>
+          </div>
+        </div>
+      </td>
+      <td class="text-right font-bold ${h.totalDebt > 50e9 ? 'text-amber-400' : 'text-white'}">${formatCurrency(h.totalDebt)}</td>
+      <td class="text-right ${h.due2025 > 10e9 ? 'text-amber-400' : 'text-slate-300'}">${formatCurrency(h.due2025)}</td>
+      <td class="text-right ${h.due2026 > 10e9 ? 'text-amber-400' : 'text-slate-300'}">${formatCurrency(h.due2026)}</td>
+      <td class="text-right text-emerald-400">${formatCurrency(h.cash)}</td>
+      <td class="text-right ${h.debtToEbitda > 3 ? 'text-red-400' : h.debtToEbitda > 2 ? 'text-amber-400' : 'text-emerald-400'}">
+        ${h.debtToEbitda ? h.debtToEbitda.toFixed(1) + 'x' : 'N/M'}
+      </td>
+      <td class="text-center">
+        <span class="risk-badge ${h.riskLevel?.toLowerCase()}">${h.riskLevel || '--'}</span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// Update risk categories
+function updateRiskCategories(categories) {
+  // Low risk
+  const lowEl = document.getElementById('lowRiskList');
+  if (categories.low && categories.low.length > 0) {
+    lowEl.innerHTML = categories.low.map(item => `
+      <div class="risk-item">
+        <span class="text-white">${item.symbol}</span>
+        <span class="font-bold text-emerald-400">${item.metric}</span>
+      </div>
+    `).join('');
+  } else {
+    lowEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-2">No low risk holdings</div>';
+  }
+
+  // Monitor
+  const monitorEl = document.getElementById('monitorList');
+  if (categories.monitor && categories.monitor.length > 0) {
+    monitorEl.innerHTML = categories.monitor.map(item => `
+      <div class="risk-item">
+        <span class="text-white">${item.symbol}</span>
+        <span class="font-bold text-amber-400">${item.metric}</span>
+      </div>
+    `).join('');
+  } else {
+    monitorEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-2">No holdings to monitor</div>';
+  }
+
+  // Elevated
+  const elevatedEl = document.getElementById('elevatedList');
+  if (categories.elevated && categories.elevated.length > 0) {
+    elevatedEl.innerHTML = categories.elevated.map(item => `
+      <div class="risk-item">
+        <span class="text-white">${item.symbol}</span>
+        <span class="font-bold text-red-400">${item.metric}</span>
+      </div>
+    `).join('');
+  } else {
+    elevatedEl.innerHTML = '<div class="text-slate-500 text-sm text-center py-2">No elevated risk holdings</div>';
+  }
+}
+
+// Update rate impact
+function updateRateImpact(impacts) {
+  const el = document.getElementById('rateImpactList');
+  if (!impacts || impacts.length === 0) {
+    el.innerHTML = '<div class="text-slate-500 text-sm">No impact data available</div>';
+    return;
+  }
+
+  el.innerHTML = impacts.map(item => {
+    const color = item.impactPct > 60 ? '#ef4444' : item.impactPct > 30 ? '#f59e0b' : '#10b981';
+    return `
+      <div class="rate-impact-row">
+        <span class="text-white font-medium">${item.symbol}</span>
+        <div class="rate-bar-container">
+          <div class="rate-bar">
+            <div class="rate-bar-fill" style="width: ${Math.min(item.impactPct, 100)}%; background: ${color}"></div>
+          </div>
+          <span class="text-sm text-slate-300">+$${item.impact}M/yr</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Update charts
+function updateCharts(data) {
+  // Maturity Wall Chart
+  const maturityCtx = document.getElementById('maturityChart').getContext('2d');
+  if (maturityChart) maturityChart.destroy();
+
+  const chartData = data.chartData || {};
+  maturityChart = new Chart(maturityCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.maturityLabels || [],
+      datasets: [{
+        label: 'Debt Maturing ($B)',
+        data: chartData.maturityValues || [],
+        backgroundColor: chartData.maturityColors || ['#f59e0b', '#0ea5e9', '#8b5cf6', '#10b981', '#94a3b8', '#64748b'],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#f8fafc',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(148, 163, 184, 0.2)',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => `$${ctx.raw.toFixed(1)}B`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: { color: '#64748b', callback: v => `$${v}B` }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
+      }
+    }
+  });
+
+  // Risk Distribution Chart
+  const riskCtx = document.getElementById('riskChart').getContext('2d');
+  if (riskChart) riskChart.destroy();
+
+  const summary = data.summary || {};
+  riskChart = new Chart(riskCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Low Risk', 'Medium Risk', 'High Risk'],
+      datasets: [{
+        data: [summary.lowRiskCount || 0, summary.mediumRiskCount || 0, summary.highRiskCount || 0],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 0,
+        spacing: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8', padding: 16, usePointStyle: true }
+        }
+      }
+    }
+  });
+
+  // Rate Impact Chart
+  const rateCtx = document.getElementById('rateChart').getContext('2d');
+  if (rateChart) rateChart.destroy();
+
+  const impacts = data.interestRateImpact || [];
+  if (impacts.length > 0) {
+    const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9'];
+    rateChart = new Chart(rateCtx, {
+      type: 'line',
+      data: {
+        labels: ['Current', '+50bp', '+100bp', '+150bp', '+200bp'],
+        datasets: impacts.slice(0, 3).map((item, i) => ({
+          label: item.symbol,
+          data: [0, item.impact * 0.5, item.impact, item.impact * 1.5, item.impact * 2],
+          borderColor: colors[i],
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#94a3b8', usePointStyle: true }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: +$${ctx.raw.toFixed(0)}M/yr`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+            ticks: { color: '#64748b', callback: v => `$${v}M` },
+            title: { display: true, text: 'Additional Cost ($M/yr)', color: '#64748b' }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { color: '#94a3b8' }
+          }
+        }
+      }
+    });
+  }
+}
+
+// Event listeners
+document.getElementById('portfolioSelect').addEventListener('change', (e) => {
+  loadDebtData(e.target.value);
+});
+
+document.getElementById('yearFilter').addEventListener('change', (e) => {
+  // Re-filter data if needed
+  if (debtData) updateUI(debtData);
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  loadPortfolios();
+});
+</script>
+
+<%- include('../partials/footer') %>

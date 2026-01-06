@@ -1,0 +1,806 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeAnalysis = analysis || {};
+const safeSummary = safeAnalysis.summary || {};
+const baseValue = safeSummary.total_value || 100000;
+const annualReturn = safeAnalysis.performance?.annualized_return || 0.08;
+const volatility = safeAnalysis.risk?.volatility || 0.15;
+
+function formatMoney(val) {
+  return '$' + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Monte Carlo Simulator' }) %>
+
+<style>
+  .sim-container {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .sim-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .scenario-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .scenario-card:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(148, 163, 184, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .scenario-card.active {
+    border-color: rgba(251, 191, 36, 0.5);
+    background: rgba(251, 191, 36, 0.1);
+  }
+
+  .percentile-bar {
+    height: 40px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .percentile-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .confidence-zone {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    opacity: 0.3;
+  }
+
+  .stat-tile {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-tile.success {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .stat-tile.warning {
+    border-color: rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .stat-tile.danger {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .input-group {
+    position: relative;
+  }
+
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .input-group input,
+  .input-group select {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+
+  .input-group input:focus,
+  .input-group select:focus {
+    outline: none;
+    border-color: rgba(251, 191, 36, 0.5);
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+  }
+
+  .run-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+    color: black;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+  }
+
+  .run-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+  }
+
+  .run-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .distribution-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+
+  .distribution-legend .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .simulating {
+    animation: pulse 1s ease-in-out infinite;
+  }
+</style>
+
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Monte Carlo Simulator</h1>
+      <p class="text-slate-400 text-sm mt-1">Run 10,000+ simulations to project portfolio outcomes</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <form method="GET" class="flex items-center gap-2">
+        <select name="portfolio" onchange="this.form.submit()"
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+          <% if (typeof portfolios !== 'undefined' && portfolios) { %>
+          <% portfolios.forEach(p => { %>
+          <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
+          <% }); %>
+          <% } else { %>
+          <option>My Portfolio</option>
+          <% } %>
+        </select>
+      </form>
+    </div>
+  </div>
+
+  <!-- Current Portfolio Stats -->
+  <div class="sim-container">
+    <div class="p-6 bg-gradient-to-r from-sky-500/10 to-purple-500/10">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-purple-600 flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-slate-400 text-sm">Current Portfolio Value</p>
+            <p class="text-3xl font-bold text-white font-mono"><%= formatMoney(baseValue) %></p>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p class="text-slate-400 text-xs">Expected Return</p>
+            <p class="text-emerald-400 font-bold font-mono"><%= (annualReturn * 100).toFixed(1) %>%</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs">Volatility</p>
+            <p class="text-amber-400 font-bold font-mono"><%= (volatility * 100).toFixed(1) %>%</p>
+          </div>
+          <div>
+            <p class="text-slate-400 text-xs">Sharpe Ratio</p>
+            <p class="text-sky-400 font-bold font-mono"><%= (annualReturn / volatility).toFixed(2) %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation Configuration -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Parameters Panel -->
+    <div class="sim-container">
+      <div class="sim-header">
+        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Simulation Parameters</h3>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="input-group">
+          <label>Time Horizon (Years)</label>
+          <select id="timeHorizon">
+            <option value="5">5 Years</option>
+            <option value="10" selected>10 Years</option>
+            <option value="15">15 Years</option>
+            <option value="20">20 Years</option>
+            <option value="30">30 Years</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>Monthly Contribution</label>
+          <input type="number" id="monthlyContrib" value="1000" min="0" step="100">
+        </div>
+
+        <div class="input-group">
+          <label>Target Goal</label>
+          <input type="number" id="targetGoal" value="1000000" min="0" step="10000">
+        </div>
+
+        <div class="input-group">
+          <label>Number of Simulations</label>
+          <select id="numSims">
+            <option value="1000">1,000 runs</option>
+            <option value="5000">5,000 runs</option>
+            <option value="10000" selected>10,000 runs</option>
+            <option value="25000">25,000 runs</option>
+          </select>
+        </div>
+
+        <button class="run-btn w-full" onclick="runMonteCarloSimulation()">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Run Simulation
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Chart -->
+    <div class="sim-container lg:col-span-2">
+      <div class="sim-header">
+        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Projection Paths</h3>
+        <div class="flex items-center gap-4">
+          <div class="distribution-legend"><div class="dot bg-emerald-500"></div>90th %ile</div>
+          <div class="distribution-legend"><div class="dot bg-sky-500"></div>50th %ile</div>
+          <div class="distribution-legend"><div class="dot bg-red-500"></div>10th %ile</div>
+        </div>
+      </div>
+      <div class="p-4">
+        <div style="height: 300px;">
+          <canvas id="projectionChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  <div id="resultsSection" style="display: none;">
+    <!-- Key Outcomes -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+      <div class="stat-tile" id="successTile">
+        <p class="text-xs text-slate-400 mb-1">Success Probability</p>
+        <p class="text-3xl font-bold font-mono" id="successProb">--</p>
+        <p class="text-xs text-slate-500 mt-1">reaching goal</p>
+      </div>
+      <div class="stat-tile">
+        <p class="text-xs text-slate-400 mb-1">Median Outcome</p>
+        <p class="text-2xl font-bold font-mono text-white" id="medianOutcome">--</p>
+        <p class="text-xs text-slate-500 mt-1">50th percentile</p>
+      </div>
+      <div class="stat-tile">
+        <p class="text-xs text-slate-400 mb-1">Best Case (90%)</p>
+        <p class="text-2xl font-bold font-mono text-emerald-400" id="bestCase">--</p>
+        <p class="text-xs text-slate-500 mt-1">90th percentile</p>
+      </div>
+      <div class="stat-tile">
+        <p class="text-xs text-slate-400 mb-1">Worst Case (10%)</p>
+        <p class="text-2xl font-bold font-mono text-red-400" id="worstCase">--</p>
+        <p class="text-xs text-slate-500 mt-1">10th percentile</p>
+      </div>
+      <div class="stat-tile">
+        <p class="text-xs text-slate-400 mb-1">Expected Value</p>
+        <p class="text-2xl font-bold font-mono text-sky-400" id="expectedValue">--</p>
+        <p class="text-xs text-slate-500 mt-1">mean outcome</p>
+      </div>
+    </div>
+
+    <!-- Distribution Chart & Percentiles -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Distribution Histogram -->
+      <div class="sim-container">
+        <div class="sim-header">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Outcome Distribution</h3>
+        </div>
+        <div class="p-4">
+          <div style="height: 250px;">
+            <canvas id="distributionChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Percentile Bars -->
+      <div class="sim-container">
+        <div class="sim-header">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Confidence Intervals</h3>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-400">5th Percentile</span>
+              <span class="font-mono text-red-400" id="p5">--</span>
+            </div>
+            <div class="percentile-bar">
+              <div class="percentile-fill bg-red-500/60" id="p5Bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-400">25th Percentile</span>
+              <span class="font-mono text-amber-400" id="p25">--</span>
+            </div>
+            <div class="percentile-bar">
+              <div class="percentile-fill bg-amber-500/60" id="p25Bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-400">50th Percentile (Median)</span>
+              <span class="font-mono text-sky-400" id="p50">--</span>
+            </div>
+            <div class="percentile-bar">
+              <div class="percentile-fill bg-sky-500/60" id="p50Bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-400">75th Percentile</span>
+              <span class="font-mono text-emerald-400" id="p75">--</span>
+            </div>
+            <div class="percentile-bar">
+              <div class="percentile-fill bg-emerald-500/60" id="p75Bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-slate-400">95th Percentile</span>
+              <span class="font-mono text-purple-400" id="p95">--</span>
+            </div>
+            <div class="percentile-bar">
+              <div class="percentile-fill bg-purple-500/60" id="p95Bar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Scenarios -->
+  <div class="sim-container">
+    <div class="sim-header">
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Quick Scenarios</h3>
+    </div>
+    <div class="p-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="scenario-card" onclick="applyScenario('conservative')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-sky-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-white font-semibold">Conservative</h4>
+              <p class="text-xs text-slate-400">5% return, 10% vol</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="scenario-card" onclick="applyScenario('moderate')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-white font-semibold">Moderate</h4>
+              <p class="text-xs text-slate-400">8% return, 15% vol</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="scenario-card" onclick="applyScenario('aggressive')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-white font-semibold">Aggressive</h4>
+              <p class="text-xs text-slate-400">12% return, 22% vol</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="scenario-card" onclick="applyScenario('crash')">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-white font-semibold">Bear Market</h4>
+              <p class="text-xs text-slate-400">2% return, 30% vol</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const baseValue = <%= baseValue %>;
+const baseReturn = <%= annualReturn %>;
+const baseVolatility = <%= volatility %>;
+
+let projectionChart = null;
+let distributionChart = null;
+let currentScenario = { return: baseReturn, volatility: baseVolatility };
+
+// Initialize charts
+document.addEventListener('DOMContentLoaded', function() {
+  initProjectionChart();
+  initDistributionChart();
+});
+
+function initProjectionChart() {
+  const ctx = document.getElementById('projectionChart');
+  if (!ctx) return;
+
+  projectionChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: '90th Percentile',
+          data: [],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: '+1',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2
+        },
+        {
+          label: '50th Percentile',
+          data: [],
+          borderColor: '#3b82f6',
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 3
+        },
+        {
+          label: '10th Percentile',
+          data: [],
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: '-1',
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2
+        },
+        {
+          label: 'Goal',
+          data: [],
+          borderColor: '#f59e0b',
+          borderDash: [5, 5],
+          tension: 0,
+          pointRadius: 0,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          padding: 12,
+          callbacks: {
+            label: (ctx) => ctx.dataset.label + ': $' + Math.round(ctx.parsed.y).toLocaleString()
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: {
+            color: '#64748b',
+            callback: (v) => '$' + (v / 1000000).toFixed(1) + 'M'
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#64748b' }
+        }
+      }
+    }
+  });
+}
+
+function initDistributionChart() {
+  const ctx = document.getElementById('distributionChart');
+  if (!ctx) return;
+
+  distributionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+        borderColor: 'rgba(59, 130, 246, 0.8)',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          callbacks: {
+            title: (items) => 'Range: ' + items[0].label,
+            label: (ctx) => ctx.parsed.y + ' simulations'
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          ticks: { color: '#64748b' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#64748b', maxTicksLimit: 8 }
+        }
+      }
+    }
+  });
+}
+
+function runMonteCarloSimulation() {
+  const timeHorizon = parseInt(document.getElementById('timeHorizon').value);
+  const monthlyContrib = parseFloat(document.getElementById('monthlyContrib').value) || 0;
+  const targetGoal = parseFloat(document.getElementById('targetGoal').value) || 1000000;
+  const numSims = parseInt(document.getElementById('numSims').value);
+
+  const btn = document.querySelector('.run-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Simulating...';
+
+  // Show results section
+  document.getElementById('resultsSection').style.display = 'block';
+
+  setTimeout(() => {
+    const results = runSimulation(numSims, timeHorizon, monthlyContrib, currentScenario.return, currentScenario.volatility);
+
+    updateResults(results, targetGoal, timeHorizon);
+    updateProjectionChart(results.percentilePaths, timeHorizon, targetGoal);
+    updateDistributionChart(results.finalValues);
+
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Run Simulation';
+
+    if (typeof showToast === 'function') {
+      showToast(`Completed ${numSims.toLocaleString()} simulations`, 'success');
+    }
+  }, 100);
+}
+
+function runSimulation(numSims, years, monthlyContrib, annualReturn, annualVol) {
+  const monthlyReturn = annualReturn / 12;
+  const monthlyVol = annualVol / Math.sqrt(12);
+  const months = years * 12;
+
+  const finalValues = [];
+  const pathsByPercentile = { p10: [], p50: [], p90: [] };
+
+  // Run simulations
+  for (let sim = 0; sim < numSims; sim++) {
+    let value = baseValue;
+    const path = [value];
+
+    for (let m = 0; m < months; m++) {
+      // Generate random return using Box-Muller transform
+      const u1 = Math.random();
+      const u2 = Math.random();
+      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+
+      const monthReturn = monthlyReturn + monthlyVol * z;
+      value = value * (1 + monthReturn) + monthlyContrib;
+      path.push(value);
+    }
+
+    finalValues.push(value);
+  }
+
+  // Sort for percentiles
+  finalValues.sort((a, b) => a - b);
+
+  // Calculate percentile paths (simplified - just interpolate)
+  const p5 = finalValues[Math.floor(numSims * 0.05)];
+  const p10 = finalValues[Math.floor(numSims * 0.10)];
+  const p25 = finalValues[Math.floor(numSims * 0.25)];
+  const p50 = finalValues[Math.floor(numSims * 0.50)];
+  const p75 = finalValues[Math.floor(numSims * 0.75)];
+  const p90 = finalValues[Math.floor(numSims * 0.90)];
+  const p95 = finalValues[Math.floor(numSims * 0.95)];
+
+  // Generate percentile paths
+  const totalContrib = monthlyContrib * months;
+  for (let y = 0; y <= years; y++) {
+    const contrib = monthlyContrib * y * 12;
+    const factor = y / years;
+
+    pathsByPercentile.p10.push(baseValue + contrib + (p10 - baseValue - totalContrib) * factor);
+    pathsByPercentile.p50.push(baseValue + contrib + (p50 - baseValue - totalContrib) * factor);
+    pathsByPercentile.p90.push(baseValue + contrib + (p90 - baseValue - totalContrib) * factor);
+  }
+
+  return {
+    finalValues,
+    percentiles: { p5, p10, p25, p50, p75, p90, p95 },
+    percentilePaths: pathsByPercentile,
+    mean: finalValues.reduce((a, b) => a + b, 0) / numSims
+  };
+}
+
+function updateResults(results, targetGoal, years) {
+  const { percentiles, mean, finalValues } = results;
+
+  // Success probability
+  const successCount = finalValues.filter(v => v >= targetGoal).length;
+  const successProb = (successCount / finalValues.length * 100).toFixed(1);
+
+  document.getElementById('successProb').textContent = successProb + '%';
+  const successTile = document.getElementById('successTile');
+  successTile.className = 'stat-tile ' + (successProb >= 70 ? 'success' : successProb >= 40 ? 'warning' : 'danger');
+  document.getElementById('successProb').className = 'text-3xl font-bold font-mono ' +
+    (successProb >= 70 ? 'text-emerald-400' : successProb >= 40 ? 'text-amber-400' : 'text-red-400');
+
+  // Other stats
+  document.getElementById('medianOutcome').textContent = formatMoney(percentiles.p50);
+  document.getElementById('bestCase').textContent = formatMoney(percentiles.p90);
+  document.getElementById('worstCase').textContent = formatMoney(percentiles.p10);
+  document.getElementById('expectedValue').textContent = formatMoney(mean);
+
+  // Percentile bars
+  const maxVal = percentiles.p95;
+  updatePercentileBar('p5', percentiles.p5, maxVal);
+  updatePercentileBar('p25', percentiles.p25, maxVal);
+  updatePercentileBar('p50', percentiles.p50, maxVal);
+  updatePercentileBar('p75', percentiles.p75, maxVal);
+  updatePercentileBar('p95', percentiles.p95, maxVal);
+}
+
+function updatePercentileBar(id, value, maxVal) {
+  document.getElementById(id).textContent = formatMoney(value);
+  document.getElementById(id + 'Bar').style.width = (value / maxVal * 100) + '%';
+}
+
+function updateProjectionChart(paths, years, targetGoal) {
+  const labels = [];
+  for (let y = 0; y <= years; y++) {
+    labels.push('Year ' + y);
+  }
+
+  projectionChart.data.labels = labels;
+  projectionChart.data.datasets[0].data = paths.p90;
+  projectionChart.data.datasets[1].data = paths.p50;
+  projectionChart.data.datasets[2].data = paths.p10;
+  projectionChart.data.datasets[3].data = Array(years + 1).fill(targetGoal);
+  projectionChart.update();
+}
+
+function updateDistributionChart(finalValues) {
+  // Create histogram bins
+  const min = Math.min(...finalValues);
+  const max = Math.max(...finalValues);
+  const numBins = 20;
+  const binSize = (max - min) / numBins;
+
+  const bins = Array(numBins).fill(0);
+  const labels = [];
+
+  for (let i = 0; i < numBins; i++) {
+    const binStart = min + i * binSize;
+    const binEnd = binStart + binSize;
+    labels.push('$' + (binStart / 1000000).toFixed(1) + 'M');
+
+    finalValues.forEach(v => {
+      if (v >= binStart && v < binEnd) bins[i]++;
+    });
+  }
+
+  distributionChart.data.labels = labels;
+  distributionChart.data.datasets[0].data = bins;
+  distributionChart.update();
+}
+
+function applyScenario(type) {
+  const scenarios = {
+    conservative: { return: 0.05, volatility: 0.10 },
+    moderate: { return: 0.08, volatility: 0.15 },
+    aggressive: { return: 0.12, volatility: 0.22 },
+    crash: { return: 0.02, volatility: 0.30 }
+  };
+
+  currentScenario = scenarios[type];
+
+  // Highlight selected card
+  document.querySelectorAll('.scenario-card').forEach(card => card.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  if (typeof showToast === 'function') {
+    showToast(`Applied ${type} scenario`, 'info');
+  }
+}
+
+function formatMoney(val) {
+  return '$' + Math.round(val).toLocaleString();
+}
+</script>
+
+<%- include('../partials/footer') %>

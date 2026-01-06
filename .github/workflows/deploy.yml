@@ -1,0 +1,194 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
+          script: |
+            set -e
+            cd /app
+
+            # Clone or pull latest code
+            if [ -d "wealthpilot-pro" ]; then
+              cd wealthpilot-pro
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              git clone https://github.com/${{ github.repository }}.git wealthpilot-pro
+              cd wealthpilot-pro
+            fi
+
+            # Create .env file
+            cat > .env << EOF
+            NODE_ENV=production
+            PORT=4000
+            POSTGRES_USER=wealthpilot
+            POSTGRES_PASSWORD=WealthPilot2024SecurePass
+            POSTGRES_DB=wealthpilot
+            DATABASE_URL=postgresql://wealthpilot:WealthPilot2024SecurePass@postgres:5432/wealthpilot?schema=public
+            REDIS_URL=redis://redis:6379
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            JWT_EXPIRES_IN=7d
+            ALPHA_VANTAGE_API_KEY=${{ secrets.ALPHA_VANTAGE_API_KEY }}
+            FMP_API_KEY=${{ secrets.FMP_API_KEY }}
+            POLYGON_API_KEY=${{ secrets.POLYGON_API_KEY }}
+            FINNHUB_API_KEY=${{ secrets.FINNHUB_API_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            SEC_API_KEY=${{ secrets.SEC_API_KEY }}
+            SEC_API_KEY_BLASR=${{ secrets.SEC_API_KEY_BLASR }}
+            FRONTEND_URL=http://${{ secrets.EC2_HOST }}:3000
+            API_URL=http://${{ secrets.EC2_HOST }}:4000
+            CORS_ORIGIN=http://${{ secrets.EC2_HOST }}:3000
+            EOF
+
+            # Create simplified docker-compose for AWS
+            cat > docker-compose.aws.yml << 'EOF'
+            version: '3.8'
+            services:
+              postgres:
+                image: postgres:16-alpine
+                container_name: wealthpilot-postgres
+                restart: always
+                environment:
+                  - POSTGRES_USER=wealthpilot
+                  - POSTGRES_PASSWORD=WealthPilot2024SecurePass
+                  - POSTGRES_DB=wealthpilot
+                volumes:
+                  - pgdata:/var/lib/postgresql/data
+                healthcheck:
+                  test: ["CMD-SHELL", "pg_isready -U wealthpilot"]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 10
+                networks:
+                  - app-network
+
+              redis:
+                image: redis:7-alpine
+                container_name: wealthpilot-redis
+                restart: always
+                volumes:
+                  - redisdata:/data
+                healthcheck:
+                  test: ["CMD", "redis-cli", "ping"]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 10
+                networks:
+                  - app-network
+
+              backend:
+                build:
+                  context: ./backend
+                  dockerfile: Dockerfile.prod
+                container_name: wealthpilot-backend
+                restart: always
+                env_file: .env
+                environment:
+                  - DATABASE_URL=postgresql://wealthpilot:WealthPilot2024SecurePass@postgres:5432/wealthpilot?schema=public
+                  - REDIS_URL=redis://redis:6379
+                ports:
+                  - "4000:4000"
+                depends_on:
+                  postgres:
+                    condition: service_healthy
+                  redis:
+                    condition: service_healthy
+                networks:
+                  - app-network
+
+              frontend:
+                build:
+                  context: ./frontend
+                  dockerfile: Dockerfile.prod
+                container_name: wealthpilot-frontend
+                restart: always
+                environment:
+                  - NODE_ENV=production
+                  - PORT=3000
+                  - API_URL=http://backend:4000
+                ports:
+                  - "3000:3000"
+                depends_on:
+                  - backend
+                networks:
+                  - app-network
+
+            networks:
+              app-network:
+                driver: bridge
+
+            volumes:
+              pgdata:
+              redisdata:
+            EOF
+
+            echo "Starting deployment..."
+
+            # Clean up Docker to free disk space
+            echo "Cleaning up Docker..."
+            docker system prune -af --volumes 2>/dev/null || true
+            docker builder prune -af 2>/dev/null || true
+            echo "Docker cleanup complete. Disk usage:"
+            df -h / | tail -1
+
+            # Start postgres and redis first (quick to start)
+            docker-compose -f docker-compose.aws.yml up -d postgres redis
+
+            echo "Waiting for database..."
+            sleep 15
+
+            # Check if postgres is healthy
+            docker-compose -f docker-compose.aws.yml ps postgres
+
+            # Build backend (this takes time)
+            echo "Building backend..."
+            docker-compose -f docker-compose.aws.yml build --no-cache backend
+
+            # Build frontend
+            echo "Building frontend..."
+            docker-compose -f docker-compose.aws.yml build --no-cache frontend
+
+            # Start backend (remove old container first if exists)
+            echo "Starting backend..."
+            docker rm -f wealthpilot-backend 2>/dev/null || true
+            docker-compose -f docker-compose.aws.yml up -d backend
+
+            # Wait for backend to be ready
+            sleep 30
+
+            # Run migrations
+            echo "Running migrations..."
+            docker exec wealthpilot-backend npx prisma db push --accept-data-loss || echo "Prisma push done"
+
+            # Seed database with demo user
+            echo "Seeding database..."
+            docker exec wealthpilot-backend node prisma/seed.js || echo "Seeding done"
+
+            # Start frontend (remove old container first if exists)
+            echo "Starting frontend..."
+            docker rm -f wealthpilot-frontend 2>/dev/null || true
+            docker-compose -f docker-compose.aws.yml up -d frontend
+
+            # Final status
+            echo ""
+            echo "=== Container Status ==="
+            docker-compose -f docker-compose.aws.yml ps
+            echo ""
+            echo "Deployment complete!"

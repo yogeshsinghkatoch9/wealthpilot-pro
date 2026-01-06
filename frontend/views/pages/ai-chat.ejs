@@ -1,0 +1,948 @@
+<%- include('../partials/header', { pageTitle: 'AI Chat Assistant' }) %>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+
+<style>
+  /* Markdown Styles for AI Responses */
+  .ai-message-content h1, .ai-message-content h2, .ai-message-content h3 {
+    color: #f0f6fc;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .ai-message-content h2 { font-size: 1.1rem; border-bottom: 1px solid #30363d; padding-bottom: 0.3rem; }
+  .ai-message-content h3 { font-size: 1rem; color: #58a6ff; }
+  .ai-message-content p { margin: 0.5rem 0; line-height: 1.6; }
+  .ai-message-content ul, .ai-message-content ol { margin: 0.5rem 0; padding-left: 1.5rem; }
+  .ai-message-content li { margin: 0.3rem 0; }
+  .ai-message-content strong { color: #f0f6fc; font-weight: 600; }
+  .ai-message-content em { color: #8b949e; }
+  .ai-message-content code { background: #161b22; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #79c0ff; }
+  .ai-message-content pre { background: #161b22; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 0.5rem 0; }
+  .ai-message-content pre code { background: none; padding: 0; }
+  .ai-message-content blockquote { border-left: 3px solid #f59e0b; padding-left: 1rem; margin: 0.5rem 0; color: #8b949e; }
+  .ai-message-content hr { border: none; border-top: 1px solid #30363d; margin: 1rem 0; }
+  .ai-message-content table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+  .ai-message-content th, .ai-message-content td { border: 1px solid #30363d; padding: 0.5rem; text-align: left; }
+  .ai-message-content th { background: #161b22; color: #f0f6fc; }
+  .ai-message-content { font-size: 0.95rem; }
+  .ai-message-content > *:first-child { margin-top: 0; }
+  .ai-message-content > *:last-child { margin-bottom: 0; }
+  .ai-message-content ul li::marker { color: #58a6ff; }
+  .ai-message-content ol li::marker { color: #f59e0b; }
+  .ai-message-content a { color: #58a6ff; text-decoration: underline; }
+  .ai-message-content a:hover { color: #79c0ff; }
+  /* Stitch AI Chat Theme Overrides */
+  .ai-chat-container {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .surface-dark {
+    background-color: #1c1d26;
+  }
+
+  .surface-dark-highlight {
+    background-color: #292a38;
+  }
+
+  .border-stitch {
+    border-color: #3d3e52;
+  }
+
+  .border-stitch-secondary {
+    border-color: #292a38;
+  }
+
+  .text-secondary-stitch {
+    color: #9e9fb7;
+  }
+
+  /* AI Avatar Glow Effect */
+  .ai-avatar {
+    border: 1px solid rgba(72, 80, 229, 0.3);
+    box-shadow: 0 0 10px rgba(72, 80, 229, 0.2);
+  }
+
+  /* User Message Shadow */
+  .user-message {
+    box-shadow: 0 10px 15px -3px rgba(72, 80, 229, 0.1);
+  }
+
+  /* Custom scrollbar for chat */
+  #chat-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #chat-container::-webkit-scrollbar-track {
+    background: #1c1d26;
+  }
+
+  #chat-container::-webkit-scrollbar-thumb {
+    background: #3d3e52;
+    border-radius: 3px;
+  }
+
+  #chat-container::-webkit-scrollbar-thumb:hover {
+    background: #4d4e62;
+  }
+
+  /* Hide scrollbar for suggested queries */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Typing indicator animation */
+  .typing-dot {
+    animation: typing-bounce 1.4s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(1) { animation-delay: 0ms; }
+  .typing-dot:nth-child(2) { animation-delay: 200ms; }
+  .typing-dot:nth-child(3) { animation-delay: 400ms; }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+  }
+
+  /* Focus ring for input */
+  .chat-input-container:focus-within {
+    ring: 2px;
+    ring-color: rgba(72, 80, 229, 0.5);
+    border-color: #4850e5;
+  }
+
+  /* Textarea auto-resize */
+  .chat-textarea {
+    min-height: 44px;
+    max-height: 128px;
+  }
+</style>
+
+<main class="ai-chat-container flex flex-1 flex-col h-[calc(100vh-56px)] relative bg-[#111217]">
+  <!-- Header -->
+  <header class="flex flex-wrap items-center justify-between gap-3 px-6 py-5 border-b border-stitch-secondary shrink-0 bg-[#111217] z-10">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2">
+        <h2 class="text-white tracking-tight text-2xl font-bold leading-tight">AI Chat Assistant</h2>
+        <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full border border-primary/20">BETA</span>
+      </div>
+      <p class="text-secondary-stitch text-sm font-normal leading-normal">Ask financial questions and receive AI-powered analysis.</p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="showChatHistory()" class="flex items-center justify-center gap-2 h-9 px-4 rounded-lg bg-[#292a38] hover:bg-[#353646] text-white text-sm font-medium transition-colors border border-stitch">
+        <span class="material-symbols-outlined text-[18px]">history</span>
+        <span>History</span>
+      </button>
+      <button onclick="startNewChat()" class="flex items-center justify-center gap-2 h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        <span>New Chat</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Chat Area -->
+  <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth" id="chat-container">
+    <!-- Date Separator -->
+    <div class="flex justify-center">
+      <span class="text-xs text-secondary-stitch font-medium surface-dark px-3 py-1 rounded-full" id="chat-date">Today</span>
+    </div>
+
+    <!-- AI Welcome Message -->
+    <div class="flex items-start gap-4 max-w-3xl" id="welcome-message">
+      <div class="ai-avatar bg-gradient-to-br from-primary to-purple-600 rounded-full w-10 h-10 shrink-0 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-xl">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-sm font-semibold">WealthPilot AI</span>
+          <span class="text-secondary-stitch text-xs" id="welcome-time"></span>
+        </div>
+        <div class="surface-dark-highlight p-4 rounded-2xl rounded-tl-none text-white text-sm leading-relaxed border border-stitch">
+          <p>Hello<%= typeof user !== 'undefined' && user && user.full_name ? ', ' + user.full_name.split(' ')[0] : '' %>! I'm your advanced financial assistant. I have real-time access to your portfolio and market data. How can I help you optimize your strategy today?</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages will be appended here -->
+    <div id="chat-messages"></div>
+
+    <!-- Typing Indicator (hidden by default) -->
+    <div class="flex items-start gap-4 max-w-3xl hidden" id="typing-indicator">
+      <div class="ai-avatar bg-gradient-to-br from-primary to-purple-600 rounded-full w-10 h-10 shrink-0 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-xl">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-sm font-semibold">WealthPilot AI</span>
+        </div>
+        <div class="surface-dark-highlight p-4 rounded-2xl rounded-tl-none border border-stitch">
+          <div class="flex gap-1.5">
+            <span class="typing-dot w-2 h-2 bg-secondary-stitch rounded-full"></span>
+            <span class="typing-dot w-2 h-2 bg-secondary-stitch rounded-full"></span>
+            <span class="typing-dot w-2 h-2 bg-secondary-stitch rounded-full"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spacer for scrolling -->
+    <div class="h-4"></div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="p-4 md:px-6 md:pb-6 bg-[#111217] border-t border-stitch-secondary shrink-0 z-10">
+    <div class="max-w-4xl mx-auto flex flex-col gap-3">
+      <!-- Suggested Queries -->
+      <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar" id="suggested-queries">
+        <button onclick="sendSuggestedQuery('What is the current market outlook?')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">trending_up</span>
+          Market Outlook
+        </button>
+        <button onclick="sendSuggestedQuery('Please help me rebalance my portfolio')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">pie_chart</span>
+          Rebalance Portfolio
+        </button>
+        <button onclick="sendSuggestedQuery('Show me dividend yields for my holdings')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">attach_money</span>
+          Dividend Yields
+        </button>
+        <button onclick="sendSuggestedQuery('Analyze energy sector performance')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">bolt</span>
+          Energy Sector
+        </button>
+        <button onclick="sendSuggestedQuery('What are my tax harvesting opportunities?')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+          Tax Harvesting
+        </button>
+        <button onclick="sendSuggestedQuery('Analyze my portfolio risk exposure')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">warning</span>
+          Risk Analysis
+        </button>
+      </div>
+
+      <!-- Hidden File Input -->
+      <input type="file" id="file-input" class="hidden" accept=".csv,.xlsx,.xls,.txt" onchange="handleFileSelect(event)" />
+
+      <!-- File Preview Area -->
+      <div id="file-preview" class="hidden mb-3 p-3 surface-dark rounded-xl border border-stitch">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+              <span class="material-symbols-outlined text-primary">description</span>
+            </div>
+            <div>
+              <p id="file-name" class="text-white text-sm font-medium truncate max-w-xs"></p>
+              <p id="file-size" class="text-secondary-stitch text-xs"></p>
+            </div>
+          </div>
+          <button type="button" onclick="removeFile()" class="p-2 text-secondary-stitch hover:text-red-500 transition-colors rounded-lg hover:bg-red-500/10">
+            <span class="material-symbols-outlined text-[20px]">close</span>
+          </button>
+        </div>
+        <div id="file-parsing-status" class="hidden mt-3 p-2 rounded-lg bg-primary/10 border border-primary/20">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary animate-spin text-[18px]">sync</span>
+            <span class="text-primary text-sm">Parsing portfolio data...</span>
+          </div>
+        </div>
+        <div id="file-parsed-summary" class="hidden mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+            <span class="text-green-500 text-sm font-medium">Portfolio Parsed Successfully</span>
+          </div>
+          <div id="parsed-holdings-count" class="text-secondary-stitch text-xs"></div>
+        </div>
+      </div>
+
+      <!-- Input Box -->
+      <form onsubmit="sendMessage(event)" class="relative flex items-end gap-2 surface-dark-highlight rounded-xl border border-stitch shadow-sm focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary p-2 chat-input-container">
+        <button type="button" onclick="showAttachmentOptions()" class="p-2 text-secondary-stitch hover:text-white transition-colors rounded-lg hover:bg-[#353646]" title="Attach portfolio file">
+          <span class="material-symbols-outlined">attach_file</span>
+        </button>
+        <textarea
+          id="chat-input"
+          class="chat-textarea w-full bg-transparent border-none text-white text-sm placeholder:text-secondary-stitch focus:ring-0 focus:outline-none resize-none py-2.5"
+          placeholder="Ask about stocks, markets, or your portfolio..."
+          rows="1"
+          onkeydown="handleKeyDown(event)"
+          oninput="autoResizeTextarea(this)"
+        ></textarea>
+        <div class="flex items-center gap-1 pb-1">
+          <button type="button" onclick="startVoiceInput()" id="voice-btn" class="p-2 text-secondary-stitch hover:text-white transition-colors rounded-lg hover:bg-[#353646]">
+            <span class="material-symbols-outlined text-[20px]">mic</span>
+          </button>
+          <button type="submit" id="send-btn" class="p-2 bg-primary hover:bg-primary/90 text-white transition-colors rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined text-[20px]">send</span>
+          </button>
+        </div>
+      </form>
+      <p class="text-center text-[10px] text-secondary-stitch">WealthPilot AI can make mistakes. Consider checking important financial information.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+// Configure marked for better rendering
+if (typeof marked !== "undefined") {
+  marked.setOptions({
+    breaks: true,
+    gfm: true,
+    highlight: function(code, lang) {
+      if (typeof hljs !== "undefined" && hljs.getLanguage(lang)) {
+        return hljs.highlight(code, { language: lang }).value;
+      }
+      return code;
+    }
+  });
+}
+
+// Portfolio context from server
+const portfolioContext = <%- JSON.stringify(typeof portfolioData !== 'undefined' ? portfolioData : {}) %>;
+const userName = '<%= typeof user !== "undefined" && user ? user.full_name : "" %>';
+const userInitial = userName ? userName.charAt(0).toUpperCase() : 'U';
+
+// Set initial time
+document.getElementById('welcome-time').textContent = formatTime(new Date());
+
+// Format time helper
+function formatTime(date) {
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Auto-resize textarea
+function autoResizeTextarea(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
+}
+
+// Handle keyboard shortcuts
+function handleKeyDown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage(event);
+  }
+}
+
+// Add user message to chat
+function addUserMessage(content) {
+  const container = document.getElementById('chat-messages');
+  const time = formatTime(new Date());
+
+  const messageHtml = `
+    <div class="flex items-end gap-3 justify-end mb-6">
+      <div class="flex flex-col gap-2 items-end max-w-2xl">
+        <div class="flex items-center gap-2">
+          <span class="text-secondary-stitch text-xs">${time}</span>
+          <span class="text-white text-sm font-semibold">You</span>
+        </div>
+        <div class="user-message bg-primary p-4 rounded-2xl rounded-br-none text-white text-sm leading-relaxed">
+          <p>${escapeHtml(content)}</p>
+        </div>
+      </div>
+      <div class="bg-gradient-to-br from-sky-500 to-purple-500 rounded-full w-10 h-10 shrink-0 flex items-center justify-center text-white font-bold text-sm">
+        ${userInitial}
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', messageHtml);
+  scrollToBottom();
+}
+
+// Add AI message to chat
+function addAIMessage(content, includeActions = false) {
+  const container = document.getElementById('chat-messages');
+  const time = formatTime(new Date());
+
+  let actionsHtml = '';
+  if (includeActions) {
+    actionsHtml = `
+      <div class="flex gap-2 mt-3">
+        <button onclick="exportData()" class="text-xs surface-dark hover:bg-[#353646] text-secondary-stitch hover:text-white border border-stitch px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">download</span> Export Data
+        </button>
+        <button onclick="viewChart()" class="text-xs surface-dark hover:bg-[#353646] text-secondary-stitch hover:text-white border border-stitch px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">show_chart</span> View Chart
+        </button>
+      </div>
+    `;
+  }
+
+  const messageHtml = `
+    <div class="flex items-start gap-4 max-w-4xl w-full mb-6">
+      <div class="ai-avatar bg-gradient-to-br from-primary to-purple-600 rounded-full w-10 h-10 shrink-0 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-xl">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-2 w-full">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-sm font-semibold">WealthPilot AI</span>
+          <span class="text-secondary-stitch text-xs">${time}</span>
+        </div>
+        <div class="ai-message-content surface-dark-highlight p-4 rounded-2xl rounded-tl-none text-white text-sm leading-relaxed border border-stitch">
+          ${typeof marked !== "undefined" ? marked.parse(content) : content}
+          ${actionsHtml}
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', messageHtml);
+  scrollToBottom();
+}
+
+// Show typing indicator
+function showTypingIndicator() {
+  document.getElementById('typing-indicator').classList.remove('hidden');
+  scrollToBottom();
+}
+
+// Hide typing indicator
+function hideTypingIndicator() {
+  document.getElementById('typing-indicator').classList.add('hidden');
+}
+
+// Scroll to bottom of chat
+function scrollToBottom() {
+  const container = document.getElementById('chat-container');
+  container.scrollTop = container.scrollHeight;
+}
+
+// Send message
+async function sendMessage(event) {
+  event.preventDefault();
+
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  // Clear input and reset height
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Add user message
+  addUserMessage(message);
+
+  // Show typing indicator
+  showTypingIndicator();
+
+  // Disable send button
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  sendBtn.classList.add('opacity-50');
+
+  try {
+    // Include parsed portfolio data if available
+    const contextData = {
+      ...portfolioContext,
+      uploadedPortfolio: parsedPortfolioData
+    };
+
+    const response = await fetch('/api/ai/chat/message', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + (localStorage.getItem('wealthpilot_token') || ''),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message,
+        portfolioContext: contextData
+      })
+    });
+
+    // Clear the file after sending
+    if (parsedPortfolioData) {
+      removeFile();
+    }
+
+    const data = await response.json();
+
+    hideTypingIndicator();
+
+    if (data.success !== false) {
+      // Check if response contains table data
+      const hasTable = data.response && (data.response.includes('<table') || data.response.includes('|'));
+      addAIMessage(data.response || data.message, hasTable);
+    } else {
+      addAIMessage('I apologize, but I encountered an issue processing your request. Please try again.');
+    }
+  } catch (error) {
+    console.error('Chat error:', error);
+    hideTypingIndicator();
+    addAIMessage('I apologize, but I encountered a connection error. Please check your internet connection and try again.');
+  }
+
+  // Re-enable send button
+  sendBtn.disabled = false;
+  sendBtn.classList.remove('opacity-50');
+  input.focus();
+}
+
+// Send suggested query
+function sendSuggestedQuery(query) {
+  const input = document.getElementById('chat-input');
+  input.value = query;
+  sendMessage(new Event('submit'));
+}
+
+// Start new chat
+function startNewChat() {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '';
+
+  // Reset welcome time
+  document.getElementById('welcome-time').textContent = formatTime(new Date());
+
+  // Show toast
+  if (typeof showToast === 'function') {
+    showToast('Started new chat session', 'success');
+  }
+
+  scrollToBottom();
+}
+
+// Show chat history (placeholder)
+function showChatHistory() {
+  if (typeof showToast === 'function') {
+    showToast('Chat history feature coming soon', 'info');
+  }
+}
+
+// File attachment state
+let selectedFile = null;
+let parsedPortfolioData = null;
+
+// Show attachment options - triggers file input
+function showAttachmentOptions() {
+  document.getElementById('file-input').click();
+}
+
+// Handle file selection
+async function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  selectedFile = file;
+
+  // Show file preview
+  const preview = document.getElementById('file-preview');
+  const fileName = document.getElementById('file-name');
+  const fileSize = document.getElementById('file-size');
+
+  fileName.textContent = file.name;
+  fileSize.textContent = formatFileSize(file.size);
+  preview.classList.remove('hidden');
+
+  // Parse the file if it's a CSV
+  if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
+    await parsePortfolioFile(file);
+  } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+    if (typeof showToast === 'function') {
+      showToast('Excel files will be uploaded for server-side parsing', 'info');
+    }
+    // For Excel, we'll upload to server
+    await uploadAndParseFile(file);
+  }
+}
+
+// Format file size
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Parse CSV portfolio file locally
+async function parsePortfolioFile(file) {
+  const parsingStatus = document.getElementById('file-parsing-status');
+  const parsedSummary = document.getElementById('file-parsed-summary');
+  const holdingsCount = document.getElementById('parsed-holdings-count');
+
+  parsingStatus.classList.remove('hidden');
+  parsedSummary.classList.add('hidden');
+
+  try {
+    const text = await file.text();
+    const lines = text.split('\n').filter(line => line.trim());
+
+    if (lines.length < 2) {
+      throw new Error('File appears to be empty');
+    }
+
+    // Parse header row
+    const headers = parseCSVRow(lines[0]);
+    const headerMap = {};
+    headers.forEach((h, i) => {
+      const normalized = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+      headerMap[normalized] = i;
+    });
+
+    // Find column indices for expected fields
+    const colMap = {
+      description: findColumn(headerMap, ['description', 'name', 'holdingname', 'security']),
+      symbol: findColumn(headerMap, ['symbol', 'ticker', 'tickersymbol', 'sym']),
+      quantity: findColumn(headerMap, ['quantity', 'shares', 'qty', 'units']),
+      price: findColumn(headerMap, ['price', 'currentprice', 'lastprice', 'closingprice']),
+      value: findColumn(headerMap, ['value', 'marketvalue', 'totalvalue', 'currentvalue']),
+      assetsPercent: findColumn(headerMap, ['assets', 'assetspercent', 'weight', 'allocation']),
+      accountType: findColumn(headerMap, ['accounttype', 'account', 'accttype']),
+      principal: findColumn(headerMap, ['principal', 'costbasis', 'cost', 'purchaseprice']),
+      principalGL: findColumn(headerMap, ['principalgl', 'gainloss', 'gl', 'unrealizedgl']),
+      principalGLPercent: findColumn(headerMap, ['principalglpercent', 'glpercent', 'returnpercent']),
+      nfsCost: findColumn(headerMap, ['nfscost']),
+      nfsGL: findColumn(headerMap, ['nfsgl']),
+      nfsGLPercent: findColumn(headerMap, ['nfsglpercent']),
+      assetType: findColumn(headerMap, ['assettype', 'securitytype', 'type']),
+      assetCategory: findColumn(headerMap, ['assetcategory', 'category', 'sector']),
+      estAnnualIncome: findColumn(headerMap, ['estannualincome', 'annualincome', 'income', 'dividend']),
+      currentYield: findColumn(headerMap, ['currentyield', 'yield', 'yieldrate', 'divyield', 'currentylddistrate']),
+      dividendInstructions: findColumn(headerMap, ['dividendinstructions', 'divinstructions']),
+      capGainInstructions: findColumn(headerMap, ['capgaininstructions', 'capitalgaininstructions']),
+      purchaseDate: findColumn(headerMap, ['initialpurchasedate', 'purchasedate', 'dateacquired', 'acquisitiondate']),
+      estTaxGL: findColumn(headerMap, ['esttaxgl', 'taxgl', 'taxgainloss'])
+    };
+
+    // Parse data rows
+    const holdings = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCSVRow(lines[i]);
+      if (row.length < 2) continue;
+
+      const holding = {
+        description: getVal(row, colMap.description, ''),
+        symbol: getVal(row, colMap.symbol, '').toUpperCase().replace(/[^A-Z]/g, ''),
+        quantity: parseNumber(getVal(row, colMap.quantity, '0')),
+        price: parseNumber(getVal(row, colMap.price, '0')),
+        value: parseNumber(getVal(row, colMap.value, '0')),
+        assetsPercent: parseNumber(getVal(row, colMap.assetsPercent, '0')),
+        accountType: getVal(row, colMap.accountType, ''),
+        principal: parseNumber(getVal(row, colMap.principal, '0')),
+        principalGL: parseNumber(getVal(row, colMap.principalGL, '0')),
+        principalGLPercent: parseNumber(getVal(row, colMap.principalGLPercent, '0')),
+        nfsCost: parseNumber(getVal(row, colMap.nfsCost, '0')),
+        nfsGL: parseNumber(getVal(row, colMap.nfsGL, '0')),
+        nfsGLPercent: parseNumber(getVal(row, colMap.nfsGLPercent, '0')),
+        assetType: getVal(row, colMap.assetType, ''),
+        assetCategory: getVal(row, colMap.assetCategory, ''),
+        estAnnualIncome: parseNumber(getVal(row, colMap.estAnnualIncome, '0')),
+        currentYield: parseNumber(getVal(row, colMap.currentYield, '0')),
+        dividendInstructions: getVal(row, colMap.dividendInstructions, ''),
+        capGainInstructions: getVal(row, colMap.capGainInstructions, ''),
+        purchaseDate: getVal(row, colMap.purchaseDate, ''),
+        estTaxGL: parseNumber(getVal(row, colMap.estTaxGL, '0'))
+      };
+
+      // Calculate value if not provided
+      if (!holding.value && holding.quantity && holding.price) {
+        holding.value = holding.quantity * holding.price;
+      }
+
+      // Only include if has symbol or description
+      if (holding.symbol || holding.description) {
+        holdings.push(holding);
+      }
+    }
+
+    if (holdings.length === 0) {
+      throw new Error('No valid holdings found in file');
+    }
+
+    // Fetch 1-day price changes for symbols
+    const symbols = holdings.filter(h => h.symbol).map(h => h.symbol);
+    if (symbols.length > 0) {
+      try {
+        const dailyChanges = await fetch1DayChanges(symbols);
+        holdings.forEach(h => {
+          if (h.symbol && dailyChanges[h.symbol]) {
+            h.oneDayPriceChange = dailyChanges[h.symbol].changePercent || 0;
+            h.oneDayValueChange = h.value * (h.oneDayPriceChange / 100);
+          }
+        });
+      } catch (err) {
+        console.warn('Could not fetch daily changes:', err);
+      }
+    }
+
+    // Calculate totals
+    const totalValue = holdings.reduce((sum, h) => sum + (h.value || 0), 0);
+    const totalGL = holdings.reduce((sum, h) => sum + (h.principalGL || 0), 0);
+    const totalIncome = holdings.reduce((sum, h) => sum + (h.estAnnualIncome || 0), 0);
+
+    parsedPortfolioData = {
+      holdings,
+      summary: {
+        totalHoldings: holdings.length,
+        totalValue,
+        totalGL,
+        totalGLPercent: totalValue > 0 ? (totalGL / (totalValue - totalGL)) * 100 : 0,
+        totalEstAnnualIncome: totalIncome,
+        portfolioYield: totalValue > 0 ? (totalIncome / totalValue) * 100 : 0
+      }
+    };
+
+    // Show success
+    parsingStatus.classList.add('hidden');
+    parsedSummary.classList.remove('hidden');
+    holdingsCount.innerHTML = `
+      <span class="font-medium text-white">${holdings.length}</span> holdings detected<br>
+      Total Value: <span class="font-medium text-white">$${formatNumber(totalValue)}</span><br>
+      Est. Annual Income: <span class="font-medium text-white">$${formatNumber(totalIncome)}</span>
+    `;
+
+    if (typeof showToast === 'function') {
+      showToast(`Parsed ${holdings.length} holdings from portfolio`, 'success');
+    }
+
+  } catch (error) {
+    console.error('Error parsing file:', error);
+    parsingStatus.classList.add('hidden');
+    if (typeof showToast === 'function') {
+      showToast('Error parsing file: ' + error.message, 'error');
+    }
+  }
+}
+
+// Parse CSV row handling quoted values
+function parseCSVRow(row) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < row.length; i++) {
+    const char = row[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+// Find column index from possible names
+function findColumn(headerMap, possibleNames) {
+  for (const name of possibleNames) {
+    if (headerMap[name] !== undefined) {
+      return headerMap[name];
+    }
+  }
+  return -1;
+}
+
+// Get value from row by column index
+function getVal(row, colIndex, defaultVal) {
+  if (colIndex < 0 || colIndex >= row.length) return defaultVal;
+  return row[colIndex] || defaultVal;
+}
+
+// Parse number from string
+function parseNumber(str) {
+  if (!str) return 0;
+  const cleaned = str.replace(/[$,%()]/g, '').replace(/,/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+// Format number with commas
+function formatNumber(num) {
+  return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Fetch 1-day price changes for symbols
+async function fetch1DayChanges(symbols) {
+  try {
+    const response = await fetch('/api/market/batch-quotes?symbols=' + symbols.join(','), {
+      headers: {
+        'Authorization': 'Bearer ' + (localStorage.getItem('wealthpilot_token') || '')
+      }
+    });
+    const data = await response.json();
+    const changes = {};
+    if (data.quotes) {
+      data.quotes.forEach(q => {
+        changes[q.symbol] = {
+          changePercent: q.changePercent || 0,
+          change: q.change || 0
+        };
+      });
+    }
+    return changes;
+  } catch (err) {
+    console.error('Error fetching batch quotes:', err);
+    return {};
+  }
+}
+
+// Upload and parse file on server (for Excel files)
+async function uploadAndParseFile(file) {
+  const parsingStatus = document.getElementById('file-parsing-status');
+  const parsedSummary = document.getElementById('file-parsed-summary');
+  const holdingsCount = document.getElementById('parsed-holdings-count');
+
+  parsingStatus.classList.remove('hidden');
+  parsedSummary.classList.add('hidden');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/ai/chat/parse-portfolio', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + (localStorage.getItem('wealthpilot_token') || '')
+      },
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.portfolio) {
+      parsedPortfolioData = data.portfolio;
+
+      parsingStatus.classList.add('hidden');
+      parsedSummary.classList.remove('hidden');
+      holdingsCount.innerHTML = `
+        <span class="font-medium text-white">${data.portfolio.summary.totalHoldings}</span> holdings detected<br>
+        Total Value: <span class="font-medium text-white">$${formatNumber(data.portfolio.summary.totalValue)}</span><br>
+        Est. Annual Income: <span class="font-medium text-white">$${formatNumber(data.portfolio.summary.totalEstAnnualIncome || 0)}</span>
+      `;
+
+      if (typeof showToast === 'function') {
+        showToast(`Parsed ${data.portfolio.summary.totalHoldings} holdings from portfolio`, 'success');
+      }
+    } else {
+      throw new Error(data.error || 'Failed to parse file');
+    }
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    parsingStatus.classList.add('hidden');
+    if (typeof showToast === 'function') {
+      showToast('Error parsing file: ' + error.message, 'error');
+    }
+  }
+}
+
+// Remove selected file
+function removeFile() {
+  selectedFile = null;
+  parsedPortfolioData = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-preview').classList.add('hidden');
+  document.getElementById('file-parsing-status').classList.add('hidden');
+  document.getElementById('file-parsed-summary').classList.add('hidden');
+}
+
+// Export data (placeholder)
+function exportData() {
+  if (typeof showToast === 'function') {
+    showToast('Exporting data...', 'info');
+  }
+}
+
+// View chart (placeholder)
+function viewChart() {
+  if (typeof showToast === 'function') {
+    showToast('Opening chart view...', 'info');
+  }
+}
+
+// Voice input
+let recognition = null;
+let isListening = false;
+
+function startVoiceInput() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (typeof showToast === 'function') {
+      showToast('Voice recognition not supported in this browser', 'error');
+    }
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voiceBtn = document.getElementById('voice-btn');
+
+  if (!recognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      isListening = true;
+      voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[20px] text-red-500 animate-pulse">mic</span>';
+      voiceBtn.classList.add('bg-red-500/20');
+      if (typeof showToast === 'function') {
+        showToast('Listening... Speak now', 'info');
+      }
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join('');
+      document.getElementById('chat-input').value = transcript;
+      autoResizeTextarea(document.getElementById('chat-input'));
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">mic</span>';
+      voiceBtn.classList.remove('bg-red-500/20');
+
+      const input = document.getElementById('chat-input').value;
+      if (input.trim()) {
+        sendMessage(new Event('submit'));
+      }
+    };
+
+    recognition.onerror = (event) => {
+      isListening = false;
+      voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">mic</span>';
+      voiceBtn.classList.remove('bg-red-500/20');
+      if (typeof showToast === 'function') {
+        showToast('Voice error: ' + event.error, 'error');
+      }
+    };
+  }
+
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Focus input
+  document.getElementById('chat-input').focus();
+
+  // Set today's date
+  const today = new Date();
+  const options = { weekday: 'long', month: 'short', day: 'numeric' };
+  const dateStr = today.toLocaleDateString('en-US', options);
+  document.getElementById('chat-date').textContent = `Today, ${dateStr}`;
+});
+</script>
+
+<%- include('../partials/footer') %>

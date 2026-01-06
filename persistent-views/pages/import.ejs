@@ -1,0 +1,382 @@
+<%
+// Safe defaults for potentially undefined variables
+const theme = typeof theme !== 'undefined' ? theme : 'dark';
+const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+%>
+<%- include('../partials/header', { pageTitle: 'Import/Export' }) %>
+<main class="p-4 lg:p-6">
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar mb-6">
+<h1 class="text-2xl font-bold text-amber-400">IMPORT & EXPORT</h1>
+<p class="text-slate-400 mt-1">Bulk import holdings from CSV or export your portfolio</p>
+</div>
+
+<div class="max-w-5xl mx-auto space-y-6">
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<a href="/api/export/template" download class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-white">Download Template</h3>
+<p class="text-slate-400 text-sm">Get blank CSV template</p>
+</div>
+</div>
+</a>
+<div class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors cursor-pointer group" onclick="document.getElementById('csvFile').click()">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-white">Upload CSV</h3>
+<p class="text-slate-400 text-sm">Import from CSV file</p>
+</div>
+</div>
+</div>
+<div class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors cursor-pointer group" onclick="document.getElementById('excelFile').click()">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-white">Upload Excel</h3>
+<p class="text-slate-400 text-sm">Import from .xlsx/.xls</p>
+</div>
+</div>
+</div>
+<% if (portfolios.length > 0) { %>
+<a href="/api/export/holdings/<%= portfolios[0].id %>" download class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+</svg>
+</div>
+<div>
+<h3 class="font-semibold text-white">Export Portfolio</h3>
+<p class="text-slate-400 text-sm">Download as CSV</p>
+</div>
+</div>
+</a>
+<% } %>
+</div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="csvFile" accept=".csv" style="display:none" onchange="handleFileSelect(event)">
+<input type="file" id="excelFile" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(event)">
+
+<!-- Import Form -->
+<div class="bloomberg-card p-6">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">Import Holdings</h3>
+
+<div class="mb-4">
+<label class="block text-sm font-medium text-slate-300 mb-2">Target Portfolio</label>
+<select id="targetPortfolio" class="form-input bg-slate-900 border-slate-700 text-white">
+<% portfolios.forEach(p => { %>
+<option value="<%= p.id %>"><%= p.name %></option>
+<% }) %>
+<% if (portfolios.length === 0) { %>
+<option disabled>No portfolios - create one first</option>
+<% } %>
+</select>
+</div>
+
+<div class="mb-4">
+<label class="block text-sm font-medium text-slate-300 mb-2">Paste CSV Data</label>
+<textarea id="csvData" rows="8" class="form-input bg-slate-900 border-slate-700 text-white font-mono text-sm" placeholder="symbol,name,quantity,cost_basis
+AAPL,Apple Inc.,100,150.00
+MSFT,Microsoft,50,280.00
+..."></textarea>
+<p class="text-slate-400 text-xs mt-1">Required: symbol, quantity. Optional: name, cost_basis, purchase_date, asset_type</p>
+</div>
+
+<div class="flex gap-3">
+<button onclick="previewImport()" class="bloomberg-btn bloomberg-btn-secondary" id="previewBtn">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+</svg>
+Preview
+</button>
+<button onclick="executeImport()" class="bloomberg-btn bloomberg-btn-primary" id="importBtn" disabled>
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+</svg>
+Import Holdings
+</button>
+</div>
+</div>
+
+<!-- Preview Results -->
+<div id="previewResults" class="bloomberg-card p-6" style="display:none;">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-semibold text-amber-400">Preview</h3>
+<div id="previewStats" class="flex gap-3"></div>
+</div>
+<div id="previewErrors" class="mb-4"></div>
+<div class="overflow-x-auto">
+<table class="w-full" id="previewTable">
+<thead>
+<tr class="border-b border-slate-700 text-slate-400 text-sm text-left">
+<th class="pb-3">Symbol</th>
+<th class="pb-3">Name</th>
+<th class="pb-3 text-right">Quantity</th>
+<th class="pb-3 text-right">Cost Basis</th>
+</tr>
+</thead>
+<tbody id="previewBody"></tbody>
+</table>
+</div>
+</div>
+
+<!-- Import Results -->
+<div id="importResults" class="bloomberg-card p-6" style="display:none;">
+<div class="flex items-center gap-3 mb-4">
+<div id="resultIcon" class="w-12 h-12 rounded-xl flex items-center justify-center"></div>
+<div>
+<h3 id="resultTitle" class="text-lg font-semibold text-white"></h3>
+<p id="resultMessage" class="text-slate-400"></p>
+</div>
+</div>
+<a href="/portfolios" class="bloomberg-btn bloomberg-btn-primary">View Portfolio</a>
+</div>
+
+<!-- Supported Formats -->
+<div class="bloomberg-card p-6">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">Supported Formats</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<% ['Fidelity', 'Schwab', 'Vanguard', 'Robinhood', 'E*TRADE', 'TD Ameritrade', 'Generic CSV', 'Excel Export'].forEach(b => { %>
+<div class="p-3 bg-slate-800/50 rounded-lg text-center border border-slate-700/50">
+<span class="text-slate-300 text-sm font-medium"><%= b %></span>
+</div>
+<% }) %>
+</div>
+<p class="text-slate-400 text-sm mt-4">We automatically detect the format and map columns. If import fails, try the generic template format.</p>
+</div>
+</div></div></main>
+
+<script>
+let previewHoldings = [];
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('csvData').value = e.target.result;
+    previewImport();
+  };
+  reader.readAsText(file);
+}
+
+async function handleExcelUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Show loading state
+  showToast('Uploading Excel file...', 'info');
+
+  try {
+    // Create FormData and upload file
+    const formData = new FormData();
+    formData.append('portfolio', file);
+    formData.append('portfolioName', file.name.replace(/\.[^/.]+$/, '')); // Remove extension
+
+    const response = await fetch('/api/portfolio-upload/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      showToast('Upload failed: ' + (data.error || 'Unknown error'), 'error');
+      return;
+    }
+
+    // Show success message
+    showToast('Upload started! Processing your portfolio...', 'success');
+
+    // Poll for completion
+    const uploadId = data.uploadId;
+    let attempts = 0;
+    const maxAttempts = 20; // 20 seconds max
+
+    const checkStatus = setInterval(async () => {
+      attempts++;
+
+      try {
+        const statusRes = await fetch(`/api/portfolio-upload/status/${uploadId}`);
+        const statusData = await statusRes.json();
+
+        if (statusData.success && statusData.upload) {
+          const upload = statusData.upload;
+
+          if (upload.status === 'completed') {
+            clearInterval(checkStatus);
+
+            // Show success result
+            document.getElementById('importResults').style.display = 'block';
+            document.getElementById('previewResults').style.display = 'none';
+
+            document.getElementById('resultIcon').innerHTML = '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            document.getElementById('resultIcon').className = 'w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500/20';
+            document.getElementById('resultTitle').textContent = 'Excel Import Successful!';
+            document.getElementById('resultMessage').textContent = `Created portfolio "${upload.portfolioName}" with ${upload.totalHoldings} holdings (Total value: $${(upload.totalValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
+
+            showToast(`Successfully imported ${upload.totalHoldings} holdings!`, 'success');
+
+            // Scroll to results
+            document.getElementById('importResults').scrollIntoView({ behavior: 'smooth' });
+
+          } else if (upload.status === 'failed') {
+            clearInterval(checkStatus);
+            showToast('Upload failed: ' + (upload.errorMessage || 'Unknown error'), 'error');
+
+            // Show error result
+            document.getElementById('importResults').style.display = 'block';
+            document.getElementById('resultIcon').innerHTML = '<svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+            document.getElementById('resultIcon').className = 'w-12 h-12 rounded-xl flex items-center justify-center bg-red-500/20';
+            document.getElementById('resultTitle').textContent = 'Excel Import Failed';
+            document.getElementById('resultMessage').textContent = upload.errorMessage || 'Unknown error';
+          }
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(checkStatus);
+          showToast('Upload is taking longer than expected. Check your portfolios page.', 'warning');
+        }
+
+      } catch (error) {
+        console.error('Error checking status:', error);
+      }
+    }, 1000); // Check every second
+
+  } catch (error) {
+    showToast('Upload error: ' + error.message, 'error');
+  }
+
+  // Reset file input
+  event.target.value = '';
+}
+
+async function previewImport() {
+  const csv = document.getElementById('csvData').value;
+  if (!csv.trim()) {
+    showToast('Please enter CSV data', 'warning');
+    return;
+  }
+  
+  const btn = document.getElementById('previewBtn');
+  setLoading(btn, true);
+  
+  try {
+    const response = await fetch('/api/import/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csv_content: csv })
+    });
+    
+    const data = await response.json();
+    
+    // Show preview panel
+    document.getElementById('previewResults').style.display = 'block';
+    document.getElementById('importResults').style.display = 'none';
+    
+    // Stats
+    document.getElementById('previewStats').innerHTML = `
+      <span class="badge-success">${data.successful_rows} valid</span>
+      <span class="badge-danger">${data.total_rows - data.successful_rows} errors</span>
+    `;
+    
+    // Errors
+    const errorsDiv = document.getElementById('previewErrors');
+    if (data.errors && data.errors.length > 0) {
+      errorsDiv.innerHTML = `<div class="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm mb-4">${data.errors.join('<br>')}</div>`;
+    } else {
+      errorsDiv.innerHTML = '';
+    }
+    
+    // Table
+    const tbody = document.getElementById('previewBody');
+    tbody.innerHTML = data.holdings.map(h => `
+      <tr class="border-b border-slate-700/50">
+        <td class="py-3 font-medium text-white">${h.symbol}</td>
+        <td class="py-3 text-slate-300">${h.name || '-'}</td>
+        <td class="py-3 text-right text-slate-300">${h.quantity.toLocaleString()}</td>
+        <td class="py-3 text-right text-slate-300">$${h.cost_basis.toFixed(2)}</td>
+      </tr>
+    `).join('');
+    
+    previewHoldings = data.holdings;
+    document.getElementById('importBtn').disabled = data.holdings.length === 0;
+    
+  } catch (error) {
+    showToast('Preview failed: ' + error.message, 'error');
+  }
+  
+  setLoading(btn, false);
+}
+
+async function executeImport() {
+  const portfolioId = document.getElementById('targetPortfolio').value;
+  if (!portfolioId) {
+    showToast('Select a portfolio first', 'warning');
+    return;
+  }
+  
+  if (previewHoldings.length === 0) {
+    showToast('No holdings to import', 'warning');
+    return;
+  }
+  
+  const btn = document.getElementById('importBtn');
+  setLoading(btn, true);
+  
+  try {
+    const response = await fetch('/api/import/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        portfolio_id: portfolioId, 
+        holdings: previewHoldings 
+      })
+    });
+    
+    const data = await response.json();
+    
+    // Show results
+    document.getElementById('previewResults').style.display = 'none';
+    document.getElementById('importResults').style.display = 'block';
+    
+    const success = data.imported > 0;
+    document.getElementById('resultIcon').innerHTML = success 
+      ? '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+      : '<svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+    document.getElementById('resultIcon').className = `w-12 h-12 rounded-xl flex items-center justify-center ${success ? 'bg-emerald-500/20' : 'bg-red-500/20'}`;
+    document.getElementById('resultTitle').textContent = success ? 'Import Successful!' : 'Import Failed';
+    document.getElementById('resultMessage').textContent = `Imported ${data.imported} holdings${data.failed > 0 ? `, ${data.failed} failed` : ''}`;
+    
+    // Clear form
+    document.getElementById('csvData').value = '';
+    previewHoldings = [];
+    
+  } catch (error) {
+    showToast('Import failed: ' + error.message, 'error');
+  }
+  
+  setLoading(btn, false);
+}
+</script>
+<%- include('../partials/footer') %>

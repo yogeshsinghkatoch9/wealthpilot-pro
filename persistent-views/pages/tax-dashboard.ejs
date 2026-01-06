@@ -1,0 +1,763 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const dashboard = typeof taxDashboard !== 'undefined' ? taxDashboard : null;
+const summary = dashboard?.summary || {};
+const opportunities = dashboard?.opportunities || [];
+const washSaleWindows = dashboard?.washSaleWindows || [];
+const recentHarvests = dashboard?.recentHarvests || [];
+const carryforward = dashboard?.carryforward || { totalBalance: 0, byYear: [] };
+const preferences = dashboard?.preferences || {};
+const recommendations = dashboard?.recommendations || [];
+
+// Helper functions
+function formatMoney(val) {
+  return '$' + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatDate(date) {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Tax Dashboard' }) %>
+
+<style>
+  .tax-card {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .tax-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .savings-banner {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.15) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 16px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .savings-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 80%;
+    height: 150%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .opportunity-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+
+  .opportunity-row:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(148, 163, 184, 0.15);
+  }
+
+  .etf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #60a5fa;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .etf-badge:hover {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  .etf-badge.recommended {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #34d399;
+  }
+
+  .wash-sale-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #f87171;
+  }
+
+  .wash-sale-safe {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #34d399;
+  }
+
+  .recommendation-card {
+    padding: 16px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 10px;
+  }
+
+  .recommendation-card.high {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+
+  .harvest-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .harvest-btn:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+
+  .stat-mini {
+    text-align: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+  }
+
+  .stat-mini-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .stat-mini-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    position: relative;
+  }
+
+  .timeline-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    width: 100px;
+    height: 2px;
+    background: rgba(148, 163, 184, 0.2);
+  }
+
+  .timeline-dot.warning {
+    background: #f59e0b;
+  }
+
+  .timeline-dot.danger {
+    background: #ef4444;
+  }
+</style>
+
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Tax Dashboard</h1>
+      <p class="text-slate-400 text-sm mt-1">Tax-loss harvesting with ETF alternatives</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <form method="GET" class="flex items-center gap-2">
+        <select name="portfolio" id="portfolioSelect" onchange="this.form.submit()"
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+          <% if (typeof portfolios !== 'undefined' && portfolios) { %>
+          <% portfolios.forEach(p => { %>
+          <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
+          <% }); %>
+          <% } else { %>
+          <option value="">Select Portfolio</option>
+          <% } %>
+        </select>
+      </form>
+      <a href="/tax-opportunities<%= selectedPid ? '?portfolio=' + selectedPid : '' %>"
+         class="px-4 py-2 bg-sky-500/20 border border-sky-500/30 text-sky-400 font-bold text-sm rounded-lg hover:bg-sky-500/30 transition-colors">
+        View All Opportunities
+      </a>
+      <button onclick="openPreferences()" class="px-4 py-2 bg-slate-700/50 text-white font-medium text-sm rounded-lg hover:bg-slate-700 transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Settings
+      </button>
+    </div>
+  </div>
+
+  <!-- Tax Savings Banner -->
+  <div class="savings-banner">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
+      <div class="lg:col-span-2">
+        <div class="flex items-center gap-4 mb-3">
+          <div class="w-14 h-14 rounded-full bg-emerald-500/25 flex items-center justify-center">
+            <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-slate-400 text-sm">Potential Tax Savings</p>
+            <p class="text-4xl lg:text-5xl font-bold text-emerald-400 font-mono"><%= formatMoney(summary.totalTaxSavings || 0) %></p>
+          </div>
+        </div>
+        <p class="text-slate-400 text-sm">
+          <span class="text-white font-semibold"><%= summary.washSafeOpportunities || 0 %></span> wash-sale-safe opportunities with
+          <span class="text-red-400 font-semibold"><%= formatMoney(summary.totalAvailableLosses || 0) %></span> in harvestable losses.
+        </p>
+      </div>
+
+      <div class="stat-mini">
+        <div class="stat-mini-value text-red-400"><%= formatMoney(summary.ytdRealizedLosses || 0) %></div>
+        <div class="stat-mini-label">YTD Losses</div>
+      </div>
+
+      <div class="stat-mini">
+        <div class="stat-mini-value text-emerald-400"><%= formatMoney(summary.ytdRealizedGains || 0) %></div>
+        <div class="stat-mini-label">YTD Gains</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="stat-mini">
+      <div class="stat-mini-value text-white"><%= summary.washSafeOpportunities || 0 %></div>
+      <div class="stat-mini-label">Safe Opportunities</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-value text-amber-400"><%= formatMoney(carryforward.totalBalance || 0) %></div>
+      <div class="stat-mini-label">Loss Carryforward</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-value text-sky-400"><%= formatMoney(summary.harvestedThisYear || 0) %></div>
+      <div class="stat-mini-label">Harvested YTD</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-value text-purple-400"><%= preferences.federal_tax_bracket || 32 %>%</div>
+      <div class="stat-mini-label">Tax Bracket</div>
+    </div>
+    <div class="stat-mini">
+      <div class="stat-mini-value <%= (summary.netTaxPosition || 0) > 0 ? 'text-emerald-400' : 'text-red-400' %>">
+        <%= formatMoney(Math.abs(summary.netTaxPosition || 0)) %>
+      </div>
+      <div class="stat-mini-label"><%= (summary.netTaxPosition || 0) >= 0 ? 'Net Gains' : 'Net Losses' %></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Top Opportunities with ETF Alternatives -->
+    <div class="lg:col-span-2 tax-card">
+      <div class="tax-card-header">
+        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Top Opportunities with ETF Alternatives</h3>
+        <a href="/tax-opportunities<%= selectedPid ? '?portfolio=' + selectedPid : '' %>" class="text-xs text-slate-400 hover:text-white">View All</a>
+      </div>
+      <div class="p-4 space-y-3">
+        <% if (opportunities.length > 0) { %>
+        <% opportunities.slice(0, 5).forEach(opp => { %>
+        <div class="opportunity-row">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+              <span class="font-mono font-bold text-red-400 text-sm"><%= opp.symbol ? opp.symbol.slice(0, 4) : '???' %></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-white font-bold font-mono"><%= opp.symbol %></span>
+                <span class="text-xs px-2 py-0.5 rounded <%= opp.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400' %>">
+                  <%= opp.holdingPeriod || 'short-term' %>
+                </span>
+              </div>
+              <div class="flex items-center gap-2 mt-1">
+                <% if (opp.inWashSaleWindow) { %>
+                <span class="wash-sale-warning">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                  Wash Sale Risk
+                </span>
+                <% } else { %>
+                <span class="wash-sale-safe">
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  Safe to Harvest
+                </span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <!-- ETF Alternative -->
+            <div class="text-center">
+              <span class="text-xs text-slate-500 block mb-1">Best ETF</span>
+              <% if (opp.etfAlternatives?.recommended) { %>
+              <span class="etf-badge recommended" onclick="showETFDetails('<%= opp.etfAlternatives.recommended %>')">
+                <%= opp.etfAlternatives.recommended %>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+              </span>
+              <% } else { %>
+              <span class="etf-badge">VTI</span>
+              <% } %>
+            </div>
+
+            <!-- Tax Savings -->
+            <div class="text-right">
+              <p class="text-red-400 font-bold font-mono">-<%= formatMoney(opp.unrealizedLoss || 0) %></p>
+              <p class="text-emerald-400 text-xs">Save <%= formatMoney(opp.taxSavings || 0) %></p>
+            </div>
+
+            <!-- Harvest Button -->
+            <button class="harvest-btn" onclick="previewHarvest('<%= opp.symbol %>', '<%= opp.etfAlternatives?.recommended || 'VTI' %>')" <%= opp.inWashSaleWindow ? 'disabled style="opacity:0.5;cursor:not-allowed"' : '' %>>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Harvest
+            </button>
+          </div>
+        </div>
+        <% }); %>
+        <% } else { %>
+        <div class="text-center py-8">
+          <p class="text-slate-400">No harvesting opportunities found.</p>
+          <p class="text-xs text-slate-500 mt-2">Try selecting a different portfolio or lowering the loss threshold.</p>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Recommendations & Wash Sale Windows -->
+    <div class="space-y-6">
+      <!-- Recommendations -->
+      <div class="tax-card">
+        <div class="tax-card-header">
+          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Recommendations</h3>
+        </div>
+        <div class="p-4 space-y-3">
+          <% if (recommendations.length > 0) { %>
+          <% recommendations.slice(0, 3).forEach(rec => { %>
+          <div class="recommendation-card <%= rec.priority === 'high' ? 'high' : '' %>">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 <%= rec.priority === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400' %>">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-white text-sm font-medium"><%= rec.message %></p>
+                <button class="text-xs text-sky-400 hover:text-sky-300 mt-1"><%= rec.action %></button>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+          <% } else { %>
+          <div class="text-center py-4">
+            <p class="text-slate-400 text-sm">No recommendations at this time.</p>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Active Wash Sale Windows -->
+      <div class="tax-card">
+        <div class="tax-card-header">
+          <h3 class="text-sm font-bold text-red-400 uppercase tracking-wide">Wash Sale Windows</h3>
+        </div>
+        <div class="p-4 space-y-3">
+          <% if (washSaleWindows.length > 0) { %>
+          <% washSaleWindows.slice(0, 3).forEach(ws => { %>
+          <div class="flex items-center justify-between p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+            <div class="flex items-center gap-3">
+              <div class="timeline-dot danger"></div>
+              <div>
+                <span class="font-mono font-bold text-white"><%= ws.symbol %></span>
+                <p class="text-xs text-slate-400">Sold <%= formatDate(ws.sale_date) %></p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-slate-500">Window ends</p>
+              <p class="text-red-400 font-mono text-sm"><%= formatDate(ws.wash_sale_window_end) %></p>
+            </div>
+          </div>
+          <% }); %>
+          <% } else { %>
+          <div class="text-center py-4">
+            <div class="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
+              <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <p class="text-slate-400 text-sm">No active wash sale windows</p>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Loss Carryforward -->
+      <div class="tax-card">
+        <div class="tax-card-header">
+          <h3 class="text-sm font-bold text-purple-400 uppercase tracking-wide">Loss Carryforward</h3>
+        </div>
+        <div class="p-4">
+          <div class="text-center mb-4">
+            <p class="text-3xl font-bold font-mono text-purple-400"><%= formatMoney(carryforward.totalBalance || 0) %></p>
+            <p class="text-xs text-slate-500 mt-1">Available to offset future gains</p>
+          </div>
+          <div class="flex justify-between items-center p-3 bg-purple-500/10 rounded-lg">
+            <span class="text-sm text-slate-400">Deductible vs Income</span>
+            <span class="text-purple-400 font-mono font-bold"><%= formatMoney(Math.min(carryforward.totalBalance || 0, 3000)) %></span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2 text-center">Up to $3,000 can offset ordinary income annually</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Harvests -->
+  <div class="tax-card">
+    <div class="tax-card-header">
+      <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Recent Harvests</h3>
+      <a href="/tax/history<%= selectedPid ? '?portfolio=' + selectedPid : '' %>" class="text-xs text-slate-400 hover:text-white">View All</a>
+    </div>
+    <div class="p-4">
+      <% if (recentHarvests.length > 0) { %>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-left text-xs text-slate-500 uppercase">
+              <th class="pb-3 font-semibold">Symbol</th>
+              <th class="pb-3 font-semibold">Date</th>
+              <th class="pb-3 font-semibold">Loss Realized</th>
+              <th class="pb-3 font-semibold">Tax Saved</th>
+              <th class="pb-3 font-semibold">Replacement</th>
+              <th class="pb-3 font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <% recentHarvests.forEach(harvest => { %>
+            <tr class="border-t border-slate-800">
+              <td class="py-3 font-mono font-bold text-white"><%= harvest.symbol %></td>
+              <td class="py-3 text-slate-400"><%= formatDate(harvest.executed_at) %></td>
+              <td class="py-3 font-mono text-red-400">-<%= formatMoney(harvest.realized_loss) %></td>
+              <td class="py-3 font-mono text-emerald-400"><%= formatMoney(harvest.tax_savings) %></td>
+              <td class="py-3">
+                <% if (harvest.replacement_symbol) { %>
+                <span class="etf-badge"><%= harvest.replacement_symbol %></span>
+                <% } else { %>
+                <span class="text-slate-500">-</span>
+                <% } %>
+              </td>
+              <td class="py-3">
+                <span class="px-2 py-1 rounded text-xs <%= harvest.wash_sale_safe ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400' %>">
+                  <%= harvest.wash_sale_safe ? 'Clean' : 'Wash Sale' %>
+                </span>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="text-center py-8">
+        <p class="text-slate-400">No harvests recorded yet this year.</p>
+        <p class="text-xs text-slate-500 mt-2">Start harvesting losses above to see your history here.</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Preferences Modal -->
+<div id="preferencesModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50" onclick="if(event.target === this) closePreferences()">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md mx-4">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold text-white">Tax Preferences</h3>
+      <button onclick="closePreferences()" class="text-slate-400 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <form id="preferencesForm" onsubmit="savePreferences(event)">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Federal Tax Bracket (%)</label>
+          <input type="number" name="federal_tax_bracket" value="<%= preferences.federal_tax_bracket || 32 %>"
+                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400" min="0" max="50" step="1">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">State</label>
+          <select name="state" class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400">
+            <option value="">Select State</option>
+            <option value="CA" <%= preferences.state === 'CA' ? 'selected' : '' %>>California</option>
+            <option value="NY" <%= preferences.state === 'NY' ? 'selected' : '' %>>New York</option>
+            <option value="TX" <%= preferences.state === 'TX' ? 'selected' : '' %>>Texas</option>
+            <option value="FL" <%= preferences.state === 'FL' ? 'selected' : '' %>>Florida</option>
+            <!-- Add more states as needed -->
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">State Tax Rate (%)</label>
+          <input type="number" name="state_tax_rate" value="<%= preferences.state_tax_rate || 0 %>"
+                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400" min="0" max="15" step="0.1">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Min Harvest Threshold ($)</label>
+          <input type="number" name="min_harvest_threshold" value="<%= preferences.min_harvest_threshold || 100 %>"
+                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400" min="0" step="50">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1">Default Lot Selection</label>
+          <select name="default_lot_method" class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400">
+            <option value="tax_efficient" <%= preferences.default_lot_method === 'tax_efficient' ? 'selected' : '' %>>Tax Efficient (Recommended)</option>
+            <option value="fifo" <%= preferences.default_lot_method === 'fifo' ? 'selected' : '' %>>FIFO (First In, First Out)</option>
+            <option value="lifo" <%= preferences.default_lot_method === 'lifo' ? 'selected' : '' %>>LIFO (Last In, First Out)</option>
+            <option value="hifo" <%= preferences.default_lot_method === 'hifo' ? 'selected' : '' %>>HIFO (Highest In, First Out)</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button type="button" onclick="closePreferences()" class="flex-1 px-4 py-2 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600 transition-colors">Cancel</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition-colors">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Harvest Preview Modal -->
+<div id="harvestModal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50" onclick="if(event.target === this) closeHarvestModal()">
+  <div class="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-lg mx-4">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold text-white">Preview Harvest</h3>
+      <button onclick="closeHarvestModal()" class="text-slate-400 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="harvestPreviewContent">
+      <div class="flex items-center justify-center py-8">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const portfolioId = '<%= selectedPid || "" %>';
+
+function openPreferences() {
+  document.getElementById('preferencesModal').classList.remove('hidden');
+  document.getElementById('preferencesModal').classList.add('flex');
+}
+
+function closePreferences() {
+  document.getElementById('preferencesModal').classList.add('hidden');
+  document.getElementById('preferencesModal').classList.remove('flex');
+}
+
+async function savePreferences(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form));
+
+  try {
+    const res = await fetch('/api/tax/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result.success) {
+      if (typeof showToast === 'function') showToast('Preferences saved!', 'success');
+      closePreferences();
+      setTimeout(() => location.reload(), 500);
+    } else {
+      if (typeof showToast === 'function') showToast(result.error || 'Failed to save', 'error');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast('Error saving preferences', 'error');
+  }
+}
+
+async function previewHarvest(symbol, replacement) {
+  document.getElementById('harvestModal').classList.remove('hidden');
+  document.getElementById('harvestModal').classList.add('flex');
+  document.getElementById('harvestPreviewContent').innerHTML = `
+    <div class="flex items-center justify-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+    </div>
+  `;
+
+  try {
+    const res = await fetch('/api/tax/harvest/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ portfolioId, symbol, replacementSymbol: replacement })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      const data = result.data;
+      document.getElementById('harvestPreviewContent').innerHTML = `
+        <div class="space-y-4">
+          <div class="p-4 bg-black/30 rounded-lg">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-lg font-bold text-white font-mono">${symbol}</span>
+              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div><span class="text-slate-400">Shares:</span> <span class="text-white font-mono">${data.holding?.shares?.toFixed(2) || '0'}</span></div>
+              <div><span class="text-slate-400">Cost Basis:</span> <span class="text-white font-mono">$${(data.holding?.totalCostBasis || 0).toFixed(2)}</span></div>
+              <div><span class="text-slate-400">Current Value:</span> <span class="text-white font-mono">$${(data.holding?.currentValue || 0).toFixed(2)}</span></div>
+              <div><span class="text-slate-400">Tax Rate:</span> <span class="text-white font-mono">${(data.harvest?.effectiveTaxRate || 0).toFixed(1)}%</span></div>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+            <span class="text-red-400 font-semibold">Realized Loss</span>
+            <span class="text-2xl font-bold text-red-400 font-mono">-$${Math.abs(data.harvest?.realizedLoss || 0).toFixed(2)}</span>
+          </div>
+
+          <div class="flex justify-between items-center p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <span class="text-emerald-400 font-semibold">Tax Savings</span>
+            <span class="text-2xl font-bold text-emerald-400 font-mono">$${(data.harvest?.taxSavings || 0).toFixed(2)}</span>
+          </div>
+
+          ${data.replacement ? `
+          <div class="p-4 bg-sky-500/10 rounded-lg border border-sky-500/20">
+            <p class="text-sm text-slate-400 mb-2">Replacement Security</p>
+            <div class="flex items-center justify-between">
+              <span class="font-mono font-bold text-sky-400 text-lg">${data.replacement.symbol}</span>
+              <div class="text-right text-sm">
+                <p class="text-white font-mono">${data.replacement.shares?.toFixed(2)} shares</p>
+                <p class="text-slate-400">@ $${data.replacement.price?.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          ${data.warnings?.length ? `
+          <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <p class="text-amber-400 text-sm">${data.warnings.join(', ')}</p>
+          </div>
+          ` : ''}
+
+          <div class="flex gap-3 mt-6">
+            <button onclick="closeHarvestModal()" class="flex-1 px-4 py-2 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600">Cancel</button>
+            <button onclick="executeHarvest('${symbol}', '${replacement}')" class="flex-1 px-4 py-2 bg-emerald-500 text-black font-bold rounded-lg hover:bg-emerald-400" ${!data.canExecute ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>
+              Execute Harvest
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      document.getElementById('harvestPreviewContent').innerHTML = `
+        <div class="text-center py-8">
+          <p class="text-red-400">${result.error || 'Failed to load preview'}</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    document.getElementById('harvestPreviewContent').innerHTML = `
+      <div class="text-center py-8">
+        <p class="text-red-400">Error loading preview</p>
+      </div>
+    `;
+  }
+}
+
+async function executeHarvest(symbol, replacement) {
+  if (!confirm(`Are you sure you want to harvest ${symbol} and replace with ${replacement}?`)) return;
+
+  try {
+    const res = await fetch('/api/tax/harvest/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ portfolioId, symbol, replacementSymbol: replacement })
+    });
+    const result = await res.json();
+
+    if (result.success) {
+      if (typeof showToast === 'function') showToast(`Successfully harvested ${symbol}!`, 'success');
+      closeHarvestModal();
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      if (typeof showToast === 'function') showToast(result.error || 'Harvest failed', 'error');
+    }
+  } catch (err) {
+    if (typeof showToast === 'function') showToast('Error executing harvest', 'error');
+  }
+}
+
+function closeHarvestModal() {
+  document.getElementById('harvestModal').classList.add('hidden');
+  document.getElementById('harvestModal').classList.remove('flex');
+}
+
+function showETFDetails(symbol) {
+  window.open(`https://finance.yahoo.com/quote/${symbol}`, '_blank');
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,123 @@
+<%
+  // Get current page for active state
+  const currentPage = typeof pageTitle !== 'undefined' ? pageTitle.toLowerCase() : 'dashboard';
+
+  // Navigation items configuration - Stitch Design
+  const navItems = [
+    { name: 'Dashboard', icon: 'dashboard', href: '/dashboard', keywords: ['dashboard', 'overview', 'home'] },
+    { name: 'Portfolios', icon: 'account_balance_wallet', href: '/portfolios', keywords: ['portfolio', 'holdings'] },
+    { name: 'Market Data', icon: 'bar_chart', href: '/market-overview', keywords: ['market', 'stocks', 'quotes'] },
+    { name: 'Technical Analysis', icon: 'show_chart', href: '/technical-analysis', keywords: ['technical', 'chart', 'indicator'] },
+    { name: 'Fundamental Analysis', icon: 'pie_chart', href: '/fundamental-analysis', keywords: ['fundamental', 'financial', 'valuation'] },
+    { name: 'Dividends', icon: 'payments', href: '/dividends', keywords: ['dividend', 'income', 'yield'] },
+    { name: 'Risk Analytics', icon: 'shield', href: '/risk', keywords: ['risk', 'analytics', 'beta', 'sharpe'] },
+    { name: 'Options Trading', icon: 'candlestick_chart', href: '/options', keywords: ['option', 'derivatives', 'greeks'] },
+    { name: 'AI & Research', icon: 'smart_toy', href: '/ai-chat', keywords: ['ai', 'research', 'assistant', 'chat'] },
+    { name: 'Tax Tools', icon: 'description', href: '/tax-loss-harvesting', keywords: ['tax', 'harvesting', 'loss'] },
+  ];
+
+  // Check if current page matches any keywords
+  function isActive(item) {
+    return item.keywords.some(kw => currentPage.includes(kw));
+  }
+%>
+
+<!-- Side Navigation - Stitch Design -->
+<aside id="sidebar" class="w-64 flex-shrink-0 border-r border-border-dark bg-card-dark flex flex-col h-screen overflow-y-auto fixed left-0 top-0 z-40 transform transition-transform duration-300 lg:translate-x-0 -translate-x-full">
+  <div class="p-6 pb-2">
+    <!-- Logo -->
+    <a href="/dashboard" class="flex items-center gap-3 mb-8">
+      <div class="bg-primary/20 p-2 rounded-lg">
+        <span class="material-symbols-outlined text-primary" style="font-size: 28px;">flight_takeoff</span>
+      </div>
+      <div class="flex flex-col">
+        <h1 class="text-white text-lg font-bold leading-tight">WealthPilot</h1>
+        <p class="text-text-secondary text-xs font-medium">PRO TERMINAL</p>
+      </div>
+    </a>
+
+    <!-- Navigation Items -->
+    <div class="flex flex-col gap-1">
+      <% navItems.forEach(item => {
+        const active = isActive(item);
+      %>
+      <a href="<%= item.href %>" class="flex items-center gap-3 px-3 py-2.5 rounded-lg <%= active ? 'bg-primary text-white' : 'hover:bg-white/5 text-text-secondary hover:text-white' %> transition-colors cursor-pointer group">
+        <span class="material-symbols-outlined <%= active ? 'filled' : '' %>" <%= active ? 'style="font-variation-settings: \'FILL\' 1;"' : '' %>><%= item.icon %></span>
+        <p class="text-sm font-medium"><%= item.name %></p>
+      </a>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="mt-auto p-6 border-t border-border-dark">
+    <% if (typeof user !== 'undefined' && user) { %>
+    <!-- User Profile -->
+    <div class="flex items-center gap-3 px-3 py-2 mb-4 rounded-lg bg-white/5">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+        <%= user.firstName ? user.firstName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : 'U') %>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="text-white text-sm font-medium truncate">
+          <%= user.firstName || (user.email ? user.email.split('@')[0] : 'User') %>
+        </p>
+        <p class="text-text-secondary text-xs truncate">Pro Account</p>
+      </div>
+    </div>
+    <% } %>
+
+    <a href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+      <span class="material-symbols-outlined">settings</span>
+      <p class="text-sm font-medium">Settings</p>
+    </a>
+    <a href="/logout" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 text-text-secondary hover:text-white transition-colors cursor-pointer">
+      <span class="material-symbols-outlined">logout</span>
+      <p class="text-sm font-medium">Log Out</p>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+<!-- Mobile Menu Toggle Button -->
+<button id="mobile-menu-toggle" onclick="toggleSidebar()" class="fixed top-4 left-4 z-50 p-2 rounded-lg bg-card-dark border border-border-dark lg:hidden">
+  <span class="material-symbols-outlined text-white">menu</span>
+</button>
+
+<script>
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (sidebar.classList.contains('-translate-x-full')) {
+      sidebar.classList.remove('-translate-x-full');
+      overlay.classList.remove('hidden');
+    } else {
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+    }
+  }
+</script>
+
+<style>
+  /* Sidebar Styles - Stitch Theme */
+  #sidebar {
+    background: #181b21;
+  }
+
+  /* Custom scrollbar for sidebar */
+  #sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+  #sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  #sidebar::-webkit-scrollbar-thumb {
+    background: #292a38;
+    border-radius: 3px;
+  }
+  #sidebar::-webkit-scrollbar-thumb:hover {
+    background: #3d3e52;
+  }
+</style>

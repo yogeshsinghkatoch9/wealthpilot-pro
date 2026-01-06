@@ -1,0 +1,580 @@
+<%- include('../partials/header', { pageTitle: 'Market Data' }) %>
+<%
+  // Safe defaults for market data
+  const safeIndices = typeof indices !== 'undefined' && indices ? indices : [
+    { symbol: 'SPY', name: 'S&P 500 ETF', price: 445.20, changePercent: 1.20, trend: 'up' },
+    { symbol: 'QQQ', name: 'Nasdaq 100 ETF', price: 372.15, changePercent: -0.45, trend: 'down' },
+    { symbol: 'DIA', name: 'Dow Jones ETF', price: 348.90, changePercent: 0.10, trend: 'up' },
+    { symbol: 'IWM', name: 'Russell 2000 ETF', price: 185.40, changePercent: 2.30, trend: 'up' }
+  ];
+
+  const safeSectors = typeof sectors !== 'undefined' && sectors ? sectors : [
+    { name: 'Technology', symbol: 'XLK', changePercent: 2.4, size: 'large' },
+    { name: 'Finance', symbol: 'XLF', changePercent: 1.1, size: 'medium' },
+    { name: 'Healthcare', symbol: 'XLV', changePercent: -0.8, size: 'small' },
+    { name: 'Energy', symbol: 'XLE', changePercent: -0.2, size: 'small' },
+    { name: 'Cons. Disc', symbol: 'XLY', changePercent: 1.5, size: 'small' },
+    { name: 'Utilities', symbol: 'XLU', changePercent: 0.0, size: 'small' },
+    { name: 'Industrial', symbol: 'XLI', changePercent: 0.5, size: 'medium' }
+  ];
+
+  const safeMovers = typeof movers !== 'undefined' && movers ? movers : {
+    gainers: [
+      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 460.18, changePercent: 4.12, logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA5wcfi0qAbFwMDYkU_1m4_urv1Jq-W1AyQG6Y5dTavgguIzvxXXIxwNy9t6kOChnyhVahNkmrmqltAabnSPZPSv_sI7m3fdIDKQWXGXrr9-OZBl-vTUr2bKsRqeeGlcvnLwJNnZJ_k-DnZ5WwhDN5SoCAAdu8veXxJ7en3rXJFvHqjLZko7MWoMrUGQ0argNx2z1KLbjDPJK6h5nv9pMhjm7n6Q7kaYnfamWwOa-XtRHzUddCLgLcl6UyZ7ou75ePUTBOizWeIqhY', bgColor: 'bg-white' },
+      { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.60, changePercent: 2.85, logo: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7FwHpfG2jsfYb-YG1ENZ0DpWifdf4_arCpRQTwdSgYnBXfvpZt4Z7B8hoZJ87QnJs1q_uJMA2ges5Byufx3bRpnKE7JuJdR77fr_Kh89KSQBMJ717O4wbyDtidGLW2mSCJR_FLI8SaX0uuX-g8nct-wKjhEAQu1g4nfrZ53TxIX5ywbNjd3VXZbYpSpxZOXGa6jh1Oy9_gZXny7efAkROTJx-2ZbmiKY4GC8gn-xrNveTGiClKlvRsgst9slpMWvvCunoRWWUUOU', bgColor: 'bg-black' },
+      { symbol: 'AMD', name: 'Adv. Micro Dev', price: 108.25, changePercent: 1.95, logo: null, bgColor: 'bg-blue-600' },
+      { symbol: 'COIN', name: 'Coinbase', price: 82.40, changePercent: 1.40, logo: null, bgColor: 'bg-blue-500' }
+    ],
+    losers: [],
+    active: []
+  };
+
+  const safeCalendar = typeof calendarEvents !== 'undefined' && calendarEvents ? calendarEvents : [
+    { time: '08:30 AM', title: 'CPI Data Release', subtitle: 'United States - Inflation', impact: 'High', forecast: '3.6%', previous: '3.7%' },
+    { time: '10:00 AM', title: 'Consumer Sentiment', subtitle: 'University of Michigan', impact: 'Medium', forecast: '68.0', previous: '67.5' },
+    { time: 'After Close', title: 'Apple (AAPL) Earnings', subtitle: 'Quarterly Report - Q3', impact: 'High', forecast: '$1.39 EPS', previous: '$1.26 EPS' }
+  ];
+
+  const marketStatus = typeof isMarketOpen !== 'undefined' ? isMarketOpen : true;
+  const currentFilter = typeof filter !== 'undefined' ? filter : 'all';
+  const currentTimeframe = typeof timeframe !== 'undefined' ? timeframe : '1D';
+  const currentMoverTab = typeof moverTab !== 'undefined' ? moverTab : 'gainers';
+%>
+
+<!-- Custom Styles for Market Data Page -->
+<style>
+  /* Material Symbols configuration */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  .icon-filled {
+    font-variation-settings: 'FILL' 1;
+  }
+
+  /* Surface colors matching Stitch design */
+  .surface-dark { background-color: #1c1d2e; }
+  .surface-dark-highlight { background-color: #2a2b3d; }
+  .border-surface { border-color: #2d2e40; }
+
+  /* Heatmap cell transitions */
+  .heatmap-cell {
+    transition: all 0.2s ease;
+  }
+  .heatmap-cell:hover {
+    transform: scale(1.02);
+    z-index: 10;
+  }
+</style>
+
+<main class="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden bg-background-dark relative">
+  <!-- Header Section -->
+  <header class="flex flex-col md:flex-row md:items-center justify-between gap-6 px-6 py-6 pb-2 shrink-0">
+    <div class="flex flex-col gap-1">
+      <h2 class="text-3xl font-black text-white tracking-tight">Market Data</h2>
+      <div class="flex items-center gap-2">
+        <% if (marketStatus) { %>
+          <div class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+          <p class="text-text-secondary text-sm">Market is Open - Real-time Data</p>
+        <% } else { %>
+          <div class="size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+          <p class="text-text-secondary text-sm">Market is Closed</p>
+        <% } %>
+      </div>
+    </div>
+    <div class="w-full md:w-96 relative group">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <span class="material-symbols-outlined text-text-secondary">search</span>
+      </div>
+      <input
+        type="text"
+        id="marketSearch"
+        class="block w-full pl-10 pr-4 py-3 rounded-lg bg-card-dark border border-border-dark text-white placeholder-text-secondary focus:ring-2 focus:ring-primary focus:border-primary focus:bg-surface-dark-highlight transition-all"
+        placeholder="Search stocks, ETFs, crypto..."
+      />
+      <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+        <kbd class="hidden sm:inline-block px-2 py-0.5 text-xs text-text-secondary bg-surface-dark-highlight rounded border border-border-dark">Cmd+K</kbd>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scrollable Content Area -->
+  <div class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
+
+    <!-- Market Indices Overview -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <% safeIndices.forEach((index) => {
+        const isPositive = index.changePercent >= 0;
+        const trendIcon = isPositive ? 'trending_up' : 'trending_down';
+        const trendColor = isPositive ? 'emerald' : 'rose';
+        const barWidth = Math.min(Math.abs(index.changePercent) * 20, 100);
+      %>
+      <div class="p-5 rounded-xl bg-card-dark border border-border-dark hover:border-primary/50 transition-colors group" data-symbol="<%= index.symbol %>">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-text-secondary font-bold text-sm tracking-wide"><%= index.symbol %></span>
+          <div class="bg-surface-dark-highlight p-1.5 rounded-md text-<%= trendColor %>-400 group-hover:text-white group-hover:bg-<%= trendColor %>-500 transition-colors">
+            <span class="material-symbols-outlined text-[20px]"><%= trendIcon %></span>
+          </div>
+        </div>
+        <div class="flex items-end gap-3">
+          <span class="text-2xl font-bold text-white font-mono stock-price"><%= index.price.toFixed(2) %></span>
+          <span class="text-sm font-medium text-<%= trendColor %>-400 mb-1 stock-change"><%= isPositive ? '+' : '' %><%= index.changePercent.toFixed(2) %>%</span>
+        </div>
+        <div class="w-full bg-border-dark h-1 mt-4 rounded-full overflow-hidden">
+          <div class="bg-<%= trendColor %>-500 h-full" style="width: <%= barWidth %>%"></div>
+        </div>
+      </div>
+      <% }); %>
+    </section>
+
+    <!-- Middle Section: Heatmap & Movers -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:min-h-[420px]">
+
+      <!-- Sector Rotation Heatmap -->
+      <div class="lg:col-span-2 flex flex-col bg-card-dark rounded-xl border border-border-dark overflow-hidden">
+        <div class="p-4 border-b border-border-dark flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">grid_view</span>
+            <h3 class="text-white font-bold text-lg">Sector Rotation</h3>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="changeSectorTimeframe('1D')" class="sector-timeframe-btn px-3 py-1 rounded-md text-xs font-medium transition-colors <%= currentTimeframe === '1D' ? 'bg-surface-dark-highlight text-white' : 'bg-transparent text-text-secondary hover:bg-surface-dark-highlight' %>" data-timeframe="1D">1D</button>
+            <button onclick="changeSectorTimeframe('1W')" class="sector-timeframe-btn px-3 py-1 rounded-md text-xs font-medium transition-colors <%= currentTimeframe === '1W' ? 'bg-surface-dark-highlight text-white' : 'bg-transparent text-text-secondary hover:bg-surface-dark-highlight' %>" data-timeframe="1W">1W</button>
+            <button onclick="changeSectorTimeframe('1M')" class="sector-timeframe-btn px-3 py-1 rounded-md text-xs font-medium transition-colors <%= currentTimeframe === '1M' ? 'bg-surface-dark-highlight text-white' : 'bg-transparent text-text-secondary hover:bg-surface-dark-highlight' %>" data-timeframe="1M">1M</button>
+          </div>
+        </div>
+        <div class="flex-1 p-4">
+          <!-- Heatmap Grid -->
+          <div class="w-full h-full grid grid-cols-4 grid-rows-3 gap-1 min-h-[300px]">
+            <%
+              // Define sector layout with grid positions
+              const sectorLayout = [
+                { name: 'Technology', symbol: 'XLK', changePercent: 2.4, colSpan: 2, rowSpan: 2 },
+                { name: 'Finance', symbol: 'XLF', changePercent: 1.1, colSpan: 1, rowSpan: 2 },
+                { name: 'Healthcare', symbol: 'XLV', changePercent: -0.8, colSpan: 1, rowSpan: 1 },
+                { name: 'Energy', symbol: 'XLE', changePercent: -0.2, colSpan: 1, rowSpan: 1 },
+                { name: 'Cons. Disc', symbol: 'XLY', changePercent: 1.5, colSpan: 1, rowSpan: 1 },
+                { name: 'Utilities', symbol: 'XLU', changePercent: 0.0, colSpan: 1, rowSpan: 1 },
+                { name: 'Industrial', symbol: 'XLI', changePercent: 0.5, colSpan: 2, rowSpan: 1 }
+              ];
+
+              sectorLayout.forEach((sector) => {
+                const isPositive = sector.changePercent > 0;
+                const isNeutral = sector.changePercent === 0;
+                const isNegative = sector.changePercent < 0;
+
+                let bgClass, borderClass, textClass, hoverClass;
+                if (isNeutral) {
+                  bgClass = 'bg-slate-800/40';
+                  borderClass = 'border-slate-500/20';
+                  hoverClass = 'hover:bg-slate-700/40';
+                  textClass = 'text-text-secondary';
+                } else if (isPositive) {
+                  const intensity = Math.min(sector.changePercent / 3, 1);
+                  if (intensity > 0.6) {
+                    bgClass = 'bg-emerald-900/40';
+                    hoverClass = 'hover:bg-emerald-900/60';
+                  } else if (intensity > 0.3) {
+                    bgClass = 'bg-emerald-900/30';
+                    hoverClass = 'hover:bg-emerald-900/50';
+                  } else {
+                    bgClass = 'bg-emerald-900/20';
+                    hoverClass = 'hover:bg-emerald-900/40';
+                  }
+                  borderClass = 'border-emerald-500/20';
+                  textClass = 'text-emerald-400';
+                } else {
+                  const intensity = Math.min(Math.abs(sector.changePercent) / 3, 1);
+                  if (intensity > 0.6) {
+                    bgClass = 'bg-rose-900/40';
+                    hoverClass = 'hover:bg-rose-900/60';
+                  } else if (intensity > 0.3) {
+                    bgClass = 'bg-rose-900/20';
+                    hoverClass = 'hover:bg-rose-900/40';
+                  } else {
+                    bgClass = 'bg-rose-900/10';
+                    hoverClass = 'hover:bg-rose-900/30';
+                  }
+                  borderClass = 'border-rose-500/20';
+                  textClass = 'text-rose-400';
+                }
+
+                const colClass = sector.colSpan === 2 ? 'col-span-2' : 'col-span-1';
+                const rowClass = sector.rowSpan === 2 ? 'row-span-2' : 'row-span-1';
+                const textSize = sector.colSpan === 2 || sector.rowSpan === 2 ? 'text-lg' : 'text-xs';
+                const changeSize = sector.colSpan === 2 || sector.rowSpan === 2 ? 'font-bold' : 'font-bold text-xs';
+            %>
+            <a href="/sector/<%= sector.symbol.toLowerCase() %>" class="heatmap-cell <%= colClass %> <%= rowClass %> <%= bgClass %> border <%= borderClass %> <%= hoverClass %> p-3 rounded cursor-pointer relative group transition-all">
+              <div class="absolute inset-0 flex flex-col justify-center items-center">
+                <span class="font-bold text-white <%= textSize %>"><%= sector.name %></span>
+                <span class="<%= textClass %> <%= changeSize %>"><%= isPositive ? '+' : '' %><%= sector.changePercent.toFixed(1) %>%</span>
+              </div>
+              <% if (sector.colSpan === 2 || sector.rowSpan === 2) { %>
+              <span class="absolute bottom-2 right-2 text-xs <%= textClass %>/50 group-hover:<%= textClass %>"><%= sector.symbol %></span>
+              <% } %>
+            </a>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Movers -->
+      <div class="lg:col-span-1 flex flex-col bg-card-dark rounded-xl border border-border-dark overflow-hidden">
+        <div class="p-4 border-b border-border-dark">
+          <h3 class="text-white font-bold text-lg mb-4">Top Movers</h3>
+          <div class="flex rounded-lg bg-background-dark p-1">
+            <button onclick="switchMoverTab('gainers')" class="mover-tab flex-1 py-1.5 text-sm font-medium rounded-md transition-all <%= currentMoverTab === 'gainers' ? 'bg-card-dark text-white shadow-sm' : 'text-text-secondary hover:text-white' %>" data-tab="gainers">Gainers</button>
+            <button onclick="switchMoverTab('losers')" class="mover-tab flex-1 py-1.5 text-sm font-medium rounded-md transition-all <%= currentMoverTab === 'losers' ? 'bg-card-dark text-white shadow-sm' : 'text-text-secondary hover:text-white' %>" data-tab="losers">Losers</button>
+            <button onclick="switchMoverTab('active')" class="mover-tab flex-1 py-1.5 text-sm font-medium rounded-md transition-all <%= currentMoverTab === 'active' ? 'bg-card-dark text-white shadow-sm' : 'text-text-secondary hover:text-white' %>" data-tab="active">Active</button>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2" id="moversContainer">
+          <table class="w-full text-left">
+            <tbody class="divide-y divide-border-dark" id="moversTableBody">
+              <% const currentMovers = safeMovers[currentMoverTab] || safeMovers.gainers; %>
+              <% if (currentMovers && currentMovers.length > 0) { %>
+                <% currentMovers.forEach((stock) => {
+                  const isPositive = stock.changePercent >= 0;
+                %>
+                <tr class="group hover:bg-surface-dark-highlight/50 transition-colors cursor-pointer" onclick="window.location='/stock/<%= stock.symbol %>'">
+                  <td class="py-3 px-2">
+                    <div class="flex items-center gap-3">
+                      <div class="size-8 rounded <%= stock.bgColor || 'bg-slate-700' %> p-0.5 flex items-center justify-center overflow-hidden">
+                        <% if (stock.logo) { %>
+                          <img src="<%= stock.logo %>" alt="<%= stock.symbol %> Logo" class="size-full object-contain" />
+                        <% } else { %>
+                          <span class="text-white text-xs font-black"><%= stock.symbol.substring(0, 4) %></span>
+                        <% } %>
+                      </div>
+                      <div>
+                        <p class="text-white font-bold text-sm"><%= stock.symbol %></p>
+                        <p class="text-text-secondary text-xs truncate max-w-[100px]"><%= stock.name %></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right py-3 px-2">
+                    <p class="text-white font-medium text-sm font-mono"><%= stock.price.toFixed(2) %></p>
+                    <p class="text-<%= isPositive ? 'emerald' : 'rose' %>-400 text-xs font-bold"><%= isPositive ? '+' : '' %><%= stock.changePercent.toFixed(2) %>%</p>
+                  </td>
+                </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="2" class="py-8 text-center text-text-secondary">No data available</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market Calendar -->
+    <section class="bg-card-dark rounded-xl border border-border-dark overflow-hidden">
+      <div class="p-6 border-b border-border-dark flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary">calendar_month</span>
+          <h3 class="text-white font-bold text-lg">Market Calendar</h3>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="filterCalendar('all')" class="calendar-filter px-4 py-2 rounded-full text-sm font-medium transition-all <%= currentFilter === 'all' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-surface-dark-highlight text-text-secondary border border-transparent hover:border-border-dark hover:text-white' %>" data-filter="all">All Events</button>
+          <button onclick="filterCalendar('earnings')" class="calendar-filter px-4 py-2 rounded-full text-sm font-medium transition-all <%= currentFilter === 'earnings' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-surface-dark-highlight text-text-secondary border border-transparent hover:border-border-dark hover:text-white' %>" data-filter="earnings">Earnings</button>
+          <button onclick="filterCalendar('dividends')" class="calendar-filter px-4 py-2 rounded-full text-sm font-medium transition-all <%= currentFilter === 'dividends' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-surface-dark-highlight text-text-secondary border border-transparent hover:border-border-dark hover:text-white' %>" data-filter="dividends">Dividends</button>
+          <button onclick="filterCalendar('economics')" class="calendar-filter px-4 py-2 rounded-full text-sm font-medium transition-all <%= currentFilter === 'economics' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-surface-dark-highlight text-text-secondary border border-transparent hover:border-border-dark hover:text-white' %>" data-filter="economics">Economics</button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left min-w-[600px]">
+          <thead class="bg-surface-dark-highlight text-text-secondary text-xs uppercase font-semibold">
+            <tr>
+              <th class="py-4 px-6">Time</th>
+              <th class="py-4 px-6">Event</th>
+              <th class="py-4 px-6">Impact</th>
+              <th class="py-4 px-6">Forecast</th>
+              <th class="py-4 px-6">Previous</th>
+              <th class="py-4 px-6 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-dark" id="calendarTableBody">
+            <% safeCalendar.forEach((event) => {
+              let impactClass;
+              if (event.impact === 'High') {
+                impactClass = 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+              } else if (event.impact === 'Medium') {
+                impactClass = 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+              } else {
+                impactClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+              }
+            %>
+            <tr class="hover:bg-surface-dark-highlight/30 transition-colors">
+              <td class="py-4 px-6 text-white font-medium"><%= event.time %></td>
+              <td class="py-4 px-6">
+                <div class="flex flex-col">
+                  <span class="text-white font-medium"><%= event.title %></span>
+                  <span class="text-xs text-text-secondary"><%= event.subtitle %></span>
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold <%= impactClass %> border"><%= event.impact %></span>
+              </td>
+              <td class="py-4 px-6 text-text-secondary font-mono"><%= event.forecast %></td>
+              <td class="py-4 px-6 text-text-secondary font-mono"><%= event.previous %></td>
+              <td class="py-4 px-6 text-right">
+                <button onclick="toggleEventAlert('<%= event.title %>')" class="text-primary hover:text-white transition-colors" title="Set Alert">
+                  <span class="material-symbols-outlined">notifications</span>
+                </button>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-text-secondary text-sm">
+      &copy; <%= new Date().getFullYear() %> WealthPilot Pro. Data provided for informational purposes only.
+    </footer>
+  </div>
+</main>
+
+<script>
+// Market Data Page JavaScript
+
+// Search functionality
+document.getElementById('marketSearch').addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase();
+  if (query.length >= 2) {
+    // Could implement search suggestions here
+    console.log('Searching for:', query);
+  }
+});
+
+// Keyboard shortcut for search
+document.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('marketSearch').focus();
+  }
+});
+
+// Sector Timeframe Change
+function changeSectorTimeframe(timeframe) {
+  // Update button states
+  document.querySelectorAll('.sector-timeframe-btn').forEach(btn => {
+    if (btn.dataset.timeframe === timeframe) {
+      btn.classList.remove('bg-transparent', 'text-text-secondary');
+      btn.classList.add('bg-surface-dark-highlight', 'text-white');
+    } else {
+      btn.classList.remove('bg-surface-dark-highlight', 'text-white');
+      btn.classList.add('bg-transparent', 'text-text-secondary');
+    }
+  });
+
+  // Fetch new sector data
+  fetch(`/api/market/sectors?timeframe=${timeframe}`, {
+    credentials: 'include'
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.error) {
+      // Update heatmap with new data
+      console.log('Sector data updated for', timeframe);
+    }
+  })
+  .catch(err => console.error('Failed to fetch sector data:', err));
+}
+
+// Mover Tab Switch
+function switchMoverTab(tab) {
+  // Update button states
+  document.querySelectorAll('.mover-tab').forEach(btn => {
+    if (btn.dataset.tab === tab) {
+      btn.classList.remove('text-text-secondary');
+      btn.classList.add('bg-card-dark', 'text-white', 'shadow-sm');
+    } else {
+      btn.classList.remove('bg-card-dark', 'text-white', 'shadow-sm');
+      btn.classList.add('text-text-secondary');
+    }
+  });
+
+  // Fetch movers data
+  fetch(`/api/market/movers?type=${tab}`, {
+    credentials: 'include'
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.error && data.movers) {
+      updateMoversTable(data.movers, tab);
+    }
+  })
+  .catch(err => console.error('Failed to fetch movers:', err));
+}
+
+// Update movers table
+function updateMoversTable(movers, type) {
+  const tbody = document.getElementById('moversTableBody');
+  if (!tbody) return;
+
+  if (!movers || movers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" class="py-8 text-center text-text-secondary">No data available</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = movers.map(stock => {
+    const isPositive = stock.changePercent >= 0;
+    const colorClass = isPositive ? 'emerald' : 'rose';
+    const sign = isPositive ? '+' : '';
+
+    return `
+      <tr class="group hover:bg-surface-dark-highlight/50 transition-colors cursor-pointer" onclick="window.location='/stock/${stock.symbol}'">
+        <td class="py-3 px-2">
+          <div class="flex items-center gap-3">
+            <div class="size-8 rounded ${stock.bgColor || 'bg-slate-700'} p-0.5 flex items-center justify-center overflow-hidden">
+              ${stock.logo
+                ? `<img src="${stock.logo}" alt="${stock.symbol} Logo" class="size-full object-contain" />`
+                : `<span class="text-white text-xs font-black">${stock.symbol.substring(0, 4)}</span>`
+              }
+            </div>
+            <div>
+              <p class="text-white font-bold text-sm">${stock.symbol}</p>
+              <p class="text-text-secondary text-xs truncate max-w-[100px]">${stock.name}</p>
+            </div>
+          </div>
+        </td>
+        <td class="text-right py-3 px-2">
+          <p class="text-white font-medium text-sm font-mono">${stock.price.toFixed(2)}</p>
+          <p class="text-${colorClass}-400 text-xs font-bold">${sign}${stock.changePercent.toFixed(2)}%</p>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Calendar Filter
+function filterCalendar(filter) {
+  // Update button states
+  document.querySelectorAll('.calendar-filter').forEach(btn => {
+    if (btn.dataset.filter === filter) {
+      btn.classList.remove('bg-surface-dark-highlight', 'text-text-secondary');
+      btn.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+    } else {
+      btn.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+      btn.classList.add('bg-surface-dark-highlight', 'text-text-secondary');
+    }
+  });
+
+  // Fetch filtered calendar data
+  fetch(`/api/market/calendar?filter=${filter}`, {
+    credentials: 'include'
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.error && data.events) {
+      updateCalendarTable(data.events);
+    }
+  })
+  .catch(err => console.error('Failed to fetch calendar:', err));
+}
+
+// Update calendar table
+function updateCalendarTable(events) {
+  const tbody = document.getElementById('calendarTableBody');
+  if (!tbody) return;
+
+  if (!events || events.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-text-secondary">No events found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = events.map(event => {
+    let impactClass;
+    if (event.impact === 'High') {
+      impactClass = 'bg-rose-500/10 text-rose-500 border-rose-500/20';
+    } else if (event.impact === 'Medium') {
+      impactClass = 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+    } else {
+      impactClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+    }
+
+    return `
+      <tr class="hover:bg-surface-dark-highlight/30 transition-colors">
+        <td class="py-4 px-6 text-white font-medium">${event.time}</td>
+        <td class="py-4 px-6">
+          <div class="flex flex-col">
+            <span class="text-white font-medium">${event.title}</span>
+            <span class="text-xs text-text-secondary">${event.subtitle}</span>
+          </div>
+        </td>
+        <td class="py-4 px-6">
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${impactClass} border">${event.impact}</span>
+        </td>
+        <td class="py-4 px-6 text-text-secondary font-mono">${event.forecast}</td>
+        <td class="py-4 px-6 text-text-secondary font-mono">${event.previous}</td>
+        <td class="py-4 px-6 text-right">
+          <button onclick="toggleEventAlert('${event.title}')" class="text-primary hover:text-white transition-colors" title="Set Alert">
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Toggle event alert
+function toggleEventAlert(eventTitle) {
+  // Show toast notification
+  if (typeof showToast === 'function') {
+    showToast(`Alert set for: ${eventTitle}`, 'success');
+  } else {
+    alert(`Alert set for: ${eventTitle}`);
+  }
+}
+
+// Real-time price updates via WebSocket
+if (typeof socket !== 'undefined') {
+  socket.on('price:update', (data) => {
+    data.forEach(update => {
+      const el = document.querySelector(`[data-symbol="${update.symbol}"]`);
+      if (el) {
+        const priceEl = el.querySelector('.stock-price');
+        const changeEl = el.querySelector('.stock-change');
+
+        if (priceEl) {
+          priceEl.textContent = parseFloat(update.price).toFixed(2);
+          priceEl.classList.add('animate-pulse');
+          setTimeout(() => priceEl.classList.remove('animate-pulse'), 500);
+        }
+
+        if (changeEl) {
+          const change = parseFloat(update.change);
+          changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+          changeEl.className = 'text-sm font-medium mb-1 stock-change ' + (change >= 0 ? 'text-emerald-400' : 'text-rose-400');
+        }
+      }
+    });
+  });
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Market Data Overview loaded');
+
+  // Auto-refresh market data every 30 seconds during market hours
+  const marketStatus = <%= marketStatus ? 'true' : 'false' %>;
+  if (marketStatus) {
+    setInterval(() => {
+      // Refresh indices
+      fetch('/api/market/indices', { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) {
+            console.log('Market indices refreshed');
+          }
+        })
+        .catch(err => console.error('Refresh failed:', err));
+    }, 30000);
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

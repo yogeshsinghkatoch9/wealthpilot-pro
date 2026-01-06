@@ -1,0 +1,151 @@
+<%
+  const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+  const initials = fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+%>
+
+<div class="bloomberg-card">
+  <div class="border-b border-slate-700 pb-3 mb-6">
+    <h3 class="text-lg font-mono font-semibold text-amber-400">PROFILE INFORMATION</h3>
+    <p class="text-slate-400 text-sm mt-1">Update your personal information and avatar</p>
+  </div>
+
+  <!-- Avatar Section -->
+  <div class="flex items-center gap-6 mb-8">
+    <div class="w-24 h-24 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-black text-3xl font-bold font-mono shadow-lg">
+      <%= initials %>
+    </div>
+    <div>
+      <p class="text-white font-mono text-lg font-semibold mb-1"><%= fullName %></p>
+      <p class="text-slate-400 text-sm font-mono mb-3"><%= user.email %></p>
+      <button onclick="uploadAvatar()" class="bloomberg-btn bloomberg-btn-secondary text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Change Avatar
+      </button>
+      <input type="file" id="avatar-upload" accept="image/*" class="hidden">
+    </div>
+  </div>
+
+  <!-- Profile Form -->
+  <form id="profile-form" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- First Name -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          First Name
+        </label>
+        <input
+          type="text"
+          name="firstName"
+          value="<%= user.firstName || '' %>"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors"
+          placeholder="John">
+      </div>
+
+      <!-- Last Name -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Last Name
+        </label>
+        <input
+          type="text"
+          name="lastName"
+          value="<%= user.lastName || '' %>"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors"
+          placeholder="Doe">
+      </div>
+
+      <!-- Email (Read-only) -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Email
+        </label>
+        <input
+          type="email"
+          value="<%= user.email %>"
+          disabled
+          class="w-full px-4 py-3 bg-slate-900/30 border border-slate-700 rounded-lg text-slate-400 font-mono cursor-not-allowed">
+        <p class="text-xs text-slate-500 mt-1 font-mono">Email cannot be changed</p>
+      </div>
+
+      <!-- Phone -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Phone
+        </label>
+        <input
+          type="tel"
+          name="phone"
+          value="<%= user.phone || '' %>"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors"
+          placeholder="+1 (555) 123-4567">
+      </div>
+
+      <!-- Timezone -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Timezone
+        </label>
+        <select
+          name="timezone"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="America/New_York" <%= user.timezone === 'America/New_York' ? 'selected' : '' %>>Eastern Time (ET)</option>
+          <option value="America/Chicago" <%= user.timezone === 'America/Chicago' ? 'selected' : '' %>>Central Time (CT)</option>
+          <option value="America/Denver" <%= user.timezone === 'America/Denver' ? 'selected' : '' %>>Mountain Time (MT)</option>
+          <option value="America/Los_Angeles" <%= user.timezone === 'America/Los_Angeles' ? 'selected' : '' %>>Pacific Time (PT)</option>
+          <option value="Europe/London" <%= user.timezone === 'Europe/London' ? 'selected' : '' %>>London (GMT)</option>
+          <option value="Europe/Paris" <%= user.timezone === 'Europe/Paris' ? 'selected' : '' %>>Paris (CET)</option>
+          <option value="Asia/Tokyo" <%= user.timezone === 'Asia/Tokyo' ? 'selected' : '' %>>Tokyo (JST)</option>
+          <option value="Asia/Hong_Kong" <%= user.timezone === 'Asia/Hong_Kong' ? 'selected' : '' %>>Hong Kong (HKT)</option>
+        </select>
+      </div>
+
+      <!-- Theme -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Theme
+        </label>
+        <select
+          name="theme"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="dark" <%= user.theme === 'dark' ? 'selected' : '' %>>Dark</option>
+          <option value="light" <%= user.theme === 'light' ? 'selected' : '' %>>Light</option>
+          <option value="auto" <%= user.theme === 'auto' ? 'selected' : '' %>>Auto (System)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Account Info -->
+    <div class="pt-6 border-t border-slate-700">
+      <h4 class="text-sm font-mono font-semibold text-slate-300 mb-4 uppercase">Account Information</h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700">
+          <p class="text-xs text-slate-500 font-mono mb-1">PLAN</p>
+          <p class="text-white font-mono font-semibold capitalize"><%= user.plan || 'Free' %></p>
+        </div>
+        <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700">
+          <p class="text-xs text-slate-500 font-mono mb-1">MEMBER SINCE</p>
+          <p class="text-white font-mono font-semibold"><%= new Date(user.createdAt).toLocaleDateString() %></p>
+        </div>
+        <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700">
+          <p class="text-xs text-slate-500 font-mono mb-1">LAST LOGIN</p>
+          <p class="text-white font-mono font-semibold"><%= user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'N/A' %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="flex gap-3">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        SAVE CHANGES
+      </button>
+      <button type="button" onclick="resetForm()" class="bloomberg-btn bloomberg-btn-secondary">
+        CANCEL
+      </button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,1467 @@
+<%- include('../partials/header', { pageTitle: 'Revenue Per Employee' }) %>
+
+<style>
+/* === REVENUE PER EMPLOYEE - PREMIUM UX === */
+:root {
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(148, 163, 184, 0.1);
+}
+
+/* Hero Control Bar */
+.hero-control-bar {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-control-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+}
+
+.page-title-section h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-title-section p {
+  color: #64748b;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* Controls Group */
+.controls-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Custom Select */
+.custom-select {
+  position: relative;
+  min-width: 180px;
+}
+
+.custom-select select {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 12px 40px 12px 16px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  transition: all 0.2s ease;
+}
+
+.custom-select select:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.custom-select select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.custom-select::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #94a3b8;
+  pointer-events: none;
+}
+
+.custom-select.portfolio-select {
+  min-width: 200px;
+}
+
+.custom-select.portfolio-select select {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Analyze Button */
+.analyze-btn {
+  background: var(--gradient-primary);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 28px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.analyze-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(59, 130, 246, 0.4);
+}
+
+.analyze-btn:active {
+  transform: translateY(0);
+}
+
+.analyze-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.analyze-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Summary Cards Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1200px) {
+  .summary-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.summary-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.summary-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.summary-card:hover::before {
+  opacity: 1;
+}
+
+.summary-card.purple::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.summary-card.emerald::before { background: linear-gradient(90deg, #10b981, #34d399); }
+.summary-card.sky::before { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+.summary-card.white::before { background: linear-gradient(90deg, #94a3b8, #cbd5e1); }
+.summary-card.green::before { background: linear-gradient(90deg, #22c55e, #4ade80); }
+
+.summary-card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 20px;
+}
+
+.summary-card.purple .icon { background: rgba(139, 92, 246, 0.15); }
+.summary-card.emerald .icon { background: rgba(16, 185, 129, 0.15); }
+.summary-card.sky .icon { background: rgba(14, 165, 233, 0.15); }
+.summary-card.white .icon { background: rgba(148, 163, 184, 0.15); }
+.summary-card.green .icon { background: rgba(34, 197, 94, 0.15); }
+
+.summary-card .label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.summary-card .value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.summary-card .context {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+/* Main Content Grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* Glass Card */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.glass-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.glass-card-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.glass-card-header .badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Enhanced Table */
+.efficiency-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.efficiency-table th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: rgba(30, 41, 59, 0.5);
+  font-weight: 600;
+}
+
+.efficiency-table th:first-child {
+  padding-left: 24px;
+}
+
+.efficiency-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+  vertical-align: middle;
+}
+
+.efficiency-table td:first-child {
+  padding-left: 24px;
+}
+
+.efficiency-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.efficiency-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.efficiency-table tbody tr.rank-1 {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.08) 0%, transparent 100%);
+}
+
+.efficiency-table tbody tr.rank-2 {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.08) 0%, transparent 100%);
+}
+
+.efficiency-table tbody tr.rank-3 {
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.08) 0%, transparent 100%);
+}
+
+/* Rank Badges */
+.rank-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  margin: 0 auto;
+}
+
+.rank-badge.gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+}
+
+.rank-badge.silver {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: white;
+}
+
+.rank-badge.bronze {
+  background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%);
+  color: white;
+}
+
+.rank-badge.default {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+}
+
+/* Company Cell */
+.company-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.company-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.company-info .symbol {
+  font-weight: 600;
+  color: white;
+  font-size: 14px;
+}
+
+.company-info .name {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Metric Badge */
+.metric-badge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.metric-badge.positive {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.metric-badge.negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.metric-badge.neutral {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+/* Sparkline */
+.sparkline-cell {
+  width: 100px;
+  height: 36px;
+}
+
+/* Insights Grid */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .insights-grid { grid-template-columns: 1fr; }
+}
+
+.insight-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.insight-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.insight-card-header .icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.insight-card.leaders .icon-wrap { background: rgba(16, 185, 129, 0.15); }
+.insight-card.improved .icon-wrap { background: rgba(14, 165, 233, 0.15); }
+.insight-card.warning .icon-wrap { background: rgba(239, 68, 68, 0.15); }
+
+.insight-card-header h4 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.insight-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+}
+
+.insight-item:last-child {
+  border-bottom: none;
+}
+
+/* Charts Section */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+.chart-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chart-card-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chart-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+}
+
+.chart-btn:hover {
+  background: rgba(100, 116, 139, 0.3);
+  color: white;
+}
+
+.chart-btn.active {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.chart-select {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+}
+
+.chart-stats {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.chart-stat {
+  text-align: center;
+}
+
+.chart-stat .label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chart-stat .value {
+  font-size: 18px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Sector Chart Section */
+.sector-chart-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Gradient Text */
+.text-gradient-purple {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-emerald {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-sky {
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Data Status Badge */
+.data-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.data-status.loading {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+.data-status.cached {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.data-status.fresh {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+}
+
+.data-status .spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+</style>
+
+<div class="p-6 space-y-6">
+  <!-- Hero Control Bar -->
+  <div class="hero-control-bar">
+    <div class="page-title-section">
+      <h1>Revenue Per Employee</h1>
+      <p>Productivity & efficiency metrics for your portfolio holdings</p>
+    </div>
+    <div class="controls-group">
+      <div class="custom-select portfolio-select">
+        <select id="portfolioSelect" onchange="loadEfficiencyData()">
+          <option value="">Select Portfolio</option>
+          <% if (typeof safePortfolios !== 'undefined' && safePortfolios.length > 0) { %>
+            <% safePortfolios.forEach(p => { %>
+              <option value="<%= p.id %>" <%= p.isDefault ? 'selected' : '' %>><%= p.name %></option>
+            <% }) %>
+          <% } %>
+        </select>
+      </div>
+      <div class="data-status" id="dataStatus"></div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card purple">
+      <div class="icon">
+        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="label">Avg Rev/Employee</div>
+      <div class="value text-gradient-purple" id="avgRevPerEmp">--</div>
+      <div class="context">weighted average</div>
+    </div>
+    <div class="summary-card emerald">
+      <div class="icon">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <div class="label">Avg Profit/Employee</div>
+      <div class="value text-gradient-emerald" id="avgProfitPerEmp">--</div>
+      <div class="context">net income basis</div>
+    </div>
+    <div class="summary-card sky">
+      <div class="icon">
+        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+        </svg>
+      </div>
+      <div class="label">Most Efficient</div>
+      <div class="value text-gradient-sky" id="mostEfficient">--</div>
+      <div class="context" id="mostEfficientValue">--</div>
+    </div>
+    <div class="summary-card white">
+      <div class="icon">
+        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <div class="label">Sector Average</div>
+      <div class="value text-white" id="sectorAvg">--</div>
+      <div class="context" id="sectorName">--</div>
+    </div>
+    <div class="summary-card green">
+      <div class="icon">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="label">Above Average</div>
+      <div class="value text-emerald-400" id="aboveAvg">--</div>
+      <div class="context">of your holdings</div>
+    </div>
+  </div>
+
+  <!-- Warning Banner for Partial Data -->
+  <div id="dataWarning" class="hidden mb-4">
+    <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3">
+      <svg class="w-5 h-5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <span class="text-amber-200 text-sm" id="warningText"></span>
+    </div>
+  </div>
+
+  <!-- Data Methodology Disclaimer -->
+  <div id="dataDisclaimer" class="hidden mb-4">
+    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
+      <button onclick="toggleDisclaimer()" class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-700/30 transition-colors">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-slate-300 text-sm font-medium">Data Methodology & Disclaimer</span>
+        </div>
+        <svg id="disclaimerChevron" class="w-4 h-4 text-slate-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div id="disclaimerContent" class="hidden px-4 pb-4">
+        <div class="text-xs text-slate-400 space-y-2 border-t border-slate-700/50 pt-3">
+          <p><strong class="text-slate-300">Employee Count Estimates:</strong> When official employee data is unavailable from financial APIs, we estimate employee counts using industry-average ratios (employees per $1B revenue). These estimates are marked with an asterisk (*).</p>
+          <p><strong class="text-slate-300">Accuracy Limitations:</strong> Estimated values are approximations and may differ significantly from actual figures. Highly efficient companies (e.g., Apple, Google) typically have fewer employees per dollar of revenue than industry averages suggest.</p>
+          <p><strong class="text-slate-300">Data Sources:</strong> Employee and financial data sourced from Yahoo Finance. For verified employee counts, refer to company 10-K filings or official investor relations.</p>
+          <p class="text-amber-400/80 italic">Use estimated metrics for directional guidance only, not for critical investment decisions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Holdings Table -->
+  <div class="glass-card">
+    <div class="glass-card-header">
+      <h3>
+        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Holdings Efficiency Rankings
+      </h3>
+      <span class="badge bg-sky-500/20 text-sky-400" id="holdingsCount">0 holdings</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="efficiency-table">
+        <thead>
+          <tr>
+            <th class="text-center w-16">Rank</th>
+            <th>Company</th>
+            <th class="text-right">Revenue</th>
+            <th class="text-right">Employees</th>
+            <th class="text-right">Rev/Employee</th>
+            <th class="text-right">Profit/Employee</th>
+            <th class="text-center">Trend</th>
+            <th class="text-center">YoY Change</th>
+            <th class="text-center">vs Sector</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsTable">
+          <tr>
+            <td colspan="9" class="text-center py-16 text-slate-400">
+              <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              <p class="font-medium text-slate-300">Select a Portfolio</p>
+              <p class="text-sm mt-2">Choose a portfolio from the dropdown above to analyze efficiency metrics</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Insights Grid -->
+  <div class="insights-grid">
+    <div class="insight-card leaders">
+      <div class="insight-card-header">
+        <div class="icon-wrap">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+        </div>
+        <h4 class="text-emerald-400">Efficiency Leaders</h4>
+      </div>
+      <div id="leadersInsight">
+        <div class="text-slate-400 text-sm py-4 text-center">Waiting for data...</div>
+      </div>
+    </div>
+    <div class="insight-card improved">
+      <div class="insight-card-header">
+        <div class="icon-wrap">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <h4 class="text-sky-400">Most Improved</h4>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Year-over-year efficiency gains</p>
+      <div id="improvedInsight">
+        <div class="text-slate-400 text-sm py-4 text-center">Waiting for data...</div>
+      </div>
+    </div>
+    <div class="insight-card warning">
+      <div class="insight-card-header">
+        <div class="icon-wrap">
+          <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <h4 class="text-red-400">Below Sector Average</h4>
+      </div>
+      <div id="belowAvgInsight">
+        <div class="text-slate-400 text-sm py-4 text-center">Waiting for data...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Grid -->
+  <div class="charts-grid">
+    <!-- Comparison Chart -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h3>Revenue Per Employee Comparison</h3>
+        <div class="chart-controls">
+          <button class="chart-btn active" data-type="bar" onclick="setChartType('bar')">Bar</button>
+          <button class="chart-btn" data-type="horizontalBar" onclick="setChartType('horizontalBar')">Horizontal</button>
+        </div>
+      </div>
+      <div style="height: 340px;">
+        <canvas id="comparisonChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h3>Efficiency Trend</h3>
+        <div class="chart-controls">
+          <select id="trendSymbol" class="chart-select">
+            <option value="">Select Stock</option>
+          </select>
+          <button class="chart-btn active" data-years="5" onclick="setTrendYears(5)">5Y</button>
+          <button class="chart-btn" data-years="3" onclick="setTrendYears(3)">3Y</button>
+        </div>
+      </div>
+      <div style="height: 280px;">
+        <canvas id="trendChart"></canvas>
+      </div>
+      <div class="chart-stats">
+        <div class="chart-stat">
+          <div class="label">CAGR</div>
+          <div class="value text-emerald-400" id="trendCAGR">--</div>
+        </div>
+        <div class="chart-stat">
+          <div class="label">Current</div>
+          <div class="value text-white" id="trendCurrent">--</div>
+        </div>
+        <div class="chart-stat">
+          <div class="label">5Y Change</div>
+          <div class="value text-sky-400" id="trend5YChange">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sector Benchmarks -->
+  <div class="sector-chart-card">
+    <div class="chart-card-header">
+      <h3>Sector Efficiency Benchmarks</h3>
+      <span class="text-xs text-slate-400">Industry average revenue per employee</span>
+    </div>
+    <div style="height: 300px;">
+      <canvas id="sectorChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global state
+let efficiencyData = null;
+let comparisonChart = null;
+let trendChart = null;
+let sectorChart = null;
+let currentChartType = 'bar';
+let trendYears = 5;
+let currentHoldings = [];
+
+// Auth helper
+function getToken() {
+  return localStorage.getItem('wealthpilot_token') || '';
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+}
+
+// Show data status
+function showDataStatus(type, message) {
+  const status = document.getElementById('dataStatus');
+  if (type === 'loading') {
+    status.className = 'data-status loading';
+    status.innerHTML = `<div class="spinner-small"></div> ${message || 'Loading...'}`;
+  } else if (type === 'cached') {
+    status.className = 'data-status cached';
+    status.innerHTML = `✓ ${message || 'Using cached data'}`;
+  } else if (type === 'fresh') {
+    status.className = 'data-status fresh';
+    status.innerHTML = `✓ ${message || 'Fresh data loaded'}`;
+  } else {
+    status.className = 'data-status';
+    status.innerHTML = '';
+  }
+}
+
+// Load efficiency data for selected portfolio
+async function loadEfficiencyData() {
+  const portfolioId = document.getElementById('portfolioSelect').value;
+
+  if (!portfolioId) {
+    resetToEmpty();
+    showDataStatus('');
+    return;
+  }
+
+  showDataStatus('loading', 'Analyzing portfolio...');
+
+  try {
+    const response = await authFetch(`/api/efficiency/portfolio/${portfolioId}`);
+    const data = await response.json();
+
+    if (data.error) {
+      showToast(data.error, 'error');
+      showDataStatus('');
+      return;
+    }
+
+    if (data.empty || !data.holdings || data.holdings.length === 0) {
+      document.getElementById('holdingsTable').innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center py-12 text-slate-400">
+            <p>No holdings in this portfolio. Add stocks to see efficiency metrics.</p>
+          </td>
+        </tr>
+      `;
+      document.getElementById('holdingsCount').textContent = '0 holdings';
+      showDataStatus('');
+      return;
+    }
+
+    // Check if any data was cached vs fresh
+    const hasCachedData = data.holdings.some(h => h.fetchedAt);
+    showDataStatus(hasCachedData ? 'cached' : 'fresh', `${data.holdings.length} stocks analyzed`);
+
+    // Store and display data
+    efficiencyData = data;
+    currentHoldings = data.holdings;
+    updateUI(data);
+    showToast('Analysis complete!', 'success');
+
+  } catch (error) {
+    console.error('Error loading efficiency data:', error);
+    showToast('Error loading data', 'error');
+    showDataStatus('');
+  }
+}
+
+// Toggle disclaimer visibility
+function toggleDisclaimer() {
+  const content = document.getElementById('disclaimerContent');
+  const chevron = document.getElementById('disclaimerChevron');
+  content.classList.toggle('hidden');
+  chevron.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
+}
+
+// Update UI
+function updateUI(data) {
+  // Show/hide warning banner
+  const warningEl = document.getElementById('dataWarning');
+  if (data.warnings) {
+    warningEl.classList.remove('hidden');
+    document.getElementById('warningText').textContent = data.warnings;
+  } else {
+    warningEl.classList.add('hidden');
+  }
+
+  // Show disclaimer if any data has estimated employees
+  const disclaimerEl = document.getElementById('dataDisclaimer');
+  const hasEstimatedData = data.holdings?.some(h => h.estimatedEmployees);
+  if (hasEstimatedData || data.warnings) {
+    disclaimerEl.classList.remove('hidden');
+  } else {
+    disclaimerEl.classList.add('hidden');
+  }
+
+  // Summary cards
+  document.getElementById('avgRevPerEmp').textContent = data.summary.avgRevPerEmployeeFormatted || '--';
+  document.getElementById('avgProfitPerEmp').textContent = data.summary.avgProfitPerEmployeeFormatted || '--';
+  document.getElementById('mostEfficient').textContent = data.summary.mostEfficient?.symbol || '--';
+  document.getElementById('mostEfficientValue').textContent = data.summary.mostEfficient?.formatted ? data.summary.mostEfficient.formatted + '/emp' : '--';
+  document.getElementById('sectorAvg').textContent = data.summary.sectorAvg?.formatted || '--';
+  document.getElementById('sectorName').textContent = data.summary.sectorAvg?.sector || '--';
+  document.getElementById('aboveAvg').textContent = `${data.summary.aboveAvg?.count || 0}/${data.summary.aboveAvg?.total || 0}`;
+  document.getElementById('holdingsCount').textContent = `${data.holdings.length} holdings`;
+
+  updateHoldingsTable(data.holdings);
+  updateInsights(data.insights);
+  updateComparisonChart(data.chartData);
+  updateTrendSymbolOptions(data.holdings.filter(h => h.hasEfficiencyData));
+  loadSectorBenchmarks();
+}
+
+// Holdings table
+function updateHoldingsTable(holdings) {
+  const tbody = document.getElementById('holdingsTable');
+  const gradients = [
+    'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+    'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+    'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+    'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+    'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
+  ];
+
+  tbody.innerHTML = holdings.map((h, idx) => {
+    // Handle stocks without efficiency data
+    const hasData = h.hasEfficiencyData;
+    const rankClass = h.rank === 1 ? 'rank-1' : h.rank === 2 ? 'rank-2' : h.rank === 3 ? 'rank-3' : '';
+    const badgeClass = h.rank === 1 ? 'gold' : h.rank === 2 ? 'silver' : h.rank === 3 ? 'bronze' : 'default';
+    const yoyClass = hasData ? (h.yoyChange >= 0 ? 'positive' : 'negative') : 'neutral';
+    const vsClass = hasData ? (parseFloat(h.vsSector) >= 0 ? 'positive' : 'negative') : 'neutral';
+
+    // Estimated employees indicator
+    const employeesDisplay = h.employeesFormatted + (h.estimatedEmployees ? '<span class="text-xs text-amber-400 ml-1" title="Estimated based on industry average">*</span>' : '');
+
+    return `
+      <tr class="${rankClass} ${!hasData ? 'opacity-60' : ''}">
+        <td class="text-center">
+          ${h.rank ? `<div class="rank-badge ${badgeClass}">${h.rank}</div>` : '<span class="text-slate-500">--</span>'}
+        </td>
+        <td>
+          <div class="company-cell">
+            <div class="company-badge" style="background: ${gradients[idx % gradients.length]}">${h.symbol.substring(0, 4)}</div>
+            <div class="company-info">
+              <div class="symbol">${h.symbol}</div>
+              <div class="name">${h.name}</div>
+            </div>
+          </div>
+        </td>
+        <td class="text-right text-slate-300 font-medium">${h.revenueFormatted}</td>
+        <td class="text-right text-slate-400">${employeesDisplay}</td>
+        <td class="text-right">
+          ${hasData
+            ? `<span class="font-bold ${h.isAboveAvg ? 'text-emerald-400' : 'text-amber-400'}">${h.revPerEmployeeFormatted}</span>`
+            : '<span class="text-slate-500" title="Employee data not available">N/A</span>'
+          }
+        </td>
+        <td class="text-right">
+          ${hasData && h.profitPerEmployee !== null
+            ? `<span class="${h.profitPerEmployee >= 0 ? 'text-emerald-400' : 'text-red-400'}">${h.profitPerEmployeeFormatted}</span>`
+            : '<span class="text-slate-500">N/A</span>'
+          }
+        </td>
+        <td class="text-center">
+          ${hasData
+            ? `<div class="sparkline-cell"><canvas id="spark-${h.symbol}" width="100" height="36"></canvas></div>`
+            : '<span class="text-slate-500">--</span>'
+          }
+        </td>
+        <td class="text-center">
+          ${hasData
+            ? `<span class="metric-badge ${yoyClass}">${h.yoyChange >= 0 ? '+' : ''}${h.yoyChange.toFixed(1)}%</span>`
+            : '<span class="text-slate-500">--</span>'
+          }
+        </td>
+        <td class="text-center">
+          ${hasData
+            ? `<span class="metric-badge ${vsClass}">${parseFloat(h.vsSector) >= 0 ? '+' : ''}${h.vsSector}%</span>`
+            : '<span class="text-slate-500">--</span>'
+          }
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Only draw sparklines for stocks with efficiency data
+  setTimeout(() => holdings.filter(h => h.hasEfficiencyData).forEach(h => drawSparkline(`spark-${h.symbol}`, h)), 100);
+}
+
+// Sparkline
+function drawSparkline(canvasId, holding) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
+
+  const isUp = holding.yoyChange >= 0;
+  const points = [];
+  const base = holding.revPerEmployee || 1e6;
+
+  for (let i = 0; i < 12; i++) {
+    const trend = isUp ? (i / 11) * 0.3 : -(i / 11) * 0.2;
+    points.push(base * (0.7 + trend + (Math.random() - 0.5) * 0.15));
+  }
+
+  const min = Math.min(...points), max = Math.max(...points), range = max - min || 1;
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, height);
+  gradient.addColorStop(0, isUp ? 'rgba(16, 185, 129, 0.4)' : 'rgba(239, 68, 68, 0.4)');
+  gradient.addColorStop(1, 'transparent');
+
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  points.forEach((p, i) => ctx.lineTo((i / 11) * width, height - ((p - min) / range) * (height - 6) - 3));
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = (i / 11) * width, y = height - ((p - min) / range) * (height - 6) - 3;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = isUp ? '#10b981' : '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// Insights
+function updateInsights(insights) {
+  document.getElementById('leadersInsight').innerHTML = insights.leaders.map(h => `
+    <div class="insight-item">
+      <span class="text-white font-medium">${h.symbol}</span>
+      <span class="font-bold text-emerald-400">${h.revPerEmployeeFormatted}</span>
+    </div>
+  `).join('') || '<div class="text-slate-400 text-sm text-center py-4">No data</div>';
+
+  document.getElementById('improvedInsight').innerHTML = insights.improved.map(h => `
+    <div class="insight-item">
+      <span class="text-white font-medium">${h.symbol}</span>
+      <span class="font-bold text-emerald-400">+${h.yoyChange.toFixed(1)}%</span>
+    </div>
+  `).join('') || '<div class="text-slate-400 text-sm text-center py-4">No data</div>';
+
+  document.getElementById('belowAvgInsight').innerHTML = insights.belowAvg.length > 0
+    ? insights.belowAvg.map(h => `
+        <div class="insight-item">
+          <span class="text-white font-medium">${h.symbol}</span>
+          <span class="font-bold text-red-400">${h.revPerEmployeeFormatted}</span>
+        </div>
+      `).join('')
+    : '<div class="text-emerald-400 text-sm text-center py-4">All holdings above sector average</div>';
+}
+
+// Comparison chart
+function updateComparisonChart(chartData) {
+  const ctx = document.getElementById('comparisonChart').getContext('2d');
+  if (comparisonChart) comparisonChart.destroy();
+
+  const labels = chartData.comparison.map(d => d.symbol);
+  const values = chartData.comparison.map(d => d.revPerEmployee);
+  const colors = chartData.comparison.map(d => d.isAboveAvg
+    ? 'rgba(16, 185, 129, 0.85)'
+    : 'rgba(245, 158, 11, 0.85)');
+
+  comparisonChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Rev/Employee ($M)',
+        data: values,
+        backgroundColor: colors,
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: currentChartType === 'horizontalBar' ? 'y' : 'x',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(59, 130, 246, 0.3)',
+          borderWidth: 1,
+          padding: 14,
+          cornerRadius: 8,
+          callbacks: { label: ctx => `$${ctx.raw.toFixed(2)}M per employee` }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }, ticks: { color: '#64748b', callback: v => currentChartType === 'horizontalBar' ? v : `$${v}M` } }
+      }
+    }
+  });
+}
+
+// Trend symbol dropdown - only shows holdings from selected portfolio
+function updateTrendSymbolOptions(holdings) {
+  const select = document.getElementById('trendSymbol');
+  select.innerHTML = '<option value="">Select Stock</option>' +
+    holdings.map(h => `<option value="${h.symbol}">${h.symbol} - ${h.name}</option>`).join('');
+
+  if (holdings.length > 0) {
+    select.value = holdings[0].symbol;
+    loadTrendData(holdings[0].symbol);
+  }
+}
+
+// Load trend
+async function loadTrendData(symbol) {
+  if (!symbol) return;
+
+  try {
+    const response = await authFetch(`/api/efficiency/trend/${symbol}?years=${trendYears}`);
+    const data = await response.json();
+    if (!data.error) updateTrendChart(data);
+  } catch (error) {
+    console.error('Error loading trend:', error);
+  }
+}
+
+// Trend chart
+function updateTrendChart(data) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+
+  const labels = data.trend.map(t => t.year);
+  const values = data.trend.map(t => t.revPerEmployee / 1e6);
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');
+  gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Rev/Emp ($M)',
+        data: values,
+        borderColor: '#8b5cf6',
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 5,
+        pointBackgroundColor: '#8b5cf6',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#94a3b8',
+          callbacks: { label: ctx => `$${ctx.raw.toFixed(2)}M per employee` }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }, ticks: { color: '#64748b', callback: v => `$${v}M` } }
+      }
+    }
+  });
+
+  document.getElementById('trendCAGR').textContent = `${data.cagr}%`;
+  document.getElementById('trendCurrent').textContent = data.current.formatted;
+
+  const firstVal = values[0], lastVal = values[values.length - 1];
+  const change5Y = firstVal > 0 ? ((lastVal - firstVal) / firstVal * 100).toFixed(1) : '0';
+  document.getElementById('trend5YChange').textContent = `${change5Y > 0 ? '+' : ''}${change5Y}%`;
+}
+
+// Sector benchmarks
+async function loadSectorBenchmarks() {
+  try {
+    const response = await authFetch('/api/efficiency/sectors');
+    const data = await response.json();
+    updateSectorChart(data.sectors);
+  } catch (error) {
+    console.error('Error loading sectors:', error);
+  }
+}
+
+function updateSectorChart(sectors) {
+  const ctx = document.getElementById('sectorChart').getContext('2d');
+  if (sectorChart) sectorChart.destroy();
+
+  const colors = [
+    'rgba(59, 130, 246, 0.85)', 'rgba(139, 92, 246, 0.85)', 'rgba(6, 182, 212, 0.85)',
+    'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(236, 72, 153, 0.85)',
+    'rgba(239, 68, 68, 0.85)', 'rgba(100, 116, 139, 0.85)', 'rgba(34, 197, 94, 0.85)',
+    'rgba(168, 85, 247, 0.85)', 'rgba(14, 165, 233, 0.85)'
+  ];
+
+  sectorChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sectors.map(s => s.sector),
+      datasets: [{
+        data: sectors.map(s => s.revPerEmployee / 1000),
+        backgroundColor: colors,
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          callbacks: { label: ctx => `$${ctx.raw.toFixed(0)}K per employee` }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }, ticks: { color: '#64748b', callback: v => `$${v}K` } },
+        y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// Chart type toggle
+function setChartType(type) {
+  currentChartType = type;
+  document.querySelectorAll('[data-type]').forEach(btn => btn.classList.toggle('active', btn.dataset.type === type));
+  if (efficiencyData) updateComparisonChart(efficiencyData.chartData);
+}
+
+// Trend years toggle
+function setTrendYears(years) {
+  trendYears = years;
+  document.querySelectorAll('[data-years]').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.years) === years));
+  const symbol = document.getElementById('trendSymbol').value;
+  if (symbol) loadTrendData(symbol);
+}
+
+// Event listeners
+document.getElementById('trendSymbol').addEventListener('change', function() {
+  loadTrendData(this.value);
+});
+
+// Reset to empty state
+function resetToEmpty() {
+  // Hide warning banner and disclaimer
+  document.getElementById('dataWarning').classList.add('hidden');
+  document.getElementById('dataDisclaimer').classList.add('hidden');
+
+  document.getElementById('avgRevPerEmp').textContent = '--';
+  document.getElementById('avgProfitPerEmp').textContent = '--';
+  document.getElementById('mostEfficient').textContent = '--';
+  document.getElementById('mostEfficientValue').textContent = '--';
+  document.getElementById('sectorAvg').textContent = '--';
+  document.getElementById('sectorName').textContent = '--';
+  document.getElementById('aboveAvg').textContent = '--';
+  document.getElementById('holdingsCount').textContent = '0 holdings';
+
+  document.getElementById('holdingsTable').innerHTML = `
+    <tr>
+      <td colspan="9" class="text-center py-16 text-slate-400">
+        <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <p class="font-medium text-slate-300">Select a Portfolio</p>
+        <p class="text-sm mt-2">Choose a portfolio from the dropdown above to analyze efficiency metrics</p>
+      </td>
+    </tr>
+  `;
+
+  document.getElementById('leadersInsight').innerHTML = '<div class="text-slate-400 text-sm text-center py-4">Select portfolio</div>';
+  document.getElementById('improvedInsight').innerHTML = '<div class="text-slate-400 text-sm text-center py-4">Select portfolio</div>';
+  document.getElementById('belowAvgInsight').innerHTML = '<div class="text-slate-400 text-sm text-center py-4">Select portfolio</div>';
+
+  if (comparisonChart) { comparisonChart.destroy(); comparisonChart = null; }
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+
+  document.getElementById('trendSymbol').innerHTML = '<option value="">Select portfolio first</option>';
+
+  efficiencyData = null;
+  currentHoldings = [];
+}
+
+// Toast
+function showToast(message, type = 'info') {
+  if (typeof window.showToast === 'function') window.showToast(message, type);
+  else console.log(`[${type}] ${message}`);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Load sector benchmarks
+  loadSectorBenchmarks();
+
+  // Auto-load if portfolio is pre-selected (default portfolio)
+  const portfolioSelect = document.getElementById('portfolioSelect');
+  if (portfolioSelect.value) {
+    loadEfficiencyData();
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

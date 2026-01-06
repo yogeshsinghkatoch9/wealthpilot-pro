@@ -1,0 +1,1075 @@
+<%- include('../partials/header', { pageTitle: 'Market News' }) %>
+<%
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+%>
+<style>
+  /* Premium News Page - Yahoo Finance Style */
+  .news-page {
+    --primary: #6366f1;
+    --primary-light: #818cf8;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+  }
+
+  /* Animations */
+  .fade-up {
+    animation: fadeUp 0.5s ease-out forwards;
+    opacity: 0;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* News Ticker */
+  .ticker-container {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+  }
+  .ticker-track {
+    display: flex;
+    animation: scroll 60s linear infinite;
+    width: max-content;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Live Stock Ticker - Scrolling */
+  .stock-ticker-container {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+  }
+  .stock-ticker-track {
+    display: flex;
+    animation: stockScroll 40s linear infinite;
+    width: max-content;
+  }
+  .stock-ticker-track:hover { animation-play-state: paused; }
+  @keyframes stockScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .stock-ticker-item {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .stock-ticker-item:hover {
+    background: <%= theme === 'light' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.25)' %> !important;
+  }
+
+  /* Cards */
+  .news-card {
+    transition: all 0.3s ease;
+  }
+  .news-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px -12px rgba(0, 0, 0, 0.3);
+  }
+  .news-card:hover .card-img img {
+    transform: scale(1.05);
+  }
+  .card-img {
+    overflow: hidden;
+  }
+  .card-img img {
+    transition: transform 0.5s ease;
+  }
+
+  /* Mover Items */
+  .mover-item {
+    transition: all 0.15s ease;
+  }
+  .mover-item:hover {
+    background: <%= theme === 'light' ? 'rgba(99, 102, 241, 0.05)' : 'rgba(99, 102, 241, 0.1)' %>;
+  }
+
+  /* Skeleton */
+  .skeleton {
+    background: linear-gradient(90deg,
+      <%= theme === 'light' ? '#e2e8f0' : '#1e293b' %> 25%,
+      <%= theme === 'light' ? '#f1f5f9' : '#334155' %> 50%,
+      <%= theme === 'light' ? '#e2e8f0' : '#1e293b' %> 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Pulse */
+  .pulse-dot {
+    animation: pulseDot 2s infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Featured Overlay */
+  .featured-gradient {
+    background: linear-gradient(0deg,
+      rgba(0,0,0,0.95) 0%,
+      rgba(0,0,0,0.7) 30%,
+      rgba(0,0,0,0.3) 60%,
+      rgba(0,0,0,0.1) 100%);
+  }
+
+  /* Scrollbar */
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .thin-scrollbar::-webkit-scrollbar { width: 4px; }
+  .thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .thin-scrollbar::-webkit-scrollbar-thumb { background: <%= theme === 'light' ? '#cbd5e1' : '#334155' %>; border-radius: 4px; }
+
+  /* Breaking Badge */
+  .breaking-pulse {
+    animation: breakingPulse 2s ease-in-out infinite;
+  }
+  @keyframes breakingPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+  }
+
+  /* Latest Item */
+  .latest-item {
+    transition: all 0.2s ease;
+  }
+  .latest-item:hover {
+    background: <%= theme === 'light' ? 'rgba(0,0,0,0.02)' : 'rgba(255,255,255,0.02)' %>;
+  }
+
+  /* Blink animation for price changes */
+  @keyframes priceUp {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(34, 197, 94, 0.3); }
+  }
+  @keyframes priceDown {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(239, 68, 68, 0.3); }
+  }
+  .price-up { animation: priceUp 0.5s ease; }
+  .price-down { animation: priceDown 0.5s ease; }
+</style>
+
+<main class="news-page <%= theme === 'light' ? 'bg-gray-50' : 'bg-[#0a0f1a]' %> min-h-screen">
+
+<!-- Live News Ticker Bar -->
+<div class="<%= theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900/80 border-slate-800' %> border-b backdrop-blur-sm sticky top-0 z-40">
+  <div class="max-w-[1400px] mx-auto px-4">
+    <div class="flex items-center h-10">
+      <div class="flex items-center gap-2 pr-4 border-r <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %> shrink-0">
+        <span class="pulse-dot w-2 h-2 bg-red-500 rounded-full"></span>
+        <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider">Live</span>
+      </div>
+      <div class="ticker-container flex-1 ml-4">
+        <div class="ticker-track" id="newsTicker">
+          <span class="<%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %> text-xs">Loading market updates...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Live Stock Prices Bar (Scrolling) -->
+<div class="<%= theme === 'light' ? 'bg-white border-gray-200' : 'bg-slate-900 border-slate-800' %> border-b">
+  <div class="stock-ticker-container">
+    <div id="liveStockTicker" class="stock-ticker-track py-2">
+      <!-- Stock items will be rendered here -->
+      <% for(let i = 0; i < 18; i++) { %>
+      <div class="flex items-center gap-2 px-3 py-1 mx-1 rounded-lg shrink-0 <%= theme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %>">
+        <div class="skeleton h-3 w-10 rounded"></div>
+        <div class="skeleton h-3 w-12 rounded"></div>
+        <div class="skeleton h-3 w-10 rounded"></div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-[1400px] mx-auto px-4 py-4">
+
+<!-- Header Row (Simplified) -->
+<div class="flex items-center gap-3 mb-4">
+  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+    </svg>
+  </div>
+  <div>
+    <h1 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Market News</h1>
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Live financial news & market data</p>
+  </div>
+</div>
+
+<!-- Main 3-Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+  <!-- Left Column - Featured Story -->
+  <div class="lg:col-span-5">
+    <div id="featuredStory" class="news-card rounded-xl overflow-hidden <%= theme === 'light' ? 'bg-white shadow-sm' : 'bg-slate-900' %> cursor-pointer h-[400px]">
+      <div class="relative h-full skeleton"></div>
+    </div>
+
+    <!-- Small News Cards Below Featured -->
+    <div id="smallNewsCards" class="grid grid-cols-2 gap-3 mt-3">
+      <% for(let i = 0; i < 2; i++) { %>
+      <div class="rounded-lg overflow-hidden <%= theme === 'light' ? 'bg-white' : 'bg-slate-900' %>">
+        <div class="aspect-video skeleton"></div>
+        <div class="p-2">
+          <div class="skeleton h-3 w-full rounded mb-1"></div>
+          <div class="skeleton h-2 w-2/3 rounded"></div>
+        </div>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Trending Stories Section -->
+    <div class="mt-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-sm font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Trending Stories</span>
+        <span class="w-1.5 h-1.5 bg-orange-500 rounded-full pulse-dot"></span>
+      </div>
+      <div id="trendingStories" class="space-y-3">
+        <% for(let i = 0; i < 5; i++) { %>
+        <div class="flex gap-3 p-2 rounded-lg <%= theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800/50 hover:bg-slate-800' %> transition-colors">
+          <div class="w-16 h-16 rounded-lg skeleton shrink-0"></div>
+          <div class="flex-1 min-w-0">
+            <div class="skeleton h-3 w-full rounded mb-1"></div>
+            <div class="skeleton h-3 w-4/5 rounded mb-1"></div>
+            <div class="skeleton h-2 w-1/2 rounded"></div>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- International Markets Section -->
+    <div class="mt-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-sm font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Global Markets</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">LIVE</span>
+      </div>
+      <div id="globalMarketsNews" class="space-y-2">
+        <% for(let i = 0; i < 4; i++) { %>
+        <div class="p-2 rounded-lg <%= theme === 'light' ? 'border border-gray-100' : 'border border-slate-800' %>">
+          <div class="skeleton h-3 w-full rounded mb-1"></div>
+          <div class="skeleton h-2 w-1/3 rounded"></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Center Column - News Stories + Latest Headlines -->
+  <div class="lg:col-span-4">
+    <!-- Medium News Stories with Images -->
+    <div id="mediumNewsStories" class="space-y-3">
+      <% for(let i = 0; i < 4; i++) { %>
+      <div class="flex gap-3">
+        <div class="w-24 h-16 rounded-lg skeleton shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="skeleton h-3 w-full rounded mb-1"></div>
+          <div class="skeleton h-3 w-4/5 rounded mb-1"></div>
+          <div class="skeleton h-2 w-1/2 rounded"></div>
+        </div>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Latest Headlines -->
+    <div class="mt-4">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-sm font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Latest</span>
+      </div>
+      <div id="latestHeadlines" class="space-y-0 border-l-2 <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %> pl-3">
+        <% for(let i = 0; i < 6; i++) { %>
+        <div class="py-2 border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-800' %>">
+          <div class="skeleton h-3 w-full rounded mb-1"></div>
+          <div class="skeleton h-2 w-1/3 rounded"></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar - Market Data -->
+  <div class="lg:col-span-3 space-y-3">
+
+    <!-- Quote Lookup -->
+    <div class="rounded-xl p-3 <%= theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-900 border border-slate-800' %>">
+      <div class="flex items-center gap-2 mb-2">
+        <svg class="w-4 h-4 <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="text-xs font-medium <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Quote Lookup</span>
+      </div>
+      <input type="text" id="quoteSearch" placeholder="Search symbol..." onkeypress="if(event.key==='Enter')searchQuote()" class="w-full h-8 px-3 text-xs rounded-lg <%= theme === 'light' ? 'bg-gray-100 text-gray-700 placeholder-gray-400' : 'bg-slate-800 text-white placeholder-slate-500' %> border-0 focus:ring-2 focus:ring-indigo-500">
+    </div>
+
+    <!-- Market Status -->
+    <div class="rounded-xl p-3 <%= theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-900 border border-slate-800' %>">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="w-2 h-2 rounded-full bg-green-500 pulse-dot"></span>
+        <span class="text-[10px] <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">U.S. markets open</span>
+      </div>
+      <div id="marketIndices" class="grid grid-cols-2 gap-2">
+        <div class="p-2 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <div class="text-[10px] <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">S&P 500</div>
+          <div class="text-sm font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="spyPrice">--</div>
+          <div class="text-[10px] font-medium" id="spyChange">--</div>
+        </div>
+        <div class="p-2 rounded-lg <%= theme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
+          <div class="text-[10px] <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">Nasdaq</div>
+          <div class="text-sm font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="qqqPrice">--</div>
+          <div class="text-[10px] font-medium" id="qqqChange">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Gainers -->
+    <div class="rounded-xl overflow-hidden <%= theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-900 border border-slate-800' %>">
+      <div class="p-2.5 border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-800' %>">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Gainers</span>
+          <div class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 bg-green-500 rounded-full pulse-dot"></span>
+            <span class="text-[9px] <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">Live</span>
+          </div>
+        </div>
+      </div>
+      <div id="topGainersList" class="overflow-y-auto thin-scrollbar">
+        <% for(let i = 0; i < 5; i++) { %>
+        <div class="flex items-center justify-between px-2.5 py-1.5 border-b <%= theme === 'light' ? 'border-gray-50' : 'border-slate-800/50' %>">
+          <div class="skeleton h-3 w-12 rounded"></div>
+          <div class="skeleton h-3 w-16 rounded"></div>
+          <div class="skeleton h-3 w-14 rounded"></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Top Losers -->
+    <div class="rounded-xl overflow-hidden <%= theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-900 border border-slate-800' %>">
+      <div class="p-2.5 border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-800' %>">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Losers</span>
+          <div class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 bg-red-500 rounded-full pulse-dot"></span>
+            <span class="text-[9px] <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">Live</span>
+          </div>
+        </div>
+      </div>
+      <div id="topLosersList" class="overflow-y-auto thin-scrollbar">
+        <% for(let i = 0; i < 5; i++) { %>
+        <div class="flex items-center justify-between px-2.5 py-1.5 border-b <%= theme === 'light' ? 'border-gray-50' : 'border-slate-800/50' %>">
+          <div class="skeleton h-3 w-12 rounded"></div>
+          <div class="skeleton h-3 w-16 rounded"></div>
+          <div class="skeleton h-3 w-14 rounded"></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Trending Tickers -->
+    <div class="rounded-xl overflow-hidden <%= theme === 'light' ? 'bg-white border border-gray-200' : 'bg-slate-900 border border-slate-800' %>">
+      <div class="p-2.5 border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-800' %>">
+        <span class="text-xs font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Trending Tickers</span>
+      </div>
+      <div id="trendingTickers" class="overflow-y-auto thin-scrollbar">
+        <% for(let i = 0; i < 4; i++) { %>
+        <div class="flex items-center justify-between px-2.5 py-1.5 border-b <%= theme === 'light' ? 'border-gray-50' : 'border-slate-800/50' %>">
+          <div class="skeleton h-3 w-12 rounded"></div>
+          <div class="skeleton h-3 w-16 rounded"></div>
+          <div class="skeleton h-3 w-14 rounded"></div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- More News Grid -->
+<div class="mt-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">More News</h2>
+    <span id="newsCount" class="text-xs <%= theme === 'light' ? 'text-gray-400' : 'text-slate-500' %>">(Loading...)</span>
+  </div>
+  <div id="newsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <% for(let i = 0; i < 4; i++) { %>
+    <div class="rounded-lg overflow-hidden <%= theme === 'light' ? 'bg-white' : 'bg-slate-900' %>">
+      <div class="aspect-video skeleton"></div>
+      <div class="p-3 space-y-2">
+        <div class="skeleton h-4 w-full rounded"></div>
+        <div class="skeleton h-3 w-3/4 rounded"></div>
+        <div class="skeleton h-2 w-1/2 rounded"></div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+  <div class="text-center mt-4">
+    <button onclick="loadMoreNews()" id="loadMoreBtn" class="h-9 px-6 rounded-lg font-medium text-xs <%= theme === 'light' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700' %> transition-colors inline-flex items-center gap-1.5">
+      Load More
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+  </div>
+</div>
+
+</div>
+</main>
+
+<script>
+const theme = '<%= theme %>';
+let allNews = [];
+let newsOffset = 0;
+const NEWS_LIMIT = 50;
+let refreshInterval;
+
+// Market Data State
+let marketRefreshInterval = null;
+let gainersData = [];
+let losersData = [];
+let trendingData = [];
+let previousPrices = {};
+
+// Live Stock Ticker Symbols (Stocks, Crypto, ETFs, Metals)
+const TICKER_SYMBOLS = [
+  // Stocks
+  'AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA', 'AMD', 'META', 'AMZN',
+  // Crypto
+  'BTC-USD', 'ETH-USD', 'SOL-USD', 'XRP-USD',
+  // ETFs
+  'SPY', 'QQQ', 'SOXL', 'ARKK',
+  // Metals
+  'GC=F', 'SI=F'
+];
+
+// All symbols for gainers/losers
+const ALL_MARKET_SYMBOLS = [
+  'NVDA', 'SMCI', 'PLTR', 'AMD', 'TSLA', 'MSTR', 'COIN', 'AVGO', 'META', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NFLX', 'CRM', 'ORCL', 'INTC', 'QCOM',
+  'BTC-USD', 'ETH-USD', 'SOL-USD', 'XRP-USD', 'DOGE-USD', 'ADA-USD', 'AVAX-USD', 'DOT-USD',
+  'SOXL', 'TQQQ', 'ARKK', 'QQQ', 'SPY', 'VTI', 'SOXS', 'SQQQ', 'XLF', 'XLE',
+  'GC=F', 'SI=F', 'PL=F',
+  'VFIAX', 'FXAIX', 'VTSAX'
+];
+
+// Display names for symbols
+const SYMBOL_NAMES = {
+  'AAPL': 'Apple', 'MSFT': 'Microsoft', 'GOOGL': 'Google', 'NVDA': 'NVIDIA', 'TSLA': 'Tesla',
+  'AMD': 'AMD', 'META': 'Meta', 'AMZN': 'Amazon', 'BTC-USD': 'Bitcoin', 'ETH-USD': 'Ethereum',
+  'SOL-USD': 'Solana', 'XRP-USD': 'Ripple', 'SPY': 'S&P 500', 'QQQ': 'Nasdaq', 'SOXL': 'Semi Bull',
+  'ARKK': 'ARK Innov', 'GC=F': 'Gold', 'SI=F': 'Silver', 'SMCI': 'Super Micro', 'PLTR': 'Palantir',
+  'MSTR': 'MicroStrategy', 'COIN': 'Coinbase', 'AVGO': 'Broadcom', 'NFLX': 'Netflix', 'CRM': 'Salesforce',
+  'ORCL': 'Oracle', 'INTC': 'Intel', 'QCOM': 'Qualcomm', 'DOGE-USD': 'Doge', 'ADA-USD': 'Cardano',
+  'AVAX-USD': 'Avalanche', 'DOT-USD': 'Polkadot', 'TQQQ': 'Nasdaq 3X', 'VTI': 'Total Mkt',
+  'SOXS': 'Semi Bear', 'SQQQ': 'Nasdaq Bear', 'XLF': 'Financials', 'XLE': 'Energy', 'PL=F': 'Platinum'
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllNews();
+  loadMarketData();
+  loadTickerData();
+  startMarketRefresh();
+  startAutoRefresh();
+});
+
+// ===== Live Stock Ticker =====
+async function loadTickerData() {
+  try {
+    const token = localStorage.getItem('token') || '';
+    const symbolsParam = TICKER_SYMBOLS.join(',');
+    const res = await fetch(`/api/market/quotes?symbols=${symbolsParam}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (Array.isArray(data) && data.length > 0) {
+      renderStockTicker(data);
+    } else {
+      renderStockTicker(getFallbackTickerData());
+    }
+  } catch (e) {
+    console.error('Ticker fetch error:', e);
+    renderStockTicker(getFallbackTickerData());
+  }
+}
+
+function getFallbackTickerData() {
+  return [
+    { symbol: 'AAPL', price: 248.52, changePercent: 1.24 },
+    { symbol: 'MSFT', price: 442.85, changePercent: 0.87 },
+    { symbol: 'GOOGL', price: 192.45, changePercent: -0.52 },
+    { symbol: 'NVDA', price: 142.85, changePercent: 3.45 },
+    { symbol: 'TSLA', price: 412.50, changePercent: 2.18 },
+    { symbol: 'AMD', price: 124.32, changePercent: -1.42 },
+    { symbol: 'META', price: 612.45, changePercent: 1.05 },
+    { symbol: 'AMZN', price: 228.45, changePercent: 0.65 },
+    { symbol: 'BTC-USD', price: 98542.80, changePercent: 2.85 },
+    { symbol: 'ETH-USD', price: 3842.50, changePercent: 4.12 },
+    { symbol: 'SOL-USD', price: 218.45, changePercent: 5.82 },
+    { symbol: 'XRP-USD', price: 2.42, changePercent: 8.45 },
+    { symbol: 'SPY', price: 602.18, changePercent: 0.85 },
+    { symbol: 'QQQ', price: 528.45, changePercent: 1.12 },
+    { symbol: 'SOXL', price: 32.45, changePercent: 4.85 },
+    { symbol: 'ARKK', price: 58.42, changePercent: 2.18 },
+    { symbol: 'GC=F', price: 2685.40, changePercent: 0.42 },
+    { symbol: 'SI=F', price: 31.42, changePercent: 1.28 }
+  ];
+}
+
+function renderStockTicker(data) {
+  const container = document.getElementById('liveStockTicker');
+  const quotes = data.map(q => ({
+    symbol: q.symbol,
+    price: q.price || q.regularMarketPrice || 0,
+    changePercent: q.changePercent || q.regularMarketChangePercent || 0
+  }));
+
+  const itemsHtml = quotes.map(q => {
+    const displaySymbol = q.symbol.replace('-USD', '').replace('=F', '');
+    const pct = q.changePercent || 0;
+    const isUp = pct >= 0;
+    const color = isUp ? 'text-green-500' : 'text-red-500';
+    const bgColor = isUp ? 'bg-green-500/10' : 'bg-red-500/10';
+    const arrow = isUp ? '▲' : '▼';
+
+    return `
+      <div onclick="goToChart('${q.symbol}')" class="stock-ticker-item flex items-center gap-2 px-3 py-1 mx-1 rounded-lg shrink-0 ${bgColor}">
+        <span class="text-xs font-bold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">${displaySymbol}</span>
+        <span class="text-xs font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">$${formatPrice(q.price)}</span>
+        <span class="text-[10px] font-bold ${color}">${arrow}${Math.abs(pct).toFixed(2)}%</span>
+      </div>
+    `;
+  }).join('');
+
+  // Duplicate for seamless infinite scroll
+  container.innerHTML = itemsHtml + itemsHtml;
+}
+
+// ===== Market Data Functions =====
+function startMarketRefresh() {
+  // Refresh every 1 second
+  marketRefreshInterval = setInterval(() => {
+    loadMarketData();
+    loadTickerData();
+  }, 1000);
+}
+
+async function loadMarketData() {
+  try {
+    const token = localStorage.getItem('token') || '';
+    const symbolsParam = ALL_MARKET_SYMBOLS.join(',');
+    const res = await fetch(`/api/market/quotes?symbols=${symbolsParam}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (Array.isArray(data) && data.length > 0) {
+      const quotes = data.map(q => ({
+        symbol: q.symbol,
+        name: q.name || q.shortName || SYMBOL_NAMES[q.symbol] || q.symbol,
+        price: q.price || q.regularMarketPrice || 0,
+        change: q.change || q.regularMarketChange || 0,
+        changePercent: q.changePercent || q.regularMarketChangePercent || 0
+      }));
+
+      // Update indices
+      const spy = quotes.find(q => q.symbol === 'SPY');
+      const qqq = quotes.find(q => q.symbol === 'QQQ');
+      if (spy) updateIndex('spy', spy);
+      if (qqq) updateIndex('qqq', qqq);
+
+      // Filter out items without valid price/changePercent, then sort for gainers/losers
+      const validQuotes = quotes.filter(q =>
+        q.price !== undefined && q.price !== null && q.price > 0 &&
+        q.changePercent !== undefined && q.changePercent !== null && !isNaN(q.changePercent)
+      );
+      gainersData = [...validQuotes].sort((a, b) => b.changePercent - a.changePercent).slice(0, 12);
+      losersData = [...validQuotes].sort((a, b) => a.changePercent - b.changePercent).slice(0, 12);
+      trendingData = [...validQuotes].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent)).slice(0, 10);
+
+      renderGainers();
+      renderLosers();
+      renderTrending();
+    } else {
+      loadFallbackMarketData();
+    }
+  } catch (e) {
+    console.error('Market fetch error:', e);
+    loadFallbackMarketData();
+  }
+}
+
+function loadFallbackMarketData() {
+  gainersData = [
+    { symbol: 'SMCI', name: 'Super Micro', price: 42.18, changePercent: 14.52 },
+    { symbol: 'NVDA', name: 'NVIDIA', price: 142.85, changePercent: 8.34 },
+    { symbol: 'SOL-USD', name: 'Solana', price: 218.45, changePercent: 7.82 },
+    { symbol: 'XRP-USD', name: 'Ripple', price: 2.42, changePercent: 6.28 },
+    { symbol: 'SOXL', name: 'Semi Bull 3X', price: 32.45, changePercent: 5.85 },
+    { symbol: 'PLTR', name: 'Palantir', price: 78.45, changePercent: 4.77 },
+    { symbol: 'BTC-USD', name: 'Bitcoin', price: 98542.80, changePercent: 3.97 },
+    { symbol: 'TSLA', name: 'Tesla', price: 412.50, changePercent: 3.42 },
+    { symbol: 'COIN', name: 'Coinbase', price: 254.92, changePercent: 3.15 },
+    { symbol: 'MSTR', name: 'MicroStrategy', price: 164.72, changePercent: 2.87 },
+    { symbol: 'ETH-USD', name: 'Ethereum', price: 3842.50, changePercent: 2.45 },
+    { symbol: 'AVGO', name: 'Broadcom', price: 178.45, changePercent: 2.12 }
+  ];
+  losersData = [
+    { symbol: 'SQQQ', name: 'Nasdaq Bear 3X', price: 8.42, changePercent: -12.85 },
+    { symbol: 'SOXS', name: 'Semi Bear 3X', price: 4.18, changePercent: -9.24 },
+    { symbol: 'INTC', name: 'Intel', price: 21.42, changePercent: -5.82 },
+    { symbol: 'VTI', name: 'Total Market', price: 285.62, changePercent: -2.15 },
+    { symbol: 'NFLX', name: 'Netflix', price: 91.46, changePercent: -1.95 },
+    { symbol: 'CRM', name: 'Salesforce', price: 256.26, changePercent: -1.87 },
+    { symbol: 'ORCL', name: 'Oracle', price: 142.80, changePercent: -1.12 },
+    { symbol: 'XLF', name: 'Financial ETF', price: 45.82, changePercent: -0.85 },
+    { symbol: 'BA', name: 'Boeing', price: 178.92, changePercent: -0.72 },
+    { symbol: 'DIS', name: 'Disney', price: 112.45, changePercent: -0.65 },
+    { symbol: 'WMT', name: 'Walmart', price: 168.32, changePercent: -0.52 },
+    { symbol: 'JNJ', name: 'Johnson & J', price: 158.75, changePercent: -0.38 }
+  ];
+  trendingData = [
+    { symbol: 'NVDA', name: 'NVIDIA', price: 142.85, changePercent: 8.34 },
+    { symbol: 'BTC-USD', name: 'Bitcoin', price: 98542.80, changePercent: 3.97 },
+    { symbol: 'TSLA', name: 'Tesla', price: 412.50, changePercent: 3.42 },
+    { symbol: 'AMD', name: 'AMD', price: 124.32, changePercent: -2.37 },
+    { symbol: 'META', name: 'Meta', price: 612.45, changePercent: 1.85 },
+    { symbol: 'AAPL', name: 'Apple', price: 248.52, changePercent: -0.42 },
+    { symbol: 'MSFT', name: 'Microsoft', price: 418.75, changePercent: 0.85 },
+    { symbol: 'GOOGL', name: 'Alphabet', price: 178.92, changePercent: 1.25 },
+    { symbol: 'AMZN', name: 'Amazon', price: 198.45, changePercent: 0.68 },
+    { symbol: 'SPY', name: 'S&P 500 ETF', price: 602.18, changePercent: 1.42 }
+  ];
+  updateIndex('spy', { price: 602.18, changePercent: 1.42 });
+  updateIndex('qqq', { price: 528.45, changePercent: 2.18 });
+  renderGainers();
+  renderLosers();
+  renderTrending();
+}
+
+function updateIndex(id, data) {
+  const priceEl = document.getElementById(`${id}Price`);
+  const changeEl = document.getElementById(`${id}Change`);
+  if (priceEl) priceEl.textContent = `$${formatPrice(data.price)}`;
+  if (changeEl) {
+    const pct = data.changePercent || 0;
+    const color = pct >= 0 ? 'text-green-500' : 'text-red-500';
+    changeEl.className = `text-[10px] font-medium ${color}`;
+    changeEl.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+  }
+}
+
+function renderGainers() {
+  const list = document.getElementById('topGainersList');
+  const validItems = gainersData.filter(item => item.price > 0 && !isNaN(item.changePercent));
+  list.innerHTML = validItems.map(item => {
+    const displaySymbol = item.symbol.replace('-USD', '').replace('=F', '');
+    const pct = item.changePercent || 0;
+    return `
+      <div onclick="goToChart('${item.symbol}')" class="mover-item flex items-center justify-between px-2.5 py-1.5 cursor-pointer border-b ${theme === 'light' ? 'border-gray-50' : 'border-slate-800/50'}">
+        <div class="min-w-0">
+          <div class="text-xs font-bold text-green-500">${displaySymbol}</div>
+          <div class="text-[9px] ${theme === 'light' ? 'text-gray-500' : 'text-slate-500'} truncate max-w-[70px]">${item.name || displaySymbol}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[11px] font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">${formatPrice(item.price)}</div>
+        </div>
+        <div class="text-right min-w-[50px]">
+          <div class="text-[10px] font-bold text-green-500">+${Math.abs(pct).toFixed(2)}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderLosers() {
+  const list = document.getElementById('topLosersList');
+  const validItems = losersData.filter(item => item.price > 0 && !isNaN(item.changePercent));
+  list.innerHTML = validItems.map(item => {
+    const displaySymbol = item.symbol.replace('-USD', '').replace('=F', '');
+    const pct = item.changePercent || 0;
+    return `
+      <div onclick="goToChart('${item.symbol}')" class="mover-item flex items-center justify-between px-2.5 py-1.5 cursor-pointer border-b ${theme === 'light' ? 'border-gray-50' : 'border-slate-800/50'}">
+        <div class="min-w-0">
+          <div class="text-xs font-bold text-red-500">${displaySymbol}</div>
+          <div class="text-[9px] ${theme === 'light' ? 'text-gray-500' : 'text-slate-500'} truncate max-w-[70px]">${item.name || displaySymbol}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[11px] font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">${formatPrice(item.price)}</div>
+        </div>
+        <div class="text-right min-w-[50px]">
+          <div class="text-[10px] font-bold text-red-500">${pct.toFixed(2)}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTrending() {
+  const list = document.getElementById('trendingTickers');
+  const validItems = trendingData.filter(item => item.price > 0 && !isNaN(item.changePercent));
+  list.innerHTML = validItems.map(item => {
+    const displaySymbol = item.symbol.replace('-USD', '').replace('=F', '');
+    const pct = item.changePercent || 0;
+    const color = pct >= 0 ? 'text-green-500' : 'text-red-500';
+    return `
+      <div onclick="goToChart('${item.symbol}')" class="mover-item flex items-center justify-between px-2.5 py-1.5 cursor-pointer border-b ${theme === 'light' ? 'border-gray-50' : 'border-slate-800/50'}">
+        <div class="min-w-0">
+          <div class="text-xs font-bold ${theme === 'light' ? 'text-indigo-600' : 'text-indigo-400'}">${displaySymbol}</div>
+          <div class="text-[9px] ${theme === 'light' ? 'text-gray-500' : 'text-slate-500'} truncate max-w-[70px]">${item.name || displaySymbol}</div>
+        </div>
+        <div class="text-right">
+          <div class="text-[11px] font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-white'}">${formatPrice(item.price)}</div>
+        </div>
+        <div class="text-right min-w-[50px]">
+          <div class="text-[10px] font-bold ${color}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatPrice(price) {
+  if (!price) return '0.00';
+  if (price >= 10000) return price.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (price >= 100) return price.toFixed(2);
+  if (price >= 1) return price.toFixed(2);
+  if (price >= 0.01) return price.toFixed(4);
+  return price.toFixed(6);
+}
+
+function goToChart(symbol) {
+  window.location.href = `/charts?symbol=${encodeURIComponent(symbol)}`;
+}
+
+function searchQuote() {
+  const input = document.getElementById('quoteSearch');
+  const symbol = input.value.trim().toUpperCase();
+  if (symbol) goToChart(symbol);
+}
+
+// ===== News Functions =====
+async function loadAllNews() {
+  newsOffset = 0;
+  await fetchNews();
+}
+
+async function fetchNews(append = false) {
+  try {
+    // Try RSS feed first (free, no API key needed)
+    const res = await fetch(`/api/news/rss?limit=${NEWS_LIMIT}`);
+    const data = await res.json();
+
+    if (data.success && data.news?.length) {
+      // Map RSS format to expected format
+      const mappedNews = data.news.map(item => ({
+        title: item.title,
+        url: item.link,
+        image_url: item.image || null,
+        source: item.source,
+        summary: item.description,
+        published_at: item.pubDate,
+        relativeTime: item.relativeTime,
+        category: item.category
+      }));
+      allNews = append ? [...allNews, ...mappedNews] : mappedNews;
+      renderAllNews();
+    } else {
+      // Fallback to old endpoint
+      const token = localStorage.getItem('token') || '';
+      const fallbackRes = await fetch(`/api/news/all-trending?limit=${NEWS_LIMIT}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const fallbackData = await fallbackRes.json();
+      if (fallbackData.news?.length) {
+        allNews = append ? [...allNews, ...fallbackData.news] : fallbackData.news;
+        renderAllNews();
+      } else showEmpty();
+    }
+  } catch (e) {
+    console.error('News fetch error:', e);
+    showError();
+  }
+}
+
+function renderAllNews() {
+  renderFeatured(allNews[0]);
+  renderSmallCards(allNews.slice(1, 3));
+  renderTrendingStories(allNews.slice(3, 9));
+  renderGlobalMarketsNews(allNews.slice(9, 14));
+  renderMediumStories(allNews.slice(14, 18));
+  renderLatestHeadlines(allNews.slice(18, 33)); // 15 items for Latest
+  renderGrid(allNews.slice(33));
+  renderTicker(allNews);
+  document.getElementById('newsCount').textContent = `(${allNews.length} articles)`;
+}
+
+function renderTrendingStories(items) {
+  const c = document.getElementById('trendingStories');
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200&q=80',
+    'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=200&q=80',
+    'https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=200&q=80',
+    'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=200&q=80',
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&q=80'
+  ];
+
+  c.innerHTML = items.map((a, idx) => {
+    const hasUrl = a.url && a.url !== '#';
+    const fallbackImg = fallbackImages[idx % fallbackImages.length];
+    return `
+      <div onclick="${hasUrl ? `window.open('${a.url.replace(/'/g, "\\'")}', '_blank')` : ''}" class="flex gap-3 p-2 rounded-lg cursor-pointer ${theme === 'light' ? 'bg-gray-50 hover:bg-gray-100' : 'bg-slate-800/50 hover:bg-slate-800'} transition-colors">
+        <div class="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+          <img src="${a.image_url || fallbackImg}" alt="" class="w-full h-full object-cover" onerror="this.src='${fallbackImg}'">
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="${theme === 'light' ? 'text-gray-900' : 'text-white'} text-xs font-semibold line-clamp-2 mb-1 hover:text-indigo-500 transition-colors">${a.title}</h4>
+          <div class="flex items-center gap-1.5 text-[9px]">
+            <span class="text-orange-500 font-medium">${a.source}</span>
+            <span class="${theme === 'light' ? 'text-gray-400' : 'text-slate-500'}">${a.relativeTime || timeAgo(a.published_at)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderGlobalMarketsNews(items) {
+  const c = document.getElementById('globalMarketsNews');
+  // Filter for international sources
+  const intlKeywords = ['BBC', 'India', 'Asia', 'Europe', 'Japan', 'China', 'World', 'Global', 'Al Jazeera', 'DW'];
+  let intlNews = items.filter(a => intlKeywords.some(k => (a.source || '').includes(k)));
+  if (intlNews.length < 4) intlNews = items; // Fallback to all items
+
+  c.innerHTML = intlNews.slice(0, 4).map(a => {
+    const hasUrl = a.url && a.url !== '#';
+    // Get flag emoji based on source
+    let flag = '🌍';
+    if ((a.source || '').includes('India')) flag = '🇮🇳';
+    else if ((a.source || '').includes('Japan') || (a.source || '').includes('Nikkei')) flag = '🇯🇵';
+    else if ((a.source || '').includes('China')) flag = '🇨🇳';
+    else if ((a.source || '').includes('Europe') || (a.source || '').includes('DW')) flag = '🇪🇺';
+    else if ((a.source || '').includes('BBC')) flag = '🇬🇧';
+    else if ((a.source || '').includes('Al Jazeera')) flag = '🌍';
+    else if ((a.source || '').includes('Asia')) flag = '🌏';
+
+    return `
+      <div onclick="${hasUrl ? `window.open('${a.url.replace(/'/g, "\\'")}', '_blank')` : ''}" class="p-2 rounded-lg cursor-pointer ${theme === 'light' ? 'border border-gray-100 hover:bg-gray-50' : 'border border-slate-800 hover:bg-slate-800/50'} transition-colors">
+        <div class="flex items-start gap-2">
+          <span class="text-sm">${flag}</span>
+          <div class="flex-1 min-w-0">
+            <h5 class="${theme === 'light' ? 'text-gray-800' : 'text-slate-200'} text-[11px] font-medium line-clamp-2 hover:text-blue-500 transition-colors">${a.title}</h5>
+            <div class="flex items-center gap-1.5 text-[9px] mt-1">
+              <span class="text-blue-500 font-medium">${a.source}</span>
+              <span class="${theme === 'light' ? 'text-gray-400' : 'text-slate-500'}">${a.relativeTime || timeAgo(a.published_at)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderFeatured(a) {
+  if (!a) return;
+  const c = document.getElementById('featuredStory');
+  const hasUrl = a.url && a.url !== '#';
+  const fallbackImg = 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80';
+
+  c.innerHTML = `
+    <div onclick="${hasUrl ? `window.open('${a.url.replace(/'/g, "\\'")}', '_blank')` : ''}" class="relative h-full overflow-hidden group cursor-pointer">
+      <img src="${a.image_url || fallbackImg}" alt="" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onerror="this.src='${fallbackImg}'">
+      <div class="featured-gradient absolute inset-0"></div>
+      <div class="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <span class="breaking-pulse px-2 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded">BREAKING</span>
+        ${a.source ? `<span class="px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold rounded">${a.source.split(' ')[0]}</span>` : ''}
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 p-4">
+        <h2 class="text-lg font-bold text-white mb-2 line-clamp-3 group-hover:text-indigo-200 transition-colors">${a.title}</h2>
+        <p class="text-white/70 text-xs line-clamp-2 mb-2">${a.summary || ''}</p>
+        <div class="flex items-center gap-2 text-[10px]">
+          <span class="px-2 py-0.5 bg-white/20 backdrop-blur rounded text-white font-medium">${a.source}</span>
+          <span class="text-white/60">${a.relativeTime || timeAgo(a.published_at)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSmallCards(items) {
+  const c = document.getElementById('smallNewsCards');
+  // Fallback images for different news categories
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80', // Trading charts
+    'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400&q=80', // Stock market
+    'https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=400&q=80', // Crypto
+    'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&q=80', // Finance
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80', // Business
+    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&q=80'  // Data
+  ];
+
+  c.innerHTML = items.map((a, idx) => {
+    const hasUrl = a.url && a.url !== '#';
+    const fallbackImg = fallbackImages[idx % fallbackImages.length];
+    return `
+      <div onclick="${hasUrl ? `window.open('${a.url.replace(/'/g, "\\'")}', '_blank')` : ''}" class="news-card rounded-lg overflow-hidden ${theme === 'light' ? 'bg-white' : 'bg-slate-900'} cursor-pointer">
+        <div class="card-img relative aspect-video">
+          <img src="${a.image_url || fallbackImg}" alt="" class="w-full h-full object-cover" onerror="this.src='${fallbackImg}'">
+        </div>
+        <div class="p-2">
+          <h4 class="${theme === 'light' ? 'text-gray-900' : 'text-white'} text-xs font-semibold line-clamp-2 mb-1">${a.title}</h4>
+          <div class="flex items-center gap-1.5 text-[9px]">
+            <span class="text-indigo-500 font-medium">${a.source}</span>
+            <span class="${theme === 'light' ? 'text-gray-400' : 'text-slate-500'}">${a.relativeTime || timeAgo(a.published_at)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMediumStories(items) {
+  const c = document.getElementById('mediumNewsStories');
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=200&q=80',
+    'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=200&q=80',
+    'https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=200&q=80',
+    'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=200&q=80'
+  ];
+
+  c.innerHTML = items.map((a, idx) => {
+    const hasUrl = a.url && a.url !== '#';
+    const fallbackImg = fallbackImages[idx % fallbackImages.length];
+    return `
+      <div onclick="${hasUrl ? `window.open('${a.url.replace(/'/g, "\\'")}', '_blank')` : ''}" class="latest-item flex gap-3 p-2 rounded-lg cursor-pointer">
+        <div class="w-24 h-16 rounded-lg overflow-hidden shrink-0 card-img">
+          <img src="${a.image_url || fallbackImg}" alt="" class="w-full h-full object-cover" onerror="this.src='${fallbackImg}'">
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="${theme === 'light' ? 'text-gray-900' : 'text-white'} text-xs font-semibold line-clamp-2 mb-1 hover:text-indigo-500 transition-colors">${a.title}</h4>
+          <div class="flex items-center gap-1.5 text-[9px]">
+            <span class="text-indigo-500 font-medium">${a.source}</span>
+            <span class="${theme === 'light' ? 'text-gray-400' : 'text-slate-500'}">${a.relativeTime || timeAgo(a.published_at)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderLatestHeadlines(items) {
+  const c = document.getElementById('latestHeadlines');
+  c.innerHTML = items.map(a => {
+    const hasUrl = a.url && a.url !== '#';
+    return `
+      <a href="${hasUrl ? a.url : '#'}" target="${hasUrl ? '_blank' : ''}" class="latest-item block py-2 border-b ${theme === 'light' ? 'border-gray-100' : 'border-slate-800'}">
+        <h5 class="${theme === 'light' ? 'text-gray-800' : 'text-slate-200'} text-[11px] font-medium line-clamp-2 hover:text-indigo-500 transition-colors">${a.title}</h5>
+        <div class="flex items-center gap-1.5 mt-1 text-[9px]">
+          <span class="text-indigo-500">${a.source}</span>
+          <span class="${theme === 'light' ? 'text-gray-400' : 'text-slate-500'}">${a.relativeTime || timeAgo(a.published_at)}</span>
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderGrid(items) {
+  const c = document.getElementById('newsGrid');
+  if (!items.length) { c.innerHTML = ''; return; }
+  const fallbackImages = [
+    'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&q=80',
+    'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=400&q=80',
+    'https://images.unsplash.com/photo-1642790106117-e829e14a795f?w=400&q=80',
+    'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&q=80',
+    'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80',
+    'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=400&q=80'
+  ];
+
+  c.innerHTML = items.map((a, idx) => {
+    const hasUrl = a.url && a.url !== '#';
+    const fallbackImg = fallbackImages[idx % fallbackImages.length];
+    return `
+      <article class="news-card fade-up rounded-lg overflow-hidden ${theme === 'light' ? 'bg-white border border-gray-100' : 'bg-slate-900 border border-slate-800'} cursor-pointer"
+               onclick="${hasUrl ? `window.open('${a.url.replace(/'/g, "\\'")}', '_blank')` : ''}">
+        <div class="card-img relative aspect-video">
+          <img src="${a.image_url || fallbackImg}" alt="" class="w-full h-full object-cover" onerror="this.src='${fallbackImg}'">
+        </div>
+        <div class="p-3">
+          <h3 class="${theme === 'light' ? 'text-gray-900' : 'text-white'} font-semibold text-xs line-clamp-2 mb-1.5 hover:text-indigo-500 transition-colors">${a.title}</h3>
+          <div class="flex items-center gap-1.5 text-[9px]">
+            <span class="font-medium text-indigo-500">${a.source}</span>
+            <span class="${theme === 'light' ? 'text-gray-400' : 'text-slate-500'}">${a.relativeTime || timeAgo(a.published_at)}</span>
+          </div>
+        </div>
+      </article>`;
+  }).join('');
+}
+
+function renderTicker(items) {
+  const c = document.getElementById('newsTicker');
+  const html = items.slice(0, 15).map(a => {
+    // Determine icon based on category or source
+    let icon = '📰';
+    const cat = (a.category || '').toLowerCase();
+    const src = (a.source || '').toLowerCase();
+    if (cat === 'markets' || src.includes('market')) icon = '📊';
+    else if (cat === 'analysis' || src.includes('seeking')) icon = '🔍';
+    else if (src.includes('cnbc')) icon = '📺';
+    else if (src.includes('yahoo')) icon = '🌐';
+    else if (src.includes('investing')) icon = '💹';
+
+    const sourceLabel = a.source ? a.source.split(' ')[0].toUpperCase() : 'NEWS';
+    const safeUrl = (a.url || '#').replace(/'/g, "\\'");
+    return `<span class="inline-flex items-center gap-2 px-4 ${theme === 'light' ? 'text-gray-600' : 'text-slate-300'} hover:text-indigo-500 cursor-pointer whitespace-nowrap text-xs" onclick="window.open('${safeUrl}', '_blank')">${icon} <strong class="text-indigo-500">${sourceLabel}</strong> ${a.title.substring(0, 60)}${a.title.length > 60 ? '...' : ''}</span>`;
+  }).join('<span class="text-slate-600 px-2">•</span>');
+  c.innerHTML = html + '<span class="text-slate-600 px-2">•</span>' + html;
+}
+
+function loadMoreNews() {
+  newsOffset += NEWS_LIMIT;
+  fetchNews(true);
+}
+
+function showEmpty() {
+  document.getElementById('newsGrid').innerHTML = `
+    <div class="col-span-full text-center py-12 ${theme === 'light' ? 'text-gray-500' : 'text-slate-400'}">
+      <p class="font-medium text-sm">No news found</p>
+    </div>`;
+}
+
+function showError() {
+  document.getElementById('newsGrid').innerHTML = `
+    <div class="col-span-full text-center py-12">
+      <p class="font-medium text-sm ${theme === 'light' ? 'text-gray-700' : 'text-white'}">Failed to load news</p>
+    </div>`;
+}
+
+function timeAgo(d) {
+  if (!d) return 'Recently';
+  const ms = Date.now() - new Date(d);
+  const m = Math.floor(ms / 60000), h = Math.floor(ms / 3600000), dy = Math.floor(ms / 86400000);
+  if (m < 1) return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (dy < 7) return `${dy}d ago`;
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function startAutoRefresh() {
+  refreshInterval = setInterval(loadAllNews, 60000);
+}
+
+window.addEventListener('beforeunload', () => {
+  clearInterval(refreshInterval);
+  clearInterval(marketRefreshInterval);
+});
+</script>
+
+<%- include('../partials/footer') %>

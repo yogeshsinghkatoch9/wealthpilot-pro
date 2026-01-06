@@ -1,0 +1,343 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const ins = insider || {};
+const summary = ins.summary || {};
+const transactions = ins.transactions || [];
+const clusters = ins.clusters || [];
+const notable = ins.notable || null;
+
+// Summary metrics
+const buys7d = summary.buys7d || summary.buys || 0;
+const sells7d = summary.sells7d || summary.sells || 0;
+const buysValue = summary.buysValue || 0;
+const sellsValue = summary.sellsValue || 0;
+const buySellRatio = sells7d > 0 ? (buys7d / sells7d).toFixed(2) : (buys7d > 0 ? 'N/A' : '0');
+const clusterCount = summary.clusterBuys || clusters.length || 0;
+
+// Helper functions
+function formatMoney(v) {
+  if (!v) return '$0';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
+  return '$' + v.toFixed(0);
+}
+function formatShares(v) {
+  if (!v) return '0';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toLocaleString();
+}
+function formatDate(d) {
+  if (!d) return '-';
+  const date = new Date(d);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Insider Trading' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">INSIDER TRADING MONITOR</h1>
+      <p class="text-slate-400">Track Form 4 filings and insider transactions</p>
+    </div>
+    <form method="GET" action="/insider-trading" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || '' %>" placeholder="All symbols" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">FILTER</button>
+    </form>
+  </div>
+</div>
+
+<% if (!insider) { %>
+<div class="tufte-stat-card text-center py-12">
+  <p class="text-amber-400 text-lg">No insider trading data available<%= symbol ? ' for ' + symbol : '' %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check back later.</p>
+</div>
+<% } else { %>
+
+<!-- Summary Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <div class="tufte-stat-card p-4 border-l-4 border-emerald-500">
+    <p class="text-slate-400 text-xs uppercase tracking-wider mb-2">Insider Buys (7d)</p>
+    <p class="text-2xl font-bold text-emerald-400 font-mono"><%= buys7d %></p>
+    <p class="text-sm text-slate-400 mt-1 font-mono"><%= formatMoney(buysValue) %> total value</p>
+  </div>
+  <div class="tufte-stat-card p-4 border-l-4 border-red-500">
+    <p class="text-slate-400 text-xs uppercase tracking-wider mb-2">Insider Sells (7d)</p>
+    <p class="text-2xl font-bold text-red-400 font-mono"><%= sells7d %></p>
+    <p class="text-sm text-slate-400 mt-1 font-mono"><%= formatMoney(sellsValue) %> total value</p>
+  </div>
+  <div class="tufte-stat-card p-4 border-l-4 border-amber-400">
+    <p class="text-slate-400 text-xs uppercase tracking-wider mb-2">Buy/Sell Ratio</p>
+    <p class="text-2xl font-bold text-white font-mono"><%= buySellRatio %></p>
+    <%
+      const ratioNum = parseFloat(buySellRatio) || 0;
+      const ratioSentiment = ratioNum > 1 ? 'Bullish signal' : ratioNum > 0.5 ? 'Neutral' : 'Below avg (bearish)';
+    %>
+    <p class="text-sm text-<%= ratioNum > 1 ? 'emerald' : ratioNum > 0.5 ? 'amber' : 'red' %>-400 mt-1"><%= ratioSentiment %></p>
+  </div>
+  <div class="tufte-stat-card p-4 border-l-4 border-purple-500">
+    <p class="text-slate-400 text-xs uppercase tracking-wider mb-2">Cluster Buys</p>
+    <p class="text-2xl font-bold text-purple-400 font-mono"><%= clusterCount %></p>
+    <p class="text-sm text-slate-400 mt-1">3+ insiders buying</p>
+  </div>
+</div>
+
+<% if (notable) { %>
+<!-- Notable Trade Alert -->
+<div class="tufte-stat-card border-l-4 border-emerald-500 <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10 p-4">
+  <div class="flex items-center gap-3">
+    <span class="text-2xl"><%= notable.type === 'buy' ? '🔥' : '⚠️' %></span>
+    <div class="flex-1">
+      <p class="font-bold text-white uppercase tracking-wide">Notable: <%= notable.title || notable.insider %> <%= notable.type === 'buy' ? 'purchased' : 'sold' %> <%= formatMoney(notable.value) %> in shares</p>
+      <p class="text-sm text-slate-300 mt-1"><%= notable.insider %> <%= notable.type === 'buy' ? 'bought' : 'sold' %> <%= formatShares(notable.shares) %> shares at <span class="tabular-nums">$<%= (notable.price || 0).toFixed(2) %></span> on <%= formatDate(notable.date) %></p>
+    </div>
+    <button onclick="viewTransaction('<%= notable.id || '' %>')" class="bloomberg-btn bloomberg-btn-sm">View Details</button>
+  </div>
+</div>
+<% } %>
+
+<!-- Tabs -->
+<div class="flex gap-2 border-b border-slate-700 pb-4">
+  <button onclick="showInsiderTab('recent')" class="insider-tab active" data-tab="recent">Recent Filings</button>
+  <button onclick="showInsiderTab('buys')" class="insider-tab" data-tab="buys">Big Buys</button>
+  <button onclick="showInsiderTab('sells')" class="insider-tab" data-tab="sells">Big Sells</button>
+  <button onclick="showInsiderTab('clusters')" class="insider-tab" data-tab="clusters">Cluster Activity</button>
+</div>
+
+<!-- Recent Filings Tab -->
+<div id="recent-tab" class="insider-panel">
+  <div class="tufte-stat-card overflow-hidden">
+    <% if (transactions.length > 0) { %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-900 text-slate-300 text-left">
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Company</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Insider</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Title</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Type</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Shares</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Price</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Value</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% transactions.slice(0, 20).forEach(t => {
+            const isBuy = t.type === 'buy' || t.type === 'P' || t.transactionType === 'P';
+          %>
+          <tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+            <td class="px-4 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> text-xs font-bold"><%= t.symbol %></div>
+                <div><p class="font-medium text-white"><%= t.companyName || t.symbol %></p></div>
+              </div>
+            </td>
+            <td class="px-4 py-4 text-white"><%= t.insiderName || t.insider %></td>
+            <td class="px-4 py-4 text-slate-400"><%= t.title || t.insiderTitle || '-' %></td>
+            <td class="px-4 py-4">
+              <span class="px-2 py-1 bg-<%= isBuy ? 'emerald' : 'red' %>-500 text-white rounded text-xs font-bold">
+                <%= isBuy ? 'BUY' : 'SELL' %>
+              </span>
+            </td>
+            <td class="px-4 py-4 text-white font-mono"><%= formatShares(t.shares || t.sharesTraded) %></td>
+            <td class="px-4 py-4 font-mono text-white">$<%= (t.price || t.pricePerShare || 0).toFixed(2) %></td>
+            <td class="px-4 py-4 font-bold text-<%= isBuy ? 'emerald' : 'red' %>-400 font-mono"><%= formatMoney(t.value || t.totalValue) %></td>
+            <td class="px-4 py-4 text-slate-400"><%= formatDate(t.date || t.transactionDate) %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <p class="text-center text-slate-400 py-8">No recent transactions found</p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Big Buys Tab -->
+<div id="buys-tab" class="insider-panel hidden">
+  <div class="tufte-stat-card overflow-hidden">
+    <%
+      const bigBuys = transactions.filter(t => (t.type === 'buy' || t.type === 'P' || t.transactionType === 'P') && (t.value || t.totalValue) >= 100000);
+    %>
+    <% if (bigBuys.length > 0) { %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-900 text-slate-300 text-left">
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Company</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Insider</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Value</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Shares</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% bigBuys.sort((a, b) => (b.value || b.totalValue) - (a.value || a.totalValue)).slice(0, 10).forEach(t => { %>
+          <tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
+            <td class="px-4 py-4 font-bold text-white"><%= t.symbol %></td>
+            <td class="px-4 py-4 text-white"><%= t.insiderName || t.insider %> (<%= t.title || t.insiderTitle || 'Insider' %>)</td>
+            <td class="px-4 py-4 font-bold text-emerald-400 font-mono"><%= formatMoney(t.value || t.totalValue) %></td>
+            <td class="px-4 py-4 text-white font-mono"><%= formatShares(t.shares || t.sharesTraded) %></td>
+            <td class="px-4 py-4 text-slate-400"><%= formatDate(t.date || t.transactionDate) %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <p class="text-center text-slate-400 py-8">No significant buy transactions found</p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Big Sells Tab -->
+<div id="sells-tab" class="insider-panel hidden">
+  <div class="tufte-stat-card overflow-hidden">
+    <%
+      const bigSells = transactions.filter(t => (t.type === 'sell' || t.type === 'S' || t.transactionType === 'S') && (t.value || t.totalValue) >= 100000);
+    %>
+    <% if (bigSells.length > 0) { %>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-900 text-slate-300 text-left">
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Company</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Insider</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Value</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Shares</th>
+            <th class="px-4 py-3 uppercase tracking-wider text-xs font-semibold">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% bigSells.sort((a, b) => (b.value || b.totalValue) - (a.value || a.totalValue)).slice(0, 10).forEach(t => { %>
+          <tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
+            <td class="px-4 py-4 font-bold text-white"><%= t.symbol %></td>
+            <td class="px-4 py-4 text-white"><%= t.insiderName || t.insider %> (<%= t.title || t.insiderTitle || 'Insider' %>)</td>
+            <td class="px-4 py-4 font-bold text-red-400 font-mono"><%= formatMoney(t.value || t.totalValue) %></td>
+            <td class="px-4 py-4 text-white font-mono"><%= formatShares(t.shares || t.sharesTraded) %></td>
+            <td class="px-4 py-4 text-slate-400"><%= formatDate(t.date || t.transactionDate) %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <p class="text-center text-slate-400 py-8">No significant sell transactions found</p>
+    <% } %>
+  </div>
+</div>
+
+<!-- Cluster Activity Tab -->
+<div id="clusters-tab" class="insider-panel hidden">
+  <% if (clusters.length > 0) { %>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <% clusters.slice(0, 6).forEach(cluster => { %>
+    <div class="tufte-stat-card p-5">
+      <div class="flex items-center gap-3 mb-4">
+        
+        <div>
+          <h3 class="font-bold text-white uppercase tracking-wide"><%= cluster.symbol %> - <%= cluster.companyName || cluster.symbol %></h3>
+          <p class="text-sm text-emerald-400 font-mono"><%= cluster.insiderCount || cluster.insiders?.length || 0 %> insiders buying in last 30 days</p>
+        </div>
+      </div>
+      <div class="space-y-2 text-sm">
+        <% (cluster.insiders || []).slice(0, 4).forEach(ins => { %>
+        <div class="flex justify-between p-2 rounded bg-slate-800/50 text-white">
+          <span><%= ins.name %> (<%= ins.title || 'Insider' %>)</span>
+          <span class="text-emerald-400 font-mono">+<%= formatShares(ins.shares) %> shares</span>
+        </div>
+        <% }); %>
+      </div>
+      <p class="text-xs text-slate-400 mt-3 font-mono">Total value: <%= formatMoney(cluster.totalValue) %></p>
+    </div>
+    <% }); %>
+  </div>
+  <% } else { %>
+  <div class="tufte-stat-card p-8 text-center">
+    <p class="text-slate-400">No cluster buying activity detected in the last 30 days</p>
+    <p class="text-sm text-slate-500 mt-2">Cluster activity occurs when 3+ insiders buy shares of the same company</p>
+  </div>
+  <% } %>
+</div>
+
+<!-- Insider Sentiment Analysis -->
+<div class="tufte-stat-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide">INSIDER SENTIMENT ANALYSIS</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <%
+      const totalTxns = buys7d + sells7d;
+      const buyPct = totalTxns > 0 ? (buys7d / totalTxns * 100) : 50;
+      const sentiment = buyPct > 60 ? 'Bullish' : buyPct < 40 ? 'Bearish' : 'Neutral';
+      const sentimentColor = sentiment === 'Bullish' ? 'emerald' : sentiment === 'Bearish' ? 'red' : 'amber';
+    %>
+    <div class="p-4 rounded-lg bg-<%= sentimentColor %>-500/10 border border-<%= sentimentColor %>-500/20 text-center">
+      <p class="text-sm text-slate-400 mb-2">Overall Sentiment</p>
+      <p class="text-2xl font-bold text-<%= sentimentColor %>-400"><%= sentiment %></p>
+      <p class="text-xs text-slate-500 mt-1"><%= buyPct.toFixed(0) %>% buy transactions</p>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-800 text-center">
+      <p class="text-sm text-slate-400 mb-2">Value Ratio</p>
+      <%
+        const valueRatio = sellsValue > 0 ? (buysValue / sellsValue) : (buysValue > 0 ? 'N/A' : '0');
+      %>
+      <p class="text-2xl font-bold text-white font-mono"><%= typeof valueRatio === 'number' ? valueRatio.toFixed(2) : valueRatio %>x</p>
+      <p class="text-xs text-slate-500 mt-1">Buy value / Sell value</p>
+    </div>
+    <div class="p-4 rounded-lg bg-slate-800 text-center">
+      <p class="text-sm text-slate-400 mb-2">Signal Strength</p>
+      <%
+        const signalStrength = clusterCount >= 5 ? 'Strong' : clusterCount >= 2 ? 'Moderate' : 'Weak';
+        const strengthColor = signalStrength === 'Strong' ? 'emerald' : signalStrength === 'Moderate' ? 'amber' : 'slate';
+      %>
+      <p class="text-2xl font-bold text-<%= strengthColor %>-400"><%= signalStrength %></p>
+      <p class="text-xs text-slate-500 mt-1"><%= clusterCount %> cluster buy signals</p>
+    </div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<style>
+.insider-tab {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.insider-tab:not(.active) {
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+.insider-tab:not(.active):hover {
+  background: #1e293b;
+}
+.insider-tab.active {
+  background: #fbbf24;
+  color: #0f172a;
+  font-weight: 700;
+  border: 1px solid #fbbf24;
+}
+</style>
+
+<script>
+function showInsiderTab(tab) {
+  document.querySelectorAll('.insider-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.insider-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tab + '-tab').classList.remove('hidden');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+}
+
+function viewTransaction(id) {
+  showToast('Loading transaction details...', 'info');
+}
+</script>
+<%- include('../partials/footer') %>

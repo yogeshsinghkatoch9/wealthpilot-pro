@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Charts Test - WealthPilot Pro</title>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  
+  <!-- Chart.js Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@2.3.0/dist/chartjs-chart-treemap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.2.5/build/index.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  
+  <!-- Advanced Charts Library -->
+  <script src="/js/advanced-charts.js"></script>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    body {
+      background: #0a0e17;
+      color: #e5e7eb;
+      font-family: system-ui, sans-serif;
+    }
+    .chart-container {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .chart-container h3 {
+      color: #f59e0b;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .chart-container canvas {
+      max-height: 400px;
+    }
+    .status {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      margin: 0.5rem 0;
+      font-family: monospace;
+    }
+    .status.success { background: #10b98133; color: #10b981; }
+    .status.error { background: #ef444433; color: #ef4444; }
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #e5e7eb;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-button:hover {
+      background: #1f2937;
+      border-color: #f59e0b;
+    }
+    .tab-button.active {
+      background: #f59e0b;
+      color: #000;
+      border-color: #f59e0b;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body class="p-8">
+  
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-4xl font-bold text-amber-500 mb-2">Advanced Charts Test Suite</h1>
+    <p class="text-gray-400 mb-6">Testing all 20 chart types with sample data</p>
+    
+    <div id="status-container"></div>
+    
+    <!-- Tab Navigation -->
+    <div class="flex gap-2 mb-6 overflow-x-auto">
+      <button class="tab-button active" data-tab="performance">Performance (4)</button>
+      <button class="tab-button" data-tab="risk">Risk (5)</button>
+      <button class="tab-button" data-tab="attribution">Attribution (4)</button>
+      <button class="tab-button" data-tab="construction">Construction (4)</button>
+      <button class="tab-button" data-tab="specialized">Specialized (3)</button>
+    </div>
+    
+    <!-- Performance Tab -->
+    <div id="tab-performance" class="tab-content active">
+      <h2 class="text-2xl font-bold text-green-500 mb-4">Performance Tab (4 Charts)</h2>
+      
+      <div class="chart-container">
+        <h3>1. Performance Attribution (Waterfall)</h3>
+        <canvas id="chart-1"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>2. Excess Return vs Benchmark (Dual-Axis Line)</h3>
+        <canvas id="chart-2"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>3. Drawdown Analysis (Area)</h3>
+        <canvas id="chart-3"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>4. Rolling Statistics (Multi-Line)</h3>
+        <canvas id="chart-4"></canvas>
+      </div>
+    </div>
+    
+    <!-- Risk Tab -->
+    <div id="tab-risk" class="tab-content">
+      <h2 class="text-2xl font-bold text-green-500 mb-4">Risk Tab (5 Charts)</h2>
+      
+      <div class="chart-container">
+        <h3>5. Factor Exposures (Horizontal Bar)</h3>
+        <canvas id="chart-5"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>6. VaR Histogram</h3>
+        <canvas id="chart-6"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>7. Correlation Matrix (Heatmap)</h3>
+        <canvas id="chart-7"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>8. Stress Scenarios (Stacked Bar)</h3>
+        <canvas id="chart-8"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>9a. Holdings Concentration (Treemap)</h3>
+        <canvas id="chart-9a"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>9b. Holdings Concentration (Pareto)</h3>
+        <canvas id="chart-9b"></canvas>
+      </div>
+    </div>
+    
+    <!-- Attribution Tab -->
+    <div id="tab-attribution" class="tab-content">
+      <h2 class="text-2xl font-bold text-green-500 mb-4">Attribution Tab (4 Charts)</h2>
+      
+      <div class="chart-container">
+        <h3>10. Regional Attribution (Stacked Bar)</h3>
+        <canvas id="chart-10"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>11. Sector Rotation (Stacked Area)</h3>
+        <canvas id="chart-11"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>12. Peer Benchmarking (Quadrant Scatter)</h3>
+        <canvas id="chart-12"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>13. Alpha Decay (Heatmap)</h3>
+        <canvas id="chart-13"></canvas>
+      </div>
+    </div>
+    
+    <!-- Construction Tab -->
+    <div id="tab-construction" class="tab-content">
+      <h2 class="text-2xl font-bold text-green-500 mb-4">Portfolio Construction Tab (4 Charts)</h2>
+      
+      <div class="chart-container">
+        <h3>14. Efficient Frontier (Scatter)</h3>
+        <canvas id="chart-14"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>15. Holdings Turnover (Calendar Heatmap)</h3>
+        <canvas id="chart-15"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>16. Liquidity Analysis (Bubble Chart)</h3>
+        <canvas id="chart-16"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>17a. Transaction Cost Analysis (Box Plot)</h3>
+        <canvas id="chart-17a"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>17b. Transaction Cost Timeline</h3>
+        <canvas id="chart-17b"></canvas>
+      </div>
+    </div>
+    
+    <!-- Specialized Tab -->
+    <div id="tab-specialized" class="tab-content">
+      <h2 class="text-2xl font-bold text-green-500 mb-4">Specialized Tab (3 Charts)</h2>
+      
+      <div class="chart-container">
+        <h3>18. Alternatives Attribution (Waterfall)</h3>
+        <canvas id="chart-18"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>19. ESG Analysis (Radar)</h3>
+        <canvas id="chart-19"></canvas>
+      </div>
+      
+      <div class="chart-container">
+        <h3>20a. Client Reporting (KPI Cards)</h3>
+        <div id="chart-20a"></div>
+      </div>
+      
+      <div class="chart-container">
+        <h3>20b. Goal Progress (Gauge)</h3>
+        <canvas id="chart-20b"></canvas>
+      </div>
+    </div>
+    
+  </div>
+  
+  <script>
+    let advancedCharts;
+    const results = [];
+    
+    function logStatus(message, success = true) {
+      const status = document.createElement('div');
+      status.className = `status ${success ? 'success' : 'error'}`;
+      status.textContent = `${success ? '✓' : '✗'} ${message}`;
+      document.getElementById('status-container').appendChild(status);
+      results.push({ message, success });
+    }
+    
+    function initializeCharts() {
+      try {
+        advancedCharts = new AdvancedCharts();
+        logStatus('Advanced Charts library initialized');
+      } catch (error) {
+        logStatus(`Failed to initialize: ${error.message}`, false);
+        return;
+      }
+      
+      // Test each chart type
+      testPerformanceCharts();
+      testRiskCharts();
+      testAttributionCharts();
+      testConstructionCharts();
+      testSpecializedCharts();
+      
+      // Summary
+      const successCount = results.filter(r => r.success).length;
+      const totalCount = results.length;
+      logStatus(`Test Complete: ${successCount}/${totalCount} charts rendered successfully`, successCount === totalCount);
+    }
+    
+    function testPerformanceCharts() {
+      try {
+        // 1. Waterfall
+        advancedCharts.createWaterfallChart('chart-1', {
+          categories: ['Starting Value', 'Allocation Effect', 'Selection Effect', 'Interaction', 'Ending Value'],
+          values: [100, 2.5, 1.8, -0.3, 104],
+          colors: ['#10b981', '#10b981', '#10b981', '#ef4444', '#10b981']
+        });
+        logStatus('Chart 1: Waterfall (Performance Attribution)');
+        
+        // 2. Dual-Axis Line
+        advancedCharts.createDualAxisLine('chart-2', {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          portfolio: [2.1, 3.5, 2.8, 4.2, 3.9, 5.1],
+          benchmark: [1.8, 2.9, 2.5, 3.8, 3.5, 4.5],
+          excess: [0.3, 0.6, 0.3, 0.4, 0.4, 0.6]
+        });
+        logStatus('Chart 2: Dual-Axis Line (Excess Return)');
+        
+        // 3. Drawdown
+        advancedCharts.createDrawdownChart('chart-3', {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          drawdowns: [0, -2.1, -3.5, -1.8, 0, -0.5, -2.3, -4.1, -3.2, -1.5, 0, -0.8],
+          peaks: [100, 100, 100, 100, 102, 102, 102, 102, 102, 102, 105, 105],
+          maxDrawdown: -4.1,
+          maxDrawdownDate: 'Aug'
+        });
+        logStatus('Chart 3: Area (Drawdown Analysis)');
+        
+        // 4. Rolling Statistics
+        advancedCharts.createRollingStats('chart-4', {
+          labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+          datasets: [
+            { label: 'Sharpe Ratio', data: [1.2, 1.5, 1.3, 1.8], color: '#10b981' },
+            { label: 'Sortino Ratio', data: [1.5, 1.8, 1.6, 2.1], color: '#3b82f6' },
+            { label: 'Information Ratio', data: [0.8, 1.1, 0.9, 1.3], color: '#f59e0b' }
+          ]
+        });
+        logStatus('Chart 4: Multi-Line (Rolling Statistics)');
+        
+      } catch (error) {
+        logStatus(`Performance charts error: ${error.message}`, false);
+      }
+    }
+    
+    function testRiskCharts() {
+      try {
+        // 5. Factor Exposures
+        advancedCharts.createFactorExposures('chart-5', {
+          factors: ['Market', 'Size', 'Value', 'Momentum', 'Quality', 'Low Vol'],
+          exposures: [0.95, 0.12, -0.08, 0.25, 0.18, -0.15],
+          contributions: [65, 8, -5, 18, 12, -8]
+        });
+        logStatus('Chart 5: Horizontal Bar (Factor Exposures)');
+        
+        // 6. VaR Histogram
+        advancedCharts.createVaRHistogram('chart-6', {
+          returns: [-15, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 15],
+          frequencies: [2, 5, 8, 15, 25, 40, 55, 60, 55, 40, 25, 15, 8, 5, 2],
+          var95: -8.5,
+          var99: -12.3,
+          cvar95: -10.2
+        });
+        logStatus('Chart 6: Histogram (VaR)');
+        
+        // 7. Correlation Heatmap
+        advancedCharts.createHeatmap('chart-7', {
+          labels: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'],
+          matrix: [
+            [1.00, 0.75, 0.68, 0.62, 0.45],
+            [0.75, 1.00, 0.82, 0.71, 0.52],
+            [0.68, 0.82, 1.00, 0.78, 0.48],
+            [0.62, 0.71, 0.78, 1.00, 0.55],
+            [0.45, 0.52, 0.48, 0.55, 1.00]
+          ]
+        });
+        logStatus('Chart 7: Heatmap (Correlation Matrix)');
+        
+        // 8. Stress Scenarios
+        advancedCharts.createStackedBar('chart-8', {
+          scenarios: ['2008 Crisis', 'COVID-19', 'Dot-com', 'Oil Shock', 'Rate Spike'],
+          components: ['Equities', 'Bonds', 'Commodities', 'Cash'],
+          data: {
+            'Equities': [-35, -28, -42, -18, -22],
+            'Bonds': [5, 3, 8, -2, -8],
+            'Commodities': [-15, 12, -8, 45, 8],
+            'Cash': [0, 0, 0, 0, 0]
+          }
+        });
+        logStatus('Chart 8: Stacked Bar (Stress Scenarios)');
+        
+        // 9a. Treemap
+        advancedCharts.createTreemap('chart-9a', {
+          holdings: [
+            { symbol: 'AAPL', weight: 15.2, sector: 'Technology' },
+            { symbol: 'MSFT', weight: 12.8, sector: 'Technology' },
+            { symbol: 'GOOGL', weight: 10.5, sector: 'Technology' },
+            { symbol: 'JPM', weight: 8.3, sector: 'Financials' },
+            { symbol: 'JNJ', weight: 7.1, sector: 'Healthcare' }
+          ]
+        });
+        logStatus('Chart 9a: Treemap (Concentration)');
+        
+        // 9b. Pareto
+        advancedCharts.createParetoChart('chart-9b', {
+          holdings: ['AAPL', 'MSFT', 'GOOGL', 'JPM', 'JNJ', 'BAC', 'PFE', 'WMT', 'HD', 'Others'],
+          weights: [15.2, 12.8, 10.5, 8.3, 7.1, 5.9, 4.8, 3.9, 3.2, 28.3],
+          cumulative: [15.2, 28.0, 38.5, 46.8, 53.9, 59.8, 64.6, 68.5, 71.7, 100.0]
+        });
+        logStatus('Chart 9b: Pareto (Concentration)');
+        
+      } catch (error) {
+        logStatus(`Risk charts error: ${error.message}`, false);
+      }
+    }
+    
+    function testAttributionCharts() {
+      try {
+        // 10. Regional Attribution
+        advancedCharts.createStackedBar('chart-10', {
+          scenarios: ['North America', 'Europe', 'Asia Pacific', 'Emerging Markets'],
+          components: ['Allocation', 'Selection', 'Interaction'],
+          data: {
+            'Allocation': [2.5, -0.8, 1.2, 0.5],
+            'Selection': [1.3, 0.4, -0.3, 0.8],
+            'Interaction': [0.2, -0.1, 0.1, -0.2]
+          }
+        });
+        logStatus('Chart 10: Stacked Bar (Regional Attribution)');
+        
+        // 11. Sector Rotation
+        advancedCharts.createStackedArea('chart-11', {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          sectors: {
+            'Technology': [25, 27, 26, 28, 30, 29],
+            'Financials': [18, 17, 18, 16, 15, 16],
+            'Healthcare': [15, 16, 17, 18, 18, 19],
+            'Consumer': [20, 19, 18, 17, 16, 15],
+            'Energy': [12, 11, 11, 11, 11, 11],
+            'Other': [10, 10, 10, 10, 10, 10]
+          }
+        });
+        logStatus('Chart 11: Stacked Area (Sector Rotation)');
+        
+        // 12. Peer Benchmarking
+        advancedCharts.createQuadrantScatter('chart-12', {
+          portfolios: [
+            { name: 'Your Portfolio', return: 12.5, risk: 15.2, size: 5000000, isYours: true },
+            { name: 'Peer A', return: 10.2, risk: 14.8, size: 3000000 },
+            { name: 'Peer B', return: 11.8, risk: 16.5, size: 7000000 },
+            { name: 'Peer C', return: 9.5, risk: 12.3, size: 2000000 },
+            { name: 'Peer D', return: 13.2, risk: 18.1, size: 4500000 }
+          ],
+          avgReturn: 11.4,
+          avgRisk: 15.4
+        });
+        logStatus('Chart 12: Quadrant Scatter (Peer Benchmarking)');
+        
+        // 13. Alpha Decay
+        advancedCharts.createHeatmap('chart-13', {
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          factors: ['Momentum', 'Value', 'Quality', 'Low Vol', 'Size'],
+          matrix: [
+            [0.85, 0.72, 0.58, 0.42],
+            [0.90, 0.88, 0.85, 0.82],
+            [0.78, 0.75, 0.71, 0.68],
+            [0.65, 0.60, 0.55, 0.50],
+            [0.55, 0.48, 0.40, 0.35]
+          ]
+        });
+        logStatus('Chart 13: Heatmap (Alpha Decay)');
+        
+      } catch (error) {
+        logStatus(`Attribution charts error: ${error.message}`, false);
+      }
+    }
+    
+    function testConstructionCharts() {
+      try {
+        // 14. Efficient Frontier
+        advancedCharts.createEfficientFrontier('chart-14', {
+          frontier: [
+            { risk: 8, return: 6 },
+            { risk: 10, return: 7.5 },
+            { risk: 12, return: 8.8 },
+            { risk: 14, return: 10 },
+            { risk: 16, return: 11 },
+            { risk: 18, return: 11.8 },
+            { risk: 20, return: 12.5 }
+          ],
+          currentPortfolio: { risk: 15, return: 10.5, label: 'Current' },
+          optimalPortfolio: { risk: 12, return: 8.8, label: 'Optimal' }
+        });
+        logStatus('Chart 14: Scatter (Efficient Frontier)');
+        
+        // 15. Calendar Heatmap
+        const turnoverData = { dates: [], values: [] };
+        const startDate = new Date('2024-01-01');
+        for (let i = 0; i < 365; i++) {
+          const date = new Date(startDate);
+          date.setDate(date.getDate() + i);
+          turnoverData.dates.push(date);
+          turnoverData.values.push(Math.random() * 5);
+        }
+        advancedCharts.createCalendarHeatmap('chart-15', turnoverData);
+        logStatus('Chart 15: Calendar Heatmap (Turnover)');
+        
+        // 16. Bubble Chart
+        advancedCharts.createBubbleChart('chart-16', {
+          holdings: [
+            { symbol: 'AAPL', weight: 15.2, adv: 85000000, daysToLiquidate: 0.5 },
+            { symbol: 'MSFT', weight: 12.8, adv: 32000000, daysToLiquidate: 1.2 },
+            { symbol: 'GOOGL', weight: 10.5, adv: 28000000, daysToLiquidate: 1.5 },
+            { symbol: 'SMCP', weight: 2.1, adv: 500000, daysToLiquidate: 8.5 }
+          ]
+        });
+        logStatus('Chart 16: Bubble (Liquidity Analysis)');
+        
+        // 17a. Box Plot
+        advancedCharts.createBoxPlot('chart-17a', {
+          brokers: ['Broker A', 'Broker B', 'Broker C', 'Broker D'],
+          costs: [
+            { min: 2, q1: 4, median: 5.5, q3: 7, max: 10 },
+            { min: 3, q1: 5, median: 6.5, q3: 8, max: 12 },
+            { min: 2.5, q1: 4.5, median: 6, q3: 7.5, max: 11 },
+            { min: 1.5, q1: 3.5, median: 5, q3: 6.5, max: 9 }
+          ]
+        });
+        logStatus('Chart 17a: Box Plot (TCA)');
+        
+        // 17b. Timeline
+        advancedCharts.createTimelineChart('chart-17b', {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          implicitCosts: [5.2, 4.8, 5.5, 4.9, 5.1, 4.7],
+          explicitCosts: [2.1, 2.0, 2.2, 2.1, 2.0, 1.9],
+          slippage: [1.5, 1.3, 1.8, 1.4, 1.6, 1.2]
+        });
+        logStatus('Chart 17b: Timeline (TCA)');
+        
+      } catch (error) {
+        logStatus(`Construction charts error: ${error.message}`, false);
+      }
+    }
+    
+    function testSpecializedCharts() {
+      try {
+        // 18. Alternatives Waterfall
+        advancedCharts.createWaterfallChart('chart-18', {
+          categories: ['Starting NAV', 'Operating Income', 'Capital Appreciation', 'Distributions', 'Fees', 'Ending NAV'],
+          values: [1000, 85, 125, -45, -15, 1150],
+          colors: ['#10b981', '#10b981', '#10b981', '#ef4444', '#ef4444', '#10b981']
+        });
+        logStatus('Chart 18: Waterfall (Alternatives)');
+        
+        // 19. ESG Radar
+        advancedCharts.createESGRadar('chart-19', {
+          categories: ['Environmental', 'Social', 'Governance', 'Carbon Footprint', 'Diversity', 'Labor Practices'],
+          portfolio: [75, 82, 88, 45, 78, 85],
+          benchmark: [68, 75, 80, 52, 70, 78],
+          best: [90, 90, 90, 90, 90, 90]
+        });
+        logStatus('Chart 19: Radar (ESG)');
+        
+        // 20a. KPI Cards
+        advancedCharts.createKPICards('chart-20a', {
+          kpis: [
+            { title: 'Total Return', value: '12.5%', change: '+2.3%', positive: true },
+            { title: 'Alpha', value: '1.8%', change: '+0.5%', positive: true },
+            { title: 'Sharpe Ratio', value: '1.45', change: '+0.12', positive: true },
+            { title: 'Max Drawdown', value: '-8.2%', change: '-1.1%', positive: false }
+          ]
+        });
+        logStatus('Chart 20a: KPI Cards (Client Reporting)');
+        
+        // 20b. Gauge
+        advancedCharts.createGaugeChart('chart-20b', {
+          current: 75,
+          target: 100,
+          label: 'Goal Progress',
+          threshold: 80
+        });
+        logStatus('Chart 20b: Gauge (Goal Progress)');
+        
+      } catch (error) {
+        logStatus(`Specialized charts error: ${error.message}`, false);
+      }
+    }
+    
+    // Tab switching
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+        
+        // Update buttons
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+      });
+    });
+    
+    // Initialize on load
+    window.addEventListener('load', initializeCharts);
+  </script>
+  
+</body>
+</html>

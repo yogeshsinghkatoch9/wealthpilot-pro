@@ -1,0 +1,104 @@
+<div class="bloomberg-card">
+  <div class="border-b border-slate-700 pb-3 mb-6">
+    <h3 class="text-lg font-mono font-semibold text-amber-400">PREFERENCES</h3>
+    <p class="text-slate-400 text-sm mt-1">Customize your platform preferences</p>
+  </div>
+
+  <form id="preferences-form" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Default Portfolio -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Default Portfolio
+        </label>
+        <select
+          name="defaultPortfolioId"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="">None</option>
+          <% portfolios.forEach(portfolio => { %>
+            <option value="<%= portfolio.id %>" <%= settings.defaultPortfolioId === portfolio.id ? 'selected' : '' %>>
+              <%= portfolio.name %>
+            </option>
+          <% }); %>
+        </select>
+        <p class="text-xs text-slate-500 mt-1 font-mono">Portfolio shown by default on dashboard</p>
+      </div>
+
+      <!-- Currency -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Currency
+        </label>
+        <select
+          name="currency"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="USD" <%= user.currency === 'USD' ? 'selected' : '' %>>USD - US Dollar ($)</option>
+          <option value="EUR" <%= user.currency === 'EUR' ? 'selected' : '' %>>EUR - Euro (€)</option>
+          <option value="GBP" <%= user.currency === 'GBP' ? 'selected' : '' %>>GBP - British Pound (£)</option>
+          <option value="JPY" <%= user.currency === 'JPY' ? 'selected' : '' %>>JPY - Japanese Yen (¥)</option>
+          <option value="CAD" <%= user.currency === 'CAD' ? 'selected' : '' %>>CAD - Canadian Dollar ($)</option>
+          <option value="AUD" <%= user.currency === 'AUD' ? 'selected' : '' %>>AUD - Australian Dollar ($)</option>
+          <option value="CHF" <%= user.currency === 'CHF' ? 'selected' : '' %>>CHF - Swiss Franc (Fr)</option>
+          <option value="CNY" <%= user.currency === 'CNY' ? 'selected' : '' %>>CNY - Chinese Yuan (¥)</option>
+          <option value="INR" <%= user.currency === 'INR' ? 'selected' : '' %>>INR - Indian Rupee (₹)</option>
+        </select>
+      </div>
+
+      <!-- Date Format -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Date Format
+        </label>
+        <select
+          name="dateFormat"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2024)</option>
+          <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2024)</option>
+          <option value="YYYY-MM-DD">YYYY-MM-DD (2024-12-31)</option>
+        </select>
+      </div>
+
+      <!-- Number Format -->
+      <div>
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Number Format
+        </label>
+        <select
+          name="numberFormat"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="1,234.56">1,234.56 (US)</option>
+          <option value="1.234,56">1.234,56 (EU)</option>
+          <option value="1 234,56">1 234,56 (FR)</option>
+        </select>
+      </div>
+
+      <!-- Dashboard Layout -->
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+          Dashboard Layout
+        </label>
+        <select
+          name="dashboardLayout"
+          class="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition-colors">
+          <option value="default" <%= settings.dashboardLayout === 'default' ? 'selected' : '' %>>Default</option>
+          <option value="compact" <%= settings.dashboardLayout === 'compact' ? 'selected' : '' %>>Compact</option>
+          <option value="detailed" <%= settings.dashboardLayout === 'detailed' ? 'selected' : '' %>>Detailed</option>
+        </select>
+        <p class="text-xs text-slate-500 mt-1 font-mono">Choose your preferred dashboard layout</p>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="flex gap-3">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        SAVE PREFERENCES
+      </button>
+      <button type="button" onclick="resetPreferencesForm()" class="bloomberg-btn bloomberg-btn-secondary">
+        CANCEL
+      </button>
+    </div>
+  </form>
+</div>

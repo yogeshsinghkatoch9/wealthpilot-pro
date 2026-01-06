@@ -1,0 +1,264 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Multi-Currency';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+  <h1 class="text-2xl font-bold text-amber-400">MULTI-CURRENCY VIEW</h1>
+  <p class="text-slate-400">View your portfolio in any currency</p>
+</div>
+<div class="flex gap-2">
+<select id="baseCurrency" onchange="updateCurrency()" class="bloomberg-btn font-mono">
+  <option value="USD" selected>🇺🇸 USD - US Dollar</option>
+  <option value="EUR">🇪🇺 EUR - Euro</option>
+  <option value="GBP">🇬🇧 GBP - British Pound</option>
+  <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
+  <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
+  <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
+  <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- Exchange Rates Ticker -->
+<div class="bloomberg-card p-4 overflow-hidden">
+<div class="flex items-center gap-8 animate-marquee">
+<% const rates = [
+  { pair: 'EUR/USD', rate: 1.0892, change: 0.12 },
+  { pair: 'GBP/USD', rate: 1.2734, change: -0.08 },
+  { pair: 'USD/JPY', rate: 149.52, change: 0.25 },
+  { pair: 'USD/CHF', rate: 0.8821, change: -0.15 },
+  { pair: 'AUD/USD', rate: 0.6543, change: 0.18 },
+  { pair: 'USD/CAD', rate: 1.3612, change: 0.05 }
+]; rates.forEach(r => { %>
+<div class="flex items-center gap-2 whitespace-nowrap">
+  <span class="font-medium font-mono text-white"><%= r.pair %></span>
+  <span class="font-mono text-slate-300"><%= r.rate.toFixed(4) %></span>
+  <span class="<%= r.change >= 0 ? 'text-emerald-400' : 'text-red-400' %> text-sm font-mono"><%= r.change >= 0 ? '+' : '' %><%= r.change %>%</span>
+</div>
+<% }); %>
+</div>
+</div>
+
+<!-- Portfolio Value in Different Currencies -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="tufte-stat-card">
+<div class="flex items-center gap-2 mb-2">
+  <span class="text-slate-400 text-sm">USD</span>
+</div>
+<p id="valueUSD" class="text-2xl font-bold tabular-nums text-white">$247,532</p>
+<p class="positive text-sm">Base Currency</p>
+</div>
+<div class="tufte-stat-card">
+<div class="flex items-center gap-2 mb-2">
+  <span class="text-slate-400 text-sm">EUR</span>
+</div>
+<p id="valueEUR" class="text-2xl font-bold tabular-nums text-white">€227,248</p>
+<p class="text-slate-400 text-sm tabular-nums">@ 1.0892</p>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center gap-2 mb-2">
+  <span class="text-2xl">🇬🇧</span>
+  <span class="text-slate-400 text-sm">GBP</span>
+</div>
+<p id="valueGBP" class="text-2xl font-bold font-mono text-white">£194,412</p>
+<p class="text-slate-400 text-sm font-mono">@ 1.2734</p>
+</div>
+<div class="bloomberg-card p-4">
+<div class="flex items-center gap-2 mb-2">
+  <span class="text-2xl">🇯🇵</span>
+  <span class="text-slate-400 text-sm">JPY</span>
+</div>
+<p id="valueJPY" class="text-2xl font-bold font-mono text-white">¥37,009,434</p>
+<p class="text-slate-400 text-sm font-mono">@ 149.52</p>
+</div>
+</div>
+
+<!-- Currency Converter -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">CURRENCY CONVERTER</h3>
+<div class="space-y-4">
+  <div>
+    <label class="block text-sm text-slate-400 mb-1">From</label>
+    <div class="flex gap-2">
+      <input type="number" id="convertFrom" value="1000" class="form-input flex-1 font-mono" onchange="convertCurrency()">
+      <select id="fromCurrency" class="bloomberg-btn w-28 font-mono" onchange="convertCurrency()">
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+        <option value="JPY">JPY</option>
+      </select>
+    </div>
+  </div>
+  <div class="flex justify-center">
+    <button onclick="swapCurrencies()" class="bloomberg-btn p-2 rounded-full">
+      <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+    </button>
+  </div>
+  <div>
+    <label class="block text-sm text-slate-400 mb-1">To</label>
+    <div class="flex gap-2">
+      <input type="text" id="convertTo" value="918.20" class="form-input flex-1 font-mono" readonly>
+      <select id="toCurrency" class="bloomberg-btn w-28 font-mono" onchange="convertCurrency()">
+        <option value="USD">USD</option>
+        <option value="EUR" selected>EUR</option>
+        <option value="GBP">GBP</option>
+        <option value="JPY">JPY</option>
+      </select>
+    </div>
+  </div>
+  <p class="text-center text-slate-400 text-sm font-mono">1 USD = 0.9182 EUR</p>
+</div>
+</div>
+
+<!-- Historical Rates Chart -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">EUR/USD HISTORICAL</h3>
+<div class="h-56"><canvas id="rateChart"></canvas></div>
+</div>
+</div>
+
+<!-- Holdings by Currency -->
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">HOLDINGS IN SELECTED CURRENCY</h3>
+<div class="overflow-x-auto">
+<table class="w-full">
+<thead>
+<tr class="border-b border-slate-700 text-slate-400 text-sm text-left">
+  <th class="pb-3">Symbol</th>
+  <th class="pb-3">Shares</th>
+  <th class="pb-3 text-right">Price (USD)</th>
+  <th class="pb-3 text-right">Price (<span id="selectedCurrencyHeader">EUR</span>)</th>
+  <th class="pb-3 text-right">Value (USD)</th>
+  <th class="pb-3 text-right">Value (<span id="selectedCurrencyHeader2">EUR</span>)</th>
+</tr>
+</thead>
+<tbody id="holdingsTable">
+<% const holdings = [
+  { symbol: 'AAPL', shares: 50, priceUSD: 185.50 },
+  { symbol: 'MSFT', shares: 30, priceUSD: 378.20 },
+  { symbol: 'GOOGL', shares: 40, priceUSD: 141.80 },
+  { symbol: 'AMZN', shares: 25, priceUSD: 178.50 },
+  { symbol: 'NVDA', shares: 20, priceUSD: 495.00 }
+]; holdings.forEach(h => {
+  const valueUSD = h.shares * h.priceUSD;
+  const rate = 0.9182;
+%>
+<tr class="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+  <td class="py-3 font-semibold text-white"><%= h.symbol %></td>
+  <td class="py-3 text-slate-300 font-mono"><%= h.shares %></td>
+  <td class="py-3 text-right text-slate-300 font-mono">$<%= h.priceUSD.toFixed(2) %></td>
+  <td class="py-3 text-right text-slate-300 font-mono">€<%= (h.priceUSD * rate).toFixed(2) %></td>
+  <td class="py-3 text-right text-white font-medium font-mono">$<%= valueUSD.toLocaleString() %></td>
+  <td class="py-3 text-right text-white font-medium font-mono">€<%= Math.round(valueUSD * rate).toLocaleString() %></td>
+</tr>
+<% }); %>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Currency Exposure -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">CURRENCY EXPOSURE BY REVENUE</h3>
+<div class="h-48"><canvas id="exposureChart"></canvas></div>
+<p class="text-center text-xs text-slate-400 mt-2">Based on company revenue geography</p>
+</div>
+
+<div class="bloomberg-card p-5">
+<h3 class="text-lg font-semibold text-amber-400 mb-4">FX IMPACT ANALYSIS</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+  <span class="text-slate-300">If USD strengthens 5%</span>
+  <span class="text-red-400 font-medium font-mono">-$3,240 (-1.3%)</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+  <span class="text-slate-300">If USD weakens 5%</span>
+  <span class="text-emerald-400 font-medium font-mono">+$2,890 (+1.2%)</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+  <span class="text-slate-300">EUR exposure</span>
+  <span class="text-white font-medium font-mono">23% of revenue</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+  <span class="text-slate-300">Asia exposure</span>
+  <span class="text-white font-medium font-mono">31% of revenue</span>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<style>
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.animate-marquee { animation: marquee 30s linear infinite; display: flex; gap: 2rem; }
+</style>
+
+<script>
+const exchangeRates = { USD: 1, EUR: 0.9182, GBP: 0.7854, JPY: 149.52, CHF: 0.8821, CAD: 1.3612, AUD: 1.5283 };
+
+function convertCurrency() {
+  const amount = parseFloat(document.getElementById('convertFrom').value) || 0;
+  const from = document.getElementById('fromCurrency').value;
+  const to = document.getElementById('toCurrency').value;
+  const inUSD = amount / exchangeRates[from];
+  const result = inUSD * exchangeRates[to];
+  document.getElementById('convertTo').value = result.toFixed(2);
+}
+
+function swapCurrencies() {
+  const from = document.getElementById('fromCurrency');
+  const to = document.getElementById('toCurrency');
+  [from.value, to.value] = [to.value, from.value];
+  convertCurrency();
+}
+
+function updateCurrency() {
+  const currency = document.getElementById('baseCurrency').value;
+  // Update displays based on selected currency
+}
+
+// Rate Chart
+new Chart(document.getElementById('rateChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [{
+      label: 'EUR/USD',
+      data: [1.08, 1.07, 1.09, 1.10, 1.08, 1.07, 1.09, 1.10, 1.08, 1.06, 1.08, 1.09],
+      borderColor: '#0ea5e9',
+      backgroundColor: 'rgba(14, 165, 233, 0.1)',
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { min: 1.04, max: 1.12 } }
+  }
+});
+
+// Exposure Chart
+new Chart(document.getElementById('exposureChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['USD', 'EUR', 'CNY', 'JPY', 'Other'],
+    datasets: [{
+      data: [46, 23, 18, 8, 5],
+      backgroundColor: ['#0ea5e9', '#8b5cf6', '#ef4444', '#f59e0b', '#64748b']
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+});
+</script>
+<%- include('../partials/footer') %>

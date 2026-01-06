@@ -1,0 +1,1026 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : { name: 'User' };
+const safeHoldings = typeof holdings !== 'undefined' ? holdings : [];
+const safeTotals = typeof totals !== 'undefined' ? totals : { totalValue: 0, totalCost: 0, totalGain: 0, dayChange: 0 };
+const safeFmt = typeof fmt !== 'undefined' ? fmt : { money: (v) => '$' + (v || 0).toLocaleString() };
+
+// Calculate derived values
+const totalCryptoValue = safeTotals.totalValue || 0;
+const dayChange = safeTotals.dayChange || 0;
+const dayChangePercent = totalCryptoValue > 0 ? (dayChange / (totalCryptoValue - dayChange) * 100) : 0;
+const totalGain = safeTotals.totalGain || 0;
+const totalCost = safeTotals.totalCost || 0;
+const allTimeGainPercent = totalCost > 0 ? (totalGain / totalCost * 100) : 0;
+const holdingsCount = safeHoldings.length;
+
+// Find top performer
+const topPerformer = safeHoldings.length > 0
+  ? safeHoldings.reduce((a, b) => (a.change_24h || 0) > (b.change_24h || 0) ? a : b, safeHoldings[0])
+  : null;
+
+// Portfolio allocation percentage (mock - would come from total portfolio)
+const portfolioPercent = 18.5;
+%>
+<%- include('../partials/header', { pageTitle: 'Cryptocurrency Portfolio' }) %>
+
+<!-- Main Content Container -->
+<main class="flex-1 flex flex-col bg-background-dark">
+  <div class="w-full max-w-[1400px] mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 sm:gap-8">
+
+    <!-- Breadcrumbs -->
+    <div class="flex flex-wrap gap-2 text-sm">
+      <a class="text-text-secondary hover:text-white transition-colors font-medium" href="/dashboard">Home</a>
+      <span class="text-text-secondary font-medium">/</span>
+      <a class="text-text-secondary hover:text-white transition-colors font-medium" href="/portfolio">Portfolio</a>
+      <span class="text-text-secondary font-medium">/</span>
+      <span class="text-white font-medium">Cryptocurrency</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="flex flex-col gap-1">
+        <h2 class="text-white text-2xl sm:text-3xl md:text-4xl font-extrabold leading-tight tracking-tight">Cryptocurrency Portfolio</h2>
+        <p class="text-text-secondary text-sm sm:text-base font-normal">Manage your digital asset holdings and real-time performance.</p>
+      </div>
+      <div class="flex gap-3 w-full sm:w-auto">
+        <button onclick="refreshPrices()" class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-card-dark hover:bg-[#292a38] text-white text-sm font-bold transition-colors border border-border-dark">
+          <span class="material-symbols-outlined text-[20px]" id="syncIcon">sync</span>
+          <span class="hidden sm:inline">Sync Wallets</span>
+        </button>
+        <button onclick="openAddModal()" class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-primary-hover text-white text-sm font-bold shadow-lg shadow-primary/20 transition-colors flex-1 sm:flex-initial">
+          <span class="material-symbols-outlined text-[20px]">add</span>
+          <span>Add Transaction</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Stats Section -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <!-- Total Crypto Value -->
+      <div class="flex flex-col gap-2 rounded-xl p-4 sm:p-6 bg-card-dark border border-border-dark">
+        <div class="flex items-center justify-between">
+          <p class="text-text-secondary text-xs sm:text-sm font-medium uppercase tracking-wider">Total Value</p>
+          <span class="material-symbols-outlined text-text-secondary text-[20px]">account_balance_wallet</span>
+        </div>
+        <p class="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-tight mt-1 font-mono"><%= safeFmt.money(totalCryptoValue) %></p>
+        <div class="flex items-center gap-1 mt-1 flex-wrap">
+          <span class="material-symbols-outlined <%= dayChange >= 0 ? 'text-accent-green' : 'text-accent-red' %> text-sm">
+            <%= dayChange >= 0 ? 'trending_up' : 'trending_down' %>
+          </span>
+          <p class="<%= dayChange >= 0 ? 'text-accent-green' : 'text-accent-red' %> text-xs sm:text-sm font-bold font-mono">
+            <%= dayChange >= 0 ? '+' : '' %><%= dayChangePercent.toFixed(2) %>%
+          </p>
+          <p class="text-text-secondary text-xs sm:text-sm ml-1">24h</p>
+        </div>
+      </div>
+
+      <!-- 24h Change -->
+      <div class="flex flex-col gap-2 rounded-xl p-4 sm:p-6 bg-card-dark border border-border-dark">
+        <div class="flex items-center justify-between">
+          <p class="text-text-secondary text-xs sm:text-sm font-medium uppercase tracking-wider">24h P/L</p>
+          <span class="material-symbols-outlined text-text-secondary text-[20px]">calendar_today</span>
+        </div>
+        <p class="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-tight mt-1 font-mono">
+          <%= dayChange >= 0 ? '+' : '' %><%= safeFmt.money(dayChange) %>
+        </p>
+        <div class="flex items-center gap-1 mt-1 flex-wrap">
+          <span class="material-symbols-outlined <%= dayChange >= 0 ? 'text-accent-green' : 'text-accent-red' %> text-sm">
+            <%= dayChange >= 0 ? 'arrow_upward' : 'arrow_downward' %>
+          </span>
+          <p class="<%= dayChange >= 0 ? 'text-accent-green' : 'text-accent-red' %> text-xs sm:text-sm font-bold font-mono">
+            <%= dayChange >= 0 ? '+' : '' %><%= dayChangePercent.toFixed(2) %>%
+          </p>
+          <p class="text-text-secondary text-xs sm:text-sm ml-1">today</p>
+        </div>
+      </div>
+
+      <!-- Portfolio % -->
+      <div class="flex flex-col gap-2 rounded-xl p-4 sm:p-6 bg-card-dark border border-border-dark">
+        <div class="flex items-center justify-between">
+          <p class="text-text-secondary text-xs sm:text-sm font-medium uppercase tracking-wider">Portfolio %</p>
+          <span class="material-symbols-outlined text-text-secondary text-[20px]">pie_chart</span>
+        </div>
+        <p class="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-tight mt-1 font-mono"><%= portfolioPercent.toFixed(1) %>%</p>
+        <div class="flex items-center gap-1 mt-1">
+          <div class="flex-1 h-1.5 bg-[#292a38] rounded-full overflow-hidden">
+            <div class="h-full bg-primary rounded-full transition-all duration-500" style="width: <%= portfolioPercent %>%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Holdings Count / Top Performer -->
+      <div class="flex flex-col gap-2 rounded-xl p-4 sm:p-6 bg-card-dark border border-border-dark">
+        <div class="flex items-center justify-between">
+          <p class="text-text-secondary text-xs sm:text-sm font-medium uppercase tracking-wider">Top Performer</p>
+          <span class="material-symbols-outlined text-text-secondary text-[20px]">emoji_events</span>
+        </div>
+        <% if (topPerformer) { %>
+        <div class="flex items-center gap-2 mt-1">
+          <div class="size-7 sm:size-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-xs">
+            <%= topPerformer.symbol.substring(0, 3) %>
+          </div>
+          <p class="text-white text-lg sm:text-xl md:text-2xl font-bold leading-tight"><%= topPerformer.name || topPerformer.symbol %></p>
+        </div>
+        <div class="flex items-center gap-1 mt-1">
+          <span class="material-symbols-outlined text-accent-green text-sm">arrow_upward</span>
+          <p class="text-accent-green text-xs sm:text-sm font-bold font-mono">+<%= (topPerformer.change_24h || 0).toFixed(2) %>%</p>
+          <p class="text-text-secondary text-xs sm:text-sm ml-1">24h</p>
+        </div>
+        <% } else { %>
+        <p class="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-tight mt-1 font-mono"><%= holdingsCount %></p>
+        <p class="text-text-secondary text-xs sm:text-sm mt-1">assets tracked</p>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="flex flex-col rounded-xl bg-card-dark border border-border-dark p-4 sm:p-6 gap-4 sm:gap-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h3 class="text-white text-base sm:text-lg font-bold">Portfolio Performance</h3>
+          <p class="text-text-secondary text-xs sm:text-sm">Net asset value over time</p>
+        </div>
+        <div class="flex bg-[#0f1115] rounded-lg p-1 gap-1">
+          <button onclick="setChartRange('1D')" class="chart-range-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-[#292a38] transition-colors" data-range="1D">1D</button>
+          <button onclick="setChartRange('1W')" class="chart-range-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-[#292a38] transition-colors" data-range="1W">1W</button>
+          <button onclick="setChartRange('1M')" class="chart-range-btn px-3 py-1 text-xs font-medium text-white bg-[#292a38] rounded shadow-sm active" data-range="1M">1M</button>
+          <button onclick="setChartRange('1Y')" class="chart-range-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-[#292a38] transition-colors" data-range="1Y">1Y</button>
+          <button onclick="setChartRange('All')" class="chart-range-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded hover:bg-[#292a38] transition-colors" data-range="All">All</button>
+        </div>
+      </div>
+      <div class="w-full h-[200px] sm:h-[280px] relative">
+        <canvas id="portfolioChart"></canvas>
+      </div>
+      <div class="flex justify-between text-xs text-text-secondary px-2" id="chartLabels">
+        <!-- Labels populated by JS -->
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
+        <h3 class="text-white text-lg sm:text-xl font-bold">Crypto Holdings (<%= holdingsCount %>)</h3>
+        <div class="flex gap-2 w-full sm:w-auto">
+          <div class="relative flex-1 sm:flex-initial">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">search</span>
+            <input id="searchHoldings" onkeyup="filterHoldings()" class="bg-card-dark border border-border-dark rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary w-full sm:w-64" placeholder="Search assets..." type="text"/>
+          </div>
+          <select id="sortBy" onchange="sortHoldings()" class="bg-card-dark border border-border-dark rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary">
+            <option value="value">Sort: Value</option>
+            <option value="change">Sort: 24h</option>
+            <option value="gain">Sort: P/L</option>
+            <option value="name">Sort: Name</option>
+          </select>
+        </div>
+      </div>
+
+      <% if (safeHoldings.length === 0) { %>
+      <!-- Empty State -->
+      <div class="w-full rounded-xl border border-border-dark bg-card-dark p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary text-4xl">currency_bitcoin</span>
+        </div>
+        <h4 class="text-lg font-semibold text-white mb-2">No crypto holdings yet</h4>
+        <p class="text-text-secondary mb-4">Start building your cryptocurrency portfolio today!</p>
+        <button onclick="openAddModal()" class="inline-flex items-center justify-center gap-2 rounded-lg h-10 px-6 bg-primary hover:bg-primary-hover text-white text-sm font-bold transition-colors">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Add First Asset
+        </button>
+      </div>
+      <% } else { %>
+      <!-- Holdings Table -->
+      <div class="w-full overflow-x-auto rounded-xl border border-border-dark bg-card-dark">
+        <table class="w-full text-left border-collapse min-w-[800px]">
+          <thead>
+            <tr class="border-b border-border-dark text-xs uppercase text-text-secondary">
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider">Asset</th>
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider text-right">Price</th>
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider text-right">Balance</th>
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider text-right">Value</th>
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider text-right">24h Change</th>
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider text-right">Allocation</th>
+              <th class="px-4 sm:px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="holdingsBody" class="divide-y divide-border-dark text-sm">
+            <% safeHoldings.forEach((h, idx) => {
+              const change24h = h.change_24h || 0;
+              const gain = (h.market_value || 0) - (h.cost_basis || 0);
+              const gainPct = h.cost_basis > 0 ? (gain / h.cost_basis * 100) : 0;
+              const alloc = totalCryptoValue > 0 ? ((h.market_value || 0) / totalCryptoValue * 100) : 0;
+              const avgCost = h.quantity > 0 ? (h.cost_basis / h.quantity) : 0;
+
+              // Crypto color mapping
+              const colorMap = {
+                'BTC': 'orange', 'ETH': 'blue', 'SOL': 'purple', 'USDT': 'green', 'USDC': 'blue',
+                'BNB': 'yellow', 'XRP': 'slate', 'ADA': 'sky', 'DOGE': 'amber', 'DOT': 'pink',
+                'AVAX': 'red', 'MATIC': 'purple', 'LINK': 'blue', 'UNI': 'pink', 'ATOM': 'indigo'
+              };
+              const color = colorMap[h.symbol] || 'slate';
+            %>
+            <tr class="holding-row group hover:bg-[#1f2128] transition-colors cursor-pointer"
+                data-symbol="<%= h.symbol %>"
+                data-value="<%= h.market_value || 0 %>"
+                data-change="<%= change24h %>"
+                data-gain="<%= gainPct %>"
+                data-name="<%= h.name || h.symbol %>"
+                onclick="showAssetDetails('<%= h.symbol %>')">
+              <td class="px-4 sm:px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="size-8 sm:size-10 rounded-full bg-<%= color %>-500/10 flex items-center justify-center p-1 flex-shrink-0">
+                    <% if (h.logo_url) { %>
+                    <img class="w-full h-full object-contain rounded-full" src="<%= h.logo_url %>" alt="<%= h.symbol %> logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <span class="text-<%= color %>-400 font-bold text-xs hidden items-center justify-center w-full h-full"><%= h.symbol.substring(0, 3) %></span>
+                    <% } else { %>
+                    <span class="text-<%= color %>-400 font-bold text-xs"><%= h.symbol.substring(0, 3) %></span>
+                    <% } %>
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-bold text-white truncate"><%= h.name || h.symbol %></span>
+                    <span class="text-text-secondary text-xs"><%= h.symbol %></span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 sm:px-6 py-4 text-right font-medium text-white font-mono">
+                <%= safeFmt.money(h.current_price || 0) %>
+              </td>
+              <td class="px-4 sm:px-6 py-4 text-right">
+                <div class="flex flex-col items-end">
+                  <span class="text-white font-medium font-mono"><%= (h.quantity || 0).toFixed(4) %> <%= h.symbol %></span>
+                  <span class="text-text-secondary text-xs">Avg: <%= safeFmt.money(avgCost) %></span>
+                </div>
+              </td>
+              <td class="px-4 sm:px-6 py-4 text-right font-bold text-white font-mono">
+                <%= safeFmt.money(h.market_value || 0) %>
+              </td>
+              <td class="px-4 sm:px-6 py-4 text-right">
+                <span class="<%= change24h >= 0 ? 'text-accent-green' : 'text-accent-red' %> font-medium flex items-center justify-end gap-1 font-mono">
+                  <span class="material-symbols-outlined text-[16px]"><%= change24h >= 0 ? 'arrow_upward' : 'arrow_downward' %></span>
+                  <%= Math.abs(change24h).toFixed(2) %>%
+                </span>
+              </td>
+              <td class="px-4 sm:px-6 py-4 text-right">
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-white font-medium font-mono"><%= alloc.toFixed(1) %>%</span>
+                  <div class="w-16 h-1.5 bg-[#292a38] rounded-full overflow-hidden">
+                    <div class="h-full bg-primary rounded-full" style="width: <%= Math.min(alloc, 100) %>%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 sm:px-6 py-4 text-right">
+                <div class="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onclick="event.stopPropagation(); openEditModal('<%= h.id %>')" class="p-1.5 rounded hover:bg-white/10 text-text-secondary hover:text-white transition-colors" title="Edit Holding">
+                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button onclick="event.stopPropagation(); openAlertModal('<%= h.symbol %>', <%= h.current_price || 0 %>)" class="p-1.5 rounded hover:bg-white/10 text-text-secondary hover:text-white transition-colors" title="Set Alert">
+                    <span class="material-symbols-outlined text-[18px]">notifications</span>
+                  </button>
+                  <button onclick="event.stopPropagation(); deleteCrypto('<%= h.id %>')" class="p-1.5 rounded hover:bg-accent-red/20 text-text-secondary hover:text-accent-red transition-colors" title="Delete">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (safeHoldings.length > 5) { %>
+      <div class="w-full flex justify-center py-2">
+        <button onclick="toggleAllHoldings()" class="text-sm text-text-secondary hover:text-white font-medium flex items-center gap-1 transition-colors">
+          <span id="viewAllText">View all holdings</span>
+          <span class="material-symbols-outlined text-[16px]" id="viewAllIcon">expand_more</span>
+        </button>
+      </div>
+      <% } %>
+      <% } %>
+    </div>
+
+    <!-- Bottom Grid: Allocation Chart + News/Alerts -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Allocation Chart -->
+      <div class="lg:col-span-1 rounded-xl bg-card-dark border border-border-dark p-4 sm:p-6">
+        <h3 class="text-white text-base sm:text-lg font-bold mb-4">Portfolio Allocation</h3>
+        <div class="h-48 sm:h-56">
+          <canvas id="allocationChart"></canvas>
+        </div>
+        <div class="space-y-2 mt-4" id="allocationLegend">
+          <!-- Legend populated by JS -->
+        </div>
+      </div>
+
+      <!-- News & Research Section -->
+      <div class="lg:col-span-2 rounded-xl bg-card-dark border border-border-dark p-4 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-white text-base sm:text-lg font-bold">Crypto News & Alerts</h3>
+          <button class="text-primary hover:text-primary-hover text-sm font-medium transition-colors flex items-center gap-1">
+            <span>View All</span>
+            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
+        <div class="space-y-3" id="cryptoNews">
+          <!-- Bitcoin Update -->
+          <div class="flex gap-4 p-3 rounded-lg hover:bg-[#1f2128] transition-colors cursor-pointer border border-transparent hover:border-border-dark">
+            <div class="size-10 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-orange-400">currency_bitcoin</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-white font-medium text-sm truncate">Bitcoin ETF sees record inflows</h4>
+                <span class="text-text-secondary text-xs flex-shrink-0">2h ago</span>
+              </div>
+              <p class="text-text-secondary text-xs mt-1 line-clamp-2">Spot Bitcoin ETFs recorded over $500M in daily inflows as institutional demand continues to grow.</p>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="px-2 py-0.5 text-xs rounded-full bg-accent-green/10 text-accent-green">Bullish</span>
+                <span class="text-text-secondary text-xs">CoinDesk</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ethereum Update -->
+          <div class="flex gap-4 p-3 rounded-lg hover:bg-[#1f2128] transition-colors cursor-pointer border border-transparent hover:border-border-dark">
+            <div class="size-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-blue-400">diamond</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-white font-medium text-sm truncate">Ethereum layer-2 TVL hits new ATH</h4>
+                <span class="text-text-secondary text-xs flex-shrink-0">5h ago</span>
+              </div>
+              <p class="text-text-secondary text-xs mt-1 line-clamp-2">Total value locked in Ethereum L2 solutions surpasses $40B as scaling solutions gain adoption.</p>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary">Network</span>
+                <span class="text-text-secondary text-xs">The Block</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Price Alert -->
+          <div class="flex gap-4 p-3 rounded-lg bg-accent-green/5 border border-accent-green/20">
+            <div class="size-10 rounded-lg bg-accent-green/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-accent-green">notifications_active</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-white font-medium text-sm">Price Alert Triggered</h4>
+                <span class="text-text-secondary text-xs flex-shrink-0">Just now</span>
+              </div>
+              <p class="text-text-secondary text-xs mt-1">SOL crossed above $150.00 - Your target price was hit!</p>
+              <div class="flex items-center gap-2 mt-2">
+                <button class="text-primary text-xs font-medium hover:underline">View Details</button>
+                <span class="text-text-secondary text-xs">|</span>
+                <button class="text-text-secondary text-xs hover:text-white">Dismiss</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Market Update -->
+          <div class="flex gap-4 p-3 rounded-lg hover:bg-[#1f2128] transition-colors cursor-pointer border border-transparent hover:border-border-dark">
+            <div class="size-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+              <span class="material-symbols-outlined text-purple-400">analytics</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-white font-medium text-sm truncate">Weekly Market Analysis</h4>
+                <span class="text-text-secondary text-xs flex-shrink-0">1d ago</span>
+              </div>
+              <p class="text-text-secondary text-xs mt-1 line-clamp-2">Crypto market shows strength with BTC dominance rising. Key support levels holding well.</p>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="px-2 py-0.5 text-xs rounded-full bg-purple-500/10 text-purple-400">Analysis</span>
+                <span class="text-text-secondary text-xs">WealthPilot Research</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="w-full text-center py-4 sm:py-6 text-xs text-text-secondary border-t border-border-dark">
+      <p>Market data provided by CoinGecko. Last updated: <span id="lastUpdated">Just now</span></p>
+    </div>
+  </div>
+</main>
+
+<!-- Add Crypto Modal -->
+<div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-card-dark border border-border-dark rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white">Add Crypto Asset</h3>
+      <button onclick="closeAddModal()" class="p-2 hover:bg-[#292a38] rounded-lg text-text-secondary hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <!-- Quick Add Buttons -->
+    <div class="mb-6">
+      <p class="text-sm text-text-secondary mb-2">Quick Add:</p>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="quickAdd('BTC', 'Bitcoin')" class="px-3 py-1.5 text-sm rounded-lg bg-[#292a38] hover:bg-[#343546] text-white transition-colors flex items-center gap-1">
+          <span class="text-orange-400">&#8383;</span> Bitcoin
+        </button>
+        <button onclick="quickAdd('ETH', 'Ethereum')" class="px-3 py-1.5 text-sm rounded-lg bg-[#292a38] hover:bg-[#343546] text-white transition-colors flex items-center gap-1">
+          <span class="text-blue-400">&#926;</span> Ethereum
+        </button>
+        <button onclick="quickAdd('SOL', 'Solana')" class="px-3 py-1.5 text-sm rounded-lg bg-[#292a38] hover:bg-[#343546] text-white transition-colors flex items-center gap-1">
+          <span class="text-purple-400">&#9678;</span> Solana
+        </button>
+        <button onclick="quickAdd('USDT', 'Tether')" class="px-3 py-1.5 text-sm rounded-lg bg-[#292a38] hover:bg-[#343546] text-white transition-colors flex items-center gap-1">
+          <span class="text-green-400">&#8366;</span> USDT
+        </button>
+      </div>
+    </div>
+
+    <form id="addForm" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-secondary mb-1">Symbol *</label>
+          <input type="text" name="symbol" id="addSymbol" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="BTC" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-secondary mb-1">Name</label>
+          <input type="text" name="name" id="addName" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Bitcoin">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-text-secondary mb-1">Quantity *</label>
+          <input type="number" step="any" name="quantity" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary font-mono" placeholder="0.5" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-text-secondary mb-1">Avg Cost ($) *</label>
+          <input type="number" step="0.01" name="avgCost" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary font-mono" placeholder="45000" required>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Exchange / Wallet</label>
+        <select name="exchange" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white focus:outline-none focus:ring-1 focus:ring-primary">
+          <option value="">Select Exchange</option>
+          <option value="coinbase">Coinbase</option>
+          <option value="binance">Binance</option>
+          <option value="kraken">Kraken</option>
+          <option value="gemini">Gemini</option>
+          <option value="wallet">Personal Wallet</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Notes</label>
+        <textarea name="notes" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary" rows="2" placeholder="Optional notes..."></textarea>
+      </div>
+    </form>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeAddModal()" class="flex-1 py-2.5 rounded-lg bg-[#292a38] hover:bg-[#343546] text-white font-medium transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitAdd()" class="flex-1 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-bold transition-colors shadow-lg shadow-primary/20">
+        Add Asset
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Price Alert Modal -->
+<div id="alertModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-card-dark border border-border-dark rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white">Create Price Alert</h3>
+      <button onclick="closeAlertModal()" class="p-2 hover:bg-[#292a38] rounded-lg text-text-secondary hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form id="alertForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Asset</label>
+        <input type="text" name="alertSymbol" id="alertSymbol" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="BTC" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Current Price</label>
+        <input type="text" id="alertCurrentPrice" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-text-secondary font-mono" readonly>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Condition</label>
+        <select name="alertCondition" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white focus:outline-none focus:ring-1 focus:ring-primary">
+          <option value="above">Price goes above</option>
+          <option value="below">Price goes below</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-text-secondary mb-1">Target Price ($)</label>
+        <input type="number" step="0.01" name="alertTarget" id="alertTarget" class="w-full bg-[#0f1115] border border-border-dark rounded-lg py-2.5 px-3 text-white placeholder-text-secondary focus:outline-none focus:ring-1 focus:ring-primary font-mono" placeholder="50000" required>
+      </div>
+    </form>
+
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeAlertModal()" class="flex-1 py-2.5 rounded-lg bg-[#292a38] hover:bg-[#343546] text-white font-medium transition-colors">
+        Cancel
+      </button>
+      <button onclick="submitAlert()" class="flex-1 py-2.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-bold transition-colors shadow-lg shadow-primary/20">
+        Create Alert
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Asset Details Modal -->
+<div id="assetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-card-dark border border-border-dark rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div id="assetIcon" class="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold">BT</div>
+        <div>
+          <h3 id="assetName" class="text-xl font-bold text-white">Bitcoin</h3>
+          <p id="assetSymbol" class="text-sm text-text-secondary">BTC</p>
+        </div>
+      </div>
+      <button onclick="closeAssetModal()" class="p-2 hover:bg-[#292a38] rounded-lg text-text-secondary hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="p-3 rounded-lg bg-[#0f1115]">
+        <p class="text-xs text-text-secondary">Price</p>
+        <p id="assetPrice" class="font-bold text-white font-mono">$0.00</p>
+      </div>
+      <div class="p-3 rounded-lg bg-[#0f1115]">
+        <p class="text-xs text-text-secondary">24h Change</p>
+        <p id="assetChange" class="font-bold text-accent-green font-mono">+0.00%</p>
+      </div>
+      <div class="p-3 rounded-lg bg-[#0f1115]">
+        <p class="text-xs text-text-secondary">Market Cap</p>
+        <p id="assetMcap" class="font-bold text-white font-mono">$0B</p>
+      </div>
+      <div class="p-3 rounded-lg bg-[#0f1115]">
+        <p class="text-xs text-text-secondary">Volume 24h</p>
+        <p id="assetVolume" class="font-bold text-white font-mono">$0B</p>
+      </div>
+    </div>
+
+    <div class="h-48 mb-6">
+      <canvas id="assetChart"></canvas>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="p-4 rounded-lg bg-[#0f1115]">
+        <h4 class="font-semibold text-white mb-3">Your Position</h4>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-text-secondary">Quantity</span><span id="posQty" class="text-white font-mono">0</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Avg Cost</span><span id="posAvgCost" class="text-white font-mono">$0</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Cost Basis</span><span id="posCost" class="text-white font-mono">$0</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">Current Value</span><span id="posValue" class="text-white font-mono">$0</span></div>
+          <div class="flex justify-between border-t border-border-dark pt-2 mt-2">
+            <span class="text-text-secondary">Profit/Loss</span>
+            <span id="posPL" class="font-bold text-accent-green font-mono">+$0</span>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 rounded-lg bg-[#0f1115]">
+        <h4 class="font-semibold text-white mb-3">Market Data</h4>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-text-secondary">24h High</span><span id="assetHigh" class="text-accent-green font-mono">$0</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">24h Low</span><span id="assetLow" class="text-accent-red font-mono">$0</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">All-Time High</span><span id="assetATH" class="text-white font-mono">$0</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">ATH Date</span><span id="assetATHDate" class="text-white">--</span></div>
+          <div class="flex justify-between"><span class="text-text-secondary">From ATH</span><span id="assetFromATH" class="text-accent-red font-mono">-0%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Holdings data from server
+const holdingsData = <%- JSON.stringify(safeHoldings) %>;
+const totalsData = <%- JSON.stringify(safeTotals) %>;
+
+let portfolioChart, allocationChart, assetChart;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', () => {
+  initCharts();
+  updateTimestamp();
+  setInterval(updateTimestamp, 60000);
+});
+
+function initCharts() {
+  initPortfolioChart();
+  if (holdingsData.length > 0) {
+    initAllocationChart();
+  }
+}
+
+function initPortfolioChart() {
+  const ctx = document.getElementById('portfolioChart');
+  if (!ctx) return;
+
+  // Generate sample data
+  const days = 30;
+  const labels = [];
+  const values = [];
+  let value = totalsData.totalValue || 10000;
+
+  for (let i = days; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    value = value * (1 + (Math.random() - 0.48) * 0.03);
+    values.push(value);
+  }
+
+  portfolioChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        borderColor: '#4850e5',
+        backgroundColor: 'rgba(72, 80, 229, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#0f1115',
+        pointHoverBorderColor: '#4850e5',
+        pointHoverBorderWidth: 3,
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#292a38',
+          titleColor: '#fff',
+          bodyColor: '#9e9fb7',
+          borderColor: '#4850e5',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (context) => '$' + context.raw.toLocaleString(undefined, { maximumFractionDigits: 2 })
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: false
+        },
+        y: {
+          display: false
+        }
+      }
+    }
+  });
+
+  // Update chart labels
+  const chartLabels = document.getElementById('chartLabels');
+  if (chartLabels && labels.length > 0) {
+    const selectedLabels = [labels[0], labels[Math.floor(days/4)], labels[Math.floor(days/2)], labels[Math.floor(3*days/4)], labels[days]];
+    chartLabels.innerHTML = selectedLabels.map(l => `<span>${l}</span>`).join('');
+  }
+}
+
+function initAllocationChart() {
+  const ctx = document.getElementById('allocationChart');
+  if (!ctx) return;
+
+  const labels = holdingsData.map(h => h.symbol);
+  const values = holdingsData.map(h => h.market_value || 0);
+  const colors = ['#f59e0b', '#6366f1', '#a855f7', '#10b981', '#06b6d4', '#f43f5e', '#ec4899', '#84cc16', '#14b8a6', '#f97316'];
+
+  allocationChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors.slice(0, labels.length),
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#292a38',
+          titleColor: '#fff',
+          bodyColor: '#9e9fb7',
+          borderColor: '#4850e5',
+          borderWidth: 1,
+          callbacks: {
+            label: (context) => {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = ((context.raw / total) * 100).toFixed(1);
+              return `${context.label}: $${context.raw.toLocaleString()} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Update legend
+  const legendContainer = document.getElementById('allocationLegend');
+  if (legendContainer) {
+    const total = values.reduce((a, b) => a + b, 0);
+    legendContainer.innerHTML = holdingsData.slice(0, 5).map((h, i) => {
+      const pct = total > 0 ? ((h.market_value || 0) / total * 100).toFixed(1) : 0;
+      return `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full" style="background-color: ${colors[i]}"></div>
+            <span class="text-text-secondary text-sm">${h.name || h.symbol}</span>
+          </div>
+          <span class="text-white font-medium font-mono text-sm">${pct}%</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function setChartRange(range) {
+  document.querySelectorAll('.chart-range-btn').forEach(btn => {
+    btn.classList.remove('active', 'text-white', 'bg-[#292a38]', 'shadow-sm');
+    btn.classList.add('text-text-secondary');
+  });
+  const activeBtn = document.querySelector(`[data-range="${range}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'text-white', 'bg-[#292a38]', 'shadow-sm');
+    activeBtn.classList.remove('text-text-secondary');
+  }
+  // In production, fetch real data for the selected range
+  showToast(`Chart range set to ${range}`, 'info');
+}
+
+// Holdings filtering and sorting
+function filterHoldings() {
+  const searchTerm = document.getElementById('searchHoldings').value.toLowerCase();
+  const rows = document.querySelectorAll('.holding-row');
+
+  rows.forEach(row => {
+    const symbol = row.dataset.symbol.toLowerCase();
+    const name = row.dataset.name.toLowerCase();
+    const matches = symbol.includes(searchTerm) || name.includes(searchTerm);
+    row.style.display = matches ? '' : 'none';
+  });
+}
+
+function sortHoldings() {
+  const sortBy = document.getElementById('sortBy').value;
+  const container = document.getElementById('holdingsBody');
+  if (!container) return;
+
+  const rows = Array.from(container.querySelectorAll('.holding-row'));
+
+  rows.sort((a, b) => {
+    switch (sortBy) {
+      case 'value': return parseFloat(b.dataset.value) - parseFloat(a.dataset.value);
+      case 'change': return parseFloat(b.dataset.change) - parseFloat(a.dataset.change);
+      case 'gain': return parseFloat(b.dataset.gain) - parseFloat(a.dataset.gain);
+      case 'name': return a.dataset.name.localeCompare(b.dataset.name);
+      default: return 0;
+    }
+  });
+
+  rows.forEach(row => container.appendChild(row));
+}
+
+// Refresh prices
+async function refreshPrices() {
+  const icon = document.getElementById('syncIcon');
+  if (icon) icon.classList.add('animate-spin');
+
+  try {
+    // In production, fetch real prices from API
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    updateTimestamp();
+    showToast('Prices updated successfully!', 'success');
+  } catch (e) {
+    showToast('Failed to refresh prices', 'error');
+  } finally {
+    if (icon) icon.classList.remove('animate-spin');
+  }
+}
+
+function updateTimestamp() {
+  const el = document.getElementById('lastUpdated');
+  if (el) el.textContent = 'Just now';
+}
+
+// Modal functions
+function openAddModal() {
+  const modal = document.getElementById('addModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeAddModal() {
+  const modal = document.getElementById('addModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.getElementById('addForm').reset();
+}
+
+function quickAdd(symbol, name) {
+  document.getElementById('addSymbol').value = symbol;
+  document.getElementById('addName').value = name;
+}
+
+async function submitAdd() {
+  const form = document.getElementById('addForm');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  if (!data.symbol || !data.quantity || !data.avgCost) {
+    showToast('Please fill all required fields', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/crypto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+      showToast('Crypto asset added successfully!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to add asset', 'error');
+    }
+  } catch (e) {
+    showToast('Error adding crypto asset', 'error');
+  }
+  closeAddModal();
+}
+
+async function deleteCrypto(id) {
+  if (!confirm('Are you sure you want to remove this holding?')) return;
+
+  try {
+    const res = await fetch('/api/crypto/' + id, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Asset removed successfully!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error removing asset', 'error');
+  }
+}
+
+// Alert Modal
+function openAlertModal(symbol = '', price = 0) {
+  const modal = document.getElementById('alertModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  if (symbol) {
+    document.getElementById('alertSymbol').value = symbol;
+    document.getElementById('alertCurrentPrice').value = '$' + price.toLocaleString();
+  }
+}
+
+function closeAlertModal() {
+  const modal = document.getElementById('alertModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function submitAlert() {
+  const symbol = document.getElementById('alertSymbol').value;
+  const target = document.getElementById('alertTarget').value;
+  const condition = document.querySelector('[name="alertCondition"]').value;
+
+  if (!symbol || !target) {
+    showToast('Please fill all fields', 'error');
+    return;
+  }
+
+  // In production, save to database
+  showToast(`Alert created: ${symbol} ${condition} $${target}`, 'success');
+  closeAlertModal();
+}
+
+// Asset Details Modal
+function showAssetDetails(symbol) {
+  const holding = holdingsData.find(h => h.symbol === symbol);
+  if (!holding) return;
+
+  const modal = document.getElementById('assetModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  document.getElementById('assetIcon').textContent = symbol.substring(0, 2).toUpperCase();
+  document.getElementById('assetName').textContent = holding.name || symbol;
+  document.getElementById('assetSymbol').textContent = symbol;
+  document.getElementById('assetPrice').textContent = '$' + (holding.current_price || 0).toLocaleString();
+
+  const change = holding.change_24h || 0;
+  const changeEl = document.getElementById('assetChange');
+  changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+  changeEl.className = 'font-bold font-mono ' + (change >= 0 ? 'text-accent-green' : 'text-accent-red');
+
+  // Simulated market data
+  const mcap = (holding.current_price || 0) * (symbol === 'BTC' ? 19500000 : symbol === 'ETH' ? 120000000 : 1000000000);
+  document.getElementById('assetMcap').textContent = '$' + (mcap / 1e9).toFixed(1) + 'B';
+  document.getElementById('assetVolume').textContent = '$' + ((mcap * 0.05) / 1e9).toFixed(1) + 'B';
+
+  // Position data
+  const avgCost = holding.quantity > 0 ? (holding.cost_basis / holding.quantity) : 0;
+  document.getElementById('posQty').textContent = (holding.quantity || 0).toFixed(4) + ' ' + symbol;
+  document.getElementById('posAvgCost').textContent = '$' + avgCost.toLocaleString();
+  document.getElementById('posCost').textContent = '$' + (holding.cost_basis || 0).toLocaleString();
+  document.getElementById('posValue').textContent = '$' + (holding.market_value || 0).toLocaleString();
+
+  const pl = (holding.market_value || 0) - (holding.cost_basis || 0);
+  const plEl = document.getElementById('posPL');
+  plEl.textContent = (pl >= 0 ? '+' : '') + '$' + Math.abs(pl).toLocaleString();
+  plEl.className = 'font-bold font-mono ' + (pl >= 0 ? 'text-accent-green' : 'text-accent-red');
+
+  // Price range
+  const price = holding.current_price || 0;
+  document.getElementById('assetHigh').textContent = '$' + (price * 1.05).toLocaleString();
+  document.getElementById('assetLow').textContent = '$' + (price * 0.95).toLocaleString();
+  document.getElementById('assetATH').textContent = '$' + (price * 1.5).toLocaleString();
+  document.getElementById('assetATHDate').textContent = 'Nov 2024';
+  document.getElementById('assetFromATH').textContent = '-33.3%';
+
+  // Mini chart
+  if (assetChart) assetChart.destroy();
+  const ctx = document.getElementById('assetChart');
+  const data = Array.from({length: 24}, () => price * (0.95 + Math.random() * 0.1));
+
+  assetChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length: 24}, (_, i) => i + 'h'),
+      datasets: [{
+        data,
+        borderColor: '#4850e5',
+        backgroundColor: 'rgba(72, 80, 229, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { display: false } }
+    }
+  });
+}
+
+function closeAssetModal() {
+  const modal = document.getElementById('assetModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function openEditModal(id) {
+  showToast('Edit functionality coming soon!', 'info');
+}
+
+function toggleAllHoldings() {
+  // Toggle showing all holdings
+  showToast('View all holdings', 'info');
+}
+
+// Toast notification helper (assumes showToast exists from global scripts)
+if (typeof showToast !== 'function') {
+  window.showToast = function(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    // Simple fallback toast
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg ${
+      type === 'success' ? 'bg-accent-green' : type === 'error' ? 'bg-accent-red' : 'bg-primary'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  };
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,198 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const vp = volumeProfile || {};
+const levels = vp.levels || [];
+const poc = vp.poc || {};
+const currentPrice = vp.currentPrice || 0;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatVolume(v) {
+  if (!v) return 'N/A';
+  if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toString();
+}
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%'; }
+
+// Calculate position relative to POC
+const pocPrice = parseFloat(poc.price) || currentPrice;
+const vsPoc = pocPrice ? ((currentPrice - pocPrice) / pocPrice) * 100 : 0;
+const position = currentPrice > pocPrice ? 'Above POC' : currentPrice < pocPrice ? 'Below POC' : 'At POC';
+const positionColor = currentPrice > pocPrice ? 'emerald' : currentPrice < pocPrice ? 'red' : 'amber';
+
+// Find max volume for scaling bars
+const maxVol = levels.length > 0 ? Math.max(...levels.map(l => l.volume)) : 1;
+%>
+<%- include('../partials/header', { pageTitle: 'Volume Profile' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white">Volume Profile</h1>
+    <p class="text-slate-400">Volume distribution by price level</p>
+  </div>
+  <form method="GET" action="/volume-profile" class="flex gap-2">
+    <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-24 font-mono uppercase">
+    <button type="submit" class="btn-primary">Analyze</button>
+  </form>
+</div>
+
+<% if (!volumeProfile) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No volume profile data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol.</p>
+</div>
+<% } else { %>
+
+<!-- Stock Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-purple-900/20">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %></h2>
+      <p class="text-slate-400">Current: <span class="font-mono"><%= formatPrice(currentPrice) %></span> - Volume Profile</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">POC (Point of Control)</p>
+      <p class="text-2xl font-bold text-purple-400 font-mono"><%= formatPrice(poc.price) %></p>
+      <p class="text-xs text-slate-500">Highest volume</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Value Area High</p>
+      <p class="text-2xl font-bold text-emerald-400 font-mono"><%= formatPrice(vp.valueAreaHigh) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Value Area Low</p>
+      <p class="text-2xl font-bold text-red-400 font-mono"><%= formatPrice(vp.valueAreaLow) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Total Volume</p>
+      <p class="text-2xl font-bold text-sky-400 font-mono"><%= formatVolume(vp.totalVolume) %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Position</p>
+      <p class="text-2xl font-bold text-<%= positionColor %>-400"><%= position %></p>
+      <p class="text-xs text-<%= positionColor %>-400"><%= formatPct(vsPoc) %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Volume Profile Visualization -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Volume by Price Level</h3>
+  <div class="space-y-1">
+    <% levels.slice().reverse().forEach((level, idx) => {
+      const priceLevel = parseFloat(level.priceLevel);
+      const isCurrentLevel = Math.abs(priceLevel - currentPrice) < (currentPrice * 0.02);
+      const isPoc = parseFloat(poc.price) && Math.abs(priceLevel - parseFloat(poc.price)) < (currentPrice * 0.02);
+      const barWidth = (level.volume / maxVol) * 100;
+      let barColor = priceLevel > currentPrice ? 'emerald' : 'red';
+      if (isPoc) barColor = 'purple';
+      if (isCurrentLevel) barColor = 'sky';
+    %>
+    <div class="flex items-center gap-2 <%= isPoc ? 'bg-purple-500/10 p-1 rounded' : '' %> <%= isCurrentLevel ? 'bg-sky-500/10 p-1 rounded' : '' %>">
+      <span class="w-20 text-xs text-right font-mono <%= isPoc ? 'text-purple-400 font-bold' : isCurrentLevel ? 'text-sky-400 font-bold' : 'text-slate-400' %>">
+        <%= formatPrice(priceLevel) %>
+      </span>
+      <div class="flex-1 h-5 bg-slate-700 rounded overflow-hidden">
+        <div class="h-full bg-<%= barColor %>-500 transition-all" style="width: <%= barWidth %>%"></div>
+      </div>
+      <span class="w-16 text-xs font-mono <%= isPoc ? 'text-purple-400 font-bold' : 'text-slate-400' %>">
+        <%= isPoc ? 'POC ' : '' %><%= formatVolume(level.volume) %>
+      </span>
+      <span class="w-12 text-xs text-slate-500"><%= level.percentage %>%</span>
+    </div>
+    <% }); %>
+  </div>
+</div>
+
+<!-- Key Levels -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <div class="bloomberg-card p-5">
+    <h4 class="font-bold text-purple-400 mb-3">Point of Control (POC)</h4>
+    <p class="text-3xl font-bold font-mono text-white"><%= formatPrice(poc.price) %></p>
+    <p class="text-sm text-slate-400 mt-2">Price level with highest traded volume. Acts as a magnet - price tends to return here.</p>
+    <p class="text-xs mt-2">
+      Current: <span class="text-<%= positionColor %>-400 font-bold"><%= formatPct(vsPoc) %> <%= position.toLowerCase() %></span>
+    </p>
+    <p class="text-xs mt-1 text-slate-500">Volume at POC: <%= formatVolume(poc.volume) %></p>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h4 class="font-bold text-emerald-400 mb-3">Value Area (70%)</h4>
+    <p class="text-lg font-bold font-mono text-white"><%= formatPrice(vp.valueAreaLow) %> - <%= formatPrice(vp.valueAreaHigh) %></p>
+    <p class="text-sm text-slate-400 mt-2">Range where approximately 70% of volume traded. Price inside this area is considered fair value.</p>
+    <% const vaWidth = vp.valueAreaHigh && vp.valueAreaLow ? ((vp.valueAreaHigh - vp.valueAreaLow) / currentPrice * 100) : 0; %>
+    <p class="text-xs mt-2">Width: <span class="font-bold"><%= formatPrice(vp.valueAreaHigh - vp.valueAreaLow) %> (<%= vaWidth.toFixed(1) %>%)</span></p>
+    <% const inValueArea = currentPrice >= vp.valueAreaLow && currentPrice <= vp.valueAreaHigh; %>
+    <p class="text-xs mt-1">Status: <span class="text-<%= inValueArea ? 'emerald' : 'amber' %>-400 font-bold"><%= inValueArea ? 'Inside Value Area' : 'Outside Value Area' %></span></p>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h4 class="font-bold text-sky-400 mb-3">Key Support/Resistance</h4>
+    <div class="space-y-2 text-sm">
+      <div class="flex justify-between">
+        <span class="text-slate-400">VA High (Resistance)</span>
+        <span class="font-bold text-emerald-400 font-mono"><%= formatPrice(vp.valueAreaHigh) %></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">Current Price</span>
+        <span class="font-bold text-sky-400 font-mono"><%= formatPrice(currentPrice) %></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">POC (Magnet)</span>
+        <span class="font-bold text-purple-400 font-mono"><%= formatPrice(poc.price) %></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-slate-400">VA Low (Support)</span>
+        <span class="font-bold text-red-400 font-mono"><%= formatPrice(vp.valueAreaLow) %></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analysis -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Volume Profile Analysis</h3>
+  <div class="prose prose-invert max-w-none">
+    <% if (currentPrice > vp.valueAreaHigh) { %>
+    <p class="text-emerald-400">
+      <strong>Bullish Signal:</strong> Price is trading <strong>above the Value Area High</strong> at <%= formatPrice(vp.valueAreaHigh) %>.
+      This indicates strong buying pressure and potential continuation higher. The Value Area High now acts as support.
+    </p>
+    <% } else if (currentPrice < vp.valueAreaLow) { %>
+    <p class="text-red-400">
+      <strong>Bearish Signal:</strong> Price is trading <strong>below the Value Area Low</strong> at <%= formatPrice(vp.valueAreaLow) %>.
+      This indicates selling pressure and potential continuation lower. The Value Area Low now acts as resistance.
+    </p>
+    <% } else if (currentPrice > pocPrice) { %>
+    <p class="text-emerald-400">
+      <strong>Bullish Bias:</strong> Price is trading <strong>above the Point of Control</strong> at <%= formatPrice(poc.price) %>.
+      This suggests buyers are in control. Watch for potential pullback to POC as support.
+    </p>
+    <% } else if (currentPrice < pocPrice) { %>
+    <p class="text-amber-400">
+      <strong>Neutral to Bearish:</strong> Price is trading <strong>below the Point of Control</strong> at <%= formatPrice(poc.price) %>.
+      The POC at <%= formatPrice(poc.price) %> may act as resistance. Watch for price to reclaim POC for bullish confirmation.
+    </p>
+    <% } else { %>
+    <p class="text-sky-400">
+      <strong>At Equilibrium:</strong> Price is trading <strong>at the Point of Control</strong>.
+      This is a key decision point. Watch for directional break from this level.
+    </p>
+    <% } %>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (volumeProfile && levels.length > 0) { %>
+// Volume distribution chart could be added here for more visualization
+console.log('Volume Profile loaded for <%= symbol %>');
+<% } %>
+</script>
+<%- include('../partials/footer') %>

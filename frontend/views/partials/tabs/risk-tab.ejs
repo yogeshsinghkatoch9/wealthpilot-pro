@@ -1,0 +1,327 @@
+<%
+  const riskDecomp = data.riskDecomp || null;
+  const varScenarios = data.varScenarios || null;
+  const correlation = data.correlation || null;
+  const stressScenarios = data.stressScenarios || null;
+  const concentration = data.concentration || null;
+%>
+
+<!-- Risk Tab Content -->
+<div class="space-y-6">
+
+  <!-- ========== ANALYSIS 5: Risk Decomposition (Factor Exposures) ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        5. Risk Decomposition (Factor Exposures)
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">FAMA-FRENCH 5-FACTOR + MOM</span>
+    </div>
+
+    <% if (riskDecomp && !riskDecomp.error) { %>
+      <!-- Factor Betas Summary -->
+      <div class="grid grid-cols-7 gap-3 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Market</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (riskDecomp.factors?.market || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Size (SMB)</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (riskDecomp.factors?.size || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Value (HML)</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (riskDecomp.factors?.value || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Profit (RMW)</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (riskDecomp.factors?.profitability || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Invest (CMA)</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (riskDecomp.factors?.investment || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Momentum</div>
+          <div class="text-lg font-bold text-white font-mono">
+            <%= (riskDecomp.factors?.momentum || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-3">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">R²</div>
+          <div class="text-lg font-bold text-bloomberg-amber font-mono">
+            <%= ((riskDecomp.rSquared || 0) * 100).toFixed(1) %>%
+          </div>
+        </div>
+      </div>
+
+      <!-- Factor Exposure Bar Chart -->
+      <div class="h-96">
+        <canvas id="factor-exposure-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No factor exposure data available. Requires historical returns and factor data.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 6: VaR & Stress Scenarios ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        6. Value at Risk & Stress Scenarios
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">95% CONFIDENCE</span>
+    </div>
+
+    <% if (varScenarios && !varScenarios.error) { %>
+      <!-- VaR Summary Cards -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">1-Day VaR (95%)</div>
+          <div class="text-2xl font-bold text-red-400 font-mono">
+            -<%= fmt.money(varScenarios.var1Day || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">1-Day CVaR</div>
+          <div class="text-2xl font-bold text-red-400 font-mono">
+            -<%= fmt.money(varScenarios.cvar1Day || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">10-Day VaR (95%)</div>
+          <div class="text-2xl font-bold text-red-400 font-mono">
+            -<%= fmt.money(varScenarios.var10Day || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Method</div>
+          <div class="text-lg font-bold text-white uppercase tracking-wide mt-1">
+            <%= varScenarios.method || 'Historical' %>
+          </div>
+        </div>
+      </div>
+
+      <!-- VaR Time Series -->
+      <div class="h-80 mb-4">
+        <canvas id="var-timeseries-chart"></canvas>
+      </div>
+
+      <!-- Returns Distribution Histogram -->
+      <div class="h-64">
+        <canvas id="var-histogram-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No VaR data available. Requires historical returns data.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 7: Correlation & Covariance Heatmap ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        7. Correlation & Covariance Heatmap
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">HOLDINGS CORRELATION</span>
+    </div>
+
+    <% if (correlation && !correlation.error && correlation.matrix && correlation.matrix.length > 0) { %>
+      <!-- Correlation Matrix Heatmap -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs font-mono">
+          <thead>
+            <tr>
+              <th class="p-2 text-left text-slate-500"></th>
+              <% correlation.symbols.forEach(symbol => { %>
+                <th class="p-2 text-center text-slate-400"><%= symbol %></th>
+              <% }) %>
+            </tr>
+          </thead>
+          <tbody>
+            <% correlation.matrix.forEach((row, i) => { %>
+              <tr>
+                <td class="p-2 text-slate-400 font-semibold"><%= correlation.symbols[i] %></td>
+                <% row.forEach(value => { %>
+                  <%
+                    let bgClass = 'bg-slate-800';
+                    if (value >= 0.7) bgClass = 'bg-red-900';
+                    else if (value >= 0.3) bgClass = 'bg-orange-900';
+                    else if (value >= -0.3) bgClass = 'bg-slate-700';
+                    else if (value >= -0.7) bgClass = 'bg-blue-900';
+                    else bgClass = 'bg-green-900';
+
+                    let textClass = Math.abs(value) > 0.5 ? 'text-white font-bold' : 'text-slate-300';
+                  %>
+                  <td class="p-2 text-center <%= bgClass %> <%= textClass %>">
+                    <%= value.toFixed(2) %>
+                  </td>
+                <% }) %>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Correlation Legend -->
+      <div class="flex items-center justify-center gap-6 mt-4 text-xs">
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-green-900 border border-slate-600"></div>
+          <span class="text-slate-400">Strong Negative (&lt; -0.7)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-blue-900 border border-slate-600"></div>
+          <span class="text-slate-400">Negative (-0.7 to -0.3)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-slate-700 border border-slate-600"></div>
+          <span class="text-slate-400">Neutral (-0.3 to 0.3)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-orange-900 border border-slate-600"></div>
+          <span class="text-slate-400">Positive (0.3 to 0.7)</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-4 h-4 bg-red-900 border border-slate-600"></div>
+          <span class="text-slate-400">Strong Positive (&gt; 0.7)</span>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No correlation data available. Requires multiple holdings with price history.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 8: Scenario & Stress Testing ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        8. Scenario & Stress Testing
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">HISTORICAL SCENARIOS</span>
+    </div>
+
+    <% if (stressScenarios && !stressScenarios.error && stressScenarios.scenarios) { %>
+      <!-- Scenario Results Table -->
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full text-sm">
+          <thead class="bg-bloomberg-surface border-b border-bloomberg-border">
+            <tr>
+              <th class="px-4 py-3 text-left text-slate-400 font-semibold">Scenario</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Impact ($)</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Impact (%)</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Probability</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono">
+            <% stressScenarios.scenarios.forEach(scenario => { %>
+              <tr class="border-b border-slate-800 hover:bg-slate-900/50">
+                <td class="px-4 py-3 text-white"><%= scenario.name %></td>
+                <td class="px-4 py-3 text-right <%= scenario.impactDollar < 0 ? 'text-red-400' : 'text-emerald-400' %>">
+                  <%= scenario.impactDollar >= 0 ? '+' : '' %><%= fmt.money(scenario.impactDollar) %>
+                </td>
+                <td class="px-4 py-3 text-right <%= scenario.impactPercent < 0 ? 'text-red-400' : 'text-emerald-400' %>">
+                  <%= scenario.impactPercent >= 0 ? '+' : '' %><%= scenario.impactPercent.toFixed(2) %>%
+                </td>
+                <td class="px-4 py-3 text-right text-slate-300">
+                  <%= (scenario.probability * 100).toFixed(1) %>%
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Stress Test P&L Bar Chart -->
+      <div class="h-80">
+        <canvas id="stress-test-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No stress test data available. Using historical crisis scenarios.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 9: Holdings Concentration ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        9. Holdings Concentration
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">PARETO ANALYSIS</span>
+    </div>
+
+    <% if (concentration && !concentration.error) { %>
+      <!-- Concentration Metrics -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">HHI Index</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= concentration.hhi || 0 %>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            <%= concentration.hhi < 1500 ? 'Well Diversified' : concentration.hhi < 2500 ? 'Moderately Concentrated' : 'Highly Concentrated' %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Gini Coefficient</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (concentration.gini || 0).toFixed(3) %>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">
+            <%= concentration.gini < 0.4 ? 'Low Inequality' : concentration.gini < 0.6 ? 'Moderate' : 'High Inequality' %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Top 10 Holdings %</div>
+          <div class="text-2xl font-bold text-bloomberg-amber font-mono">
+            <%= (concentration.top10Percent || 0).toFixed(1) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Effective N</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= Math.round(concentration.effectiveN || 0) %>
+          </div>
+          <div class="text-xs text-slate-500 mt-1">holdings</div>
+        </div>
+      </div>
+
+      <!-- Pareto Chart (80/20 Rule) -->
+      <div class="h-96">
+        <canvas id="concentration-pareto-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No concentration data available. Requires portfolio holdings.
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+  // Store chart data for later initialization
+  window.riskTabData = {
+    riskDecomp: <%- JSON.stringify(riskDecomp) %>,
+    varScenarios: <%- JSON.stringify(varScenarios) %>,
+    correlation: <%- JSON.stringify(correlation) %>,
+    stressScenarios: <%- JSON.stringify(stressScenarios) %>,
+    concentration: <%- JSON.stringify(concentration) %>
+  };
+</script>

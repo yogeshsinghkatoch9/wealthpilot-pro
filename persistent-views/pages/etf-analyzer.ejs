@@ -1,0 +1,1399 @@
+<%
+const safeFmt = fmt || {
+  compact: (val) => typeof val === 'number' ? val.toLocaleString() : val,
+  pct: (val) => typeof val === 'number' ? val.toFixed(2) + '%' : val,
+  number: (val) => typeof val === 'number' ? val.toFixed(2) : val,
+  currency: (val) => typeof val === 'number' ? '$' + val.toLocaleString() : val,
+  billions: (val) => typeof val === 'number' ? '$' + (val / 1e9).toFixed(1) + 'B' : val
+};
+%>
+<%- include('../partials/header', { pageTitle: 'ETF Analyzer Pro' }) %>
+
+<style>
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .glass-card {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .gradient-border {
+    position: relative;
+    background: rgba(30, 41, 59, 0.9);
+  }
+
+  .etf-badge {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+    animation: fadeInUp 0.5s ease-out;
+  }
+
+  .etf-badge:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
+    transform: scale(1.05);
+  }
+
+  .search-input {
+    background: rgba(30, 41, 59, 0.6);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    transition: all 0.3s;
+  }
+
+  .search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    background: rgba(30, 41, 59, 0.8);
+  }
+
+  .metric-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: rgba(71, 85, 105, 0.3);
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+    border-radius: 9999px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(71, 85, 105, 0.2) 25%,
+      rgba(71, 85, 105, 0.3) 50%,
+      rgba(71, 85, 105, 0.2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 0.5rem;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    padding: 1rem;
+  }
+
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .overlap-indicator {
+    position: relative;
+    height: 4px;
+    background: rgba(71, 85, 105, 0.3);
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+
+  .overlap-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
+    border-radius: 9999px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    min-width: 300px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 9999;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .stat-number {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tab-indicator {
+    position: absolute;
+    bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+    border-radius: 9999px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+</style>
+
+<div class="flex-1 overflow-auto bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+  <!-- Hero Section -->
+  <div class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10"></div>
+    <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0); background-size: 40px 40px;"></div>
+
+    <div class="relative px-8 py-12 max-w-7xl mx-auto">
+      <div class="text-center mb-8">
+        <h1 class="text-5xl font-bold text-white mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+          ETF Analyzer Pro
+        </h1>
+        <p class="text-xl text-slate-300">Deep Dive into ETF Holdings, Overlap Analysis & Expense Optimization</p>
+      </div>
+
+      <!-- Search Section -->
+      <div class="max-w-4xl mx-auto">
+        <div class="glass-card rounded-2xl p-6">
+          <div class="flex gap-4">
+            <div class="flex-1 relative">
+              <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <i class="fas fa-search text-slate-400"></i>
+              </div>
+              <input
+                type="text"
+                id="etfSearch"
+                placeholder="Search ETF by symbol or name (e.g., SPY, QQQ, VOO)..."
+                class="search-input w-full pl-12 pr-4 py-4 rounded-xl text-white placeholder-slate-400 focus:outline-none text-lg"
+                autocomplete="off"
+              />
+              <div id="searchResults" class="absolute z-50 w-full mt-2 hidden"></div>
+            </div>
+            <button onclick="quickAdd()" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl transition-all font-semibold shadow-lg hover:shadow-xl transform hover:scale-105">
+              <i class="fas fa-plus mr-2"></i>Add ETF
+            </button>
+          </div>
+
+          <!-- Quick Add Buttons -->
+          <div class="mt-4 space-y-3">
+            <!-- S&P 500 & Total Market -->
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-emerald-400 text-xs font-semibold uppercase tracking-wider w-32">S&P 500:</span>
+              <button onclick="addETF('SPY')" class="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 hover:from-emerald-500/30 hover:to-blue-500/30 border border-emerald-500/30 text-slate-200 rounded-lg text-sm transition-all">SPY</button>
+              <button onclick="addETF('VOO')" class="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 hover:from-emerald-500/30 hover:to-blue-500/30 border border-emerald-500/30 text-slate-200 rounded-lg text-sm transition-all">VOO</button>
+              <button onclick="addETF('IVV')" class="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 hover:from-emerald-500/30 hover:to-blue-500/30 border border-emerald-500/30 text-slate-200 rounded-lg text-sm transition-all">IVV</button>
+              <button onclick="addETF('VTI')" class="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 hover:from-emerald-500/30 hover:to-blue-500/30 border border-emerald-500/30 text-slate-200 rounded-lg text-sm transition-all">VTI</button>
+            </div>
+
+            <!-- Tech & Growth -->
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-purple-400 text-xs font-semibold uppercase tracking-wider w-32">Tech:</span>
+              <button onclick="addETF('QQQ')" class="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-slate-200 rounded-lg text-sm transition-all">QQQ</button>
+              <button onclick="addETF('ARKK')" class="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-slate-200 rounded-lg text-sm transition-all">ARKK</button>
+              <button onclick="addETF('XLK')" class="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-slate-200 rounded-lg text-sm transition-all">XLK</button>
+              <button onclick="addETF('SOXX')" class="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 border border-purple-500/30 text-slate-200 rounded-lg text-sm transition-all">SOXX</button>
+            </div>
+
+            <!-- Dividend -->
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-amber-400 text-xs font-semibold uppercase tracking-wider w-32">Dividend:</span>
+              <button onclick="addETF('VIG')" class="px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/30 text-slate-200 rounded-lg text-sm transition-all">VIG</button>
+              <button onclick="addETF('SCHD')" class="px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/30 text-slate-200 rounded-lg text-sm transition-all">SCHD</button>
+              <button onclick="addETF('VYM')" class="px-3 py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/30 text-slate-200 rounded-lg text-sm transition-all">VYM</button>
+            </div>
+
+            <!-- Bonds -->
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-sky-400 text-xs font-semibold uppercase tracking-wider w-32">Bonds:</span>
+              <button onclick="addETF('AGG')" class="px-3 py-1 bg-gradient-to-r from-sky-500/20 to-cyan-500/20 hover:from-sky-500/30 hover:to-cyan-500/30 border border-sky-500/30 text-slate-200 rounded-lg text-sm transition-all">AGG</button>
+              <button onclick="addETF('BND')" class="px-3 py-1 bg-gradient-to-r from-sky-500/20 to-cyan-500/20 hover:from-sky-500/30 hover:to-cyan-500/30 border border-sky-500/30 text-slate-200 rounded-lg text-sm transition-all">BND</button>
+              <button onclick="addETF('TLT')" class="px-3 py-1 bg-gradient-to-r from-sky-500/20 to-cyan-500/20 hover:from-sky-500/30 hover:to-cyan-500/30 border border-sky-500/30 text-slate-200 rounded-lg text-sm transition-all">TLT</button>
+            </div>
+
+            <!-- International -->
+            <div class="flex flex-wrap gap-2 items-center">
+              <span class="text-rose-400 text-xs font-semibold uppercase tracking-wider w-32">International:</span>
+              <button onclick="addETF('VEA')" class="px-3 py-1 bg-gradient-to-r from-rose-500/20 to-red-500/20 hover:from-rose-500/30 hover:to-red-500/30 border border-rose-500/30 text-slate-200 rounded-lg text-sm transition-all">VEA</button>
+              <button onclick="addETF('VWO')" class="px-3 py-1 bg-gradient-to-r from-rose-500/20 to-red-500/20 hover:from-rose-500/30 hover:to-red-500/30 border border-rose-500/30 text-slate-200 rounded-lg text-sm transition-all">VWO</button>
+              <button onclick="addETF('VXUS')" class="px-3 py-1 bg-gradient-to-r from-rose-500/20 to-red-500/20 hover:from-rose-500/30 hover:to-red-500/30 border border-rose-500/30 text-slate-200 rounded-lg text-sm transition-all">VXUS</button>
+            </div>
+          </div>
+
+          <!-- Selected ETFs -->
+          <div id="selectedETFsContainer" class="mt-6 min-h-[60px]">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-slate-400 text-sm font-semibold uppercase tracking-wider">Selected ETFs (<span id="etfCount">0</span>/5)</span>
+              <button onclick="clearAll()" class="text-red-400 hover:text-red-300 text-sm font-semibold transition-colors" id="clearBtn" style="display: none;">
+                <i class="fas fa-trash mr-1"></i>Clear All
+              </button>
+            </div>
+            <div id="selectedETFs" class="flex flex-wrap gap-3">
+              <div class="text-slate-500 text-sm italic">No ETFs selected. Search and add ETFs to begin analysis.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-8 py-8">
+
+    <!-- Tabs -->
+    <div class="glass-card rounded-xl p-2 mb-6 relative">
+      <div class="flex gap-2 relative">
+        <button class="tab-btn flex-1 py-3 px-6 rounded-lg font-semibold transition-all relative z-10 text-white" data-tab="overview" onclick="switchTab('overview')">
+          <i class="fas fa-chart-pie mr-2"></i>Overview
+        </button>
+        <button class="tab-btn flex-1 py-3 px-6 rounded-lg font-semibold transition-all relative z-10 text-slate-400" data-tab="holdings" onclick="switchTab('holdings')">
+          <i class="fas fa-list-ul mr-2"></i>Holdings
+        </button>
+        <button class="tab-btn flex-1 py-3 px-6 rounded-lg font-semibold transition-all relative z-10 text-slate-400" data-tab="overlap" onclick="switchTab('overlap')">
+          <i class="fas fa-project-diagram mr-2"></i>Overlap
+        </button>
+        <button class="tab-btn flex-1 py-3 px-6 rounded-lg font-semibold transition-all relative z-10 text-slate-400" data-tab="expenses" onclick="switchTab('expenses')">
+          <i class="fas fa-money-bill-wave mr-2"></i>Expenses
+        </button>
+        <button class="tab-btn flex-1 py-3 px-6 rounded-lg font-semibold transition-all relative z-10 text-slate-400" data-tab="compare" onclick="switchTab('compare')">
+          <i class="fas fa-balance-scale mr-2"></i>Compare
+        </button>
+        <div class="tab-indicator" id="tabIndicator"></div>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+
+    <!-- Overview Tab -->
+    <div id="overviewTab" class="tab-content">
+      <div id="overviewContent" class="comparison-grid">
+        <!-- Empty State -->
+        <div class="col-span-full glass-card rounded-xl p-12 text-center">
+          <i class="fas fa-chart-line text-6xl text-blue-400/50 mb-4"></i>
+          <h3 class="text-2xl font-bold text-white mb-2">Start Your Analysis</h3>
+          <p class="text-slate-400 max-w-md mx-auto">Search and add ETFs above to view detailed profiles, live prices, and key metrics</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings Tab -->
+    <div id="holdingsTab" class="tab-content hidden">
+      <div id="holdingsContent">
+        <div class="glass-card rounded-xl p-12 text-center">
+          <i class="fas fa-list text-6xl text-purple-400/50 mb-4"></i>
+          <h3 class="text-2xl font-bold text-white mb-2">No ETF Selected</h3>
+          <p class="text-slate-400">Add an ETF and click "View Holdings" to see detailed breakdown</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlap Tab -->
+    <div id="overlapTab" class="tab-content hidden">
+      <div id="overlapContent">
+        <div class="glass-card rounded-xl p-12 text-center">
+          <i class="fas fa-project-diagram text-6xl text-pink-400/50 mb-4"></i>
+          <h3 class="text-2xl font-bold text-white mb-2">Compare Multiple ETFs</h3>
+          <p class="text-slate-400">Add at least 2 ETFs to analyze holdings overlap and find commonalities</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses Tab -->
+    <div id="expensesTab" class="tab-content hidden">
+      <div id="expensesContent">
+        <div class="glass-card rounded-xl p-12 text-center">
+          <i class="fas fa-money-bill-wave text-6xl text-green-400/50 mb-4"></i>
+          <h3 class="text-2xl font-bold text-white mb-2">Expense Analysis</h3>
+          <p class="text-slate-400">Add ETFs to compare expense ratios and cost impact</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare Tab -->
+    <div id="compareTab" class="tab-content hidden">
+      <div id="compareContent">
+        <div class="glass-card rounded-xl p-12 text-center">
+          <i class="fas fa-balance-scale text-6xl text-amber-400/50 mb-4"></i>
+          <h3 class="text-2xl font-bold text-white mb-2">Side-by-Side Comparison</h3>
+          <p class="text-slate-400">Add multiple ETFs for comprehensive metric comparison</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast">
+  <div class="flex items-center gap-3">
+    <div id="toastIcon" class="text-2xl"></div>
+    <div class="flex-1">
+      <div id="toastTitle" class="font-semibold text-white"></div>
+      <div id="toastMessage" class="text-sm text-slate-400"></div>
+    </div>
+    <button onclick="hideToast()" class="text-slate-400 hover:text-white">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global state
+let selectedETFs = [];
+let etfData = {};
+let charts = {};
+let currentTab = 'overview';
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  initializeTabIndicator();
+  setupSearchListener();
+});
+
+// Setup search listener
+function setupSearchListener() {
+  const searchInput = document.getElementById('etfSearch');
+  let searchTimeout;
+
+  searchInput.addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+
+    if (query.length >= 1) {
+      searchTimeout = setTimeout(() => searchETFs(query), 300);
+    } else {
+      hideSearchResults();
+    }
+  });
+
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      quickAdd();
+    }
+  });
+
+  // Click outside to close
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#etfSearch') && !e.target.closest('#searchResults')) {
+      hideSearchResults();
+    }
+  });
+}
+
+// Search ETFs
+async function searchETFs(query) {
+  const resultsDiv = document.getElementById('searchResults');
+  resultsDiv.innerHTML = '<div class="glass-card rounded-xl p-4 text-center"><div class="skeleton h-20 w-full"></div></div>';
+  resultsDiv.classList.remove('hidden');
+
+  // Show popular ETFs if search is short
+  if (query.length <= 2) {
+    showPopularETFs(query);
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/etf-analyzer/search?query=${encodeURIComponent(query)}`);
+    const data = await response.json();
+
+    if (data.success && data.data.length > 0) {
+      renderSearchResults(data.data);
+    } else {
+      showPopularETFs(query);
+    }
+  } catch (error) {
+    console.error('Search failed:', error);
+    showPopularETFs(query);
+  }
+}
+
+// Show popular ETFs
+function showPopularETFs(query) {
+  const popular = [
+    { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust' },
+    { symbol: 'VOO', name: 'Vanguard S&P 500 ETF' },
+    { symbol: 'QQQ', name: 'Invesco QQQ Trust' },
+    { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF' },
+    { symbol: 'IVV', name: 'iShares Core S&P 500 ETF' }
+  ].filter(etf =>
+    query === '' ||
+    etf.symbol.toLowerCase().includes(query.toLowerCase()) ||
+    etf.name.toLowerCase().includes(query.toLowerCase())
+  );
+
+  renderSearchResults(popular);
+}
+
+// Render search results
+function renderSearchResults(results) {
+  const resultsDiv = document.getElementById('searchResults');
+
+  if (results.length === 0) {
+    resultsDiv.innerHTML = `
+      <div class="glass-card rounded-xl p-4 text-center">
+        <p class="text-slate-400">No results found</p>
+      </div>
+    `;
+    return;
+  }
+
+  resultsDiv.innerHTML = `
+    <div class="glass-card rounded-xl overflow-hidden divide-y divide-slate-700/50 max-h-96 overflow-y-auto">
+      ${results.map(etf => `
+        <div class="search-result p-4 hover:bg-blue-600/10 cursor-pointer transition-colors" onclick="addETF('${etf.symbol}')">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <div class="font-bold text-white text-lg">${etf.symbol}</div>
+              <div class="text-sm text-slate-400">${etf.name || etf.symbol + ' ETF'}</div>
+            </div>
+            <i class="fas fa-plus-circle text-blue-400 text-xl"></i>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  resultsDiv.classList.remove('hidden');
+}
+
+// Hide search results
+function hideSearchResults() {
+  document.getElementById('searchResults').classList.add('hidden');
+}
+
+// Quick add from search
+function quickAdd() {
+  const symbol = document.getElementById('etfSearch').value.trim().toUpperCase();
+  if (symbol) {
+    addETF(symbol);
+    document.getElementById('etfSearch').value = '';
+    hideSearchResults();
+  }
+}
+
+// Add ETF
+async function addETF(symbol) {
+  symbol = symbol.toUpperCase();
+
+  if (selectedETFs.includes(symbol)) {
+    showToast('Already Added', `${symbol} is already in your selection`, 'info');
+    return;
+  }
+
+  if (selectedETFs.length >= 5) {
+    showToast('Limit Reached', 'Maximum 5 ETFs can be compared', 'warning');
+    return;
+  }
+
+  selectedETFs.push(symbol);
+  updateSelectedETFs();
+  hideSearchResults();
+
+  showToast('ETF Added', `${symbol} added successfully`, 'success');
+
+  // Fetch data
+  await fetchETFData(symbol);
+  updateAllTabs();
+}
+
+// Remove ETF
+function removeETF(symbol) {
+  selectedETFs = selectedETFs.filter(s => s !== symbol);
+  delete etfData[symbol];
+  updateSelectedETFs();
+  updateAllTabs();
+  showToast('ETF Removed', `${symbol} removed from comparison`, 'info');
+}
+
+// Clear all
+function clearAll() {
+  if (confirm('Remove all ETFs from comparison?')) {
+    selectedETFs = [];
+    etfData = {};
+    updateSelectedETFs();
+    updateAllTabs();
+    showToast('Cleared', 'All ETFs removed', 'info');
+  }
+}
+
+// Update selected ETFs display
+function updateSelectedETFs() {
+  const container = document.getElementById('selectedETFs');
+  const countSpan = document.getElementById('etfCount');
+  const clearBtn = document.getElementById('clearBtn');
+
+  countSpan.textContent = selectedETFs.length;
+  clearBtn.style.display = selectedETFs.length > 0 ? 'block' : 'none';
+
+  if (selectedETFs.length === 0) {
+    container.innerHTML = '<div class="text-slate-500 text-sm italic">No ETFs selected. Search and add ETFs to begin analysis.</div>';
+    return;
+  }
+
+  container.innerHTML = selectedETFs.map((symbol, idx) => {
+    const data = etfData[symbol];
+    const isLoading = !data;
+
+    return `
+      <div class="etf-badge" style="animation-delay: ${idx * 100}ms;">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-white">${symbol}</span>
+          ${isLoading ?
+            '<div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>' :
+            `<span class="text-${data.changePercent >= 0 ? 'green' : 'red'}-400 text-xs font-mono">
+              ${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%
+            </span>`
+          }
+        </div>
+        <button onclick="removeETF('${symbol}')" class="ml-2 text-slate-400 hover:text-red-400 transition-colors">
+          <i class="fas fa-times-circle"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+// Fetch ETF data
+async function fetchETFData(symbol) {
+  try {
+    const response = await fetch(`/api/etf-analyzer/profile/${symbol}`);
+    const result = await response.json();
+
+    if (result.success) {
+      etfData[symbol] = result.data;
+      updateSelectedETFs();
+    } else {
+      showToast('Error', `Failed to fetch data for ${symbol}`, 'error');
+    }
+  } catch (error) {
+    console.error(`Failed to fetch ${symbol}:`, error);
+    showToast('Error', `Failed to fetch data for ${symbol}`, 'error');
+  }
+}
+
+// Update all tabs
+function updateAllTabs() {
+  updateOverviewTab();
+  updateHoldingsTab();
+  updateOverlapTab();
+  updateExpensesTab();
+  updateCompareTab();
+}
+
+// Switch tab
+function switchTab(tab) {
+  currentTab = tab;
+
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.dataset.tab === tab) {
+      btn.classList.add('text-white');
+      btn.classList.remove('text-slate-400');
+    } else {
+      btn.classList.remove('text-white');
+      btn.classList.add('text-slate-400');
+    }
+  });
+
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  document.getElementById(`${tab}Tab`).classList.remove('hidden');
+
+  // Update indicator
+  updateTabIndicator(tab);
+}
+
+// Initialize tab indicator
+function initializeTabIndicator() {
+  updateTabIndicator('overview');
+}
+
+// Update tab indicator position
+function updateTabIndicator(tab) {
+  const indicator = document.getElementById('tabIndicator');
+  const button = document.querySelector(`[data-tab="${tab}"]`);
+
+  if (button && indicator) {
+    const parent = button.parentElement;
+    const rect = button.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+
+    indicator.style.width = rect.width + 'px';
+    indicator.style.left = (rect.left - parentRect.left) + 'px';
+  }
+}
+
+// Update overview tab
+function updateOverviewTab() {
+  const content = document.getElementById('overviewContent');
+
+  if (selectedETFs.length === 0) {
+    content.innerHTML = `
+      <div class="col-span-full glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-chart-line text-6xl text-blue-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Start Your Analysis</h3>
+        <p class="text-slate-400 max-w-md mx-auto">Search and add ETFs above to view detailed profiles, live prices, and key metrics</p>
+      </div>
+    `;
+    return;
+  }
+
+  content.innerHTML = selectedETFs.map(symbol => {
+    const data = etfData[symbol];
+
+    if (!data) {
+      return `
+        <div class="glass-card rounded-xl p-6">
+          <div class="skeleton h-8 w-20 mb-4"></div>
+          <div class="skeleton h-6 w-full mb-2"></div>
+          <div class="skeleton h-24 w-full"></div>
+        </div>
+      `;
+    }
+
+    const changeColor = data.changePercent >= 0 ? 'green' : 'red';
+    const changeIcon = data.changePercent >= 0 ? 'arrow-up' : 'arrow-down';
+
+    return `
+      <div class="gradient-border glass-card rounded-xl p-6" style="animation: fadeInUp 0.5s ease-out;">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <h3 class="text-2xl font-bold text-white mb-1">${data.symbol}</h3>
+            <p class="text-sm text-slate-400">${data.name}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-3xl font-bold text-white stat-number">$${data.price.toFixed(2)}</div>
+            <div class="flex items-center justify-end gap-2 text-${changeColor}-400 font-semibold mt-1">
+              <i class="fas fa-${changeIcon}"></i>
+              <span class="stat-number">${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3 mb-4">
+          <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+            <span class="text-slate-400 text-sm">Expense Ratio</span>
+            <span class="text-white font-bold tabular-nums">${data.expenseRatio.toFixed(2)}%</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+            <span class="text-slate-400 text-sm">AUM</span>
+            <span class="text-white font-bold tabular-nums">$${(data.aum / 1e9).toFixed(1)}B</span>
+          </div>
+          <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+            <span class="text-slate-400 text-sm">Volume</span>
+            <span class="text-white font-bold tabular-nums">${data.volume.toLocaleString()}</span>
+          </div>
+          <div class="flex justify-between items-center py-2">
+            <span class="text-slate-400 text-sm">Exchange</span>
+            <span class="text-white font-semibold">${data.exchange}</span>
+          </div>
+        </div>
+
+        <button onclick="viewHoldings('${symbol}')" class="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all font-semibold shadow-lg transform hover:scale-105">
+          <i class="fas fa-list mr-2"></i>View Holdings
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+// View holdings
+async function viewHoldings(symbol) {
+  switchTab('holdings');
+
+  const content = document.getElementById('holdingsContent');
+  content.innerHTML = `
+    <div class="glass-card rounded-xl p-8">
+      <div class="text-center">
+        <div class="skeleton h-64 w-full mb-4"></div>
+        <p class="text-slate-400">Loading holdings for ${symbol}...</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const response = await fetch(`/api/etf-analyzer/holdings/${symbol}`);
+    const result = await response.json();
+
+    if (result.success) {
+      renderHoldings(symbol, result.data.holdings);
+    }
+  } catch (error) {
+    content.innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-red-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Error Loading Holdings</h3>
+        <p class="text-slate-400">Failed to fetch holdings data for ${symbol}</p>
+      </div>
+    `;
+  }
+}
+
+// Render holdings
+function renderHoldings(symbol, holdings) {
+  const content = document.getElementById('holdingsContent');
+  const top10Weight = holdings.slice(0, 10).reduce((sum, h) => sum + h.weight, 0);
+  const etf = etfData[symbol];
+
+  content.innerHTML = `
+    <div class="glass-card rounded-xl p-8">
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-3xl font-bold text-white mb-2">${symbol} Holdings</h2>
+            <p class="text-slate-400">${etf ? etf.name : ''}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-slate-400">Current Price</div>
+            <div class="text-2xl font-bold text-white stat-number">$${etf ? etf.price.toFixed(2) : '-'}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">Total Holdings</div>
+            <div class="text-2xl font-bold text-white stat-number">${holdings.length}</div>
+          </div>
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">Top 10 Weight</div>
+            <div class="text-2xl font-bold text-blue-400 stat-number">${top10Weight.toFixed(1)}%</div>
+          </div>
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">Expense Ratio</div>
+            <div class="text-2xl font-bold text-green-400 stat-number">${etf ? etf.expenseRatio.toFixed(2) : '0.00'}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Holdings Chart -->
+      <div class="mb-8">
+        <h3 class="text-lg font-bold text-white mb-4">Top 10 Holdings Distribution</h3>
+        <div class="chart-container">
+          <canvas id="holdingsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Holdings Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b-2 border-slate-700">
+              <th class="text-left py-3 px-4 text-slate-400 font-semibold text-sm uppercase">#</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Symbol</th>
+              <th class="text-left py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Name</th>
+              <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Weight</th>
+              <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Visual</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${holdings.slice(0, 25).map(holding => `
+              <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                <td class="py-3 px-4 text-slate-400">${holding.rank}</td>
+                <td class="py-3 px-4">
+                  <span class="font-mono font-bold text-white">${holding.symbol}</span>
+                </td>
+                <td class="py-3 px-4 text-slate-300">${holding.name}</td>
+                <td class="py-3 px-4 text-right">
+                  <span class="font-mono font-bold text-blue-400">${holding.weight.toFixed(2)}%</span>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${(holding.weight / holdings[0].weight * 100)}%"></div>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Create holdings chart
+  createHoldingsChart(holdings.slice(0, 10));
+}
+
+// Create holdings chart
+function createHoldingsChart(holdings) {
+  const ctx = document.getElementById('holdingsChart');
+  if (!ctx) return;
+
+  if (charts.holdings) {
+    charts.holdings.destroy();
+  }
+
+  charts.holdings = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: holdings.map(h => h.symbol),
+      datasets: [{
+        data: holdings.map(h => h.weight),
+        backgroundColor: [
+          '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
+          '#06b6d4', '#6366f1', '#f43f5e', '#84cc16', '#a855f7'
+        ],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#cbd5e1',
+            padding: 15,
+            font: { size: 12, family: 'system-ui' }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#fff',
+          bodyColor: '#cbd5e1',
+          borderColor: '#3b82f6',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + context.parsed.toFixed(2) + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Update holdings tab
+function updateHoldingsTab() {
+  if (selectedETFs.length === 0) {
+    document.getElementById('holdingsContent').innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-list text-6xl text-purple-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">No ETF Selected</h3>
+        <p class="text-slate-400">Add an ETF and click "View Holdings" to see detailed breakdown</p>
+      </div>
+    `;
+  }
+}
+
+// Update overlap tab
+async function updateOverlapTab() {
+  const content = document.getElementById('overlapContent');
+
+  if (selectedETFs.length < 2) {
+    content.innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-project-diagram text-6xl text-pink-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Compare Multiple ETFs</h3>
+        <p class="text-slate-400">Add at least 2 ETFs to analyze holdings overlap and find commonalities</p>
+      </div>
+    `;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="glass-card rounded-xl p-8">
+      <div class="text-center">
+        <div class="skeleton h-64 w-full mb-4"></div>
+        <p class="text-slate-400">Calculating overlap analysis...</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const response = await fetch('/api/etf-analyzer/overlap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbols: selectedETFs })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      renderOverlap(result.data);
+    }
+  } catch (error) {
+    content.innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-red-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Error</h3>
+        <p class="text-slate-400">Failed to calculate overlap analysis</p>
+      </div>
+    `;
+  }
+}
+
+// Render overlap
+function renderOverlap(data) {
+  const content = document.getElementById('overlapContent');
+
+  content.innerHTML = `
+    <div class="space-y-6">
+      <!-- Summary -->
+      <div class="glass-card rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-white mb-6">Overlap Analysis Summary</h2>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">ETFs Analyzed</div>
+            <div class="text-3xl font-bold text-white stat-number">${data.summary.etfsAnalyzed}</div>
+          </div>
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">Common Holdings</div>
+            <div class="text-3xl font-bold text-blue-400 stat-number">${data.summary.totalCommonHoldings}</div>
+          </div>
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">Avg Overlap</div>
+            <div class="text-3xl font-bold text-purple-400 stat-number">${data.summary.avgOverlapPercent || '0.00'}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pairwise Overlap -->
+      <div class="glass-card rounded-xl p-8">
+        <h3 class="text-xl font-bold text-white mb-6">Pairwise Overlap Analysis</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${data.pairwiseOverlap.map(pair => `
+            <div class="metric-card">
+              <div class="flex justify-between items-center mb-3">
+                <div>
+                  <span class="font-bold text-white text-lg">${pair.etf1}</span>
+                  <i class="fas fa-arrows-alt-h text-slate-400 mx-2"></i>
+                  <span class="font-bold text-white text-lg">${pair.etf2}</span>
+                </div>
+                <span class="px-3 py-1 bg-blue-600/20 border border-blue-600/30 rounded-full text-blue-400 font-semibold text-sm">
+                  ${pair.commonCount} holdings
+                </span>
+              </div>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-400">Holdings Overlap</span>
+                  <span class="text-white font-mono font-semibold">${pair.overlapPercent}%</span>
+                </div>
+                <div class="overlap-indicator">
+                  <div class="overlap-fill" style="width: ${pair.overlapPercent}%"></div>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-400">Weighted Overlap</span>
+                  <span class="text-white font-mono font-semibold">${pair.weightedOverlap}%</span>
+                </div>
+                <div class="overlap-indicator">
+                  <div class="overlap-fill" style="width: ${pair.weightedOverlap}%"></div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Common Holdings -->
+      ${data.commonHoldings.length > 0 ? `
+        <div class="glass-card rounded-xl p-8">
+          <h3 class="text-xl font-bold text-white mb-6">Top Common Holdings</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b-2 border-slate-700">
+                  <th class="text-left py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Symbol</th>
+                  <th class="text-left py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Name</th>
+                  <th class="text-center py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Present In</th>
+                  <th class="text-right py-3 px-4 text-slate-400 font-semibold text-sm uppercase">Avg Weight</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.commonHoldings.slice(0, 20).map(holding => `
+                  <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                    <td class="py-3 px-4">
+                      <span class="font-mono font-bold text-white">${holding.symbol}</span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-300">${holding.name}</td>
+                    <td class="py-3 px-4 text-center">
+                      <span class="px-3 py-1 bg-purple-600/20 border border-purple-600/30 rounded-full text-purple-400 font-semibold text-sm">
+                        ${holding.presentIn}/${data.summary.etfsAnalyzed}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <span class="font-mono font-bold text-blue-400">${holding.avgWeight.toFixed(2)}%</span>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// Update expenses tab
+async function updateExpensesTab() {
+  const content = document.getElementById('expensesContent');
+
+  if (selectedETFs.length < 2) {
+    content.innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-money-bill-wave text-6xl text-green-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Expense Analysis</h3>
+        <p class="text-slate-400">Add at least 2 ETFs to compare expense ratios and cost impact</p>
+      </div>
+    `;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="glass-card rounded-xl p-8">
+      <div class="text-center">
+        <div class="skeleton h-64 w-full mb-4"></div>
+        <p class="text-slate-400">Comparing expense ratios...</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const response = await fetch('/api/etf-analyzer/compare-expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbols: selectedETFs })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      renderExpenses(result.data);
+    }
+  } catch (error) {
+    content.innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-red-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Error</h3>
+        <p class="text-slate-400">Failed to compare expenses</p>
+      </div>
+    `;
+  }
+}
+
+// Render expenses
+function renderExpenses(data) {
+  const content = document.getElementById('expensesContent');
+
+  content.innerHTML = `
+    <div class="space-y-6">
+      <!-- Summary -->
+      <div class="glass-card rounded-xl p-8">
+        <h2 class="text-2xl font-bold text-white mb-6">Expense Comparison</h2>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="metric-card border-2 border-green-600/30">
+            <div class="text-sm text-slate-400 mb-1">Lowest Expense</div>
+            <div class="text-2xl font-bold text-green-400 stat-number mb-1">${data.lowestExpense.expenseRatio.toFixed(2)}%</div>
+            <div class="text-xs text-slate-400">${data.lowestExpense.symbol}</div>
+          </div>
+          <div class="metric-card">
+            <div class="text-sm text-slate-400 mb-1">Average Expense</div>
+            <div class="text-2xl font-bold text-white stat-number">${data.avgExpense}%</div>
+          </div>
+          <div class="metric-card border-2 border-red-600/30">
+            <div class="text-sm text-slate-400 mb-1">Highest Expense</div>
+            <div class="text-2xl font-bold text-red-400 stat-number mb-1">${data.highestExpense.expenseRatio.toFixed(2)}%</div>
+            <div class="text-xs text-slate-400">${data.highestExpense.symbol}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expense Chart -->
+      <div class="glass-card rounded-xl p-8">
+        <h3 class="text-xl font-bold text-white mb-6">Expense Ratio Comparison</h3>
+        <div class="chart-container">
+          <canvas id="expenseChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Detailed Breakdown -->
+      <div class="comparison-grid">
+        ${data.etfs.map(etf => {
+          const isLowest = etf.symbol === data.lowestExpense.symbol;
+          const isHighest = etf.symbol === data.highestExpense.symbol;
+          const borderClass = isLowest ? 'border-2 border-green-600/50' : isHighest ? 'border-2 border-red-600/50' : '';
+
+          return `
+            <div class="glass-card rounded-xl p-6 ${borderClass}">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h4 class="text-xl font-bold text-white mb-1">${etf.symbol}</h4>
+                  <p class="text-sm text-slate-400">${etf.name}</p>
+                </div>
+                ${isLowest ? '<span class="px-2 py-1 bg-green-600 text-white text-xs rounded-full font-semibold">LOWEST</span>' : ''}
+                ${isHighest ? '<span class="px-2 py-1 bg-red-600 text-white text-xs rounded-full font-semibold">HIGHEST</span>' : ''}
+              </div>
+
+              <div class="space-y-3 mb-4">
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400 text-sm">Expense Ratio</span>
+                  <span class="text-2xl font-bold text-white stat-number">${etf.expenseRatio.toFixed(2)}%</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400 text-sm">Price</span>
+                  <span class="text-white font-semibold stat-number">$${etf.price.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400 text-sm">AUM</span>
+                  <span class="text-white font-semibold stat-number">$${(etf.aum / 1e9).toFixed(1)}B</span>
+                </div>
+              </div>
+
+              <div class="pt-4 border-t border-slate-700">
+                <div class="text-xs text-slate-400 mb-1">Annual cost on $10,000 investment:</div>
+                <div class="text-xl font-bold text-white stat-number">$${(10000 * etf.expenseRatio / 100).toFixed(2)}</div>
+                <div class="text-xs text-slate-400 mt-2">
+                  Over 10 years: <span class="text-white font-semibold stat-number">$${(10000 * etf.expenseRatio / 100 * 10).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  // Create expense chart
+  createExpenseChart(data.etfs);
+}
+
+// Create expense chart
+function createExpenseChart(etfs) {
+  const ctx = document.getElementById('expenseChart');
+  if (!ctx) return;
+
+  if (charts.expense) {
+    charts.expense.destroy();
+  }
+
+  charts.expense = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: etfs.map(e => e.symbol),
+      datasets: [{
+        label: 'Expense Ratio (%)',
+        data: etfs.map(e => e.expenseRatio),
+        backgroundColor: etfs.map((e, i) => {
+          const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+          return colors[i % colors.length];
+        }),
+        borderWidth: 0,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#fff',
+          bodyColor: '#cbd5e1',
+          borderColor: '#3b82f6',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: function(context) {
+              return 'Expense Ratio: ' + context.parsed.y.toFixed(2) + '%';
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(148, 163, 184, 0.1)'
+          },
+          ticks: {
+            color: '#cbd5e1',
+            callback: function(value) {
+              return value.toFixed(2) + '%';
+            }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#cbd5e1', font: { size: 14, weight: 'bold' } }
+        }
+      }
+    }
+  });
+}
+
+// Update compare tab
+function updateCompareTab() {
+  const content = document.getElementById('compareContent');
+
+  if (selectedETFs.length < 2) {
+    content.innerHTML = `
+      <div class="glass-card rounded-xl p-12 text-center">
+        <i class="fas fa-balance-scale text-6xl text-amber-400/50 mb-4"></i>
+        <h3 class="text-2xl font-bold text-white mb-2">Side-by-Side Comparison</h3>
+        <p class="text-slate-400">Add multiple ETFs for comprehensive metric comparison</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Get all metrics to compare
+  const metrics = [
+    { key: 'price', label: 'Current Price', format: v => '$' + v.toFixed(2) },
+    { key: 'changePercent', label: 'Daily Change', format: v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%' },
+    { key: 'volume', label: 'Volume', format: v => v.toLocaleString() },
+    { key: 'expenseRatio', label: 'Expense Ratio', format: v => v.toFixed(2) + '%' },
+    { key: 'aum', label: 'AUM', format: v => '$' + (v / 1e9).toFixed(1) + 'B' }
+  ];
+
+  content.innerHTML = `
+    <div class="glass-card rounded-xl p-8">
+      <h2 class="text-2xl font-bold text-white mb-6">Side-by-Side Comparison</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b-2 border-slate-700">
+              <th class="text-left py-4 px-4 text-slate-400 font-semibold uppercase text-sm">Metric</th>
+              ${selectedETFs.map(symbol => `
+                <th class="text-center py-4 px-4">
+                  <div class="text-xl font-bold text-white">${symbol}</div>
+                  <div class="text-xs text-slate-400">${etfData[symbol]?.name || ''}</div>
+                </th>
+              `).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${metrics.map(metric => `
+              <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                <td class="py-4 px-4 font-semibold text-white">${metric.label}</td>
+                ${selectedETFs.map(symbol => {
+                  const data = etfData[symbol];
+                  if (!data) return '<td class="py-4 px-4 text-center text-slate-500">-</td>';
+
+                  const value = data[metric.key];
+                  const formatted = metric.format(value);
+
+                  let colorClass = 'text-white';
+                  if (metric.key === 'changePercent') {
+                    colorClass = value >= 0 ? 'text-green-400' : 'text-red-400';
+                  } else if (metric.key === 'expenseRatio') {
+                    // Find min expense ratio
+                    const allExpenses = selectedETFs.map(s => etfData[s]?.expenseRatio || 999).filter(e => e !== 999);
+                    const minExpense = Math.min(...allExpenses);
+                    if (value === minExpense) colorClass = 'text-green-400';
+                  }
+
+                  return `<td class="py-4 px-4 text-center font-bold stat-number ${colorClass}">${formatted}</td>`;
+                }).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// Toast notifications
+function showToast(title, message, type = 'info') {
+  const toast = document.getElementById('toast');
+  const iconEl = document.getElementById('toastIcon');
+  const titleEl = document.getElementById('toastTitle');
+  const messageEl = document.getElementById('toastMessage');
+
+  const icons = {
+    success: '<i class="fas fa-check-circle text-green-400"></i>',
+    error: '<i class="fas fa-exclamation-circle text-red-400"></i>',
+    warning: '<i class="fas fa-exclamation-triangle text-yellow-400"></i>',
+    info: '<i class="fas fa-info-circle text-blue-400"></i>'
+  };
+
+  iconEl.innerHTML = icons[type] || icons.info;
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+
+  toast.classList.add('show');
+
+  setTimeout(() => {
+    hideToast();
+  }, 4000);
+}
+
+function hideToast() {
+  document.getElementById('toast').classList.remove('show');
+}
+
+// Initialize on load
+console.log('ETF Analyzer Pro initialized');
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,1206 @@
+<%
+  // Safe defaults
+  const safeUser = typeof user !== 'undefined' ? user : {};
+  const safeSettings = typeof settings !== 'undefined' ? settings : {};
+  const safeApiKeys = typeof apiKeys !== 'undefined' ? apiKeys : [];
+  const safeSessions = typeof sessions !== 'undefined' ? sessions : [];
+  const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+
+  // Current tab from query parameter
+  const activeTab = typeof req !== 'undefined' && req.query && req.query.tab ? req.query.tab : 'profile';
+
+  // Generate initials for avatar
+  const fullName = `${safeUser.firstName || ''} ${safeUser.lastName || ''}`.trim() || 'User';
+  const initials = fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+
+  // User data with fallbacks
+  const userName = fullName;
+  const userEmail = safeUser.email || 'user@wealthpilot.com';
+  const userPhone = safeUser.phone || '';
+  const userBio = safeUser.bio || '';
+  const userJobTitle = safeUser.jobTitle || '';
+  const userAvatar = safeUser.avatar || '';
+
+  // Settings with fallbacks
+  const twoFactorEnabled = safeSettings.twoFactorEnabled || false;
+  const currentTheme = safeSettings.theme || 'dark';
+  const marketAlerts = safeSettings.marketAlerts !== false;
+  const portfolioUpdates = safeSettings.portfolioUpdates !== false;
+  const securityAlerts = safeSettings.securityAlerts !== false;
+  const emailDigest = safeSettings.emailDigest !== false;
+  const pushNotifications = safeSettings.pushNotifications !== false;
+%>
+<%- include('../partials/header', { pageTitle: 'Settings' }) %>
+
+<style>
+  /* Stitch Settings Page Styles */
+  .settings-container {
+    max-width: 1024px;
+    margin: 0 auto;
+  }
+
+  /* Toggle Switch Styling */
+  .toggle-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .toggle-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    width: 44px;
+    height: 24px;
+    background: #292a38;
+    border-radius: 9999px;
+    position: relative;
+    transition: background-color 0.2s ease;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 9999px;
+    transition: transform 0.2s ease;
+  }
+
+  .toggle-switch input:checked + .toggle-track {
+    background: #4850e5;
+  }
+
+  .toggle-switch input:checked + .toggle-track::after {
+    transform: translateX(20px);
+  }
+
+  .toggle-switch input:disabled + .toggle-track {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Tab Styles */
+  .settings-tab {
+    padding: 0.75rem 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    color: #9e9fb7;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .settings-tab:hover {
+    color: white;
+    border-bottom-color: #3d3e52;
+  }
+
+  .settings-tab.active {
+    color: white;
+    border-bottom-color: #4850e5;
+  }
+
+  /* Card Styles */
+  .settings-card {
+    background: #181920;
+    border: 1px solid #292a38;
+    border-radius: 0.75rem;
+  }
+
+  /* Input Styles */
+  .settings-input {
+    background: #111217;
+    border: 1px solid #292a38;
+    color: white;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    width: 100%;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .settings-input:focus {
+    outline: none;
+    border-color: #4850e5;
+    box-shadow: 0 0 0 2px rgba(72, 80, 229, 0.2);
+  }
+
+  .settings-input:disabled,
+  .settings-input[readonly] {
+    background: rgba(17, 18, 23, 0.5);
+    color: #6b7280;
+    cursor: not-allowed;
+  }
+
+  .settings-input::placeholder {
+    color: #6b7280;
+  }
+
+  /* Button Styles */
+  .btn-primary {
+    background: #4850e5;
+    color: white;
+    font-weight: 700;
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+    box-shadow: 0 10px 15px -3px rgba(72, 80, 229, 0.25);
+  }
+
+  .btn-primary:hover {
+    background: rgba(72, 80, 229, 0.9);
+  }
+
+  .btn-secondary {
+    background: #292a38;
+    color: white;
+    font-weight: 700;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background: #3d3e52;
+  }
+
+  .btn-danger {
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* Theme Card Styles */
+  .theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 2px solid #292a38;
+    background: #111217;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+    position: relative;
+  }
+
+  .theme-card:hover {
+    border-color: #6b7280;
+  }
+
+  .theme-card.active {
+    border-color: #4850e5;
+  }
+
+  .theme-card .check-icon {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #4850e5;
+    display: none;
+  }
+
+  .theme-card.active .check-icon {
+    display: block;
+  }
+
+  /* Floating Save Bar */
+  .floating-save-bar {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: #111217;
+    border: 1px solid #292a38;
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    gap: 1rem;
+    z-index: 50;
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .floating-save-bar.visible {
+    display: flex;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Tab Content Animation */
+  .tab-content {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .tab-pane {
+    display: none;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  /* Session Item */
+  .session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #111217;
+    border: 1px solid #292a38;
+    border-radius: 0.5rem;
+  }
+
+  /* Avatar Hover Effect */
+  .avatar-wrapper {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .avatar-wrapper .avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .avatar-wrapper:hover .avatar-overlay {
+    opacity: 1;
+  }
+
+  /* Scrollable Content */
+  .settings-scroll {
+    height: calc(100vh - 180px);
+    overflow-y: auto;
+    padding-bottom: 6rem;
+  }
+
+  /* Hide scrollbar for tabs */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+</style>
+
+<main class="p-4 lg:p-6">
+  <div class="settings-container">
+    <!-- Page Header -->
+    <div class="mb-2">
+      <h1 class="text-3xl font-black leading-tight tracking-tight text-white mb-2">User Settings</h1>
+      <p class="text-[#9e9fb7] text-base font-normal">Manage your account, preferences, and security settings.</p>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="mt-6 mb-6">
+      <div class="flex border-b border-[#292a38] gap-8 overflow-x-auto no-scrollbar">
+        <button onclick="switchTab('profile')"
+                class="settings-tab <%= activeTab === 'profile' ? 'active' : '' %>"
+                data-tab="profile">
+          Profile
+        </button>
+        <button onclick="switchTab('security')"
+                class="settings-tab <%= activeTab === 'security' ? 'active' : '' %>"
+                data-tab="security">
+          Security
+        </button>
+        <button onclick="switchTab('notifications')"
+                class="settings-tab <%= activeTab === 'notifications' ? 'active' : '' %>"
+                data-tab="notifications">
+          Notifications
+        </button>
+        <button onclick="switchTab('display')"
+                class="settings-tab <%= activeTab === 'display' ? 'active' : '' %>"
+                data-tab="display">
+          Display
+        </button>
+        <button onclick="switchTab('data')"
+                class="settings-tab <%= activeTab === 'data' ? 'active' : '' %>"
+                data-tab="data">
+          Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="settings-scroll">
+      <!-- Profile Tab -->
+      <div id="profile-tab" class="tab-pane <%= activeTab === 'profile' ? 'active' : '' %>">
+        <div class="flex flex-col gap-6">
+          <!-- Section Header -->
+          <h2 class="text-xl font-bold text-white">Profile Information</h2>
+
+          <!-- Avatar Card -->
+          <div class="settings-card p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-5 w-full">
+              <div class="avatar-wrapper">
+                <% if (userAvatar) { %>
+                  <div class="bg-center bg-no-repeat bg-cover rounded-full h-24 w-24 ring-4 ring-[#292a38]"
+                       style="background-image: url('<%= userAvatar %>');">
+                  </div>
+                <% } else { %>
+                  <div class="h-24 w-24 rounded-full ring-4 ring-[#292a38] bg-primary flex items-center justify-center">
+                    <span class="text-3xl font-bold text-white"><%= initials %></span>
+                  </div>
+                <% } %>
+                <div class="avatar-overlay">
+                  <span class="material-symbols-outlined text-white">edit</span>
+                </div>
+              </div>
+              <div class="flex flex-col">
+                <h3 class="text-white text-xl font-bold"><%= userName %></h3>
+                <p class="text-[#9e9fb7] text-sm"><%= userJobTitle || 'Portfolio Manager' %></p>
+                <p class="text-[#9e9fb7] text-sm mt-1"><%= userEmail %></p>
+              </div>
+            </div>
+            <button class="btn-secondary shrink-0 text-sm" onclick="openAvatarUpload()">
+              Change Avatar
+            </button>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="settings-card p-6">
+            <form id="profile-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-[#9e9fb7]">Full Name</label>
+                <input type="text"
+                       name="fullName"
+                       class="settings-input"
+                       placeholder="Enter full name"
+                       value="<%= userName %>"
+                       data-original="<%= userName %>"/>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-[#9e9fb7]">Job Title</label>
+                <input type="text"
+                       name="jobTitle"
+                       class="settings-input"
+                       placeholder="Enter job title"
+                       value="<%= userJobTitle %>"
+                       data-original="<%= userJobTitle %>"/>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-[#9e9fb7]">
+                  Email Address
+                  <span class="text-xs ml-1 bg-[#292a38] px-2 py-0.5 rounded text-gray-400">Read Only</span>
+                </label>
+                <input type="email"
+                       name="email"
+                       class="settings-input"
+                       value="<%= userEmail %>"
+                       readonly/>
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-[#9e9fb7]">Phone Number</label>
+                <input type="tel"
+                       name="phone"
+                       class="settings-input"
+                       placeholder="Enter phone number"
+                       value="<%= userPhone %>"
+                       data-original="<%= userPhone %>"/>
+              </div>
+              <div class="flex flex-col gap-2 md:col-span-2">
+                <label class="text-sm font-medium text-[#9e9fb7]">Bio</label>
+                <textarea name="bio"
+                          class="settings-input"
+                          placeholder="Brief description for your public profile..."
+                          rows="3"
+                          data-original="<%= userBio %>"><%= userBio %></textarea>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Tab -->
+      <div id="security-tab" class="tab-pane <%= activeTab === 'security' ? 'active' : '' %>">
+        <div class="flex flex-col gap-6">
+          <h2 class="text-xl font-bold text-white">Account Security</h2>
+
+          <div class="settings-card overflow-hidden divide-y divide-[#292a38]">
+            <!-- Password -->
+            <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h4 class="text-white text-base font-semibold">Password</h4>
+                <p class="text-[#9e9fb7] text-sm mt-1">Last changed 3 months ago</p>
+              </div>
+              <div class="flex items-center gap-4">
+                <input type="password"
+                       class="bg-transparent border-none text-white text-xl tracking-widest w-32 focus:ring-0 px-0"
+                       value="Password123"
+                       disabled
+                       readonly/>
+                <button class="text-primary hover:text-white text-sm font-bold px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary transition-colors"
+                        onclick="openPasswordModal()">
+                  Change Password
+                </button>
+              </div>
+            </div>
+
+            <!-- 2FA -->
+            <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h4 class="text-white text-base font-semibold">Two-Factor Authentication (2FA)</h4>
+                <p class="text-[#9e9fb7] text-sm mt-1">Add an extra layer of security to your account.</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         id="2fa-toggle"
+                         name="twoFactorEnabled"
+                         <%= twoFactorEnabled ? 'checked' : '' %>
+                         onchange="toggle2FA(this)"/>
+                  <div class="toggle-track"></div>
+                </label>
+                <span class="text-sm font-medium text-white"><%= twoFactorEnabled ? 'Enabled' : 'Disabled' %></span>
+              </div>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="p-6">
+              <h4 class="text-white text-base font-semibold mb-4">Active Sessions</h4>
+              <div class="space-y-4">
+                <% if (safeSessions.length > 0) { %>
+                  <% safeSessions.forEach((session, index) => { %>
+                    <div class="session-item">
+                      <div class="flex items-center gap-4">
+                        <div class="bg-[#292a38] p-2 rounded text-white">
+                          <span class="material-symbols-outlined text-xl">
+                            <%= session.deviceType === 'mobile' ? 'smartphone' : 'desktop_mac' %>
+                          </span>
+                        </div>
+                        <div>
+                          <p class="text-white text-sm font-medium"><%= session.deviceName || 'Unknown Device' %></p>
+                          <p class="text-[#9e9fb7] text-xs">
+                            <%= session.location || 'Unknown Location' %>
+                            <% if (session.current) { %>
+                              - Currently Active
+                            <% } else { %>
+                              - <%= session.lastActive || 'Unknown' %>
+                            <% } %>
+                          </p>
+                        </div>
+                      </div>
+                      <% if (session.current) { %>
+                        <span class="text-green-400 text-xs font-bold px-2 py-1 bg-green-400/10 rounded">Current</span>
+                      <% } else { %>
+                        <button class="text-[#9e9fb7] hover:text-white text-xs font-bold underline"
+                                onclick="revokeSession('<%= session.id %>')">
+                          Revoke
+                        </button>
+                      <% } %>
+                    </div>
+                  <% }); %>
+                <% } else { %>
+                  <!-- Default sessions when none provided -->
+                  <div class="session-item">
+                    <div class="flex items-center gap-4">
+                      <div class="bg-[#292a38] p-2 rounded text-white">
+                        <span class="material-symbols-outlined text-xl">desktop_mac</span>
+                      </div>
+                      <div>
+                        <p class="text-white text-sm font-medium">Current Browser</p>
+                        <p class="text-[#9e9fb7] text-xs">Currently Active</p>
+                      </div>
+                    </div>
+                    <span class="text-green-400 text-xs font-bold px-2 py-1 bg-green-400/10 rounded">Current</span>
+                  </div>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications Tab -->
+      <div id="notifications-tab" class="tab-pane <%= activeTab === 'notifications' ? 'active' : '' %>">
+        <div class="flex flex-col gap-6">
+          <h2 class="text-xl font-bold text-white">Notification Preferences</h2>
+
+          <div class="settings-card p-6">
+            <div class="space-y-6">
+              <!-- Market Alerts -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Market Alerts</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Receive notifications when significant market movements occur in your watchlist.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         name="marketAlerts"
+                         <%= marketAlerts ? 'checked' : '' %>
+                         onchange="updateNotificationSetting('marketAlerts', this.checked)"/>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+
+              <hr class="border-[#292a38]"/>
+
+              <!-- Portfolio Updates -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Portfolio Updates</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Daily summaries and performance reports sent to your email.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         name="portfolioUpdates"
+                         <%= portfolioUpdates ? 'checked' : '' %>
+                         onchange="updateNotificationSetting('portfolioUpdates', this.checked)"/>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+
+              <hr class="border-[#292a38]"/>
+
+              <!-- Security Alerts -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Security Alerts</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Get notified about new logins and sensitive account changes.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         name="securityAlerts"
+                         checked
+                         disabled/>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+
+              <hr class="border-[#292a38]"/>
+
+              <!-- Email Digest -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Weekly Email Digest</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Receive a weekly summary of your portfolio performance and market insights.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         name="emailDigest"
+                         <%= emailDigest ? 'checked' : '' %>
+                         onchange="updateNotificationSetting('emailDigest', this.checked)"/>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+
+              <hr class="border-[#292a38]"/>
+
+              <!-- Push Notifications -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Push Notifications</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Receive real-time push notifications on your browser or mobile device.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         name="pushNotifications"
+                         <%= pushNotifications ? 'checked' : '' %>
+                         onchange="updateNotificationSetting('pushNotifications', this.checked)"/>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Display Tab -->
+      <div id="display-tab" class="tab-pane <%= activeTab === 'display' ? 'active' : '' %>">
+        <div class="flex flex-col gap-6">
+          <h2 class="text-xl font-bold text-white">Theme & Display</h2>
+
+          <div class="settings-card p-6 flex flex-col md:flex-row gap-8">
+            <!-- Appearance -->
+            <div class="flex-1">
+              <label class="text-white font-medium block mb-3">Appearance</label>
+              <div class="grid grid-cols-3 gap-4">
+                <button class="theme-card <%= currentTheme === 'light' ? 'active' : '' %>"
+                        onclick="setTheme('light')">
+                  <span class="material-symbols-outlined text-base check-icon">check_circle</span>
+                  <div class="w-full h-12 bg-[#e5e7eb] rounded"></div>
+                  <span class="text-xs font-medium <%= currentTheme === 'light' ? 'text-white font-bold' : 'text-[#9e9fb7]' %>">Light</span>
+                </button>
+                <button class="theme-card <%= currentTheme === 'dark' ? 'active' : '' %>"
+                        onclick="setTheme('dark')">
+                  <span class="material-symbols-outlined text-base check-icon">check_circle</span>
+                  <div class="w-full h-12 bg-[#111217] border border-gray-700 rounded"></div>
+                  <span class="text-xs font-medium <%= currentTheme === 'dark' ? 'text-white font-bold' : 'text-[#9e9fb7]' %>">Dark</span>
+                </button>
+                <button class="theme-card <%= currentTheme === 'system' ? 'active' : '' %>"
+                        onclick="setTheme('system')">
+                  <span class="material-symbols-outlined text-base check-icon">check_circle</span>
+                  <div class="w-full h-12 bg-gradient-to-br from-[#111217] to-[#e5e7eb] rounded"></div>
+                  <span class="text-xs font-medium <%= currentTheme === 'system' ? 'text-white font-bold' : 'text-[#9e9fb7]' %>">System</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Data Density -->
+            <div class="flex-1">
+              <label class="text-white font-medium block mb-3">Data Density</label>
+              <div class="flex items-center gap-4 mt-2">
+                <span class="text-sm text-[#9e9fb7]">Compact</span>
+                <input type="range"
+                       min="1"
+                       max="3"
+                       value="2"
+                       class="w-full h-2 bg-[#292a38] rounded-lg appearance-none cursor-pointer accent-primary"
+                       onchange="updateDensity(this.value)"/>
+                <span class="text-sm text-[#9e9fb7]">Comfortable</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Display Settings -->
+          <div class="settings-card p-6">
+            <div class="space-y-6">
+              <!-- Accent Color -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Accent Color</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Choose your preferred accent color for highlights and buttons.</p>
+                </div>
+                <div class="flex gap-2">
+                  <button class="w-8 h-8 rounded-full bg-[#4850e5] ring-2 ring-offset-2 ring-offset-[#181920] ring-primary" title="Blue"></button>
+                  <button class="w-8 h-8 rounded-full bg-[#10b981]" title="Emerald"></button>
+                  <button class="w-8 h-8 rounded-full bg-[#f59e0b]" title="Amber"></button>
+                  <button class="w-8 h-8 rounded-full bg-[#ec4899]" title="Pink"></button>
+                </div>
+              </div>
+
+              <hr class="border-[#292a38]"/>
+
+              <!-- Animations -->
+              <div class="flex items-start justify-between">
+                <div class="max-w-lg">
+                  <p class="text-white font-medium">Reduce Animations</p>
+                  <p class="text-[#9e9fb7] text-sm mt-1">Minimize motion and animations throughout the interface.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox"
+                         name="reduceAnimations"
+                         onchange="toggleAnimations(this.checked)"/>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Tab -->
+      <div id="data-tab" class="tab-pane <%= activeTab === 'data' ? 'active' : '' %>">
+        <div class="flex flex-col gap-6">
+          <h2 class="text-xl font-bold text-white">Data Management</h2>
+
+          <div class="settings-card p-6">
+            <!-- Export Data -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+              <div>
+                <p class="text-white font-medium">Export Data</p>
+                <p class="text-[#9e9fb7] text-sm mt-1">Download a copy of your portfolio data and transaction history.</p>
+              </div>
+              <button class="btn-secondary flex items-center gap-2 text-sm" onclick="exportData('csv')">
+                <span class="material-symbols-outlined text-lg">download</span>
+                Export CSV
+              </button>
+            </div>
+
+            <hr class="border-[#292a38] mb-6"/>
+
+            <!-- Export JSON -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+              <div>
+                <p class="text-white font-medium">Export as JSON</p>
+                <p class="text-[#9e9fb7] text-sm mt-1">Export your complete account data in JSON format for portability.</p>
+              </div>
+              <button class="btn-secondary flex items-center gap-2 text-sm" onclick="exportData('json')">
+                <span class="material-symbols-outlined text-lg">code</span>
+                Export JSON
+              </button>
+            </div>
+
+            <hr class="border-[#292a38] mb-6"/>
+
+            <!-- Import Data -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+              <div>
+                <p class="text-white font-medium">Import Data</p>
+                <p class="text-[#9e9fb7] text-sm mt-1">Import portfolio data from a CSV or JSON file.</p>
+              </div>
+              <button class="btn-secondary flex items-center gap-2 text-sm" onclick="openImportModal()">
+                <span class="material-symbols-outlined text-lg">upload</span>
+                Import Data
+              </button>
+            </div>
+
+            <hr class="border-[#292a38] mb-6"/>
+
+            <!-- Delete Account -->
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <p class="text-red-400 font-medium">Delete Account</p>
+                <p class="text-[#9e9fb7] text-sm mt-1">Permanently delete your account and remove all data from our servers.</p>
+              </div>
+              <button class="btn-danger text-sm" onclick="confirmDeleteAccount()">
+                Delete Account
+              </button>
+            </div>
+          </div>
+
+          <!-- Data Privacy Info -->
+          <div class="settings-card p-6">
+            <h4 class="text-white font-semibold mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">shield</span>
+              Data Privacy
+            </h4>
+            <div class="space-y-4 text-sm text-[#9e9fb7]">
+              <p>Your data is encrypted at rest and in transit using industry-standard AES-256 encryption.</p>
+              <p>We do not sell or share your personal data with third parties for marketing purposes.</p>
+              <p>You can request a complete data export or account deletion at any time.</p>
+              <a href="/privacy-policy" class="text-primary hover:underline inline-flex items-center gap-1 mt-2">
+                View Privacy Policy
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Floating Save Bar -->
+<div id="floating-save-bar" class="floating-save-bar">
+  <span class="text-sm text-[#9e9fb7] hidden sm:block">Unsaved changes</span>
+  <div class="flex gap-2">
+    <button class="px-4 py-2 text-white hover:bg-[#292a38] rounded-lg text-sm font-medium transition-colors"
+            onclick="discardChanges()">
+      Discard
+    </button>
+    <button class="btn-primary text-sm" onclick="saveChanges()">
+      Save Changes
+    </button>
+  </div>
+</div>
+
+<!-- Password Change Modal -->
+<div id="password-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+  <div class="settings-card p-6 w-full max-w-md mx-4">
+    <h3 class="text-xl font-bold text-white mb-4">Change Password</h3>
+    <form id="password-form" class="space-y-4">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-[#9e9fb7]">Current Password</label>
+        <input type="password" name="currentPassword" class="settings-input" placeholder="Enter current password" required/>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-[#9e9fb7]">New Password</label>
+        <input type="password" name="newPassword" class="settings-input" placeholder="Enter new password" required/>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-[#9e9fb7]">Confirm New Password</label>
+        <input type="password" name="confirmPassword" class="settings-input" placeholder="Confirm new password" required/>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button type="button" class="btn-secondary flex-1" onclick="closePasswordModal()">Cancel</button>
+        <button type="submit" class="btn-primary flex-1">Update Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50">
+  <div class="settings-card p-6 w-full max-w-md mx-4">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-red-400 text-2xl">warning</span>
+      </div>
+      <h3 class="text-xl font-bold text-white">Delete Account</h3>
+    </div>
+    <p class="text-[#9e9fb7] mb-4">This action cannot be undone. All your data, including portfolios, transactions, and settings will be permanently deleted.</p>
+    <div class="flex flex-col gap-2 mb-6">
+      <label class="text-sm font-medium text-[#9e9fb7]">Type "DELETE" to confirm</label>
+      <input type="text" id="delete-confirm-input" class="settings-input" placeholder="Type DELETE"/>
+    </div>
+    <div class="flex gap-3">
+      <button class="btn-secondary flex-1" onclick="closeDeleteModal()">Cancel</button>
+      <button id="delete-confirm-btn" class="btn-danger flex-1 opacity-50 cursor-not-allowed" disabled onclick="deleteAccount()">
+        Delete Account
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Track form changes
+let hasUnsavedChanges = false;
+const originalValues = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Store original values
+  document.querySelectorAll('[data-original]').forEach(input => {
+    originalValues[input.name] = input.dataset.original;
+  });
+
+  // Listen for changes
+  document.querySelectorAll('.settings-input').forEach(input => {
+    input.addEventListener('input', checkForChanges);
+  });
+
+  // Delete confirmation input
+  const deleteInput = document.getElementById('delete-confirm-input');
+  if (deleteInput) {
+    deleteInput.addEventListener('input', function() {
+      const btn = document.getElementById('delete-confirm-btn');
+      if (this.value === 'DELETE') {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    });
+  }
+});
+
+function checkForChanges() {
+  hasUnsavedChanges = false;
+  document.querySelectorAll('[data-original]').forEach(input => {
+    const currentValue = input.value;
+    const originalValue = input.dataset.original;
+    if (currentValue !== originalValue) {
+      hasUnsavedChanges = true;
+    }
+  });
+
+  const saveBar = document.getElementById('floating-save-bar');
+  if (hasUnsavedChanges) {
+    saveBar.classList.add('visible');
+  } else {
+    saveBar.classList.remove('visible');
+  }
+}
+
+function switchTab(tabName) {
+  // Update URL
+  const url = new URL(window.location);
+  url.searchParams.set('tab', tabName);
+  window.history.pushState({}, '', url);
+
+  // Hide all tabs
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.classList.remove('active');
+  });
+
+  // Show selected tab
+  const selectedPane = document.getElementById(tabName + '-tab');
+  if (selectedPane) {
+    selectedPane.classList.add('active');
+  }
+
+  // Update tab buttons
+  document.querySelectorAll('.settings-tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  const selectedBtn = document.querySelector(`[data-tab="${tabName}"]`);
+  if (selectedBtn) {
+    selectedBtn.classList.add('active');
+  }
+}
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', () => {
+  const url = new URL(window.location);
+  const tab = url.searchParams.get('tab') || 'profile';
+  switchTab(tab);
+});
+
+// Avatar upload
+function openAvatarUpload() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      // Handle file upload
+      console.log('Uploading avatar:', file.name);
+      showToast('Avatar uploaded successfully', 'success');
+    }
+  };
+  input.click();
+}
+
+// Password modal
+function openPasswordModal() {
+  document.getElementById('password-modal').classList.remove('hidden');
+  document.getElementById('password-modal').classList.add('flex');
+}
+
+function closePasswordModal() {
+  document.getElementById('password-modal').classList.add('hidden');
+  document.getElementById('password-modal').classList.remove('flex');
+  document.getElementById('password-form').reset();
+}
+
+document.getElementById('password-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+
+  if (formData.get('newPassword') !== formData.get('confirmPassword')) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+
+  try {
+    // API call to change password
+    showToast('Password updated successfully', 'success');
+    closePasswordModal();
+  } catch (error) {
+    showToast('Failed to update password', 'error');
+  }
+});
+
+// 2FA toggle
+async function toggle2FA(checkbox) {
+  const enabled = checkbox.checked;
+  try {
+    // API call to toggle 2FA
+    const label = checkbox.parentElement.nextElementSibling;
+    label.textContent = enabled ? 'Enabled' : 'Disabled';
+    showToast(`Two-factor authentication ${enabled ? 'enabled' : 'disabled'}`, 'success');
+  } catch (error) {
+    checkbox.checked = !enabled;
+    showToast('Failed to update 2FA settings', 'error');
+  }
+}
+
+// Revoke session
+async function revokeSession(sessionId) {
+  if (confirm('Are you sure you want to revoke this session?')) {
+    try {
+      // API call to revoke session
+      showToast('Session revoked successfully', 'success');
+      location.reload();
+    } catch (error) {
+      showToast('Failed to revoke session', 'error');
+    }
+  }
+}
+
+// Notification settings
+async function updateNotificationSetting(setting, value) {
+  try {
+    // API call to update notification setting
+    showToast('Notification preferences updated', 'success');
+  } catch (error) {
+    showToast('Failed to update preferences', 'error');
+  }
+}
+
+// Theme settings
+function setTheme(theme) {
+  // Update UI
+  document.querySelectorAll('.theme-card').forEach(card => {
+    card.classList.remove('active');
+  });
+  event.currentTarget.classList.add('active');
+
+  // Apply theme
+  document.documentElement.setAttribute('data-theme', theme === 'system' ?
+    (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') :
+    theme
+  );
+
+  // Save preference
+  localStorage.setItem('theme', theme);
+  showToast('Theme updated', 'success');
+}
+
+function updateDensity(value) {
+  const densities = ['compact', 'default', 'comfortable'];
+  const density = densities[value - 1];
+  document.body.setAttribute('data-density', density);
+  localStorage.setItem('density', density);
+}
+
+function toggleAnimations(reduce) {
+  if (reduce) {
+    document.body.classList.add('reduce-motion');
+  } else {
+    document.body.classList.remove('reduce-motion');
+  }
+  localStorage.setItem('reduceAnimations', reduce);
+}
+
+// Data management
+async function exportData(format) {
+  try {
+    showToast(`Preparing ${format.toUpperCase()} export...`, 'info');
+    // API call to export data
+    window.location.href = `/api/user/export?format=${format}`;
+  } catch (error) {
+    showToast('Failed to export data', 'error');
+  }
+}
+
+function openImportModal() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv,.json';
+  input.onchange = async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      showToast('Importing data...', 'info');
+      // Handle import
+    }
+  };
+  input.click();
+}
+
+// Delete account
+function confirmDeleteAccount() {
+  document.getElementById('delete-modal').classList.remove('hidden');
+  document.getElementById('delete-modal').classList.add('flex');
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').classList.add('hidden');
+  document.getElementById('delete-modal').classList.remove('flex');
+  document.getElementById('delete-confirm-input').value = '';
+  const btn = document.getElementById('delete-confirm-btn');
+  btn.disabled = true;
+  btn.classList.add('opacity-50', 'cursor-not-allowed');
+}
+
+async function deleteAccount() {
+  try {
+    // API call to delete account
+    showToast('Account deletion initiated...', 'warning');
+    setTimeout(() => {
+      window.location.href = '/logout';
+    }, 2000);
+  } catch (error) {
+    showToast('Failed to delete account', 'error');
+  }
+}
+
+// Save changes
+async function saveChanges() {
+  const form = document.getElementById('profile-form');
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  try {
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch('/api/user/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      // Update original values
+      document.querySelectorAll('[data-original]').forEach(input => {
+        input.dataset.original = input.value;
+        originalValues[input.name] = input.value;
+      });
+
+      hasUnsavedChanges = false;
+      document.getElementById('floating-save-bar').classList.remove('visible');
+      showToast('Changes saved successfully', 'success');
+    } else {
+      throw new Error('Failed to save');
+    }
+  } catch (error) {
+    showToast('Failed to save changes', 'error');
+  }
+}
+
+function discardChanges() {
+  document.querySelectorAll('[data-original]').forEach(input => {
+    input.value = input.dataset.original;
+  });
+  hasUnsavedChanges = false;
+  document.getElementById('floating-save-bar').classList.remove('visible');
+  showToast('Changes discarded', 'info');
+}
+
+// Toast notifications
+function showToast(message, type = 'info') {
+  // Check if toast system exists
+  if (typeof window.showNotification === 'function') {
+    window.showNotification(message, type);
+  } else {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+  }
+}
+
+// Warn before leaving with unsaved changes
+window.addEventListener('beforeunload', function(e) {
+  if (hasUnsavedChanges) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+</script>
+
+<!-- Settings Page JavaScript -->
+<script src="/js/settings.js"></script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,1442 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = 'Interest Coverage Analysis';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<style>
+/* Advanced Animations */
+@keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); } 50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.5); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes countUp { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.skeleton { background: linear-gradient(90deg, rgba(51,65,85,0.4) 25%, rgba(71,85,105,0.6) 50%, rgba(51,65,85,0.4) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; }
+.animate-fade-in { animation: fadeInUp 0.5s ease-out forwards; }
+.animate-slide-in { animation: slideIn 0.4s ease-out forwards; }
+.animate-count { animation: countUp 0.6s ease-out forwards; }
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Premium Metric Cards */
+.metric-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-color, #f59e0b), transparent);
+}
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+.metric-card.excellent { --accent-color: #10b981; }
+.metric-card.good { --accent-color: #0ea5e9; }
+.metric-card.adequate { --accent-color: #f59e0b; }
+.metric-card.weak { --accent-color: #f97316; }
+.metric-card.distressed { --accent-color: #ef4444; }
+
+/* Coverage Badge */
+.coverage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+.coverage-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Holding Row */
+.holding-row {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.holding-row:hover {
+  background: rgba(245, 158, 11, 0.08);
+  transform: translateX(4px);
+}
+
+/* Gauge Container */
+.gauge-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+/* Progress Ring */
+.progress-ring {
+  transform: rotate(-90deg);
+}
+.progress-ring-circle {
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+
+/* Chart Container */
+.chart-container {
+  position: relative;
+  height: 280px;
+  background: linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.5) 100%);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+/* Sparkline */
+.sparkline-container {
+  width: 80px;
+  height: 30px;
+}
+
+/* Tab Navigation */
+.tab-nav {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.tab-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+.tab-btn.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #000;
+  font-weight: 600;
+}
+
+/* Sort Dropdown */
+.sort-dropdown {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sort-dropdown:hover {
+  border-color: #f59e0b;
+}
+.sort-dropdown:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+/* Tooltip */
+.custom-tooltip {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #e2e8f0;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Health Score */
+.health-score {
+  font-size: 3.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #6ee7b7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.health-score.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.health-score.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 50%, #fca5a5 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Data freshness indicator */
+.freshness-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  color: #10b981;
+}
+.freshness-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse-glow 2s infinite;
+}
+
+/* Legend */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+</style>
+
+<!-- Premium Header Bar -->
+<div class="bloomberg-header">
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div class="animate-fade-in">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-amber-400"><%= safePageTitle %></h1>
+          <p class="text-slate-400 text-sm">Debt service ability & financial health analysis</p>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-3 items-center">
+      <div class="freshness-indicator" id="freshnessIndicator">
+        <span class="freshness-dot"></span>
+        <span>Live Data</span>
+      </div>
+      <div class="tab-nav">
+        <button class="tab-btn active" data-mode="portfolio" id="portfolioTab">
+          <span class="hidden sm:inline">Portfolio</span>
+          <span class="sm:hidden">Port</span>
+        </button>
+        <button class="tab-btn" data-mode="single" id="singleTab">
+          <span class="hidden sm:inline">Single Stock</span>
+          <span class="sm:hidden">Stock</span>
+        </button>
+      </div>
+      <input type="text" id="symbolInput" class="form-input w-24 bg-slate-800/80 border-amber-400/30 text-white rounded-lg px-3 py-2 hidden uppercase placeholder-slate-500" placeholder="AAPL" />
+      <button id="analyzeBtn" class="px-5 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-black rounded-lg font-semibold hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg hover:shadow-amber-500/25">
+        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Analyze
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div id="loadingState" class="hidden">
+  <div class="glass-card p-12 text-center">
+    <div class="relative w-20 h-20 mx-auto mb-6">
+      <div class="absolute inset-0 rounded-full border-4 border-amber-500/20"></div>
+      <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+      <div class="absolute inset-3 rounded-full border-4 border-orange-500/20"></div>
+      <div class="absolute inset-3 rounded-full border-4 border-orange-500 border-t-transparent animate-spin" style="animation-direction: reverse; animation-duration: 1.5s;"></div>
+    </div>
+    <p class="text-lg text-slate-300 font-medium">Analyzing Interest Coverage</p>
+    <p class="mt-2 text-slate-500">Fetching financial data from multiple sources...</p>
+  </div>
+</div>
+
+<!-- Error State -->
+<div id="errorState" class="hidden">
+  <div class="glass-card p-12 text-center border-red-500/30">
+    <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+      <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    <p id="errorMessage" class="text-red-400 text-lg font-medium mb-4"></p>
+    <button onclick="loadPortfolioData()" class="px-6 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors">
+      <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Retry Analysis
+    </button>
+  </div>
+</div>
+
+<!-- Main Content Container -->
+<div id="mainContent">
+  <!-- Top Row: Health Score & Key Metrics -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-fade-in">
+    <!-- Portfolio Health Gauge -->
+    <div class="glass-card p-6 lg:col-span-1">
+      <h3 class="text-sm font-medium text-slate-400 mb-4 text-center">Portfolio Health Score</h3>
+      <div class="gauge-container">
+        <svg viewBox="0 0 200 200" class="w-full h-full">
+          <!-- Background circle -->
+          <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="16"/>
+          <!-- Progress circle -->
+          <circle id="healthGauge" class="progress-ring-circle" cx="100" cy="100" r="80" fill="none" stroke="url(#gaugeGradient)" stroke-width="16" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="502.65" transform="rotate(-90 100 100)"/>
+          <!-- Gradient definition -->
+          <defs>
+            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#10b981"/>
+              <stop offset="50%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#ef4444"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span id="healthScoreValue" class="health-score">--</span>
+          <span id="healthScoreLabel" class="text-slate-400 text-sm">of 100</span>
+        </div>
+      </div>
+      <p id="healthDescription" class="text-center text-sm text-slate-400 mt-4">Analyzing portfolio...</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="metric-card excellent" style="animation-delay: 0.1s">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400">Avg Coverage</span>
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <p id="avgCoverage" class="text-3xl font-bold font-mono text-emerald-400">--</p>
+        <p id="avgCoverageRating" class="text-xs text-emerald-400/70 mt-1">--</p>
+      </div>
+
+      <div class="metric-card good" style="animation-delay: 0.2s">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400">Median</span>
+          <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <p id="medianCoverage" class="text-3xl font-bold font-mono text-sky-400">--</p>
+        <p id="medianRating" class="text-xs text-slate-400 mt-1">-- holdings</p>
+      </div>
+
+      <div class="metric-card" style="animation-delay: 0.3s">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400">Strong (>10x)</span>
+          <div class="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <svg class="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+        <p id="strongCount" class="text-3xl font-bold text-emerald-400">--</p>
+        <div class="w-full bg-slate-700 rounded-full h-1.5 mt-2">
+          <div id="strongBar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="metric-card" style="animation-delay: 0.4s">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400">At Risk (<3x)</span>
+          <div class="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center">
+            <svg class="w-3 h-3 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+        <p id="weakCount" class="text-3xl font-bold text-red-400">--</p>
+        <div class="w-full bg-slate-700 rounded-full h-1.5 mt-2">
+          <div id="weakBar" class="bg-red-500 h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coverage Scale Legend -->
+  <div class="glass-card p-4 animate-fade-in" style="animation-delay: 0.2s">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm text-slate-400">Interest Coverage = EBIT / Interest Expense</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 text-xs">
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gradient-to-r from-red-600 to-red-500"></div><span class="text-slate-400">&lt;1.5x Distressed</span></div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gradient-to-r from-orange-600 to-orange-500"></div><span class="text-slate-400">1.5-3x Weak</span></div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gradient-to-r from-yellow-600 to-yellow-500"></div><span class="text-slate-400">3-5x Adequate</span></div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gradient-to-r from-sky-600 to-sky-500"></div><span class="text-slate-400">5-10x Good</span></div>
+        <div class="flex items-center gap-2"><div class="w-4 h-4 rounded bg-gradient-to-r from-emerald-600 to-emerald-500"></div><span class="text-slate-400">&gt;10x Excellent</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style="animation-delay: 0.3s">
+    <!-- Coverage Distribution Histogram -->
+    <div class="glass-card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Distribution
+        </h3>
+        <span class="text-xs px-2 py-1 rounded-full bg-slate-700/50 text-slate-400">By Count</span>
+      </div>
+      <div class="chart-container h-56">
+        <canvas id="distributionChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Coverage by Holding (Horizontal Bar) -->
+    <div class="glass-card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Coverage Ranking
+        </h3>
+        <select id="sortSelect" class="sort-dropdown text-xs">
+          <option value="coverage-desc">Highest First</option>
+          <option value="coverage-asc">Lowest First</option>
+          <option value="weight-desc">By Weight</option>
+        </select>
+      </div>
+      <div class="chart-container h-56">
+        <canvas id="coverageChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Radar Comparison Chart -->
+    <div class="glass-card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+          </svg>
+          Multi-Metric
+        </h3>
+        <span class="text-xs px-2 py-1 rounded-full bg-slate-700/50 text-slate-400">Top 5</span>
+      </div>
+      <div class="chart-container h-56">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Holdings Table -->
+  <div id="holdingsTableSection" class="glass-card overflow-hidden animate-fade-in" style="animation-delay: 0.4s">
+    <div class="p-4 border-b border-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div class="flex items-center gap-3">
+        <h3 class="font-semibold text-white">Holdings Analysis</h3>
+        <span id="dataSourceBadge" class="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="exportBtn" class="px-3 py-1.5 text-xs bg-slate-700/50 text-slate-300 rounded-lg hover:bg-slate-600/50 transition-colors">
+          <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export
+        </button>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-800/50 text-slate-400 text-left text-xs uppercase tracking-wider">
+            <th class="px-4 py-3 font-medium">Company</th>
+            <th class="px-4 py-3 font-medium text-right">EBIT (TTM)</th>
+            <th class="px-4 py-3 font-medium text-right">Interest Exp</th>
+            <th class="px-4 py-3 font-medium text-center">Coverage</th>
+            <th class="px-4 py-3 font-medium text-center">5Y Trend</th>
+            <th class="px-4 py-3 font-medium text-center">Rating</th>
+            <th class="px-4 py-3 font-medium text-center">Sparkline</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsTableBody" class="text-white divide-y divide-slate-700/30">
+          <tr>
+            <td colspan="7" class="text-center py-12 text-slate-400">
+              <div class="animate-pulse space-y-3">
+                <div class="h-4 bg-slate-700/50 rounded w-48 mx-auto"></div>
+                <div class="h-4 bg-slate-700/50 rounded w-32 mx-auto"></div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Trend Chart (Full Width) -->
+  <div class="glass-card p-6 animate-fade-in" style="animation-delay: 0.5s">
+    <div class="flex items-center justify-between mb-4">
+      <h3 id="trendChartTitle" class="font-semibold text-white flex items-center gap-2">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+        </svg>
+        5-Year Coverage Trend
+      </h3>
+      <div id="trendChartLegend" class="flex items-center gap-4 text-xs"></div>
+    </div>
+    <div class="chart-container h-72">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Insights Section -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in" style="animation-delay: 0.6s">
+    <div class="glass-card p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+          </svg>
+        </div>
+        <div>
+          <h4 class="font-bold text-emerald-400">Strongest Coverage</h4>
+          <p class="text-xs text-slate-500">Best debt service ability</p>
+        </div>
+      </div>
+      <div id="strongestList" class="space-y-3">
+        <div class="skeleton h-8 rounded"></div>
+        <div class="skeleton h-8 rounded"></div>
+        <div class="skeleton h-8 rounded"></div>
+      </div>
+    </div>
+
+    <div class="glass-card p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <div>
+          <h4 class="font-bold text-sky-400">Most Improved</h4>
+          <p class="text-xs text-slate-500">Upward coverage trend</p>
+        </div>
+      </div>
+      <div id="improvedList" class="space-y-3">
+        <div class="skeleton h-8 rounded"></div>
+        <div class="skeleton h-8 rounded"></div>
+        <div class="skeleton h-8 rounded"></div>
+      </div>
+    </div>
+
+    <div class="glass-card p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h4 class="font-bold text-red-400">Coverage Concerns</h4>
+          <p class="text-xs text-slate-500">Low or declining ratio</p>
+        </div>
+      </div>
+      <div id="concernsList" class="space-y-3">
+        <div class="skeleton h-8 rounded"></div>
+        <div class="skeleton h-8 rounded"></div>
+        <div class="skeleton h-8 rounded"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Single Stock Detail Section -->
+  <div id="singleStockSection" class="hidden mt-6 animate-fade-in">
+    <div class="glass-card p-6">
+      <h3 id="singleStockTitle" class="font-semibold text-amber-400 text-xl mb-6">Stock Analysis</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="singleStockMetrics"></div>
+    </div>
+  </div>
+</div>
+
+</div></div></main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // Chart instances
+  let coverageChart = null;
+  let trendChart = null;
+  let distributionChart = null;
+  let radarChart = null;
+  let portfolioData = null;
+
+  // Chart.js defaults
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+  // DOM Elements
+  const elements = {
+    loadingState: document.getElementById('loadingState'),
+    errorState: document.getElementById('errorState'),
+    errorMessage: document.getElementById('errorMessage'),
+    mainContent: document.getElementById('mainContent'),
+    holdingsTableSection: document.getElementById('holdingsTableSection'),
+    portfolioTab: document.getElementById('portfolioTab'),
+    singleTab: document.getElementById('singleTab'),
+    symbolInput: document.getElementById('symbolInput'),
+    analyzeBtn: document.getElementById('analyzeBtn'),
+    singleStockSection: document.getElementById('singleStockSection'),
+    sortSelect: document.getElementById('sortSelect'),
+    healthGauge: document.getElementById('healthGauge')
+  };
+
+  // Initialize
+  async function init() {
+    setupEventListeners();
+    await loadPortfolioData();
+  }
+
+  function setupEventListeners() {
+    elements.portfolioTab.addEventListener('click', () => switchMode('portfolio'));
+    elements.singleTab.addEventListener('click', () => switchMode('single'));
+    elements.analyzeBtn.addEventListener('click', handleAnalyze);
+    elements.symbolInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleAnalyze();
+    });
+    elements.sortSelect.addEventListener('change', handleSort);
+    document.getElementById('exportBtn').addEventListener('click', handleExport);
+  }
+
+  function switchMode(mode) {
+    elements.portfolioTab.classList.toggle('active', mode === 'portfolio');
+    elements.singleTab.classList.toggle('active', mode === 'single');
+
+    if (mode === 'single') {
+      elements.symbolInput.classList.remove('hidden');
+      elements.singleStockSection.classList.remove('hidden');
+    } else {
+      elements.symbolInput.classList.add('hidden');
+      elements.singleStockSection.classList.add('hidden');
+      loadPortfolioData();
+    }
+  }
+
+  async function handleAnalyze() {
+    const mode = elements.singleTab.classList.contains('active') ? 'single' : 'portfolio';
+    if (mode === 'single') {
+      const symbol = elements.symbolInput.value.trim().toUpperCase();
+      if (symbol) await loadSingleStockData(symbol);
+    } else {
+      await loadPortfolioData();
+    }
+  }
+
+  function handleSort() {
+    if (!portfolioData) return;
+    const sortBy = elements.sortSelect.value;
+    let sorted = [...portfolioData.holdings];
+
+    switch(sortBy) {
+      case 'coverage-desc':
+        sorted.sort((a, b) => (b.interestCoverage || -999) - (a.interestCoverage || -999));
+        break;
+      case 'coverage-asc':
+        sorted.sort((a, b) => (a.interestCoverage || 999) - (b.interestCoverage || 999));
+        break;
+      case 'weight-desc':
+        sorted.sort((a, b) => (b.weight || 0) - (a.weight || 0));
+        break;
+    }
+
+    renderHoldingsTable(sorted);
+    renderCoverageChart(sorted);
+  }
+
+  function handleExport() {
+    if (!portfolioData) return;
+
+    const csvContent = [
+      ['Symbol', 'Name', 'EBIT', 'Interest Expense', 'Coverage Ratio', '5Y Avg', 'Trend', 'Rating'].join(','),
+      ...portfolioData.holdings.map(h => [
+        h.symbol,
+        `"${h.name || h.symbol}"`,
+        h.ebit,
+        h.interestExpense,
+        h.interestCoverage,
+        h.historical5YAvg,
+        h.trend,
+        h.rating
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `interest-coverage-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // API Calls
+  async function loadPortfolioData() {
+    showLoading(true);
+    hideError();
+
+    try {
+      const response = await fetch('/api/fundamentals/portfolio/interest-coverage', {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) throw new Error('Please log in to view portfolio analysis');
+        throw new Error('Failed to load portfolio data');
+      }
+
+      portfolioData = await response.json();
+      renderPortfolioData(portfolioData);
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  async function loadSingleStockData(symbol) {
+    showLoading(true);
+    hideError();
+
+    try {
+      const response = await fetch(`/api/fundamentals/${symbol}/interest-coverage`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Failed to load data for ${symbol}`);
+      }
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'No data available');
+
+      renderSingleStockData(data);
+    } catch (error) {
+      console.error('Single stock error:', error);
+      showError(error.message);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // Rendering Functions
+  function renderPortfolioData(data) {
+    // Update health gauge
+    updateHealthGauge(data.portfolio);
+
+    // Update summary metrics
+    document.getElementById('avgCoverage').textContent = formatRatio(data.portfolio.avgCoverage);
+    document.getElementById('avgCoverageRating').textContent = data.portfolio.overallRating;
+    document.getElementById('medianCoverage').textContent = formatRatio(data.portfolio.medianCoverage);
+    document.getElementById('medianRating').textContent = `${data.portfolio.totalHoldings} holdings`;
+    document.getElementById('strongCount').textContent = data.summary.strong;
+    document.getElementById('weakCount').textContent = data.summary.weak + data.summary.distressed;
+
+    // Update progress bars
+    const total = data.portfolio.totalHoldings || 1;
+    document.getElementById('strongBar').style.width = `${(data.summary.strong / total) * 100}%`;
+    document.getElementById('weakBar').style.width = `${((data.summary.weak + data.summary.distressed) / total) * 100}%`;
+
+    // Update data source
+    const sources = [...new Set(data.holdings.map(h => h.source))].filter(Boolean);
+    document.getElementById('dataSourceBadge').textContent = sources.length > 0 ? sources[0] : 'Live Data';
+
+    // Render all charts and tables
+    renderHoldingsTable(data.holdings);
+    renderCoverageChart(data.holdings);
+    renderDistributionChart(data.holdings);
+    renderRadarChart(data.holdings);
+    renderInsights(data.insights);
+
+    if (data.holdings.length > 0) {
+      renderTrendChart(data.holdings.slice(0, 3)); // Show top 3 trends
+    }
+
+    // Show portfolio sections
+    elements.singleStockSection.classList.add('hidden');
+    elements.holdingsTableSection.classList.remove('hidden');
+  }
+
+  function updateHealthGauge(portfolio) {
+    // Calculate health score (0-100)
+    let score = 50; // Base score
+    const avgCoverage = portfolio.avgCoverage || 0;
+
+    if (avgCoverage >= 10) score = 85 + Math.min((avgCoverage - 10) / 2, 15);
+    else if (avgCoverage >= 5) score = 70 + (avgCoverage - 5);
+    else if (avgCoverage >= 3) score = 50 + (avgCoverage - 3) * 10;
+    else if (avgCoverage >= 1.5) score = 25 + (avgCoverage - 1.5) * 16.67;
+    else score = Math.max(0, avgCoverage * 16.67);
+
+    score = Math.round(Math.min(100, Math.max(0, score)));
+
+    // Animate gauge
+    const circumference = 2 * Math.PI * 80;
+    const offset = circumference - (score / 100) * circumference;
+    elements.healthGauge.style.strokeDashoffset = offset;
+
+    // Update score display
+    const scoreEl = document.getElementById('healthScoreValue');
+    scoreEl.textContent = score;
+    scoreEl.className = 'health-score' + (score < 40 ? ' danger' : score < 70 ? ' warning' : '');
+
+    // Update description
+    const descriptions = {
+      excellent: 'Excellent debt coverage',
+      good: 'Healthy debt position',
+      adequate: 'Adequate coverage',
+      warning: 'Coverage needs attention',
+      danger: 'High debt risk'
+    };
+    const desc = score >= 85 ? 'excellent' : score >= 70 ? 'good' : score >= 50 ? 'adequate' : score >= 25 ? 'warning' : 'danger';
+    document.getElementById('healthDescription').textContent = descriptions[desc];
+  }
+
+  function renderHoldingsTable(holdings) {
+    const tbody = document.getElementById('holdingsTableBody');
+
+    if (!holdings || holdings.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-16 text-slate-400">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800/50 flex items-center justify-center">
+              <svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <p class="font-medium text-lg">No Holdings Found</p>
+            <p class="text-sm mt-2">Add stocks to your portfolio to analyze interest coverage</p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = holdings.map((h, idx) => `
+      <tr class="holding-row" onclick="window.showHoldingDetail('${h.symbol}')" style="animation: slideIn 0.3s ease-out ${idx * 0.05}s forwards; opacity: 0;">
+        <td class="px-4 py-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${getSymbolGradient(h.symbol)} flex items-center justify-center text-white text-xs font-bold shadow-lg">
+              ${h.symbol.slice(0, 3)}
+            </div>
+            <div>
+              <span class="font-semibold text-white">${h.symbol}</span>
+              <p class="text-xs text-slate-500 truncate max-w-[150px]">${h.name || ''}</p>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-4 text-right font-mono ${h.ebit < 0 ? 'text-red-400' : 'text-slate-300'}">${formatCurrency(h.ebit)}</td>
+        <td class="px-4 py-4 text-right font-mono text-slate-300">${formatCurrency(h.interestExpense)}</td>
+        <td class="px-4 py-4 text-center">
+          <span class="coverage-badge ${getRatingBgClass(h.rating)}">
+            ${formatRatio(h.interestCoverage)}
+          </span>
+        </td>
+        <td class="px-4 py-4 text-center">
+          <div class="flex items-center justify-center gap-2">
+            <span class="${getTrendClass(h.trend)}">${getTrendIcon(h.trend)}</span>
+            <span class="text-xs ${getTrendClass(h.trend)}">${h.trend || 'N/A'}</span>
+          </div>
+        </td>
+        <td class="px-4 py-4 text-center">
+          <span class="px-3 py-1 rounded-lg ${getRatingPillClass(h.rating)} text-xs font-medium">${h.rating || 'N/A'}</span>
+        </td>
+        <td class="px-4 py-4">
+          <div class="sparkline-container" id="spark-${h.symbol}"></div>
+          <canvas id="sparkline-${h.symbol}" width="80" height="30"></canvas>
+        </td>
+      </tr>
+    `).join('');
+
+    // Render sparklines
+    setTimeout(() => {
+      holdings.forEach(h => renderSparkline(h));
+    }, 100);
+  }
+
+  function renderSparkline(holding) {
+    const canvas = document.getElementById(`sparkline-${holding.symbol}`);
+    if (!canvas || !holding.historicalData || holding.historicalData.length < 2) return;
+
+    const ctx = canvas.getContext('2d');
+    const data = [...holding.historicalData].reverse().map(d => d.interestCoverage || 0);
+    const max = Math.max(...data) || 1;
+    const min = Math.min(...data);
+    const range = max - min || 1;
+
+    ctx.clearRect(0, 0, 80, 30);
+    ctx.beginPath();
+    ctx.strokeStyle = holding.trend === 'Improving' ? '#10b981' : holding.trend === 'Declining' ? '#ef4444' : '#94a3b8';
+    ctx.lineWidth = 2;
+
+    data.forEach((val, i) => {
+      const x = (i / (data.length - 1)) * 76 + 2;
+      const y = 28 - ((val - min) / range) * 24;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  function renderCoverageChart(holdings) {
+    const ctx = document.getElementById('coverageChart').getContext('2d');
+    if (coverageChart) coverageChart.destroy();
+
+    const sorted = [...holdings]
+      .filter(h => h.interestCoverage !== null)
+      .sort((a, b) => (b.interestCoverage || 0) - (a.interestCoverage || 0))
+      .slice(0, 8);
+
+    if (sorted.length === 0) return;
+
+    coverageChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(h => h.symbol),
+        datasets: [{
+          data: sorted.map(h => Math.min(Math.max(h.interestCoverage || 0, -10), 50)),
+          backgroundColor: sorted.map(h => getBarColor(h.interestCoverage)),
+          borderRadius: 6,
+          barThickness: 24
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(245, 158, 11, 0.3)',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => {
+                const h = sorted[ctx.dataIndex];
+                return [`Coverage: ${h.interestCoverage?.toFixed(1) || 'N/A'}x`, `Rating: ${h.rating}`];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { callback: v => v + 'x' }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { weight: 500 } }
+          }
+        }
+      }
+    });
+  }
+
+  function renderDistributionChart(holdings) {
+    const ctx = document.getElementById('distributionChart').getContext('2d');
+    if (distributionChart) distributionChart.destroy();
+
+    // Create distribution buckets
+    const buckets = {
+      'Distressed (<1.5x)': 0,
+      'Weak (1.5-3x)': 0,
+      'Adequate (3-5x)': 0,
+      'Good (5-10x)': 0,
+      'Excellent (>10x)': 0
+    };
+
+    holdings.forEach(h => {
+      const c = h.interestCoverage;
+      if (c === null || c === undefined) return;
+      if (c < 1.5) buckets['Distressed (<1.5x)']++;
+      else if (c < 3) buckets['Weak (1.5-3x)']++;
+      else if (c < 5) buckets['Adequate (3-5x)']++;
+      else if (c < 10) buckets['Good (5-10x)']++;
+      else buckets['Excellent (>10x)']++;
+    });
+
+    distributionChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(buckets),
+        datasets: [{
+          data: Object.values(buckets),
+          backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#0ea5e9', '#10b981'],
+          borderWidth: 0,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 16,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: { size: 10 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(245, 158, 11, 0.3)',
+            borderWidth: 1
+          }
+        }
+      }
+    });
+  }
+
+  function renderRadarChart(holdings) {
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    if (radarChart) radarChart.destroy();
+
+    const top5 = [...holdings]
+      .filter(h => h.interestCoverage !== null && h.interestCoverage > 0)
+      .sort((a, b) => (b.interestCoverage || 0) - (a.interestCoverage || 0))
+      .slice(0, 5);
+
+    if (top5.length < 3) return;
+
+    const colors = ['#10b981', '#0ea5e9', '#f59e0b', '#f97316', '#8b5cf6'];
+
+    radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Coverage', '5Y Avg', 'Stability', 'Trend', 'Capacity'],
+        datasets: top5.map((h, i) => ({
+          label: h.symbol,
+          data: [
+            Math.min(h.interestCoverage / 20, 5),
+            Math.min((h.historical5YAvg || 0) / 20, 5),
+            h.trend === 'Stable' ? 4 : h.trend === 'Improving' ? 5 : 2,
+            h.trend === 'Improving' ? 5 : h.trend === 'Stable' ? 3 : 1,
+            h.interestCoverage > 10 ? 5 : h.interestCoverage > 5 ? 4 : h.interestCoverage > 3 ? 3 : 2
+          ],
+          borderColor: colors[i],
+          backgroundColor: colors[i] + '20',
+          pointBackgroundColor: colors[i],
+          pointBorderColor: '#0f172a',
+          pointBorderWidth: 2
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { padding: 12, usePointStyle: true, font: { size: 10 } }
+          }
+        },
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 5,
+            grid: { color: 'rgba(255,255,255,0.1)' },
+            angleLines: { color: 'rgba(255,255,255,0.1)' },
+            pointLabels: { font: { size: 10 } },
+            ticks: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  function renderTrendChart(holdings) {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    if (trendChart) trendChart.destroy();
+
+    if (!holdings || holdings.length === 0) return;
+
+    const colors = ['#10b981', '#0ea5e9', '#f59e0b', '#f97316', '#8b5cf6'];
+    const datasets = holdings.filter(h => h.historicalData && h.historicalData.length > 0).map((h, i) => {
+      const data = [...h.historicalData].reverse();
+      return {
+        label: h.symbol,
+        data: data.map(d => d.interestCoverage),
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length] + '20',
+        fill: i === 0,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: colors[i % colors.length],
+        pointBorderColor: '#0f172a',
+        pointBorderWidth: 2
+      };
+    });
+
+    if (datasets.length === 0) return;
+
+    const years = [...holdings[0].historicalData].reverse().map(d => d.year);
+    document.getElementById('trendChartTitle').innerHTML = `
+      <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+      </svg>
+      5-Year Coverage Trend (${holdings.map(h => h.symbol).join(', ')})
+    `;
+
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: years, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { padding: 16, usePointStyle: true, font: { size: 11 } }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(245, 158, 11, 0.3)',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.raw?.toFixed(1) || 'N/A'}x`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { callback: v => v + 'x' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderInsights(insights) {
+    // Strongest
+    document.getElementById('strongestList').innerHTML = (insights.strongest || []).slice(0, 3).length > 0
+      ? insights.strongest.slice(0, 3).map((h, i) => `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors cursor-pointer" onclick="window.showHoldingDetail('${h.symbol}')" style="animation: slideIn 0.3s ease-out ${i * 0.1}s forwards; opacity: 0;">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-emerald-400">#${i + 1}</span>
+              <span class="font-medium text-white">${h.symbol}</span>
+            </div>
+            <span class="font-bold text-emerald-400 font-mono">${formatRatio(h.interestCoverage)}</span>
+          </div>
+        `).join('')
+      : '<p class="text-slate-500 text-sm p-2">No strong coverage holdings</p>';
+
+    // Most Improved
+    document.getElementById('improvedList').innerHTML = (insights.mostImproved || []).slice(0, 3).length > 0
+      ? insights.mostImproved.slice(0, 3).map((h, i) => `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 transition-colors cursor-pointer" onclick="window.showHoldingDetail('${h.symbol}')" style="animation: slideIn 0.3s ease-out ${i * 0.1}s forwards; opacity: 0;">
+            <div class="flex items-center gap-2">
+              <span class="text-sky-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+              </span>
+              <span class="font-medium text-white">${h.symbol}</span>
+            </div>
+            <span class="text-xs text-sky-400">Improving</span>
+          </div>
+        `).join('')
+      : '<p class="text-slate-500 text-sm p-2">No improving trends</p>';
+
+    // Concerns
+    document.getElementById('concernsList').innerHTML = (insights.concerns || []).slice(0, 3).length > 0
+      ? insights.concerns.slice(0, 3).map((h, i) => `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer" onclick="window.showHoldingDetail('${h.symbol}')" style="animation: slideIn 0.3s ease-out ${i * 0.1}s forwards; opacity: 0;">
+            <span class="font-medium text-white">${h.symbol}</span>
+            <span class="text-xs ${h.interestCoverage < 0 ? 'text-red-400' : 'text-amber-400'} font-mono">
+              ${h.interestCoverage < 0 ? 'Neg EBIT' : formatRatio(h.interestCoverage)}
+            </span>
+          </div>
+        `).join('')
+      : '<p class="text-slate-500 text-sm p-2">No concerns</p>';
+  }
+
+  function renderSingleStockData(data) {
+    // Hide all portfolio sections
+    elements.holdingsTableSection.classList.add('hidden');
+    document.querySelectorAll('#mainContent > div:not(#singleStockSection)').forEach(el => {
+      if (!el.id?.includes('loading') && !el.id?.includes('error')) {
+        el.style.display = 'none';
+      }
+    });
+
+    // Show single stock section
+    elements.singleStockSection.classList.remove('hidden');
+    elements.singleStockSection.style.display = 'block';
+
+    const coverage = data.current?.interestCoverage;
+    const ratingClass = data.analysis?.rating === 'Excellent' ? 'excellent' :
+                        data.analysis?.rating === 'Distressed' ? 'distressed' :
+                        data.analysis?.rating === 'Weak' ? 'weak' : 'good';
+
+    document.getElementById('singleStockTitle').textContent = `${data.company || data.symbol} - Interest Coverage Analysis`;
+
+    document.getElementById('singleStockMetrics').innerHTML = `
+      <div class="metric-card ${data.current?.ebit < 0 ? 'distressed' : 'good'}">
+        <p class="text-xs text-slate-400 mb-1">EBIT (TTM)</p>
+        <p class="text-2xl font-bold font-mono ${data.current?.ebit < 0 ? 'text-red-400' : 'text-emerald-400'}">${formatCurrency(data.current?.ebit)}</p>
+        <p class="text-xs text-slate-500 mt-1">Operating Income</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-xs text-slate-400 mb-1">Interest Expense</p>
+        <p class="text-2xl font-bold font-mono text-amber-400">${formatCurrency(data.current?.interestExpense)}</p>
+        <p class="text-xs text-slate-500 mt-1">Annual Cost</p>
+      </div>
+      <div class="metric-card ${ratingClass}">
+        <p class="text-xs text-slate-400 mb-1">Coverage Ratio</p>
+        <p class="text-3xl font-bold font-mono ${getRatingTextClass(data.analysis?.rating)}">${formatRatio(coverage)}</p>
+        <p class="text-sm mt-1 font-semibold ${getRatingTextClass(data.analysis?.rating)}">${data.analysis?.rating || 'N/A'}</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-xs text-slate-400 mb-1">5Y Average</p>
+        <p class="text-2xl font-bold font-mono text-sky-400">${formatRatio(data.analysis?.fiveYearAvg)}</p>
+        <p class="text-xs mt-1 ${getTrendClass(data.analysis?.trend)}">${getTrendIcon(data.analysis?.trend)} ${data.analysis?.trend || 'N/A'}</p>
+      </div>
+    `;
+
+    // Add analysis details
+    const analysisHtml = `
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div class="glass-card p-4">
+          <h4 class="text-sm font-semibold text-amber-400 mb-3">Debt Capacity</h4>
+          <p class="text-lg font-bold text-white">${data.analysis?.debtCapacity || 'N/A'}</p>
+          <p class="text-xs text-slate-400 mt-1">Can service debt: ${data.analysis?.canServiceDebt ? 'Yes' : 'No'}</p>
+        </div>
+        <div class="glass-card p-4">
+          <h4 class="text-sm font-semibold text-amber-400 mb-3">Risk Level</h4>
+          <p class="text-lg font-bold ${data.analysis?.riskLevel === 'Low' ? 'text-emerald-400' : data.analysis?.riskLevel === 'High' ? 'text-red-400' : 'text-amber-400'}">${data.analysis?.riskLevel || 'N/A'}</p>
+          <p class="text-xs text-slate-400 mt-1">Based on coverage ratio</p>
+        </div>
+        <div class="glass-card p-4">
+          <h4 class="text-sm font-semibold text-amber-400 mb-3">Benchmarks</h4>
+          <div class="text-xs space-y-1">
+            <p class="text-slate-300">Investment Grade: &gt;${data.benchmarks?.investment_grade || 4}x</p>
+            <p class="text-slate-300">High Yield: &gt;${data.benchmarks?.high_yield || 2}x</p>
+            <p class="text-slate-300">Distressed: &lt;${data.benchmarks?.distressed || 1}x</p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 text-xs text-slate-500 flex items-center gap-2">
+        <span class="px-2 py-1 rounded bg-slate-700">${data.source || 'API'}</span>
+        <span>Last updated: ${new Date(data.lastUpdated || Date.now()).toLocaleString()}</span>
+      </div>
+    `;
+
+    // Append analysis to single stock section
+    let analysisDiv = document.getElementById('singleStockAnalysis');
+    if (!analysisDiv) {
+      analysisDiv = document.createElement('div');
+      analysisDiv.id = 'singleStockAnalysis';
+      elements.singleStockSection.querySelector('.glass-card').appendChild(analysisDiv);
+    }
+    analysisDiv.innerHTML = analysisHtml;
+
+    // Render trend chart if historical data available
+    if (data.historical && data.historical.length > 0) {
+      renderTrendChart([{ symbol: data.symbol, historicalData: data.historical }]);
+    }
+  }
+
+  // Function to restore portfolio view
+  function restorePortfolioView() {
+    document.querySelectorAll('#mainContent > div').forEach(el => {
+      el.style.display = '';
+    });
+    elements.singleStockSection.classList.add('hidden');
+    elements.holdingsTableSection.classList.remove('hidden');
+  }
+
+  // Helper Functions
+  function showLoading(show) {
+    elements.loadingState.classList.toggle('hidden', !show);
+    elements.mainContent.classList.toggle('hidden', show);
+  }
+
+  function showError(message) {
+    elements.errorState.classList.remove('hidden');
+    elements.mainContent.classList.add('hidden');
+    elements.errorMessage.textContent = message;
+  }
+
+  function hideError() {
+    elements.errorState.classList.add('hidden');
+  }
+
+  function formatCurrency(value) {
+    if (value === null || value === undefined) return 'N/A';
+    const absValue = Math.abs(value);
+    const sign = value < 0 ? '-' : '';
+    if (absValue >= 1e12) return `${sign}$${(absValue / 1e12).toFixed(1)}T`;
+    if (absValue >= 1e9) return `${sign}$${(absValue / 1e9).toFixed(1)}B`;
+    if (absValue >= 1e6) return `${sign}$${(absValue / 1e6).toFixed(1)}M`;
+    return `${sign}$${absValue.toLocaleString()}`;
+  }
+
+  function formatRatio(value) {
+    if (value === null || value === undefined) return 'N/M';
+    if (value === 0) return '0x';
+    return `${value.toFixed(1)}x`;
+  }
+
+  function getBarColor(coverage) {
+    if (coverage === null) return '#475569';
+    if (coverage >= 10) return '#10b981';
+    if (coverage >= 5) return '#0ea5e9';
+    if (coverage >= 3) return '#f59e0b';
+    if (coverage >= 1.5) return '#f97316';
+    return '#ef4444';
+  }
+
+  function getRatingBgClass(rating) {
+    const classes = {
+      'Excellent': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+      'Good': 'bg-sky-500/20 text-sky-400 border border-sky-500/30',
+      'Adequate': 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
+      'Weak': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+      'Distressed': 'bg-red-500/20 text-red-400 border border-red-500/30',
+      'N/M': 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+    };
+    return classes[rating] || classes['N/M'];
+  }
+
+  function getRatingPillClass(rating) {
+    const classes = {
+      'Excellent': 'bg-emerald-500/20 text-emerald-400',
+      'Good': 'bg-sky-500/20 text-sky-400',
+      'Adequate': 'bg-yellow-500/20 text-yellow-400',
+      'Weak': 'bg-orange-500/20 text-orange-400',
+      'Distressed': 'bg-red-500/20 text-red-400',
+      'N/M': 'bg-slate-500/20 text-slate-400'
+    };
+    return classes[rating] || classes['N/M'];
+  }
+
+  function getRatingTextClass(rating) {
+    const classes = {
+      'Excellent': 'text-emerald-400',
+      'Good': 'text-sky-400',
+      'Adequate': 'text-yellow-400',
+      'Weak': 'text-orange-400',
+      'Distressed': 'text-red-400'
+    };
+    return classes[rating] || 'text-slate-400';
+  }
+
+  function getTrendClass(trend) {
+    if (trend === 'Improving') return 'text-emerald-400';
+    if (trend === 'Declining') return 'text-red-400';
+    return 'text-slate-400';
+  }
+
+  function getTrendIcon(trend) {
+    if (trend === 'Improving') return '<svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>';
+    if (trend === 'Declining') return '<svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>';
+    return '<svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/></svg>';
+  }
+
+  function getSymbolGradient(symbol) {
+    const gradients = [
+      'from-purple-500 to-purple-700',
+      'from-sky-500 to-sky-700',
+      'from-emerald-500 to-emerald-700',
+      'from-amber-500 to-amber-700',
+      'from-rose-500 to-rose-700',
+      'from-indigo-500 to-indigo-700',
+      'from-teal-500 to-teal-700',
+      'from-cyan-500 to-cyan-700'
+    ];
+    return gradients[symbol.charCodeAt(0) % gradients.length];
+  }
+
+  // Global function for row clicks
+  window.showHoldingDetail = function(symbol) {
+    switchMode('single');
+    elements.symbolInput.value = symbol;
+    loadSingleStockData(symbol);
+  };
+
+  window.loadPortfolioData = loadPortfolioData;
+
+  // Initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,532 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeDividends = typeof dividends !== 'undefined' && dividends ? dividends : [];
+const safeProjectedIncome = typeof projectedIncome !== 'undefined' && projectedIncome ? projectedIncome : '$1,245.00';
+const safeYieldOnCost = typeof yieldOnCost !== 'undefined' && yieldOnCost ? yieldOnCost : '4.2%';
+const safeNextPayout = typeof nextPayout !== 'undefined' && nextPayout ? nextPayout : { date: 'Oct 15', stock: 'KO', amount: '$138.00' };
+const safePendingEvents = typeof pendingEvents !== 'undefined' && pendingEvents ? pendingEvents : 12;
+const safeCurrentMonth = typeof currentMonth !== 'undefined' && currentMonth ? currentMonth : 'January 2026';
+%>
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Dividend Calendar - WealthPilot Pro</title>
+  <!-- Google Fonts: Manrope -->
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Theme Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4850e5",
+            "background-dark": "#111217",
+            "surface-dark": "#1a1d24",
+            "border-dark": "#292a38",
+            "text-secondary": "#9e9fb7",
+            "success": "#0bda65",
+            "warning": "#fa6538",
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"],
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #111217; }
+    ::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d3e52; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  </style>
+</head>
+<body class="bg-background-dark text-white font-display overflow-hidden h-screen flex">
+  <!-- Sidebar -->
+  <aside class="w-72 bg-background-dark border-r border-border-dark flex flex-col flex-shrink-0 h-full">
+    <div class="p-6">
+      <div class="flex items-center gap-3">
+        <div class="size-10 text-primary">
+          <svg class="w-full h-full" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13.8261 17.4264C16.7203 18.1174 20.2244 18.5217 24 18.5217C27.7756 18.5217 31.2797 18.1174 34.1739 17.4264C36.9144 16.7722 39.9967 15.2331 41.3563 14.1648L24.8486 40.6391C24.4571 41.267 23.5429 41.267 23.1514 40.6391L6.64374 14.1648C8.00331 15.2331 11.0856 16.7722 13.8261 17.4264Z" fill="currentColor"></path>
+            <path clip-rule="evenodd" d="M39.998 12.236C39.9944 12.2537 39.9875 12.2845 39.9748 12.3294C39.9436 12.4399 39.8949 12.5741 39.8346 12.7175C39.8168 12.7597 39.7989 12.8007 39.7813 12.8398C38.5103 13.7113 35.9788 14.9393 33.7095 15.4811C30.9875 16.131 27.6413 16.5217 24 16.5217C20.3587 16.5217 17.0125 16.131 14.2905 15.4811C12.0012 14.9346 9.44505 13.6897 8.18538 12.8168C8.17384 12.7925 8.16216 12.767 8.15052 12.7408C8.09919 12.6249 8.05721 12.5114 8.02977 12.411C8.00356 12.3152 8.00039 12.2667 8.00004 12.2612C8.00004 12.261 8 12.2607 8.00004 12.2612C8.00004 12.2359 8.0104 11.9233 8.68485 11.3686C9.34546 10.8254 10.4222 10.2469 11.9291 9.72276C14.9242 8.68098 19.1919 8 24 8C28.8081 8 33.0758 8.68098 36.0709 9.72276C37.5778 10.2469 38.6545 10.8254 39.3151 11.3686C39.9006 11.8501 39.9857 12.1489 39.998 12.236Z" fill="currentColor" fill-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div class="flex flex-col">
+          <h1 class="text-white text-lg font-bold leading-normal tracking-tight">WealthPilot</h1>
+          <p class="text-text-secondary text-xs font-medium uppercase tracking-wider">Pro Account</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 px-4 flex flex-col gap-2 overflow-y-auto">
+      <a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-surface-dark hover:text-white transition-colors group" href="/dashboard">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors" style="font-size: 24px;">dashboard</span>
+        <span class="text-sm font-medium">Dashboard</span>
+      </a>
+      <a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-surface-dark hover:text-white transition-colors group" href="/portfolios">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors" style="font-size: 24px;">pie_chart</span>
+        <span class="text-sm font-medium">Portfolio</span>
+      </a>
+      <a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 text-primary border border-primary/20" href="/dividend-calendar">
+        <span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">calendar_month</span>
+        <span class="text-sm font-bold">Dividend Calendar</span>
+      </a>
+      <a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-surface-dark hover:text-white transition-colors group" href="/fundamental-analysis">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors" style="font-size: 24px;">query_stats</span>
+        <span class="text-sm font-medium">Research</span>
+      </a>
+      <a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-surface-dark hover:text-white transition-colors group" href="/reports">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors" style="font-size: 24px;">description</span>
+        <span class="text-sm font-medium">Reports</span>
+      </a>
+    </nav>
+    <div class="p-4 border-t border-border-dark">
+      <a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary hover:bg-surface-dark hover:text-white transition-colors group" href="/settings">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors" style="font-size: 24px;">settings</span>
+        <span class="text-sm font-medium">Settings</span>
+      </a>
+      <div class="mt-4 flex items-center gap-3 px-3 py-2 bg-surface-dark rounded-xl border border-border-dark">
+        <div class="size-8 rounded-full bg-primary/20 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary text-lg">person</span>
+        </div>
+        <div class="flex flex-col overflow-hidden">
+          <p class="text-white text-sm font-medium truncate">User</p>
+          <p class="text-text-secondary text-xs truncate">user@wealthpilot.com</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col h-full overflow-hidden bg-background-dark relative">
+    <!-- Top Header -->
+    <header class="h-20 border-b border-border-dark px-8 flex items-center justify-between bg-background-dark/95 backdrop-blur z-20 shrink-0">
+      <div class="flex items-center gap-6">
+        <h2 class="text-white text-xl font-bold leading-tight tracking-tight">Dividend Calendar</h2>
+        <div class="h-6 w-px bg-border-dark"></div>
+        <div class="flex items-center gap-2">
+          <button class="flex items-center justify-center size-8 rounded hover:bg-surface-dark text-text-secondary hover:text-white transition-colors">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+          <span class="text-white font-medium text-lg min-w-[140px] text-center"><%= safeCurrentMonth %></span>
+          <button class="flex items-center justify-center size-8 rounded hover:bg-surface-dark text-text-secondary hover:text-white transition-colors">
+            <span class="material-symbols-outlined">chevron_right</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <label class="relative flex items-center min-w-[280px]">
+          <span class="absolute left-3 text-text-secondary material-symbols-outlined" style="font-size: 20px;">search</span>
+          <input class="w-full bg-surface-dark border border-border-dark text-white text-sm rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-text-secondary/70" placeholder="Search holdings..." type="text"/>
+        </label>
+        <button class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-colors shadow-lg shadow-primary/25">
+          <span class="material-symbols-outlined" style="font-size: 20px;">download</span>
+          <span>Export</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Area -->
+    <div class="flex-1 overflow-y-auto p-8">
+      <div class="max-w-[1600px] mx-auto flex flex-col gap-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-surface-dark border border-border-dark rounded-xl p-5 flex flex-col gap-3 hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between">
+              <p class="text-text-secondary text-sm font-medium">Projected Income</p>
+              <span class="material-symbols-outlined text-success bg-success/10 p-1 rounded" style="font-size: 20px;">trending_up</span>
+            </div>
+            <div>
+              <p class="text-white text-2xl font-bold tracking-tight"><%= safeProjectedIncome %></p>
+              <p class="text-success text-xs font-medium mt-1 flex items-center gap-1">
+                <span class="material-symbols-outlined" style="font-size: 14px;">arrow_upward</span>
+                12.5% vs last month
+              </p>
+            </div>
+          </div>
+          <div class="bg-surface-dark border border-border-dark rounded-xl p-5 flex flex-col gap-3 hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between">
+              <p class="text-text-secondary text-sm font-medium">Yield on Cost</p>
+              <span class="material-symbols-outlined text-primary bg-primary/10 p-1 rounded" style="font-size: 20px;">percent</span>
+            </div>
+            <div>
+              <p class="text-white text-2xl font-bold tracking-tight"><%= safeYieldOnCost %></p>
+              <p class="text-text-secondary text-xs font-medium mt-1">Aggregate Portfolio</p>
+            </div>
+          </div>
+          <div class="bg-surface-dark border border-border-dark rounded-xl p-5 flex flex-col gap-3 hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between">
+              <p class="text-text-secondary text-sm font-medium">Next Payout</p>
+              <span class="material-symbols-outlined text-text-secondary bg-white/5 p-1 rounded" style="font-size: 20px;">payments</span>
+            </div>
+            <div>
+              <p class="text-white text-2xl font-bold tracking-tight"><%= safeNextPayout.date %></p>
+              <p class="text-text-secondary text-xs font-medium mt-1"><%= safeNextPayout.stock %> - <%= safeNextPayout.amount %></p>
+            </div>
+          </div>
+          <div class="bg-surface-dark border border-border-dark rounded-xl p-5 flex flex-col gap-3 hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between">
+              <p class="text-text-secondary text-sm font-medium">Pending Events</p>
+              <span class="material-symbols-outlined text-text-secondary bg-white/5 p-1 rounded" style="font-size: 20px;">calendar_clock</span>
+            </div>
+            <div>
+              <p class="text-white text-2xl font-bold tracking-tight"><%= safePendingEvents %></p>
+              <p class="text-text-secondary text-xs font-medium mt-1">4 Confirmed, 8 Projected</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Section -->
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex bg-surface-dark p-1 rounded-lg border border-border-dark">
+              <button class="px-4 py-1.5 rounded-md bg-border-dark text-white text-sm font-medium shadow-sm transition-all">Month</button>
+              <button class="px-4 py-1.5 rounded-md text-text-secondary hover:text-white text-sm font-medium transition-all">Quarter</button>
+              <button class="px-4 py-1.5 rounded-md text-text-secondary hover:text-white text-sm font-medium transition-all">Year</button>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-dark bg-surface-dark/50">
+                <div class="size-2 rounded-full bg-success"></div>
+                <span class="text-xs text-text-secondary">Pay Date</span>
+              </div>
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-dark bg-surface-dark/50">
+                <div class="size-2 rounded-full bg-primary"></div>
+                <span class="text-xs text-text-secondary">Ex-Div Date</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar Grid -->
+          <div class="bg-surface-dark border border-border-dark rounded-xl overflow-hidden shadow-sm">
+            <!-- Weekday Headers -->
+            <div class="grid grid-cols-7 border-b border-border-dark bg-[#1e2029]">
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Sun</div>
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Mon</div>
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Tue</div>
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Wed</div>
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Thu</div>
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Fri</div>
+              <div class="py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Sat</div>
+            </div>
+            <!-- Days Grid -->
+            <div class="calendar-grid bg-border-dark gap-px" id="calendar-grid">
+              <!-- Week 1 -->
+              <div class="min-h-[120px] bg-background-dark/50 p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary/30 text-sm font-medium">29</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark/50 p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary/30 text-sm font-medium">30</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark/50 p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary/30 text-sm font-medium">31</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">1</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <div class="flex justify-between items-start">
+                  <span class="text-white text-sm font-bold">2</span>
+                </div>
+                <div class="mt-2 flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2 p-1.5 rounded bg-[#1e2235] border-l-2 border-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                    <div class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white">KO</div>
+                    <div class="flex flex-col leading-none">
+                      <span class="text-[10px] font-bold text-white">KO</span>
+                      <span class="text-[9px] text-text-secondary">Ex-Div</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">3</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">4</span>
+              </div>
+              <!-- Week 2 -->
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <div class="flex justify-between items-start">
+                  <span class="flex items-center justify-center size-7 rounded-full bg-primary text-white text-sm font-bold shadow-lg shadow-primary/40">5</span>
+                </div>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">6</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">7</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">8</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">9</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <div class="flex justify-between items-start">
+                  <span class="text-white text-sm font-bold">10</span>
+                </div>
+                <div class="mt-2 flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2 p-1.5 rounded bg-[#152e24] border-l-2 border-success cursor-pointer hover:bg-success/20 transition-colors group/item">
+                    <div class="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-[8px] font-bold text-white">JNJ</div>
+                    <div class="flex flex-col leading-none w-full">
+                      <div class="flex justify-between items-center w-full">
+                        <span class="text-[10px] font-bold text-white">JNJ</span>
+                        <span class="text-[10px] font-bold text-success">+$210</span>
+                      </div>
+                      <span class="text-[9px] text-text-secondary group-hover/item:text-white transition-colors">Payout</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">11</span>
+              </div>
+              <!-- Week 3 -->
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">12</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">13</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">14</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <div class="flex justify-between items-start">
+                  <span class="text-white text-sm font-bold">15</span>
+                </div>
+                <div class="mt-2 flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2 p-1.5 rounded bg-[#152e24] border-l-2 border-success cursor-pointer hover:bg-success/20 transition-colors group/item">
+                    <div class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white">KO</div>
+                    <div class="flex flex-col leading-none w-full">
+                      <div class="flex justify-between items-center w-full">
+                        <span class="text-[10px] font-bold text-white">KO</span>
+                        <span class="text-[10px] font-bold text-success">+$138</span>
+                      </div>
+                      <span class="text-[9px] text-text-secondary group-hover/item:text-white transition-colors">Payout</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 p-1.5 rounded bg-[#152e24] border-l-2 border-success cursor-pointer hover:bg-success/20 transition-colors group/item">
+                    <div class="w-5 h-5 rounded-full bg-orange-600 flex items-center justify-center text-[8px] font-bold text-white">O</div>
+                    <div class="flex flex-col leading-none w-full">
+                      <div class="flex justify-between items-center w-full">
+                        <span class="text-[10px] font-bold text-white">O</span>
+                        <span class="text-[10px] font-bold text-success">+$45</span>
+                      </div>
+                      <span class="text-[9px] text-text-secondary group-hover/item:text-white transition-colors">Payout</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">16</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">17</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">18</span>
+              </div>
+              <!-- Week 4 -->
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">19</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">20</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">21</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">22</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <div class="flex justify-between items-start">
+                  <span class="text-white text-sm font-bold">23</span>
+                </div>
+                <div class="mt-2 flex flex-col gap-1.5">
+                  <div class="flex items-center gap-2 p-1.5 rounded bg-[#1e2235] border-l-2 border-primary cursor-pointer hover:bg-primary/10 transition-colors">
+                    <div class="w-5 h-5 rounded-full bg-gray-600 flex items-center justify-center text-[8px] font-bold text-white">VZ</div>
+                    <div class="flex flex-col leading-none">
+                      <span class="text-[10px] font-bold text-white">VZ</span>
+                      <span class="text-[9px] text-text-secondary">Ex-Div</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">24</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">25</span>
+              </div>
+              <!-- Week 5 -->
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">26</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">27</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">28</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">29</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">30</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary text-sm font-medium">31</span>
+              </div>
+              <div class="min-h-[120px] bg-background-dark/50 p-2 relative group hover:bg-surface-dark transition-colors">
+                <span class="text-text-secondary/30 text-sm font-medium">1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Dividends Table -->
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-white text-lg font-bold">Upcoming Dividends</h3>
+            <a class="text-primary text-sm font-bold hover:text-primary/80 transition-colors" href="#">View All</a>
+          </div>
+          <div class="bg-surface-dark border border-border-dark rounded-xl overflow-hidden">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-[#1e2029] text-text-secondary border-b border-border-dark">
+                <tr>
+                  <th class="px-6 py-4 font-medium">Asset</th>
+                  <th class="px-6 py-4 font-medium">Status</th>
+                  <th class="px-6 py-4 font-medium">Ex-Date</th>
+                  <th class="px-6 py-4 font-medium">Pay Date</th>
+                  <th class="px-6 py-4 font-medium text-right">Amount / Share</th>
+                  <th class="px-6 py-4 font-medium text-right">Total Payout</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border-dark">
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">KO</div>
+                      <div>
+                        <p class="text-white font-bold">Coca-Cola Co</p>
+                        <p class="text-text-secondary text-xs">KO</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#152e24] text-success text-xs font-medium border border-success/20">
+                      <span class="size-1.5 rounded-full bg-success"></span>
+                      Confirmed
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-text-secondary">Jan 02, 2026</td>
+                  <td class="px-6 py-4 text-white font-medium">Jan 15, 2026</td>
+                  <td class="px-6 py-4 text-right text-text-secondary">$0.46</td>
+                  <td class="px-6 py-4 text-right text-success font-bold">+$138.00</td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-xs font-bold text-white">JNJ</div>
+                      <div>
+                        <p class="text-white font-bold">Johnson & Johnson</p>
+                        <p class="text-text-secondary text-xs">JNJ</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#152e24] text-success text-xs font-medium border border-success/20">
+                      <span class="size-1.5 rounded-full bg-success"></span>
+                      Confirmed
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-text-secondary">Dec 28, 2025</td>
+                  <td class="px-6 py-4 text-white font-medium">Jan 10, 2026</td>
+                  <td class="px-6 py-4 text-right text-text-secondary">$1.19</td>
+                  <td class="px-6 py-4 text-right text-success font-bold">+$210.00</td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold text-white">VZ</div>
+                      <div>
+                        <p class="text-white font-bold">Verizon Communications</p>
+                        <p class="text-text-secondary text-xs">VZ</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
+                      <span class="size-1.5 rounded-full bg-primary"></span>
+                      Projected
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-text-secondary">Jan 23, 2026</td>
+                  <td class="px-6 py-4 text-white font-medium">Feb 01, 2026</td>
+                  <td class="px-6 py-4 text-right text-text-secondary">$0.65</td>
+                  <td class="px-6 py-4 text-right text-success font-bold">+$97.50</td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-xs font-bold text-white">O</div>
+                      <div>
+                        <p class="text-white font-bold">Realty Income Corp</p>
+                        <p class="text-text-secondary text-xs">O</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#152e24] text-success text-xs font-medium border border-success/20">
+                      <span class="size-1.5 rounded-full bg-success"></span>
+                      Monthly
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-text-secondary">Jan 02, 2026</td>
+                  <td class="px-6 py-4 text-white font-medium">Jan 15, 2026</td>
+                  <td class="px-6 py-4 text-right text-text-secondary">$0.26</td>
+                  <td class="px-6 py-4 text-right text-success font-bold">+$45.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="flex flex-wrap gap-3 pt-4">
+          <a href="/dividend-aristocrats" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-dark border border-border-dark text-sm text-text-secondary hover:text-white hover:border-primary/50 transition-all">
+            <span class="material-symbols-outlined text-[18px]">military_tech</span>
+            Dividend Aristocrats
+          </a>
+          <a href="/dividend-growth" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-dark border border-border-dark text-sm text-text-secondary hover:text-white hover:border-primary/50 transition-all">
+            <span class="material-symbols-outlined text-[18px]">trending_up</span>
+            Dividend Growth
+          </a>
+          <a href="/dividend-yield-curve" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-dark border border-border-dark text-sm text-text-secondary hover:text-white hover:border-primary/50 transition-all">
+            <span class="material-symbols-outlined text-[18px]">show_chart</span>
+            Yield Curve
+          </a>
+          <a href="/payout-ratio" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface-dark border border-border-dark text-sm text-text-secondary hover:text-white hover:border-primary/50 transition-all">
+            <span class="material-symbols-outlined text-[18px]">pie_chart</span>
+            Payout Ratio
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

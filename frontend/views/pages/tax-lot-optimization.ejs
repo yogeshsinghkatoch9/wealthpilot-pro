@@ -1,0 +1,780 @@
+<%- include('../partials/header', { pageTitle: 'Tax Lot Optimization' }) %>
+<%
+  // Safe defaults for data
+  const safeAccounts = typeof accounts !== 'undefined' && accounts ? accounts : [
+    { id: '8832', name: 'Main Brokerage (*8832)', type: 'brokerage' },
+    { id: '4021', name: 'Roth IRA (*4021)', type: 'ira' },
+    { id: '9921', name: 'Trust Fund (*9921)', type: 'trust' }
+  ];
+
+  const safeAssets = typeof assets !== 'undefined' && assets ? assets : [
+    { symbol: 'AAPL', name: 'Apple Inc.', logo: '/images/logos/aapl.png' },
+    { symbol: 'TSLA', name: 'Tesla Inc.', logo: '/images/logos/tsla.png' },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', logo: '/images/logos/nvda.png' }
+  ];
+
+  const selectedAsset = typeof asset !== 'undefined' && asset ? asset : {
+    symbol: 'AAPL',
+    name: 'Apple Inc.',
+    price: 185.00,
+    change: 1.2,
+    lastUpdated: '10:30 AM EST'
+  };
+
+  const safePosition = typeof position !== 'undefined' && position ? position : {
+    totalShares: 450,
+    avgCost: 142.50,
+    unrealizedGain: 19125.00
+  };
+
+  const safeRecommendation = typeof recommendation !== 'undefined' && recommendation ? recommendation : {
+    strategy: 'HIFO Optimization',
+    savings: 450,
+    description: 'Selling highest cost lots first will save roughly'
+  };
+
+  const safeLots = typeof lots !== 'undefined' && lots ? lots : [
+    { id: 1, dateAcquired: 'Jan 12, 2021', term: 'Long Term', shares: 25.00, costBasis: 120.00, marketValue: 4625.00, gainLoss: 1625.00, selected: true },
+    { id: 2, dateAcquired: 'Mar 15, 2023', term: 'Short Term', shares: 25.00, costBasis: 190.00, marketValue: 4625.00, gainLoss: -125.00, selected: true },
+    { id: 3, dateAcquired: 'Jun 02, 2023', term: 'Short Term', shares: 50.00, costBasis: 165.00, marketValue: 9250.00, gainLoss: 1000.00, selected: false },
+    { id: 4, dateAcquired: 'Aug 10, 2023', term: 'Short Term', shares: 100.00, costBasis: 175.00, marketValue: 18500.00, gainLoss: 1000.00, selected: false },
+    { id: 5, dateAcquired: 'Dec 01, 2023', term: 'Short Term', shares: 15.00, costBasis: 195.00, marketValue: 2775.00, gainLoss: -150.00, selected: false }
+  ];
+
+  const safeSimulation = typeof simulation !== 'undefined' && simulation ? simulation : {
+    selectedQuantity: 50,
+    grossProceeds: 9250.00,
+    totalCostBasis: 7750.00,
+    realizedGainLoss: 1500.00,
+    shortTermImpact: -125.00,
+    longTermImpact: 1625.00,
+    estimatedTax: 243.75
+  };
+%>
+
+<style>
+  /* Tax Lot Optimization specific styles */
+  .tlo-container {
+    background: #111221;
+    min-height: calc(100vh - 56px);
+  }
+
+  .tlo-header {
+    background: #111217;
+    border-bottom: 1px solid #292a38;
+  }
+
+  .tlo-label {
+    position: absolute;
+    top: -8px;
+    left: 8px;
+    padding: 0 4px;
+    background: #111217;
+    font-size: 10px;
+    font-weight: 700;
+    color: #4850e5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tlo-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 48px;
+    width: 256px;
+    border-radius: 8px;
+    border: 1px solid #292a38;
+    background: #1c1d26;
+    padding: 0 12px;
+    transition: border-color 0.2s;
+  }
+
+  .tlo-select-wrapper:hover {
+    border-color: rgba(72, 80, 229, 0.5);
+  }
+
+  .tlo-select {
+    width: 100%;
+    background: transparent;
+    border: none;
+    font-size: 14px;
+    color: white;
+    cursor: pointer;
+    appearance: none;
+    outline: none;
+  }
+
+  .tlo-card {
+    background: #1c1d26;
+    border: 1px solid #292a38;
+    border-radius: 12px;
+  }
+
+  .tlo-recommendation-card {
+    background: linear-gradient(to bottom right, #1c1d26, rgba(72, 80, 229, 0.1));
+    border: 1px solid rgba(72, 80, 229, 0.3);
+  }
+
+  .tlo-table-toolbar {
+    background: #111217;
+    border: 1px solid #292a38;
+    border-radius: 8px;
+  }
+
+  .tlo-tab-button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #9e9fb7;
+    transition: all 0.2s;
+  }
+
+  .tlo-tab-button:hover {
+    color: white;
+  }
+
+  .tlo-tab-button.active {
+    background: #292a38;
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .tlo-table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+  }
+
+  .tlo-table thead tr {
+    background: #15161e;
+    border-bottom: 1px solid #292a38;
+  }
+
+  .tlo-table th {
+    padding: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9e9fb7;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tlo-table tbody tr {
+    border-bottom: 1px solid #292a38;
+    transition: background-color 0.2s;
+  }
+
+  .tlo-table tbody tr:hover {
+    background: rgba(41, 42, 56, 0.3);
+  }
+
+  .tlo-table tbody tr.selected {
+    background: rgba(72, 80, 229, 0.05);
+  }
+
+  .tlo-table tbody tr.selected:hover {
+    background: rgba(72, 80, 229, 0.1);
+  }
+
+  .tlo-table td {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .tlo-checkbox {
+    border-radius: 4px;
+    border: 1px solid #292a38;
+    background: #111217;
+    color: #4850e5;
+    cursor: pointer;
+  }
+
+  .tlo-checkbox:checked {
+    background: #4850e5;
+    border-color: #4850e5;
+  }
+
+  .tlo-badge-long {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: rgba(168, 85, 247, 0.1);
+    color: #c084fc;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+  }
+
+  .tlo-badge-short {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .tlo-simulation-card {
+    background: #1c1d26;
+    border: 1px solid #292a38;
+    border-radius: 12px;
+    position: sticky;
+    top: 0;
+  }
+
+  .tlo-simulation-stat {
+    padding: 16px;
+    background: #111217;
+    border: 1px solid #292a38;
+    border-radius: 8px;
+  }
+
+  .tlo-tax-breakdown {
+    padding: 12px;
+    background: rgba(72, 80, 229, 0.05);
+    border: 1px solid rgba(72, 80, 229, 0.1);
+    border-radius: 8px;
+  }
+
+  .tlo-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: #4850e5;
+    color: white;
+    font-weight: 700;
+    border-radius: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 10px 25px -5px rgba(72, 80, 229, 0.2);
+  }
+
+  .tlo-btn-primary:hover {
+    background: rgba(72, 80, 229, 0.9);
+  }
+
+  .tlo-btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: #292a38;
+    color: white;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .tlo-btn-secondary:hover {
+    background: #3d3e52;
+  }
+
+  /* Custom scrollbar */
+  .tlo-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .tlo-scrollbar::-webkit-scrollbar-track {
+    background: #111221;
+  }
+
+  .tlo-scrollbar::-webkit-scrollbar-thumb {
+    background: #292a38;
+    border-radius: 4px;
+  }
+
+  .tlo-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3d3e52;
+  }
+
+  .text-success { color: #0bda65; }
+  .text-error { color: #ff4d4d; }
+  .bg-success-10 { background: rgba(11, 218, 101, 0.1); }
+</style>
+
+<main class="tlo-container">
+  <!-- Header Section -->
+  <header class="tlo-header flex flex-col md:flex-row md:items-center justify-between gap-4 p-6">
+    <div class="flex flex-col gap-1">
+      <h2 class="text-2xl font-bold tracking-tight text-white">Tax Lot Optimization</h2>
+      <p class="text-text-secondary text-sm">Strategize disposals to minimize capital gains tax liability.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Account Selector -->
+      <div class="relative">
+        <label class="tlo-label">Account</label>
+        <div class="tlo-select-wrapper">
+          <span class="material-symbols-outlined text-text-secondary mr-2" style="font-size: 20px;">wallet</span>
+          <select id="accountSelector" class="tlo-select" onchange="updateAccount(this.value)">
+            <% safeAccounts.forEach(account => { %>
+              <option value="<%= account.id %>"><%= account.name %></option>
+            <% }); %>
+          </select>
+          <span class="material-symbols-outlined text-text-secondary absolute right-3 pointer-events-none" style="font-size: 20px;">expand_more</span>
+        </div>
+      </div>
+
+      <!-- Asset Selector -->
+      <div class="relative">
+        <label class="tlo-label">Asset</label>
+        <div class="tlo-select-wrapper">
+          <div class="w-5 h-5 rounded-full bg-white flex items-center justify-center mr-2 overflow-hidden">
+            <img alt="<%= selectedAsset.symbol %> Logo" class="w-3 h-3" src="<%= safeAssets[0].logo || '/images/placeholder.png' %>" onerror="this.style.display='none'"/>
+          </div>
+          <select id="assetSelector" class="tlo-select" onchange="updateAsset(this.value)">
+            <% safeAssets.forEach(a => { %>
+              <option value="<%= a.symbol %>" <%= a.symbol === selectedAsset.symbol ? 'selected' : '' %>><%= a.symbol %> - <%= a.name %></option>
+            <% }); %>
+          </select>
+          <span class="material-symbols-outlined text-text-secondary absolute right-3 pointer-events-none" style="font-size: 20px;">expand_more</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Scrollable Content Area -->
+  <div class="flex-1 overflow-y-auto tlo-scrollbar p-6">
+    <div class="mx-auto max-w-[1400px] flex flex-col gap-6">
+
+      <!-- Key Stats & Recommendation Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <!-- Market Price Card -->
+        <div class="tlo-card p-5 flex flex-col gap-2">
+          <p class="text-text-secondary text-sm font-medium">Market Price</p>
+          <div class="flex items-end gap-3">
+            <span class="text-3xl font-bold text-white font-mono" id="marketPrice">$<%= typeof fmt !== 'undefined' ? fmt.number(selectedAsset.price) : selectedAsset.price.toFixed(2) %></span>
+            <span class="flex items-center text-sm font-bold mb-1 px-1.5 py-0.5 rounded <%= selectedAsset.change >= 0 ? 'text-success bg-success-10' : 'text-error bg-red-500/10' %>">
+              <span class="material-symbols-outlined text-base mr-0.5"><%= selectedAsset.change >= 0 ? 'trending_up' : 'trending_down' %></span>
+              <%= selectedAsset.change >= 0 ? '+' : '' %><%= selectedAsset.change %>%
+            </span>
+          </div>
+          <p class="text-xs text-text-secondary mt-1">Last updated: <%= selectedAsset.lastUpdated %></p>
+        </div>
+
+        <!-- Position Summary Card -->
+        <div class="tlo-card p-5 flex flex-col gap-2">
+          <p class="text-text-secondary text-sm font-medium">Total Position</p>
+          <div class="flex items-end gap-3">
+            <span class="text-3xl font-bold text-white font-mono"><%= safePosition.totalShares %> <span class="text-lg text-text-secondary font-normal">shares</span></span>
+          </div>
+          <div class="flex justify-between text-xs mt-1">
+            <span class="text-text-secondary">Avg Cost: <span class="text-white font-mono">$<%= safePosition.avgCost.toFixed(2) %></span></span>
+            <span class="text-text-secondary">Unrealized: <span class="<%= safePosition.unrealizedGain >= 0 ? 'text-success' : 'text-error' %> font-mono"><%= safePosition.unrealizedGain >= 0 ? '+' : '' %>$<%= typeof fmt !== 'undefined' ? fmt.money(safePosition.unrealizedGain) : safePosition.unrealizedGain.toLocaleString('en-US', {minimumFractionDigits: 2}) %></span></span>
+          </div>
+        </div>
+
+        <!-- Recommendation Card -->
+        <div class="tlo-recommendation-card p-5 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute top-0 right-0 p-4 opacity-10">
+            <span class="material-symbols-outlined text-6xl text-primary">lightbulb</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="material-symbols-outlined text-primary text-xl">auto_awesome</span>
+              <p class="text-primary text-sm font-bold uppercase tracking-wider">Recommended Strategy</p>
+            </div>
+            <p class="text-white text-xl font-bold"><%= safeRecommendation.strategy %></p>
+            <p class="text-text-secondary text-sm mt-1"><%= safeRecommendation.description %> <span class="text-white font-bold">$<%= safeRecommendation.savings %></span> vs FIFO.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Workspace: Table + Simulation -->
+      <div class="flex flex-col xl:flex-row gap-6 min-h-[500px]">
+
+        <!-- Left Column: Tax Lot Table -->
+        <div class="flex-1 flex flex-col tlo-card overflow-hidden">
+
+          <!-- Table Toolbar -->
+          <div class="p-4 border-b border-surface-border flex flex-wrap items-center justify-between gap-4">
+            <div class="tlo-table-toolbar flex items-center gap-2 p-1">
+              <button class="tlo-tab-button active" onclick="filterLots('all', this)">All Lots</button>
+              <button class="tlo-tab-button" onclick="filterLots('long', this)">Long Term</button>
+              <button class="tlo-tab-button" onclick="filterLots('short', this)">Short Term</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-text-secondary font-medium">Auto-Select:</span>
+              <button class="text-xs font-bold text-primary hover:text-primary/80 transition-colors" onclick="applyStrategy('hifo')">Apply HIFO</button>
+              <span class="text-text-secondary">|</span>
+              <button class="text-xs font-bold text-text-secondary hover:text-white transition-colors" onclick="applyStrategy('lifo')">Apply LIFO</button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="overflow-x-auto flex-1">
+            <table class="tlo-table" id="taxLotTable">
+              <thead>
+                <tr>
+                  <th class="w-12">
+                    <input type="checkbox" class="tlo-checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)"/>
+                  </th>
+                  <th class="cursor-pointer hover:text-white group" onclick="sortTable('dateAcquired')">
+                    Date Acquired <span class="material-symbols-outlined align-bottom text-[16px] opacity-0 group-hover:opacity-100">arrow_drop_down</span>
+                  </th>
+                  <th>Term</th>
+                  <th class="text-right">Shares</th>
+                  <th class="text-right">Cost Basis</th>
+                  <th class="text-right">Mkt Value</th>
+                  <th class="text-right">Gain/Loss</th>
+                </tr>
+              </thead>
+              <tbody id="lotsTableBody">
+                <% safeLots.forEach((lot, index) => { %>
+                <tr class="lot-row <%= lot.selected ? 'selected' : '' %>"
+                    data-lot-id="<%= lot.id %>"
+                    data-term="<%= lot.term === 'Long Term' ? 'long' : 'short' %>"
+                    data-shares="<%= lot.shares %>"
+                    data-cost="<%= lot.costBasis * lot.shares %>"
+                    data-gain="<%= lot.gainLoss %>">
+                  <td>
+                    <input type="checkbox" class="tlo-checkbox lot-checkbox" <%= lot.selected ? 'checked' : '' %> onchange="updateSelection(this)"/>
+                  </td>
+                  <td class="text-white"><%= lot.dateAcquired %></td>
+                  <td>
+                    <span class="<%= lot.term === 'Long Term' ? 'tlo-badge-long' : 'tlo-badge-short' %>"><%= lot.term %></span>
+                  </td>
+                  <td class="text-right text-white font-mono"><%= lot.shares.toFixed(2) %></td>
+                  <td class="text-right text-text-secondary font-mono">$<%= lot.costBasis.toFixed(2) %></td>
+                  <td class="text-right text-white font-mono">$<%= typeof fmt !== 'undefined' ? fmt.money(lot.marketValue) : lot.marketValue.toLocaleString('en-US', {minimumFractionDigits: 2}) %></td>
+                  <td class="text-right font-mono font-bold <%= lot.gainLoss >= 0 ? 'text-success' : 'text-error' %>">
+                    <%= lot.gainLoss >= 0 ? '+' : '' %>$<%= typeof fmt !== 'undefined' ? fmt.money(Math.abs(lot.gainLoss)) : Math.abs(lot.gainLoss).toLocaleString('en-US', {minimumFractionDigits: 2}) %>
+                  </td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right Column: Simulation Engine -->
+        <div class="xl:w-[360px] flex-none flex flex-col gap-4">
+          <div class="tlo-simulation-card p-6 flex flex-col gap-6">
+
+            <!-- Simulation Header -->
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-primary/20 rounded-lg text-primary">
+                <span class="material-symbols-outlined">calculate</span>
+              </div>
+              <h3 class="text-lg font-bold text-white">Simulation Engine</h3>
+            </div>
+
+            <!-- Simulation Stats -->
+            <div class="flex flex-col gap-4">
+              <div class="tlo-simulation-stat flex justify-between items-center">
+                <span class="text-text-secondary text-sm">Selected Quantity</span>
+                <span class="text-white font-bold text-lg font-mono" id="selectedQuantity"><%= safeSimulation.selectedQuantity %> shares</span>
+              </div>
+
+              <div class="space-y-3 pt-2">
+                <div class="flex justify-between items-baseline">
+                  <span class="text-text-secondary text-sm">Est. Gross Proceeds</span>
+                  <span class="text-white font-mono font-medium" id="grossProceeds">$<%= typeof fmt !== 'undefined' ? fmt.money(safeSimulation.grossProceeds) : safeSimulation.grossProceeds.toLocaleString('en-US', {minimumFractionDigits: 2}) %></span>
+                </div>
+                <div class="flex justify-between items-baseline">
+                  <span class="text-text-secondary text-sm">Total Cost Basis</span>
+                  <span class="text-text-secondary font-mono font-medium" id="totalCostBasis">$<%= typeof fmt !== 'undefined' ? fmt.money(safeSimulation.totalCostBasis) : safeSimulation.totalCostBasis.toLocaleString('en-US', {minimumFractionDigits: 2}) %></span>
+                </div>
+                <div class="h-px bg-surface-border my-2"></div>
+                <div class="flex justify-between items-baseline">
+                  <span class="text-text-secondary text-sm">Realized Gain/Loss</span>
+                  <span class="font-mono font-bold <%= safeSimulation.realizedGainLoss >= 0 ? 'text-success' : 'text-error' %>" id="realizedGainLoss"><%= safeSimulation.realizedGainLoss >= 0 ? '+' : '' %>$<%= typeof fmt !== 'undefined' ? fmt.money(Math.abs(safeSimulation.realizedGainLoss)) : Math.abs(safeSimulation.realizedGainLoss).toLocaleString('en-US', {minimumFractionDigits: 2}) %></span>
+                </div>
+
+                <!-- Tax Breakdown Sub-section -->
+                <div class="tlo-tax-breakdown mt-4">
+                  <div class="flex justify-between items-baseline mb-1">
+                    <span class="text-xs text-text-secondary">Short Term Impact</span>
+                    <span class="font-mono text-xs <%= safeSimulation.shortTermImpact >= 0 ? 'text-success' : 'text-error' %>" id="shortTermImpact">(<%= safeSimulation.shortTermImpact >= 0 ? '+' : '' %>$<%= typeof fmt !== 'undefined' ? fmt.money(Math.abs(safeSimulation.shortTermImpact)) : Math.abs(safeSimulation.shortTermImpact).toFixed(2) %>)</span>
+                  </div>
+                  <div class="flex justify-between items-baseline mb-2">
+                    <span class="text-xs text-text-secondary">Long Term Impact</span>
+                    <span class="font-mono text-xs <%= safeSimulation.longTermImpact >= 0 ? 'text-success' : 'text-error' %>" id="longTermImpact"><%= safeSimulation.longTermImpact >= 0 ? '+' : '' %>$<%= typeof fmt !== 'undefined' ? fmt.money(Math.abs(safeSimulation.longTermImpact)) : Math.abs(safeSimulation.longTermImpact).toFixed(2) %></span>
+                  </div>
+                  <div class="h-px bg-primary/10 my-2"></div>
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-1">
+                      <span class="text-sm font-bold text-white">Est. Tax Liability</span>
+                      <span class="material-symbols-outlined text-text-secondary text-[16px] cursor-help" title="Estimated based on 15% LTCG and 35% STCG">info</span>
+                    </div>
+                    <span class="text-white font-mono font-bold" id="estimatedTax">$<%= typeof fmt !== 'undefined' ? fmt.money(safeSimulation.estimatedTax) : safeSimulation.estimatedTax.toFixed(2) %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col gap-3 mt-2">
+              <button class="tlo-btn-primary" onclick="executeSale()">
+                <span>Execute Sale</span>
+                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+              </button>
+              <button class="tlo-btn-secondary" onclick="resetSelection()">
+                <span class="material-symbols-outlined text-[20px]">restart_alt</span>
+                <span>Reset Selection</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+// Page state
+const pageState = {
+  lots: <%- JSON.stringify(safeLots) %>,
+  currentPrice: <%= selectedAsset.price %>,
+  ltcgRate: 0.15,
+  stcgRate: 0.35
+};
+
+// Format currency
+function formatMoney(value) {
+  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Update account selection
+function updateAccount(accountId) {
+  window.location.href = `/tax-lot-optimization?account=${accountId}`;
+}
+
+// Update asset selection
+function updateAsset(symbol) {
+  const params = new URLSearchParams(window.location.search);
+  params.set('symbol', symbol);
+  window.location.href = `/tax-lot-optimization?${params.toString()}`;
+}
+
+// Filter lots by term
+function filterLots(type, button) {
+  // Update active tab
+  document.querySelectorAll('.tlo-tab-button').forEach(btn => btn.classList.remove('active'));
+  button.classList.add('active');
+
+  // Filter rows
+  const rows = document.querySelectorAll('.lot-row');
+  rows.forEach(row => {
+    const term = row.dataset.term;
+    if (type === 'all') {
+      row.style.display = '';
+    } else if (type === 'long' && term !== 'long') {
+      row.style.display = 'none';
+    } else if (type === 'short' && term !== 'short') {
+      row.style.display = 'none';
+    } else {
+      row.style.display = '';
+    }
+  });
+}
+
+// Toggle select all
+function toggleSelectAll(checked) {
+  const checkboxes = document.querySelectorAll('.lot-checkbox');
+  checkboxes.forEach(cb => {
+    cb.checked = checked;
+    const row = cb.closest('tr');
+    if (checked) {
+      row.classList.add('selected');
+    } else {
+      row.classList.remove('selected');
+    }
+  });
+  updateSimulation();
+}
+
+// Update individual selection
+function updateSelection(checkbox) {
+  const row = checkbox.closest('tr');
+  if (checkbox.checked) {
+    row.classList.add('selected');
+  } else {
+    row.classList.remove('selected');
+  }
+
+  // Update select all checkbox
+  const allCheckboxes = document.querySelectorAll('.lot-checkbox');
+  const allChecked = Array.from(allCheckboxes).every(cb => cb.checked);
+  document.getElementById('selectAll').checked = allChecked;
+
+  updateSimulation();
+}
+
+// Apply strategy (HIFO or LIFO)
+function applyStrategy(strategy) {
+  // Reset all selections first
+  document.querySelectorAll('.lot-checkbox').forEach(cb => {
+    cb.checked = false;
+    cb.closest('tr').classList.remove('selected');
+  });
+
+  // Sort lots based on strategy
+  const rows = Array.from(document.querySelectorAll('.lot-row'));
+
+  if (strategy === 'hifo') {
+    // Highest In, First Out - sort by cost basis descending
+    rows.sort((a, b) => {
+      const costA = parseFloat(a.querySelector('td:nth-child(5)').textContent.replace(/[$,]/g, ''));
+      const costB = parseFloat(b.querySelector('td:nth-child(5)').textContent.replace(/[$,]/g, ''));
+      return costB - costA;
+    });
+  } else if (strategy === 'lifo') {
+    // Last In, First Out - sort by date descending (most recent first)
+    rows.sort((a, b) => {
+      const dateA = new Date(a.querySelector('td:nth-child(2)').textContent);
+      const dateB = new Date(b.querySelector('td:nth-child(2)').textContent);
+      return dateB - dateA;
+    });
+  }
+
+  // Select the top 2 lots as an example
+  rows.slice(0, 2).forEach(row => {
+    const cb = row.querySelector('.lot-checkbox');
+    cb.checked = true;
+    row.classList.add('selected');
+  });
+
+  updateSimulation();
+
+  if (typeof showToast === 'function') {
+    showToast(`Applied ${strategy.toUpperCase()} strategy`, 'success');
+  }
+}
+
+// Update simulation calculations
+function updateSimulation() {
+  const selectedRows = document.querySelectorAll('.lot-row.selected');
+
+  let totalShares = 0;
+  let totalCost = 0;
+  let totalGain = 0;
+  let longTermGain = 0;
+  let shortTermGain = 0;
+
+  selectedRows.forEach(row => {
+    const shares = parseFloat(row.dataset.shares);
+    const cost = parseFloat(row.dataset.cost);
+    const gain = parseFloat(row.dataset.gain);
+    const term = row.dataset.term;
+
+    totalShares += shares;
+    totalCost += cost;
+    totalGain += gain;
+
+    if (term === 'long') {
+      longTermGain += gain;
+    } else {
+      shortTermGain += gain;
+    }
+  });
+
+  const grossProceeds = totalShares * pageState.currentPrice;
+
+  // Calculate estimated tax
+  const ltTax = longTermGain > 0 ? longTermGain * pageState.ltcgRate : 0;
+  const stTax = shortTermGain > 0 ? shortTermGain * pageState.stcgRate : 0;
+  const estimatedTax = ltTax + stTax;
+
+  // Update DOM
+  document.getElementById('selectedQuantity').textContent = `${totalShares} shares`;
+  document.getElementById('grossProceeds').textContent = `$${formatMoney(grossProceeds)}`;
+  document.getElementById('totalCostBasis').textContent = `$${formatMoney(totalCost)}`;
+
+  const gainLossEl = document.getElementById('realizedGainLoss');
+  gainLossEl.textContent = `${totalGain >= 0 ? '+' : ''}$${formatMoney(Math.abs(totalGain))}`;
+  gainLossEl.className = `font-mono font-bold ${totalGain >= 0 ? 'text-success' : 'text-error'}`;
+
+  const stImpactEl = document.getElementById('shortTermImpact');
+  stImpactEl.textContent = `(${shortTermGain >= 0 ? '+' : ''}$${formatMoney(Math.abs(shortTermGain))})`;
+  stImpactEl.className = `font-mono text-xs ${shortTermGain >= 0 ? 'text-success' : 'text-error'}`;
+
+  const ltImpactEl = document.getElementById('longTermImpact');
+  ltImpactEl.textContent = `${longTermGain >= 0 ? '+' : ''}$${formatMoney(Math.abs(longTermGain))}`;
+  ltImpactEl.className = `font-mono text-xs ${longTermGain >= 0 ? 'text-success' : 'text-error'}`;
+
+  document.getElementById('estimatedTax').textContent = `$${formatMoney(estimatedTax)}`;
+}
+
+// Execute sale
+function executeSale() {
+  const selectedRows = document.querySelectorAll('.lot-row.selected');
+  if (selectedRows.length === 0) {
+    if (typeof showToast === 'function') {
+      showToast('Please select at least one lot to sell', 'warning');
+    }
+    return;
+  }
+
+  const lotIds = Array.from(selectedRows).map(row => row.dataset.lotId);
+
+  // In a real app, this would make an API call
+  if (typeof showToast === 'function') {
+    showToast(`Executing sale for ${lotIds.length} lot(s)...`, 'info');
+  }
+
+  // Simulate API call
+  setTimeout(() => {
+    if (typeof showToast === 'function') {
+      showToast('Sale order submitted successfully', 'success');
+    }
+  }, 1500);
+}
+
+// Reset selection
+function resetSelection() {
+  document.querySelectorAll('.lot-checkbox').forEach(cb => {
+    cb.checked = false;
+    cb.closest('tr').classList.remove('selected');
+  });
+  document.getElementById('selectAll').checked = false;
+  updateSimulation();
+
+  if (typeof showToast === 'function') {
+    showToast('Selection reset', 'info');
+  }
+}
+
+// Sort table
+let sortDirection = {};
+function sortTable(column) {
+  const tbody = document.getElementById('lotsTableBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  sortDirection[column] = !sortDirection[column];
+  const dir = sortDirection[column] ? 1 : -1;
+
+  rows.sort((a, b) => {
+    let aVal, bVal;
+
+    if (column === 'dateAcquired') {
+      aVal = new Date(a.querySelector('td:nth-child(2)').textContent);
+      bVal = new Date(b.querySelector('td:nth-child(2)').textContent);
+    }
+
+    return (aVal - bVal) * dir;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+}
+
+// Initialize simulation on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateSimulation();
+});
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,508 @@
+<%- include('../partials/header', { pageTitle: 'Dashboard' }) %>
+
+<!-- Stitch Theme: Modern Dashboard Variant -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#4850e5",
+        "background-dark": "#111221",
+        "card-dark": "#1a1c2e",
+        "border-dark": "#2d2f45",
+        "text-secondary": "#9e9fb7",
+        "accent-green": "#0bda65",
+        "accent-red": "#ef4444",
+      },
+      fontFamily: {
+        "display": ["Manrope", "sans-serif"]
+      },
+    },
+  },
+}
+</script>
+<style>
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #111221; }
+::-webkit-scrollbar-thumb { background: #2d2f45; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #4850e5; }
+.glass-panel {
+  background: rgba(26, 28, 46, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+</style>
+
+<div class="flex h-screen w-full bg-background-dark text-white font-display overflow-hidden dark">
+  <!-- Side Navigation -->
+  <aside class="hidden md:flex flex-col w-72 h-full border-r border-border-dark bg-[#111217] p-6 justify-between flex-shrink-0">
+    <div class="flex flex-col gap-8">
+      <!-- Logo -->
+      <div class="flex items-center gap-3 px-2">
+        <div class="bg-primary/20 p-2 rounded-lg">
+          <span class="material-symbols-outlined text-primary text-3xl">token</span>
+        </div>
+        <div class="flex flex-col">
+          <h1 class="text-white text-xl font-bold leading-tight">WealthPilot</h1>
+          <p class="text-text-secondary text-xs font-medium tracking-wider uppercase">Pro Edition</p>
+        </div>
+      </div>
+      <!-- Nav Links -->
+      <nav class="flex flex-col gap-2">
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary text-white group transition-all duration-200 shadow-lg shadow-primary/20" href="/dashboard">
+          <span class="material-symbols-outlined text-[24px]">dashboard</span>
+          <span class="text-sm font-semibold">Dashboard</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white transition-all duration-200" href="/holdings">
+          <span class="material-symbols-outlined text-[24px]">work</span>
+          <span class="text-sm font-semibold">Holdings</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white transition-all duration-200" href="/technical-analysis">
+          <span class="material-symbols-outlined text-[24px]">monitoring</span>
+          <span class="text-sm font-semibold">Analysis</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white transition-all duration-200" href="/market-overview">
+          <span class="material-symbols-outlined text-[24px]">description</span>
+          <span class="text-sm font-semibold">Reports</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white transition-all duration-200" href="/portfolio">
+          <span class="material-symbols-outlined text-[24px]">account_balance_wallet</span>
+          <span class="text-sm font-semibold">Wallet</span>
+        </a>
+      </nav>
+    </div>
+    <!-- Bottom Actions -->
+    <div class="flex flex-col gap-4">
+      <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white transition-all duration-200" href="/settings">
+        <span class="material-symbols-outlined text-[24px]">settings</span>
+        <span class="text-sm font-semibold">Settings</span>
+      </a>
+      <div class="h-px w-full bg-border-dark"></div>
+      <div class="flex items-center gap-3 px-2 py-2">
+        <div class="h-10 w-10 rounded-full bg-primary/30 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary">person</span>
+        </div>
+        <div class="flex flex-col overflow-hidden">
+          <span class="text-white text-sm font-bold truncate"><%= typeof user !== 'undefined' && user ? user.name || user.email : 'User' %></span>
+          <span class="text-text-secondary text-xs truncate">Premium Plan</span>
+        </div>
+        <a href="/auth/logout" class="ml-auto text-text-secondary hover:text-white">
+          <span class="material-symbols-outlined">logout</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+    <!-- Header -->
+    <header class="flex items-center justify-between px-6 py-5 md:px-8 border-b border-border-dark bg-background-dark/80 backdrop-blur-md sticky top-0 z-20">
+      <div class="flex flex-col">
+        <h2 class="text-2xl font-bold text-white tracking-tight">Overview</h2>
+        <p class="text-text-secondary text-sm">Welcome back, here's what's happening today.</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="relative hidden md:block">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary text-[20px]">search</span>
+          <input class="bg-card-dark border border-border-dark text-white text-sm rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 placeholder-text-secondary/50" placeholder="Search assets..." type="text">
+        </div>
+        <a href="/alerts" class="relative p-2.5 rounded-xl bg-card-dark border border-border-dark text-text-secondary hover:text-white hover:border-primary/50 transition-colors">
+          <span class="material-symbols-outlined text-[24px]">notifications</span>
+          <span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-primary border-2 border-card-dark"></span>
+        </a>
+        <button class="md:hidden p-2.5 rounded-xl bg-primary text-white" id="mobileMenuBtn">
+          <span class="material-symbols-outlined text-[24px]">menu</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Content -->
+    <div class="flex-1 overflow-y-auto p-6 md:p-8">
+      <div class="max-w-7xl mx-auto flex flex-col gap-8">
+        <!-- Stats Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Stat Card 1 - Total Net Worth -->
+          <div class="glass-panel rounded-2xl p-6 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <span class="material-symbols-outlined text-6xl text-primary">account_balance</span>
+            </div>
+            <div class="flex flex-col gap-1 relative z-10">
+              <p class="text-text-secondary font-medium">Total Net Worth</p>
+              <div class="flex items-baseline gap-2">
+                <h3 class="text-3xl font-bold text-white tracking-tight"><%= typeof fmt !== 'undefined' ? fmt.money(totals?.value || 0) : '$0.00' %></h3>
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <% const gainPct = ((totals?.gain || 0) / (totals?.cost || 1) * 100); %>
+                <span class="<%= gainPct >= 0 ? 'bg-accent-green/10 text-accent-green' : 'bg-accent-red/10 text-accent-red' %> px-2 py-0.5 rounded text-sm font-semibold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px]"><%= gainPct >= 0 ? 'trending_up' : 'trending_down' %></span>
+                  <%= typeof fmt !== 'undefined' ? fmt.pct(gainPct) : '0%' %>
+                </span>
+                <span class="text-text-secondary text-sm">vs last month</span>
+              </div>
+            </div>
+            <!-- Subtle chart bg -->
+            <div class="absolute bottom-0 left-0 right-0 h-16 opacity-30">
+              <svg class="w-full h-full text-primary fill-current" viewBox="0 0 300 60">
+                <path d="M0,40 Q30,35 60,45 T120,30 T180,40 T240,20 T300,35 V60 H0 Z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Stat Card 2 - Day's Gain -->
+          <div class="bg-card-dark border border-border-dark rounded-2xl p-6 flex flex-col gap-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-text-secondary font-medium">Day's Gain</p>
+                <h3 class="text-3xl font-bold text-white tracking-tight mt-1">
+                  <% const dayGain = totals?.gain || 0; %>
+                  <span class="<%= dayGain >= 0 ? 'text-accent-green' : 'text-accent-red' %>">
+                    <%= typeof fmt !== 'undefined' ? fmt.money(dayGain) : '$0.00' %>
+                  </span>
+                </h3>
+              </div>
+              <div class="p-2 bg-accent-green/10 rounded-lg">
+                <span class="material-symbols-outlined text-accent-green">arrow_outward</span>
+              </div>
+            </div>
+            <div class="w-full bg-white/5 rounded-full h-1.5 mt-2">
+              <div class="bg-accent-green h-1.5 rounded-full" style="width: <%= Math.min(75, Math.abs(gainPct)) %>%"></div>
+            </div>
+          </div>
+
+          <!-- Stat Card 3 - Total Return -->
+          <div class="bg-card-dark border border-border-dark rounded-2xl p-6 flex flex-col gap-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-text-secondary font-medium">Total Return</p>
+                <h3 class="text-3xl font-bold text-white tracking-tight mt-1">
+                  <span class="<%= gainPct >= 0 ? 'text-accent-green' : 'text-accent-red' %>">
+                    <%= gainPct >= 0 ? '+' : '' %><%= gainPct.toFixed(1) %>%
+                  </span>
+                </h3>
+              </div>
+              <div class="p-2 bg-primary/10 rounded-lg">
+                <span class="material-symbols-outlined text-primary">pie_chart</span>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <span class="text-sm text-text-secondary">YTD Performance</span>
+              <span class="text-sm text-primary font-bold ml-auto"><%= gainPct >= 0 ? 'On Track' : 'Needs Attention' %></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <!-- Left Column (Chart & Holdings) -->
+          <div class="xl:col-span-2 flex flex-col gap-6">
+            <!-- Chart Section -->
+            <div class="bg-card-dark border border-border-dark rounded-2xl p-6 flex flex-col gap-6">
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 class="text-xl font-bold text-white">Portfolio Performance</h3>
+                  <p class="text-text-secondary text-sm">Compared to S&P 500 Benchmark</p>
+                </div>
+                <div class="flex bg-background-dark p-1 rounded-lg border border-border-dark">
+                  <button class="px-3 py-1.5 rounded-md text-sm font-medium text-text-secondary hover:text-white transition-colors" data-period="1D">1D</button>
+                  <button class="px-3 py-1.5 rounded-md text-sm font-medium text-text-secondary hover:text-white transition-colors" data-period="1W">1W</button>
+                  <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-primary text-white shadow-lg shadow-primary/25" data-period="1M">1M</button>
+                  <button class="px-3 py-1.5 rounded-md text-sm font-medium text-text-secondary hover:text-white transition-colors" data-period="YTD">YTD</button>
+                  <button class="px-3 py-1.5 rounded-md text-sm font-medium text-text-secondary hover:text-white transition-colors" data-period="ALL">ALL</button>
+                </div>
+              </div>
+              <div class="h-[300px] w-full relative">
+                <canvas id="performanceChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Top Holdings Table -->
+            <div class="bg-card-dark border border-border-dark rounded-2xl flex flex-col overflow-hidden">
+              <div class="p-6 border-b border-border-dark flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white">Top Holdings</h3>
+                <a href="/holdings" class="text-primary text-sm font-semibold hover:text-primary/80">View All</a>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead class="bg-background-dark/50 text-xs uppercase text-text-secondary font-semibold">
+                    <tr>
+                      <th class="px-6 py-4">Asset</th>
+                      <th class="px-6 py-4 text-right">Price</th>
+                      <th class="px-6 py-4 text-right">Balance</th>
+                      <th class="px-6 py-4 text-right">24h Change</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-border-dark text-sm">
+                    <%
+                    const safePortfolios = typeof portfolios !== 'undefined' && portfolios ? portfolios : [];
+                    const safeHoldings = safePortfolios.length > 0 && safePortfolios[0].holdings ? safePortfolios[0].holdings : [];
+                    if (safeHoldings.length > 0) {
+                      safeHoldings.slice(0, 5).forEach(holding => {
+                        const value = (holding.shares || 0) * (holding.currentPrice || holding.avgCostBasis || 0);
+                        const change = (Math.random() * 10 - 5);
+                    %>
+                    <tr class="hover:bg-white/5 transition-colors group">
+                      <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                          <div class="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span class="text-primary text-xs font-bold"><%= holding.symbol.substring(0, 2) %></span>
+                          </div>
+                          <div>
+                            <p class="font-bold text-white"><%= holding.name || holding.symbol %></p>
+                            <p class="text-text-secondary text-xs"><%= holding.symbol %></p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 text-right text-white font-medium"><%= typeof fmt !== 'undefined' ? fmt.money(holding.currentPrice || holding.avgCostBasis || 0) : '$0.00' %></td>
+                      <td class="px-6 py-4 text-right">
+                        <p class="text-white font-medium"><%= typeof fmt !== 'undefined' ? fmt.money(value) : '$0.00' %></p>
+                        <p class="text-text-secondary text-xs"><%= (holding.shares || 0).toFixed(2) %> Shares</p>
+                      </td>
+                      <td class="px-6 py-4 text-right">
+                        <span class="<%= change >= 0 ? 'text-accent-green bg-accent-green/10' : 'text-accent-red bg-accent-red/10' %> px-2 py-1 rounded text-xs font-bold">
+                          <%= change >= 0 ? '+' : '' %><%= change.toFixed(2) %>%
+                        </span>
+                      </td>
+                    </tr>
+                    <% }); } else { %>
+                    <tr>
+                      <td colspan="4" class="px-6 py-12 text-center text-text-secondary">
+                        <div class="flex flex-col items-center gap-2">
+                          <span class="material-symbols-outlined text-4xl text-text-secondary/50">folder_open</span>
+                          <p>No holdings yet. <a href="/holdings/add" class="text-primary hover:underline">Add your first holding</a></p>
+                        </div>
+                      </td>
+                    </tr>
+                    <% } %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column (Activity & Actions) -->
+          <div class="xl:col-span-1 flex flex-col gap-6">
+            <!-- Quick Action Card -->
+            <div class="bg-gradient-to-br from-primary to-[#2a309e] rounded-2xl p-6 text-white shadow-xl shadow-primary/20">
+              <h3 class="text-lg font-bold mb-1">Quick Action</h3>
+              <p class="text-white/70 text-sm mb-6">Execute trades or move funds instantly.</p>
+              <div class="grid grid-cols-2 gap-3">
+                <a href="/holdings/add" class="flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 p-4 rounded-xl transition-colors">
+                  <span class="material-symbols-outlined text-2xl">add_card</span>
+                  <span class="text-sm font-semibold">Add Holding</span>
+                </a>
+                <a href="/market-overview" class="flex flex-col items-center justify-center gap-2 bg-white/10 hover:bg-white/20 border border-white/10 p-4 rounded-xl transition-colors">
+                  <span class="material-symbols-outlined text-2xl">swap_horiz</span>
+                  <span class="text-sm font-semibold">Trade</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Activity Stream -->
+            <div class="bg-card-dark border border-border-dark rounded-2xl flex flex-col flex-1 h-full min-h-[400px]">
+              <div class="p-6 border-b border-border-dark flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-bold text-white">Activity Stream</h3>
+                  <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-green opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-accent-green"></span>
+                  </span>
+                </div>
+                <button class="text-text-secondary hover:text-white">
+                  <span class="material-symbols-outlined">filter_list</span>
+                </button>
+              </div>
+              <div class="p-6 flex flex-col gap-6 overflow-y-auto">
+                <!-- Activity Item 1 -->
+                <div class="flex gap-4 relative">
+                  <div class="absolute top-8 left-[19px] bottom-[-24px] w-px bg-border-dark"></div>
+                  <div class="h-10 w-10 rounded-full bg-[#1e2330] border border-border-dark flex items-center justify-center shrink-0 z-10">
+                    <span class="material-symbols-outlined text-accent-green text-[20px]">shopping_cart</span>
+                  </div>
+                  <div class="flex flex-col gap-1 pb-2">
+                    <p class="text-white text-sm font-medium">Bought <span class="font-bold">10 AAPL</span></p>
+                    <p class="text-text-secondary text-xs">Today at 10:24 AM</p>
+                    <span class="text-white text-xs font-bold bg-[#1e2330] px-2 py-1 rounded w-fit border border-border-dark mt-1">-$1,750.00</span>
+                  </div>
+                </div>
+                <!-- Activity Item 2 -->
+                <div class="flex gap-4 relative">
+                  <div class="absolute top-8 left-[19px] bottom-[-24px] w-px bg-border-dark"></div>
+                  <div class="h-10 w-10 rounded-full bg-[#1e2330] border border-border-dark flex items-center justify-center shrink-0 z-10">
+                    <span class="material-symbols-outlined text-primary text-[20px]">notifications_active</span>
+                  </div>
+                  <div class="flex flex-col gap-1 pb-2">
+                    <p class="text-white text-sm font-medium">Price Alert: <span class="font-bold">BTC > $42k</span></p>
+                    <p class="text-text-secondary text-xs">Today at 09:15 AM</p>
+                    <p class="text-text-secondary text-xs italic mt-1">Target price reached.</p>
+                  </div>
+                </div>
+                <!-- Activity Item 3 -->
+                <div class="flex gap-4 relative">
+                  <div class="absolute top-8 left-[19px] bottom-[-24px] w-px bg-border-dark"></div>
+                  <div class="h-10 w-10 rounded-full bg-[#1e2330] border border-border-dark flex items-center justify-center shrink-0 z-10">
+                    <span class="material-symbols-outlined text-accent-green text-[20px]">payments</span>
+                  </div>
+                  <div class="flex flex-col gap-1 pb-2">
+                    <p class="text-white text-sm font-medium">Dividend Received</p>
+                    <p class="text-text-secondary text-xs">Yesterday at 4:00 PM</p>
+                    <span class="text-accent-green text-xs font-bold bg-accent-green/10 px-2 py-1 rounded w-fit mt-1">+$45.00 (KO)</span>
+                  </div>
+                </div>
+                <!-- Activity Item 4 -->
+                <div class="flex gap-4 relative">
+                  <div class="h-10 w-10 rounded-full bg-[#1e2330] border border-border-dark flex items-center justify-center shrink-0 z-10">
+                    <span class="material-symbols-outlined text-accent-red text-[20px]">sell</span>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <p class="text-white text-sm font-medium">Sold <span class="font-bold">5 NVDA</span></p>
+                    <p class="text-text-secondary text-xs">2 days ago</p>
+                    <span class="text-white text-xs font-bold bg-[#1e2330] px-2 py-1 rounded w-fit border border-border-dark mt-1">+$2,100.00</span>
+                  </div>
+                </div>
+              </div>
+              <div class="p-4 border-t border-border-dark mt-auto">
+                <a href="/portfolio?view=transactions" class="block w-full py-2 text-sm text-primary font-medium hover:bg-primary/10 rounded-lg transition-colors text-center">
+                  View All Activity
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="mobileSidebar" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/50" id="sidebarOverlay"></div>
+  <aside class="absolute left-0 top-0 h-full w-72 bg-[#111217] border-r border-border-dark p-6 flex flex-col justify-between transform transition-transform">
+    <div class="flex flex-col gap-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="bg-primary/20 p-2 rounded-lg">
+            <span class="material-symbols-outlined text-primary text-xl">token</span>
+          </div>
+          <span class="text-white font-bold">WealthPilot</span>
+        </div>
+        <button id="closeSidebar" class="text-text-secondary hover:text-white">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <nav class="flex flex-col gap-2">
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary text-white" href="/dashboard">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span class="text-sm font-semibold">Dashboard</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white" href="/holdings">
+          <span class="material-symbols-outlined">work</span>
+          <span class="text-sm font-semibold">Holdings</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white" href="/technical-analysis">
+          <span class="material-symbols-outlined">monitoring</span>
+          <span class="text-sm font-semibold">Analysis</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white" href="/settings">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="text-sm font-semibold">Settings</span>
+        </a>
+      </nav>
+    </div>
+    <a href="/auth/logout" class="flex items-center gap-4 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-white">
+      <span class="material-symbols-outlined">logout</span>
+      <span class="text-sm font-semibold">Log Out</span>
+    </a>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Mobile menu
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const mobileSidebar = document.getElementById('mobileSidebar');
+const closeSidebar = document.getElementById('closeSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener('click', () => mobileSidebar.classList.remove('hidden'));
+}
+if (closeSidebar) {
+  closeSidebar.addEventListener('click', () => mobileSidebar.classList.add('hidden'));
+}
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener('click', () => mobileSidebar.classList.add('hidden'));
+}
+
+// Performance Chart
+const ctx = document.getElementById('performanceChart');
+if (ctx) {
+  const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+  gradient.addColorStop(0, 'rgba(72, 80, 229, 0.3)');
+  gradient.addColorStop(1, 'rgba(72, 80, 229, 0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length: 12}, (_, i) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (11 - i));
+        return d.toLocaleDateString('en-US', { month: 'short' });
+      }),
+      datasets: [{
+        label: 'Portfolio Value',
+        data: Array.from({length: 12}, () => Math.random() * 100000 + 400000),
+        borderColor: '#4850e5',
+        backgroundColor: gradient,
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#4850e5',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1c2e',
+          titleColor: '#fff',
+          bodyColor: '#9e9fb7',
+          borderColor: '#2d2f45',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (context) => `$${context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2})}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          grid: { color: 'rgba(45, 47, 69, 0.5)', drawBorder: false },
+          ticks: {
+            color: '#9e9fb7',
+            callback: (value) => '$' + (value / 1000).toFixed(0) + 'K'
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#9e9fb7' }
+        }
+      }
+    }
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

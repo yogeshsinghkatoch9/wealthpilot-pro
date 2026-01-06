@@ -1,0 +1,227 @@
+<div class="space-y-6">
+  <!-- Export Data -->
+  <div class="bloomberg-card">
+    <div class="border-b border-slate-700 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-amber-400">EXPORT YOUR DATA</h3>
+      <p class="text-slate-400 text-sm mt-1">Download all your data in JSON format</p>
+    </div>
+
+    <div class="space-y-4">
+      <p class="text-slate-300 font-mono text-sm">
+        Export all your portfolio data, transactions, watchlists, and settings. This includes:
+      </p>
+
+      <ul class="space-y-2">
+        <li class="flex items-start gap-2 text-sm font-mono text-slate-400">
+          <svg class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Profile information and preferences
+        </li>
+        <li class="flex items-start gap-2 text-sm font-mono text-slate-400">
+          <svg class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          All portfolios and holdings
+        </li>
+        <li class="flex items-start gap-2 text-sm font-mono text-slate-400">
+          <svg class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Transaction history
+        </li>
+        <li class="flex items-start gap-2 text-sm font-mono text-slate-400">
+          <svg class="w-5 h-5 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Watchlists and alerts
+        </li>
+      </ul>
+
+      <button onclick="exportData()" class="bloomberg-btn bloomberg-btn-primary">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        EXPORT ALL DATA
+      </button>
+    </div>
+  </div>
+
+  <!-- Privacy Settings -->
+  <div class="bloomberg-card">
+    <div class="border-b border-slate-700 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-amber-400">PRIVACY SETTINGS</h3>
+      <p class="text-slate-400 text-sm mt-1">Control your privacy preferences</p>
+    </div>
+
+    <div class="space-y-3">
+      <label class="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+        <div>
+          <span class="text-white font-mono block">Allow analytics</span>
+          <span class="text-xs text-slate-500 font-mono">Help us improve by sharing anonymous usage data</span>
+        </div>
+        <input type="checkbox" checked class="toggle-checkbox">
+      </label>
+
+      <label class="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+        <div>
+          <span class="text-white font-mono block">Marketing emails</span>
+          <span class="text-xs text-slate-500 font-mono">Receive product updates and newsletters</span>
+        </div>
+        <input type="checkbox" class="toggle-checkbox">
+      </label>
+    </div>
+  </div>
+
+  <!-- Data Retention -->
+  <div class="bloomberg-card">
+    <div class="border-b border-slate-700 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-amber-400">DATA RETENTION</h3>
+      <p class="text-slate-400 text-sm mt-1">How we handle your data</p>
+    </div>
+
+    <div class="space-y-4">
+      <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700">
+        <h4 class="text-white font-mono font-semibold mb-2">Portfolio Data</h4>
+        <p class="text-sm text-slate-400 font-mono">
+          Your portfolio data is stored indefinitely unless you delete it. You can delete individual portfolios or your entire account at any time.
+        </p>
+      </div>
+
+      <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700">
+        <h4 class="text-white font-mono font-semibold mb-2">Transaction History</h4>
+        <p class="text-sm text-slate-400 font-mono">
+          Transaction records are kept permanently for tax and reporting purposes. You can export this data at any time.
+        </p>
+      </div>
+
+      <div class="p-4 bg-slate-900/30 rounded-lg border border-slate-700">
+        <h4 class="text-white font-mono font-semibold mb-2">Session Data</h4>
+        <p class="text-sm text-slate-400 font-mono">
+          Login sessions expire automatically after 30 days of inactivity. You can revoke sessions manually from the Security tab.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Account -->
+  <div class="bloomberg-card border-2 border-red-900/50">
+    <div class="border-b border-red-900/50 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-red-400">DANGER ZONE</h3>
+      <p class="text-slate-400 text-sm mt-1">Permanently delete your account and all data</p>
+    </div>
+
+    <div class="p-4 bg-red-900/10 rounded-lg border border-red-900/30 mb-4">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div>
+          <p class="text-red-400 font-mono font-semibold mb-1">This action cannot be undone</p>
+          <p class="text-sm text-slate-400 font-mono">
+            Deleting your account will permanently remove all your data including:
+          </p>
+          <ul class="mt-2 space-y-1 text-sm text-slate-400 font-mono">
+            <li>• All portfolios and holdings</li>
+            <li>• Transaction history</li>
+            <li>• Watchlists and alerts</li>
+            <li>• Settings and preferences</li>
+            <li>• API keys and sessions</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="showDeleteAccountModal()" class="bloomberg-btn bloomberg-btn-danger w-full">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      DELETE MY ACCOUNT
+    </button>
+  </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div id="delete-account-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+  <div class="bloomberg-card max-w-md w-full border-2 border-red-900/50">
+    <div class="border-b border-red-900/50 pb-3 mb-6">
+      <h3 class="text-lg font-mono font-semibold text-red-400">CONFIRM ACCOUNT DELETION</h3>
+    </div>
+
+    <div class="mb-6">
+      <p class="text-slate-300 font-mono text-sm mb-4">
+        This will permanently delete your account and all associated data. This action cannot be undone.
+      </p>
+
+      <form id="delete-account-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+            Enter your password to confirm
+          </label>
+          <input
+            type="password"
+            name="password"
+            required
+            class="w-full px-4 py-3 bg-slate-900/50 border border-red-900/50 rounded-lg text-white font-mono focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-colors">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-300 font-mono mb-2 uppercase tracking-wide">
+            Type "DELETE" to confirm
+          </label>
+          <input
+            type="text"
+            name="confirmation"
+            required
+            pattern="DELETE"
+            class="w-full px-4 py-3 bg-slate-900/50 border border-red-900/50 rounded-lg text-white font-mono focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-colors"
+            placeholder="DELETE">
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="bloomberg-btn bloomberg-btn-danger flex-1">
+            DELETE ACCOUNT
+          </button>
+          <button type="button" onclick="hideDeleteAccountModal()" class="bloomberg-btn bloomberg-btn-secondary">
+            CANCEL
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.toggle-checkbox {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  background: #1e293b;
+  border: 2px solid #475569;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-checkbox:checked {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+.toggle-checkbox::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s;
+}
+
+.toggle-checkbox:checked::after {
+  left: 22px;
+}
+</style>

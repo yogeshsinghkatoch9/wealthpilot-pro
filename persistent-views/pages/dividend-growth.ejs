@@ -1,0 +1,184 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+%>
+<%- include('../partials/header', { pageTitle: 'Dividend Growth' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-b-2 border-amber-400 px-6 py-4 -mx-6 -mt-6 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 tracking-wide">DIVIDEND GROWTH TRACKER</h1>
+<p class="text-slate-400 text-sm mt-1">Track dividend growth history & projections</p>
+</div>
+<select class="bloomberg-btn w-48 font-mono text-sm">
+<option>ALL HOLDINGS</option>
+<option>DIVIDEND GROWERS</option>
+<option>DIVIDEND ARISTOCRATS</option>
+</select>
+</div>
+</div>
+
+<!-- Portfolio Dividend Growth Summary -->
+<div class="bloomberg-card">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="text-center border-r border-slate-700 last:border-r-0">
+<p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Avg Dividend Growth</p>
+<p class="text-4xl font-mono font-bold text-emerald-400">8.4%</p>
+<p class="text-xs text-slate-500 uppercase mt-1">5-year CAGR</p>
+</div>
+<div class="text-center border-r border-slate-700 last:border-r-0">
+<p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Dividend Growers</p>
+<p class="text-3xl font-mono font-bold text-amber-400">14/18</p>
+<p class="text-xs text-slate-500 uppercase mt-1">Holdings</p>
+</div>
+<div class="text-center border-r border-slate-700 last:border-r-0">
+<p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Avg Streak</p>
+<p class="text-3xl font-mono font-bold text-sky-400">18 yrs</p>
+<p class="text-xs text-slate-500 uppercase mt-1">Consecutive increases</p>
+</div>
+<div class="text-center">
+<p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Projected 2025 Income</p>
+<p class="text-3xl font-mono font-bold text-emerald-400">$13,502</p>
+<p class="text-xs text-emerald-400 uppercase mt-1">+5.1% growth</p>
+</div>
+</div>
+</div>
+
+<!-- Dividend Growth Chart -->
+<div class="bloomberg-card">
+<h3 class="text-lg font-bold text-amber-400 mb-4 uppercase tracking-wide">Portfolio Dividend Income Growth</h3>
+<div class="h-64"><canvas id="growthChart"></canvas></div>
+<div class="flex justify-center gap-6 mt-4 text-sm font-mono">
+<span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-400"></span><span class="text-slate-300">ACTUAL</span></span>
+<span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-400 opacity-50"></span><span class="text-slate-300">PROJECTED</span></span>
+</div>
+</div>
+
+<!-- Holdings Dividend Growth -->
+<div class="bloomberg-card overflow-hidden">
+<div class="border-b-2 border-amber-400 pb-3 mb-4">
+<h3 class="text-lg font-bold text-amber-400 uppercase tracking-wide">Holdings Dividend Growth</h3>
+</div>
+<table class="bloomberg-table">
+<thead>
+<tr>
+<th class="px-4 py-3">STOCK</th>
+<th class="px-4 py-3 text-center">CURRENT DIV</th>
+<th class="px-4 py-3 text-center">1Y GROWTH</th>
+<th class="px-4 py-3 text-center">5Y CAGR</th>
+<th class="px-4 py-3 text-center">10Y CAGR</th>
+<th class="px-4 py-3 text-center">STREAK</th>
+<th class="px-4 py-3 text-center">PAYOUT</th>
+<th class="px-4 py-3">TREND</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div><span class="font-medium text-white">Johnson & Johnson</span></div></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">$4.96</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+5.3%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+6.1%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+6.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-purple-500/20 text-purple-400 font-mono font-bold">62 yrs</span></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">44%</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><span class="w-2 h-4 bg-emerald-400 rounded-sm"></span><span class="w-2 h-5 bg-emerald-400 rounded-sm"></span><span class="w-2 h-6 bg-emerald-400 rounded-sm"></span><span class="w-2 h-7 bg-emerald-400 rounded-sm"></span><span class="w-2 h-8 bg-emerald-400 rounded-sm"></span></div></td>
+</tr>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">KO</div><span class="font-medium text-white">Coca-Cola</span></div></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">$1.94</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+5.4%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+3.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+5.2%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-purple-500/20 text-purple-400 font-mono font-bold">62 yrs</span></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">68%</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><span class="w-2 h-5 bg-emerald-400 rounded-sm"></span><span class="w-2 h-5 bg-emerald-400 rounded-sm"></span><span class="w-2 h-6 bg-emerald-400 rounded-sm"></span><span class="w-2 h-6 bg-emerald-400 rounded-sm"></span><span class="w-2 h-7 bg-emerald-400 rounded-sm"></span></div></td>
+</tr>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div><span class="font-medium text-white">Microsoft</span></div></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">$3.00</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+10.3%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+10.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+12.4%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-mono font-bold">22 yrs</span></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">28%</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><span class="w-2 h-3 bg-emerald-400 rounded-sm"></span><span class="w-2 h-5 bg-emerald-400 rounded-sm"></span><span class="w-2 h-6 bg-emerald-400 rounded-sm"></span><span class="w-2 h-7 bg-emerald-400 rounded-sm"></span><span class="w-2 h-8 bg-emerald-400 rounded-sm"></span></div></td>
+</tr>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium text-white">Apple</span></div></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">$0.96</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+4.3%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+6.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+8.8%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-mono font-bold">12 yrs</span></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">15%</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><span class="w-2 h-4 bg-emerald-400 rounded-sm"></span><span class="w-2 h-5 bg-emerald-400 rounded-sm"></span><span class="w-2 h-5 bg-emerald-400 rounded-sm"></span><span class="w-2 h-6 bg-emerald-400 rounded-sm"></span><span class="w-2 h-6 bg-emerald-400 rounded-sm"></span></div></td>
+</tr>
+<tr>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">T</div><span class="font-medium text-white">AT&T</span></div></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">$1.11</td>
+<td class="px-4 py-3 text-center text-slate-400 font-mono">0%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-8.2%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-2.4%</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-mono font-bold">2 yrs</span></td>
+<td class="px-4 py-3 text-center font-mono text-slate-300">52%</td>
+<td class="px-4 py-3"><div class="flex gap-0.5"><span class="w-2 h-8 bg-red-400 rounded-sm"></span><span class="w-2 h-6 bg-red-400 rounded-sm"></span><span class="w-2 h-4 bg-amber-400 rounded-sm"></span><span class="w-2 h-4 bg-amber-400 rounded-sm"></span><span class="w-2 h-4 bg-amber-400 rounded-sm"></span></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Growth Projections -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">5-Year Income Projection</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2025</span><span class="font-bold text-emerald-400">$13,502</span></div>
+<div class="flex items-center justify-between"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2026</span><span class="font-bold">$14,634</span></div>
+<div class="flex items-center justify-between"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2027</span><span class="font-bold">$15,861</span></div>
+<div class="flex items-center justify-between"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2028</span><span class="font-bold">$17,193</span></div>
+<div class="flex items-center justify-between"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2029</span><span class="font-bold text-emerald-400">$18,637</span></div>
+</div>
+<p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-4">Based on 8.4% CAGR. Actual may vary.</p>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Top Growers (5Y CAGR)</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-2 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="font-medium">MSFT</span><span class="text-emerald-400 font-bold">+10.8%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="font-medium">V</span><span class="text-emerald-400 font-bold">+17.2%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="font-medium">HD</span><span class="text-emerald-400 font-bold">+12.4%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="font-medium">UNH</span><span class="text-emerald-400 font-bold">+14.8%</span>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('growthChart'), {
+  type: 'line',
+  data: {
+    labels: ['2020','2021','2022','2023','2024','2025','2026','2027'],
+    datasets: [{
+      label: 'Annual Dividend Income',
+      data: [8200,9100,10200,11400,12847,13502,14634,15861],
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16,185,129,0.1)',
+      fill: true,
+      tension: 0.3,
+      segment: { borderDash: ctx => ctx.p1DataIndex >= 4 ? [5,5] : undefined }
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

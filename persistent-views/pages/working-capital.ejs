@@ -1,0 +1,1279 @@
+<%- include('../partials/header', { pageTitle: 'Working Capital Analysis' }) %>
+
+<style>
+/* Professional Dark Theme */
+:root {
+  --bg-primary: #0a0f1a;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1f2937;
+  --border-color: rgba(255,255,255,0.08);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-primary: #0ea5e9;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(31, 41, 55, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+}
+
+/* Metric Cards */
+.metric-card {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  border-radius: 12px;
+  padding: 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+}
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+}
+
+/* Loading Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Tab Navigation */
+.tab-nav {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+.tab-btn {
+  padding: 0.625rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.tab-btn:hover {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--accent-primary);
+}
+.tab-btn.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+  color: #000;
+  font-weight: 600;
+}
+
+/* Rating Badges */
+.rating-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+.rating-excellent { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.rating-strong { background: rgba(14, 165, 233, 0.2); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.3); }
+.rating-adequate { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+.rating-weak { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+/* Data Table */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.data-table thead tr {
+  background: rgba(15, 23, 42, 0.8);
+}
+.data-table th {
+  padding: 0.875rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.data-table tbody tr {
+  transition: all 0.2s ease;
+}
+.data-table tbody tr:hover {
+  background: rgba(14, 165, 233, 0.05);
+}
+
+/* Chart Container */
+.chart-container {
+  position: relative;
+  height: 280px;
+  padding: 1rem;
+}
+
+/* Cycle Indicator */
+.cycle-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.cycle-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* Waterfall Chart Styles */
+.waterfall-bar {
+  transition: all 0.3s ease;
+}
+.waterfall-bar:hover {
+  filter: brightness(1.2);
+}
+
+/* Heatmap Cell */
+.heatmap-cell {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.heatmap-cell:hover {
+  transform: scale(1.05);
+  z-index: 10;
+}
+
+/* Insight Card */
+.insight-card {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  padding: 1.25rem;
+  border-left: 4px solid;
+  transition: all 0.2s ease;
+}
+.insight-card:hover {
+  background: rgba(15, 23, 42, 0.8);
+}
+.insight-best { border-left-color: #10b981; }
+.insight-cash { border-left-color: #0ea5e9; }
+.insight-concern { border-left-color: #ef4444; }
+.insight-cycle { border-left-color: #8b5cf6; }
+
+/* Stress Test Indicator */
+.stress-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+.stress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+.stress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease-out;
+}
+
+/* Symbol Badge */
+.symbol-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: white;
+  background: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+}
+
+/* Single Stock Panel */
+.search-input {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+</style>
+
+<!-- Header Section -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <div>
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-emerald-600 flex items-center justify-center">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white">Working Capital Analysis</h1>
+        <p class="text-slate-400 text-sm">Liquidity ratios, cash conversion cycle & short-term financial health</p>
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="portfolio" id="portfolioTab">Portfolio</button>
+      <button class="tab-btn" data-tab="single" id="singleTab">Single Stock</button>
+    </div>
+    <button id="exportBtn" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium flex items-center gap-2 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Export
+    </button>
+  </div>
+</div>
+
+<!-- Single Stock Search Panel -->
+<div id="singleStockPanel" class="hidden mb-6">
+  <div class="glass-card p-4">
+    <div class="flex gap-3">
+      <input type="text" id="stockSymbol" placeholder="Enter symbol (e.g., AAPL, MSFT, NVDA)"
+        class="search-input flex-1 uppercase">
+      <button id="analyzeBtn" class="px-6 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-emerald-500 text-white font-semibold hover:opacity-90 transition-opacity flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Analyze
+      </button>
+    </div>
+    <p class="text-xs text-slate-500 mt-2">Enter any stock symbol to analyze its working capital metrics</p>
+  </div>
+</div>
+
+<!-- Loading State -->
+<div id="loadingState" class="text-center py-12">
+  <div class="inline-flex items-center gap-3">
+    <div class="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+    <span class="text-slate-400 text-lg">Analyzing liquidity metrics...</span>
+  </div>
+  <div class="mt-8 max-w-3xl mx-auto space-y-4">
+    <div class="skeleton h-40 w-full"></div>
+    <div class="grid grid-cols-4 gap-4">
+      <div class="skeleton h-24"></div>
+      <div class="skeleton h-24"></div>
+      <div class="skeleton h-24"></div>
+      <div class="skeleton h-24"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Error State -->
+<div id="errorState" class="hidden">
+  <div class="glass-card p-8 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+      <svg class="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </div>
+    <h3 class="text-xl font-bold text-red-400 mb-2">Analysis Failed</h3>
+    <p id="errorMessage" class="text-slate-400 mb-4">Unable to fetch working capital data.</p>
+    <button onclick="loadPortfolioData()" class="px-6 py-2 rounded-lg bg-sky-500 text-white font-medium hover:bg-sky-600 transition-colors">
+      Retry
+    </button>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div id="mainContent" class="hidden space-y-6">
+
+  <!-- Top Row: Health Gauge & Key Metrics -->
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Health Gauge -->
+    <div class="glass-card p-6 flex flex-col items-center justify-center">
+      <h3 class="text-sm font-medium text-slate-400 mb-4">Portfolio Liquidity Score</h3>
+      <div class="relative w-44 h-44">
+        <svg viewBox="0 0 100 100" class="w-full h-full transform -rotate-90">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#1f2937" stroke-width="8"/>
+          <circle id="healthGauge" cx="50" cy="50" r="40" fill="none" stroke="url(#gaugeGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2" style="transition: stroke-dashoffset 1s ease-out"/>
+          <defs>
+            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ef4444"/>
+              <stop offset="50%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#10b981"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span id="healthScore" class="text-4xl font-bold text-white font-mono">--</span>
+          <span id="healthRating" class="text-sm font-medium text-emerald-400 mt-1">Loading</span>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">Average Current Ratio</p>
+    </div>
+
+    <!-- Key Metrics Grid -->
+    <div class="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="metric-card">
+        <p class="text-xs text-slate-400 mb-1 uppercase tracking-wide">Current Ratio</p>
+        <p id="avgCurrentRatio" class="text-2xl font-bold text-emerald-400 font-mono">--</p>
+        <p class="text-xs text-slate-500 mt-1">Assets / Liabilities</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-xs text-slate-400 mb-1 uppercase tracking-wide">Quick Ratio</p>
+        <p id="avgQuickRatio" class="text-2xl font-bold text-sky-400 font-mono">--</p>
+        <p class="text-xs text-slate-500 mt-1">Acid Test</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-xs text-slate-400 mb-1 uppercase tracking-wide">Cash Ratio</p>
+        <p id="avgCashRatio" class="text-2xl font-bold text-white font-mono">--</p>
+        <p class="text-xs text-slate-500 mt-1">Immediate Liquidity</p>
+      </div>
+      <div class="metric-card">
+        <p class="text-xs text-slate-400 mb-1 uppercase tracking-wide">Median Ratio</p>
+        <p id="medianRatio" class="text-2xl font-bold text-purple-400 font-mono">--</p>
+        <p class="text-xs text-slate-500 mt-1">50th Percentile</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Distribution Summary -->
+  <div class="glass-card p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-semibold text-white">Liquidity Distribution</h3>
+      <span id="holdingsCount" class="text-sm text-slate-400">0 holdings</span>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div>
+          <p class="text-2xl font-bold text-emerald-400 font-mono" id="excellentCount">0</p>
+          <p class="text-xs text-slate-400">Excellent (2.5x+)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-sky-500/10 border border-sky-500/20">
+        <div class="w-3 h-3 rounded-full bg-sky-500 animate-pulse"></div>
+        <div>
+          <p class="text-2xl font-bold text-sky-400 font-mono" id="strongCount">0</p>
+          <p class="text-xs text-slate-400">Strong (1.5-2.5x)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+        <div class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></div>
+        <div>
+          <p class="text-2xl font-bold text-amber-400 font-mono" id="adequateCount">0</p>
+          <p class="text-xs text-slate-400">Adequate (1.0-1.5x)</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+        <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+        <div>
+          <p class="text-2xl font-bold text-red-400 font-mono" id="weakCount">0</p>
+          <p class="text-xs text-slate-400">Weak (&lt;1.0x)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ratio Scale Reference -->
+  <div class="glass-card p-4">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm text-slate-400"><strong class="text-slate-300">Current Ratio</strong> = Current Assets / Current Liabilities</span>
+      </div>
+      <div class="flex flex-wrap gap-4 text-xs">
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><span class="text-slate-400">&lt;1.0x Weak</span></div>
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-400">1.0-1.5x Adequate</span></div>
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-sky-500"></div><span class="text-slate-400">1.5-2.5x Strong</span></div>
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-slate-400">&gt;2.5x Excellent</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Distribution Doughnut -->
+    <div class="glass-card p-6">
+      <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+        </svg>
+        Rating Distribution
+      </h3>
+      <div class="chart-container h-64">
+        <canvas id="distributionChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Current Ratio Bar Chart -->
+    <div class="glass-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Current Ratio by Holding
+        </h3>
+        <select id="sortSelect" class="text-sm rounded-lg border border-slate-600 bg-slate-800 text-white px-3 py-1.5">
+          <option value="ratio">By Ratio</option>
+          <option value="alpha">A-Z</option>
+          <option value="value">By Value</option>
+        </select>
+      </div>
+      <div class="chart-container h-64">
+        <canvas id="ratioChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Radar Chart - Multi-Metric Comparison -->
+    <div class="glass-card p-6">
+      <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+        </svg>
+        Multi-Ratio Comparison (Top 5)
+      </h3>
+      <div class="chart-container h-72">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Trend Chart -->
+    <div class="glass-card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+          </svg>
+          5-Year Liquidity Trend
+        </h3>
+        <select id="trendSelect" class="text-sm rounded-lg border border-slate-600 bg-slate-800 text-white px-3 py-1.5">
+          <option value="all">Portfolio Average</option>
+        </select>
+      </div>
+      <div class="chart-container h-72">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cash Conversion Cycle Analysis -->
+  <div class="glass-card p-6" id="cycleSection">
+    <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+      <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Cash Conversion Cycle Analysis
+    </h3>
+    <p class="text-sm text-slate-400 mb-4">CCC = Days Inventory Outstanding + Days Sales Outstanding - Days Payables Outstanding</p>
+    <div id="cycleContent" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <!-- Dynamic content -->
+    </div>
+  </div>
+
+  <!-- Holdings Table -->
+  <div class="glass-card overflow-hidden">
+    <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
+      <h3 class="font-semibold text-white flex items-center gap-2">
+        <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        Holdings Liquidity Analysis
+      </h3>
+      <span id="dataSourceBadge" class="text-xs px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-400">Live Data</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th class="text-right">Current Assets</th>
+            <th class="text-right">Current Liab.</th>
+            <th class="text-right">Working Capital</th>
+            <th class="text-center">Current</th>
+            <th class="text-center">Quick</th>
+            <th class="text-center">Cash</th>
+            <th class="text-center">Trend</th>
+            <th class="text-center">Rating</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsTableBody">
+          <tr>
+            <td colspan="9" class="text-center py-12 text-slate-400">
+              <div class="skeleton h-4 w-48 mx-auto mb-2"></div>
+              <div class="skeleton h-4 w-32 mx-auto"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Insights Row -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="insight-card insight-best">
+      <h4 class="font-bold text-emerald-400 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+        Best Liquidity
+      </h4>
+      <div id="bestLiquidityList" class="space-y-2"></div>
+    </div>
+    <div class="insight-card insight-cash">
+      <h4 class="font-bold text-sky-400 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Highest Cash
+      </h4>
+      <div id="mostCashList" class="space-y-2"></div>
+    </div>
+    <div class="insight-card insight-cycle">
+      <h4 class="font-bold text-purple-400 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Fastest Cash Cycle
+      </h4>
+      <div id="fastestCycleList" class="space-y-2"></div>
+    </div>
+    <div class="insight-card insight-concern">
+      <h4 class="font-bold text-red-400 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        Liquidity Concerns
+      </h4>
+      <div id="concernsList" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Data Attribution -->
+  <div class="text-center text-xs text-slate-500 mt-4 flex items-center justify-center gap-4">
+    <span id="dataSource">Data: Yahoo Finance, SEC Filings</span>
+    <span>|</span>
+    <span id="lastUpdated">Updated: --</span>
+  </div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // State
+  let portfolioData = null;
+  let charts = {};
+  let currentSort = 'ratio';
+
+  // DOM Elements
+  const elements = {
+    loadingState: document.getElementById('loadingState'),
+    errorState: document.getElementById('errorState'),
+    mainContent: document.getElementById('mainContent'),
+    singleStockPanel: document.getElementById('singleStockPanel'),
+    portfolioTab: document.getElementById('portfolioTab'),
+    singleTab: document.getElementById('singleTab')
+  };
+
+  // Chart.js defaults
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+  // Initialize
+  function init() {
+    setupEventListeners();
+    loadPortfolioData();
+  }
+
+  function setupEventListeners() {
+    elements.portfolioTab.addEventListener('click', () => switchMode('portfolio'));
+    elements.singleTab.addEventListener('click', () => switchMode('single'));
+    document.getElementById('analyzeBtn')?.addEventListener('click', handleSingleStockAnalysis);
+    document.getElementById('stockSymbol')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleSingleStockAnalysis();
+    });
+    document.getElementById('sortSelect')?.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      if (portfolioData) updateRatioChart();
+    });
+    document.getElementById('exportBtn')?.addEventListener('click', handleExport);
+  }
+
+  function switchMode(mode) {
+    elements.portfolioTab.classList.toggle('active', mode === 'portfolio');
+    elements.singleTab.classList.toggle('active', mode === 'single');
+
+    if (mode === 'single') {
+      elements.singleStockPanel.classList.remove('hidden');
+    } else {
+      elements.singleStockPanel.classList.add('hidden');
+      loadPortfolioData();
+    }
+  }
+
+  // API Calls
+  async function loadPortfolioData() {
+    showLoading(true);
+    hideError();
+
+    try {
+      const response = await fetch('/api/fundamentals/portfolio/working-capital', {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) throw new Error('Please log in to view portfolio analysis');
+        throw new Error('Failed to load portfolio data');
+      }
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Unknown error');
+
+      portfolioData = data;
+      renderPortfolioData(data);
+    } catch (error) {
+      console.error('Error loading portfolio data:', error);
+      showError(error.message);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  async function handleSingleStockAnalysis() {
+    const symbolInput = document.getElementById('stockSymbol');
+    const symbol = symbolInput.value.trim().toUpperCase();
+    if (!symbol) return;
+
+    showLoading(true);
+    hideError();
+
+    try {
+      // Use the correct working-capital endpoint
+      const response = await fetch(`/api/fundamentals/${symbol}/working-capital`, {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch data for ${symbol}`);
+
+      const data = await response.json();
+
+      // Transform single stock data to portfolio format
+      const singleHolding = {
+        symbol: symbol,
+        name: data.company || symbol,
+        currentAssets: data.components?.currentAssets || 0,
+        currentLiabilities: data.components?.currentLiabilities || 0,
+        inventory: data.components?.inventory || 0,
+        cash: data.components?.cash || 0,
+        receivables: data.components?.receivables || 0,
+        workingCapital: data.metrics?.workingCapital || 0,
+        currentRatio: data.metrics?.currentRatio || 0,
+        quickRatio: data.metrics?.quickRatio || 0,
+        cashRatio: data.metrics?.cashRatio || 0,
+        dso: data.cycleDays?.daysSalesOutstanding || 0,
+        dio: data.cycleDays?.daysInventoryOutstanding || 0,
+        dpo: data.cycleDays?.daysPayablesOutstanding || 0,
+        cashConversionCycle: data.cycleDays?.cashConversionCycle || 0,
+        rating: getRating(data.metrics?.currentRatio || 0),
+        trend: 'N/A',
+        historicalData: [],
+        source: 'API'
+      };
+
+      portfolioData = {
+        success: true,
+        portfolio: {
+          avgCurrentRatio: singleHolding.currentRatio,
+          avgQuickRatio: singleHolding.quickRatio,
+          avgCashRatio: singleHolding.cashRatio,
+          medianCurrentRatio: singleHolding.currentRatio,
+          totalHoldings: 1,
+          overallRating: singleHolding.rating
+        },
+        holdings: [singleHolding],
+        summary: {
+          excellent: singleHolding.rating === 'Excellent' ? 1 : 0,
+          strong: singleHolding.rating === 'Strong' ? 1 : 0,
+          adequate: singleHolding.rating === 'Adequate' ? 1 : 0,
+          weak: singleHolding.rating === 'Weak' ? 1 : 0
+        },
+        insights: {
+          bestLiquidity: [singleHolding],
+          mostCash: [singleHolding],
+          fastestCycle: singleHolding.cashConversionCycle ? [singleHolding] : [],
+          concerns: singleHolding.currentRatio < 1.0 ? [singleHolding] : []
+        }
+      };
+
+      renderPortfolioData(portfolioData);
+    } catch (error) {
+      console.error('Error:', error);
+      showError(error.message);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  function getRating(ratio) {
+    if (ratio >= 2.5) return 'Excellent';
+    if (ratio >= 1.5) return 'Strong';
+    if (ratio >= 1.0) return 'Adequate';
+    return 'Weak';
+  }
+
+  // Rendering
+  function renderPortfolioData(data) {
+    // Health gauge
+    const avgRatio = data.portfolio.avgCurrentRatio || 0;
+    const gaugePercent = Math.min((avgRatio / 4) * 100, 100);
+    const circumference = 251.2;
+    const offset = circumference - (gaugePercent / 100) * circumference;
+    document.getElementById('healthGauge').style.strokeDashoffset = offset;
+    document.getElementById('healthScore').textContent = avgRatio.toFixed(2) + 'x';
+    document.getElementById('healthRating').textContent = data.portfolio.overallRating;
+    document.getElementById('healthRating').className = `text-sm font-medium ${getRatingColor(data.portfolio.overallRating)}`;
+
+    // Key metrics
+    document.getElementById('avgCurrentRatio').textContent = avgRatio.toFixed(2) + 'x';
+    document.getElementById('avgQuickRatio').textContent = (data.portfolio.avgQuickRatio || 0).toFixed(2) + 'x';
+    document.getElementById('avgCashRatio').textContent = (data.portfolio.avgCashRatio || 0).toFixed(2) + 'x';
+    document.getElementById('medianRatio').textContent = (data.portfolio.medianCurrentRatio || 0).toFixed(2) + 'x';
+
+    // Distribution counts
+    document.getElementById('excellentCount').textContent = data.summary.excellent || 0;
+    document.getElementById('strongCount').textContent = data.summary.strong || 0;
+    document.getElementById('adequateCount').textContent = data.summary.adequate || 0;
+    document.getElementById('weakCount').textContent = data.summary.weak || 0;
+    document.getElementById('holdingsCount').textContent = `${data.holdings.length} holdings`;
+
+    // Render all components
+    renderHoldingsTable(data.holdings);
+    renderDistributionChart(data.summary);
+    updateRatioChart();
+    renderRadarChart(data.holdings.slice(0, 5));
+    renderTrendChart(data.holdings);
+    renderCycleAnalysis(data.holdings);
+    renderInsights(data.insights);
+
+    // Update timestamps
+    document.getElementById('lastUpdated').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+    const sources = [...new Set(data.holdings.map(h => h.source).filter(Boolean))];
+    document.getElementById('dataSource').textContent = `Data: ${sources.length > 0 ? sources.join(', ') : 'API'}`;
+  }
+
+  function renderHoldingsTable(holdings) {
+    const tbody = document.getElementById('holdingsTableBody');
+
+    if (!holdings || holdings.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center py-16 text-slate-400">
+            <svg class="w-12 h-12 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p class="font-medium">No Holdings Found</p>
+            <p class="text-sm mt-1">Add stocks to your portfolio to analyze liquidity</p>
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = holdings.map(h => {
+      const wcColor = h.workingCapital >= 0 ? 'text-emerald-400' : 'text-red-400';
+      return `
+        <tr>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-3">
+              <div class="symbol-badge">${h.symbol.slice(0, 4)}</div>
+              <div>
+                <span class="font-medium text-white">${h.symbol}</span>
+                <p class="text-xs text-slate-500 truncate max-w-[150px]">${h.name || ''}</p>
+              </div>
+            </div>
+          </td>
+          <td class="text-right font-mono">$${formatCurrency(h.currentAssets)}</td>
+          <td class="text-right font-mono">$${formatCurrency(h.currentLiabilities)}</td>
+          <td class="text-right font-mono font-bold ${wcColor}">${h.workingCapital >= 0 ? '' : '-'}$${formatCurrency(Math.abs(h.workingCapital))}</td>
+          <td class="text-center">
+            <span class="px-2 py-1 rounded-lg font-bold font-mono" style="background: ${getBarColor(h.currentRatio)}20; color: ${getBarColor(h.currentRatio)}">
+              ${h.currentRatio.toFixed(2)}x
+            </span>
+          </td>
+          <td class="text-center font-mono" style="color: ${getBarColor(h.quickRatio)}">${h.quickRatio.toFixed(2)}x</td>
+          <td class="text-center font-mono" style="color: ${getBarColor(h.cashRatio * 2)}">${h.cashRatio.toFixed(2)}x</td>
+          <td class="text-center">${getTrendHTML(h.trend)}</td>
+          <td class="text-center"><span class="rating-badge ${getRatingClass(h.rating)}">${h.rating}</span></td>
+        </tr>`;
+    }).join('');
+  }
+
+  function renderDistributionChart(summary) {
+    const ctx = document.getElementById('distributionChart');
+    if (charts.distribution) charts.distribution.destroy();
+
+    charts.distribution = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Excellent', 'Strong', 'Adequate', 'Weak'],
+        datasets: [{
+          data: [summary.excellent, summary.strong, summary.adequate, summary.weak],
+          backgroundColor: ['#10b981', '#0ea5e9', '#f59e0b', '#ef4444'],
+          borderWidth: 0,
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { padding: 16, usePointStyle: true, pointStyle: 'circle' }
+          }
+        }
+      }
+    });
+  }
+
+  function updateRatioChart() {
+    if (!portfolioData) return;
+
+    let holdings = [...portfolioData.holdings];
+
+    if (currentSort === 'alpha') holdings.sort((a, b) => a.symbol.localeCompare(b.symbol));
+    else if (currentSort === 'value') holdings.sort((a, b) => (b.currentAssets || 0) - (a.currentAssets || 0));
+    else holdings.sort((a, b) => (b.currentRatio || 0) - (a.currentRatio || 0));
+
+    const ctx = document.getElementById('ratioChart');
+    if (charts.ratio) charts.ratio.destroy();
+
+    const displayHoldings = holdings.slice(0, 10);
+
+    charts.ratio = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: displayHoldings.map(h => h.symbol),
+        datasets: [{
+          label: 'Current Ratio',
+          data: displayHoldings.map(h => h.currentRatio),
+          backgroundColor: displayHoldings.map(h => getBarColor(h.currentRatio)),
+          borderRadius: 6,
+          maxBarThickness: 36
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: Math.min(Math.max(...displayHoldings.map(h => h.currentRatio)) * 1.2, 6),
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { callback: v => v + 'x' }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { weight: 500 } }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(14, 165, 233, 0.3)',
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => `Current Ratio: ${ctx.raw.toFixed(2)}x`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function renderRadarChart(holdings) {
+    const ctx = document.getElementById('radarChart');
+    if (charts.radar) charts.radar.destroy();
+
+    if (holdings.length === 0) return;
+
+    const colors = ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+    charts.radar = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Current Ratio', 'Quick Ratio', 'Cash Ratio', 'Working Cap Health'],
+        datasets: holdings.slice(0, 5).map((h, i) => ({
+          label: h.symbol,
+          data: [
+            Math.min(h.currentRatio / 4 * 10, 10),
+            Math.min(h.quickRatio / 3 * 10, 10),
+            Math.min(h.cashRatio / 2 * 10, 10),
+            h.workingCapital > 0 ? 8 : 2
+          ],
+          borderColor: colors[i],
+          backgroundColor: colors[i] + '20',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: colors[i]
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 10,
+            ticks: { display: false },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            pointLabels: { font: { size: 11 } }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { padding: 12, usePointStyle: true }
+          }
+        }
+      }
+    });
+  }
+
+  function renderTrendChart(holdings) {
+    const ctx = document.getElementById('trendChart');
+    const select = document.getElementById('trendSelect');
+
+    // Populate select
+    select.innerHTML = '<option value="all">Portfolio Average</option>' +
+      holdings.filter(h => h.historicalData?.length > 1).map(h =>
+        `<option value="${h.symbol}">${h.symbol}</option>`
+      ).join('');
+
+    const renderChart = (selectedSymbol) => {
+      if (charts.trend) charts.trend.destroy();
+
+      const years = ['2020', '2021', '2022', '2023', '2024'];
+      const colors = ['#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+      let datasets;
+      if (selectedSymbol === 'all') {
+        datasets = holdings.filter(h => h.historicalData?.length >= 5).slice(0, 5).map((h, i) => ({
+          label: h.symbol,
+          data: h.historicalData.slice(0, 5).map(d => d.currentRatio),
+          borderColor: colors[i],
+          backgroundColor: colors[i] + '10',
+          fill: false,
+          tension: 0.3,
+          pointRadius: 4,
+          pointBackgroundColor: colors[i]
+        }));
+      } else {
+        const holding = holdings.find(h => h.symbol === selectedSymbol);
+        if (holding?.historicalData?.length > 0) {
+          datasets = [
+            {
+              label: 'Current Ratio',
+              data: holding.historicalData.slice(0, 5).map(d => d.currentRatio),
+              borderColor: '#10b981',
+              fill: true,
+              backgroundColor: 'rgba(16,185,129,0.1)',
+              tension: 0.3
+            },
+            {
+              label: 'Quick Ratio',
+              data: holding.historicalData.slice(0, 5).map(d => d.quickRatio),
+              borderColor: '#0ea5e9',
+              fill: false,
+              tension: 0.3
+            }
+          ];
+        } else {
+          datasets = [];
+        }
+      }
+
+      charts.trend = new Chart(ctx, {
+        type: 'line',
+        data: { labels: years, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,0.05)' },
+              ticks: { callback: v => v + 'x' }
+            },
+            x: { grid: { display: false } }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { padding: 12, usePointStyle: true }
+            }
+          }
+        }
+      });
+    };
+
+    select.addEventListener('change', (e) => renderChart(e.target.value));
+    renderChart('all');
+  }
+
+  function renderCycleAnalysis(holdings) {
+    const container = document.getElementById('cycleContent');
+
+    // Calculate averages
+    const validHoldings = holdings.filter(h => h.cashConversionCycle !== undefined);
+    if (validHoldings.length === 0) {
+      container.innerHTML = '<p class="col-span-4 text-slate-400 text-center py-4">Cash conversion cycle data not available</p>';
+      return;
+    }
+
+    const avgDSO = validHoldings.reduce((sum, h) => sum + (h.dso || 0), 0) / validHoldings.length;
+    const avgDIO = validHoldings.reduce((sum, h) => sum + (h.dio || 0), 0) / validHoldings.length;
+    const avgDPO = validHoldings.reduce((sum, h) => sum + (h.dpo || 0), 0) / validHoldings.length;
+    const avgCCC = avgDIO + avgDSO - avgDPO;
+
+    container.innerHTML = `
+      <div class="cycle-indicator">
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Days Sales Outstanding</p>
+          <p class="cycle-value text-sky-400">${Math.round(avgDSO)}</p>
+        </div>
+      </div>
+      <div class="cycle-indicator">
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Days Inventory Outstanding</p>
+          <p class="cycle-value text-amber-400">${Math.round(avgDIO)}</p>
+        </div>
+      </div>
+      <div class="cycle-indicator">
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Days Payables Outstanding</p>
+          <p class="cycle-value text-purple-400">${Math.round(avgDPO)}</p>
+        </div>
+      </div>
+      <div class="cycle-indicator" style="background: ${avgCCC < 30 ? 'rgba(16, 185, 129, 0.1)' : avgCCC < 60 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border-color: ${avgCCC < 30 ? 'rgba(16, 185, 129, 0.3)' : avgCCC < 60 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)'}">
+        <div>
+          <p class="text-xs text-slate-400 mb-1">Cash Conversion Cycle</p>
+          <p class="cycle-value ${avgCCC < 30 ? 'text-emerald-400' : avgCCC < 60 ? 'text-amber-400' : 'text-red-400'}">${Math.round(avgCCC)}</p>
+          <p class="text-xs ${avgCCC < 30 ? 'text-emerald-400' : avgCCC < 60 ? 'text-amber-400' : 'text-red-400'}">${avgCCC < 30 ? 'Excellent' : avgCCC < 60 ? 'Good' : 'Needs Improvement'}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderInsights(insights) {
+    // Best Liquidity
+    document.getElementById('bestLiquidityList').innerHTML = (insights.bestLiquidity || []).length > 0
+      ? insights.bestLiquidity.slice(0, 3).map(h => `
+          <div class="flex justify-between items-center p-2 rounded bg-emerald-500/10">
+            <span class="text-slate-300">${h.symbol}</span>
+            <span class="font-bold text-emerald-400 font-mono">${h.currentRatio.toFixed(2)}x</span>
+          </div>
+        `).join('')
+      : '<p class="text-sm text-slate-500">No holdings</p>';
+
+    // Most Cash
+    document.getElementById('mostCashList').innerHTML = (insights.mostCash || []).length > 0
+      ? insights.mostCash.slice(0, 3).map(h => `
+          <div class="flex justify-between items-center p-2 rounded bg-sky-500/10">
+            <span class="text-slate-300">${h.symbol}</span>
+            <span class="font-bold text-sky-400 font-mono">$${formatCurrency(h.cash)}</span>
+          </div>
+        `).join('')
+      : '<p class="text-sm text-slate-500">No holdings</p>';
+
+    // Fastest Cycle
+    const cycleList = document.getElementById('fastestCycleList');
+    if (cycleList) {
+      cycleList.innerHTML = (insights.fastestCycle || []).length > 0
+        ? insights.fastestCycle.slice(0, 3).map(h => `
+            <div class="flex justify-between items-center p-2 rounded bg-purple-500/10">
+              <span class="text-slate-300">${h.symbol}</span>
+              <span class="font-bold text-purple-400 font-mono">${h.cashConversionCycle || 0} days</span>
+            </div>
+          `).join('')
+        : '<p class="text-sm text-slate-500">No data</p>';
+    }
+
+    // Concerns
+    document.getElementById('concernsList').innerHTML = (insights.concerns || []).length > 0
+      ? insights.concerns.slice(0, 3).map(h => `
+          <div class="flex justify-between items-center p-2 rounded bg-red-500/10">
+            <span class="text-slate-300">${h.symbol}</span>
+            <span class="font-bold text-red-400 font-mono">${h.currentRatio.toFixed(2)}x</span>
+          </div>
+        `).join('')
+      : '<p class="text-sm text-emerald-400">No concerns</p>';
+  }
+
+  // Helpers
+  function showLoading(show) {
+    elements.loadingState.classList.toggle('hidden', !show);
+    elements.mainContent.classList.toggle('hidden', show);
+  }
+
+  function showError(message) {
+    elements.errorState.classList.remove('hidden');
+    elements.loadingState.classList.add('hidden');
+    elements.mainContent.classList.add('hidden');
+    document.getElementById('errorMessage').textContent = message;
+  }
+
+  function hideError() {
+    elements.errorState.classList.add('hidden');
+  }
+
+  function formatCurrency(value) {
+    if (!value && value !== 0) return '--';
+    const absValue = Math.abs(value);
+    if (absValue >= 1e12) return (value / 1e12).toFixed(1) + 'T';
+    if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    return Math.round(value).toLocaleString();
+  }
+
+  function getBarColor(ratio) {
+    if (ratio >= 2.5) return '#10b981';
+    if (ratio >= 1.5) return '#0ea5e9';
+    if (ratio >= 1.0) return '#f59e0b';
+    return '#ef4444';
+  }
+
+  function getRatingClass(rating) {
+    switch(rating?.toLowerCase()) {
+      case 'excellent': return 'rating-excellent';
+      case 'strong': return 'rating-strong';
+      case 'adequate': return 'rating-adequate';
+      default: return 'rating-weak';
+    }
+  }
+
+  function getRatingColor(rating) {
+    switch(rating?.toLowerCase()) {
+      case 'excellent': return 'text-emerald-400';
+      case 'strong': return 'text-sky-400';
+      case 'adequate': return 'text-amber-400';
+      default: return 'text-red-400';
+    }
+  }
+
+  function getTrendHTML(trend) {
+    if (trend === 'Improving') return '<span class="text-emerald-400 text-xs font-medium flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>Up</span>';
+    if (trend === 'Declining') return '<span class="text-red-400 text-xs font-medium flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>Down</span>';
+    return '<span class="text-slate-500 text-xs">Stable</span>';
+  }
+
+  function handleExport() {
+    if (!portfolioData) return;
+
+    const headers = ['Symbol', 'Name', 'Current Assets', 'Current Liabilities', 'Working Capital', 'Current Ratio', 'Quick Ratio', 'Cash Ratio', 'Rating', 'Trend'];
+    const rows = portfolioData.holdings.map(h => [
+      h.symbol,
+      `"${h.name || ''}"`,
+      h.currentAssets,
+      h.currentLiabilities,
+      h.workingCapital,
+      h.currentRatio,
+      h.quickRatio,
+      h.cashRatio,
+      h.rating,
+      h.trend
+    ]);
+
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `working_capital_analysis_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Expose for retry button
+  window.loadPortfolioData = loadPortfolioData;
+
+  // Initialize on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<%- include('../partials/footer') %>

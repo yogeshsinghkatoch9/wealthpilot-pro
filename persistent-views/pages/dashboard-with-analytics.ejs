@@ -1,0 +1,596 @@
+<%- include('../partials/header', { pageTitle: 'Advanced Analytics' }) %>
+
+<!-- Stitch Theme: Advanced Analytics Dashboard -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#4850e5",
+        "background-dark": "#111221",
+        "surface-dark": "#1e2130",
+        "surface-highlight": "#292a38"
+      },
+      fontFamily: {
+        "display": ["Manrope", "sans-serif"]
+      },
+    },
+  },
+}
+</script>
+<style>
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #111221; }
+::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #4850e5; }
+</style>
+
+<%
+const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+const safeTotals = typeof totals !== 'undefined' && totals ? totals : { value: 0, gain: 0, cost: 0 };
+const safePortfolios = typeof portfolios !== 'undefined' && portfolios ? portfolios : [];
+%>
+
+<div class="flex h-screen w-full bg-background-dark text-white font-display overflow-hidden dark">
+  <!-- SIDEBAR -->
+  <div class="hidden md:flex flex-col w-72 border-r border-surface-highlight bg-background-dark shrink-0">
+    <div class="p-6 pb-2">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center shadow-lg shadow-primary/20">
+          <span class="material-symbols-outlined text-white" style="font-size: 24px;">flight_takeoff</span>
+        </div>
+        <div>
+          <h1 class="text-white text-lg font-bold leading-tight">WealthPilot</h1>
+          <p class="text-slate-400 text-xs font-medium tracking-wide uppercase">Pro Edition</p>
+        </div>
+      </div>
+    </div>
+    <nav class="flex-1 flex flex-col gap-2 px-4 overflow-y-auto">
+      <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-surface-highlight transition-colors group" href="/dashboard">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors">dashboard</span>
+        <span class="font-medium">Dashboard</span>
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-surface-highlight transition-colors group" href="/portfolio">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors">pie_chart</span>
+        <span class="font-medium">Portfolio</span>
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-highlight text-white border-l-4 border-primary shadow-sm" href="/dashboard/analytics">
+        <span class="material-symbols-outlined text-primary">analytics</span>
+        <span class="font-medium">Analytics</span>
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-surface-highlight transition-colors group" href="/market-overview">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors">description</span>
+        <span class="font-medium">Reporting</span>
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-surface-highlight transition-colors group" href="/settings">
+        <span class="material-symbols-outlined group-hover:text-white transition-colors">settings</span>
+        <span class="font-medium">Settings</span>
+      </a>
+    </nav>
+    <div class="p-4 border-t border-surface-highlight">
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-surface-highlight/50 hover:bg-surface-highlight cursor-pointer transition-colors">
+        <div class="size-10 rounded-full bg-primary/30 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary">person</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-semibold text-white"><%= typeof user !== 'undefined' && user ? user.name || user.email : 'User' %></span>
+          <span class="text-xs text-slate-400">Senior Analyst</span>
+        </div>
+        <a href="/auth/logout" class="ml-auto text-slate-400 hover:text-white">
+          <span class="material-symbols-outlined" style="font-size: 20px;">logout</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-dark relative">
+    <!-- HEADER -->
+    <header class="flex items-center justify-between border-b border-surface-highlight px-8 py-5 bg-background-dark/95 backdrop-blur z-10">
+      <div class="flex items-center gap-4">
+        <button class="md:hidden p-2 text-slate-400 hover:text-white" id="mobileMenuBtn">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div>
+          <h2 class="text-white text-2xl font-bold tracking-tight">Advanced Analytics</h2>
+          <p class="text-slate-400 text-sm mt-0.5 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            Market Open - Data delayed 15m
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <!-- Search -->
+        <div class="hidden lg:flex items-center bg-surface-highlight rounded-lg h-10 w-64 px-3 border border-transparent focus-within:border-primary/50 transition-colors">
+          <span class="material-symbols-outlined text-slate-400">search</span>
+          <input class="bg-transparent border-none text-white placeholder-slate-400 text-sm w-full focus:ring-0" placeholder="Search ticker, fund, or ISIN..." type="text">
+        </div>
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+          <a href="/alerts" class="size-10 rounded-lg bg-surface-highlight hover:bg-surface-highlight/80 flex items-center justify-center text-white relative transition-colors">
+            <span class="material-symbols-outlined" style="font-size: 20px;">notifications</span>
+            <span class="absolute top-2.5 right-2.5 size-2 bg-primary rounded-full border border-surface-highlight"></span>
+          </a>
+          <a href="/help" class="size-10 rounded-lg bg-surface-highlight hover:bg-surface-highlight/80 flex items-center justify-center text-white transition-colors">
+            <span class="material-symbols-outlined" style="font-size: 20px;">help</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT SCROLLABLE -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-8">
+      <div class="max-w-[1600px] mx-auto flex flex-col gap-6">
+        <!-- FILTERS ROW -->
+        <div class="flex flex-wrap gap-3 items-center justify-between">
+          <div class="flex flex-wrap gap-3">
+            <button class="flex h-9 items-center gap-2 rounded-lg bg-surface-highlight hover:bg-white/5 border border-white/5 pl-4 pr-3 transition-colors group">
+              <span class="text-slate-300 text-sm font-medium">Range: <span class="text-white">YTD</span></span>
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-white" style="font-size: 18px;">expand_more</span>
+            </button>
+            <button class="flex h-9 items-center gap-2 rounded-lg bg-surface-highlight hover:bg-white/5 border border-white/5 pl-4 pr-3 transition-colors group">
+              <span class="text-slate-300 text-sm font-medium">Currency: <span class="text-white">USD</span></span>
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-white" style="font-size: 18px;">expand_more</span>
+            </button>
+            <select id="portfolio-selector" class="flex h-9 items-center gap-2 rounded-lg bg-surface-highlight hover:bg-white/5 border border-white/5 px-4 text-slate-300 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="all">All Portfolios</option>
+              <% safePortfolios.forEach(portfolio => { %>
+                <option value="<%= portfolio.id %>"><%= portfolio.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="flex gap-2">
+            <button class="flex h-9 px-4 items-center gap-2 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+              <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="rounded-xl border border-surface-highlight bg-surface-highlight/30 p-5 flex flex-col gap-1 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+              <span class="material-symbols-outlined text-slate-500" style="font-size: 20px;">info</span>
+            </div>
+            <p class="text-slate-400 text-sm font-medium">Alpha (1Y)</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <h3 class="text-3xl font-bold text-white tracking-tight">2.45</h3>
+              <span class="text-emerald-500 text-sm font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">+0.12%</span>
+            </div>
+            <div class="w-full bg-slate-800/50 h-1 mt-4 rounded-full overflow-hidden">
+              <div class="bg-emerald-500 h-full w-[75%] rounded-full"></div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-surface-highlight bg-surface-highlight/30 p-5 flex flex-col gap-1 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+              <span class="material-symbols-outlined text-slate-500" style="font-size: 20px;">info</span>
+            </div>
+            <p class="text-slate-400 text-sm font-medium">Beta</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <h3 class="text-3xl font-bold text-white tracking-tight">1.12</h3>
+              <span class="text-slate-500 text-sm font-medium">vs 1.0</span>
+            </div>
+            <div class="w-full bg-slate-800/50 h-1 mt-4 rounded-full overflow-hidden">
+              <div class="bg-primary h-full w-[60%] rounded-full"></div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-surface-highlight bg-surface-highlight/30 p-5 flex flex-col gap-1 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+              <span class="material-symbols-outlined text-slate-500" style="font-size: 20px;">info</span>
+            </div>
+            <p class="text-slate-400 text-sm font-medium">Sharpe Ratio</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <h3 class="text-3xl font-bold text-white tracking-tight">1.85</h3>
+              <span class="text-rose-500 text-sm font-bold bg-rose-500/10 px-1.5 py-0.5 rounded">-0.1%</span>
+            </div>
+            <div class="w-full bg-slate-800/50 h-1 mt-4 rounded-full overflow-hidden">
+              <div class="bg-orange-400 h-full w-[85%] rounded-full"></div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-surface-highlight bg-surface-highlight/30 p-5 flex flex-col gap-1 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition-opacity">
+              <span class="material-symbols-outlined text-slate-500" style="font-size: 20px;">info</span>
+            </div>
+            <p class="text-slate-400 text-sm font-medium">Max Drawdown</p>
+            <div class="flex items-baseline gap-2 mt-1">
+              <h3 class="text-3xl font-bold text-white tracking-tight">-12.4%</h3>
+              <span class="text-emerald-500 text-sm font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">+1.2%</span>
+            </div>
+            <div class="w-full bg-slate-800/50 h-1 mt-4 rounded-full overflow-hidden">
+              <div class="bg-rose-500 h-full w-[35%] rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ANALYTICS ROW 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Factor Exposure -->
+          <div class="lg:col-span-4 bg-surface-dark rounded-xl border border-surface-highlight p-6 flex flex-col h-full">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-white font-bold text-lg">Factor Exposure</h3>
+              <button class="text-slate-400 hover:text-white"><span class="material-symbols-outlined">more_horiz</span></button>
+            </div>
+            <div class="flex-1 flex flex-col gap-4 justify-center">
+              <!-- Factor Item: Momentum -->
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-300 font-medium">Momentum</span>
+                  <span class="text-emerald-400 font-bold">High (+1.2)</span>
+                </div>
+                <div class="flex gap-1 h-2 w-full">
+                  <div class="flex-1 bg-emerald-500 rounded-l-sm"></div>
+                  <div class="flex-1 bg-emerald-500/80"></div>
+                  <div class="flex-1 bg-emerald-500/60"></div>
+                  <div class="flex-1 bg-emerald-500/40"></div>
+                  <div class="flex-1 bg-surface-highlight rounded-r-sm"></div>
+                </div>
+              </div>
+              <!-- Factor Item: Value -->
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-300 font-medium">Value</span>
+                  <span class="text-slate-400 font-bold">Neutral (0.1)</span>
+                </div>
+                <div class="flex gap-1 h-2 w-full">
+                  <div class="flex-1 bg-surface-highlight rounded-l-sm"></div>
+                  <div class="flex-1 bg-surface-highlight"></div>
+                  <div class="flex-1 bg-primary rounded-sm"></div>
+                  <div class="flex-1 bg-surface-highlight"></div>
+                  <div class="flex-1 bg-surface-highlight rounded-r-sm"></div>
+                </div>
+              </div>
+              <!-- Factor Item: Volatility -->
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-300 font-medium">Volatility</span>
+                  <span class="text-rose-400 font-bold">Low (-0.8)</span>
+                </div>
+                <div class="flex gap-1 h-2 w-full">
+                  <div class="flex-1 bg-surface-highlight rounded-l-sm"></div>
+                  <div class="flex-1 bg-rose-500/40"></div>
+                  <div class="flex-1 bg-rose-500/60"></div>
+                  <div class="flex-1 bg-rose-500/80"></div>
+                  <div class="flex-1 bg-rose-500 rounded-r-sm"></div>
+                </div>
+              </div>
+              <!-- Factor Item: Size -->
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-slate-300 font-medium">Size</span>
+                  <span class="text-emerald-400 font-bold">Med (+0.6)</span>
+                </div>
+                <div class="flex gap-1 h-2 w-full">
+                  <div class="flex-1 bg-surface-highlight rounded-l-sm"></div>
+                  <div class="flex-1 bg-emerald-500/40"></div>
+                  <div class="flex-1 bg-emerald-500/60"></div>
+                  <div class="flex-1 bg-emerald-500 rounded-r-sm"></div>
+                  <div class="flex-1 bg-surface-highlight"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Attribution -->
+          <div class="lg:col-span-4 bg-surface-dark rounded-xl border border-surface-highlight p-6 flex flex-col h-full">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-white font-bold text-lg">Attribution</h3>
+              <div class="text-xs font-medium px-2 py-1 rounded bg-surface-highlight text-slate-300">Total: +0.8%</div>
+            </div>
+            <div class="flex-1 flex items-end justify-between px-2 gap-4">
+              <!-- Bar 1 -->
+              <div class="flex flex-col items-center gap-2 w-full">
+                <div class="relative w-full bg-surface-highlight/20 h-40 rounded-lg flex items-end justify-center overflow-hidden">
+                  <div class="w-full bg-emerald-500 mx-4 rounded-t-sm" style="height: 65%;"></div>
+                  <div class="absolute bottom-1 text-xs font-bold text-white drop-shadow-md">+1.2%</div>
+                </div>
+                <span class="text-xs text-slate-400 font-medium">Sector Alloc</span>
+              </div>
+              <!-- Bar 2 -->
+              <div class="flex flex-col items-center gap-2 w-full">
+                <div class="relative w-full bg-surface-highlight/20 h-40 rounded-lg flex items-start justify-center overflow-hidden">
+                  <div class="w-full bg-rose-500 mx-4 rounded-b-sm" style="height: 25%;"></div>
+                  <div class="absolute top-8 text-xs font-bold text-white drop-shadow-md">-0.4%</div>
+                </div>
+                <span class="text-xs text-slate-400 font-medium">Selection</span>
+              </div>
+              <!-- Bar 3 -->
+              <div class="flex flex-col items-center gap-2 w-full">
+                <div class="relative w-full bg-surface-highlight/20 h-40 rounded-lg flex items-end justify-center overflow-hidden">
+                  <div class="w-full bg-slate-500 mx-4 rounded-t-sm" style="height: 5%;"></div>
+                  <div class="absolute bottom-1 text-xs font-bold text-white drop-shadow-md">0.0%</div>
+                </div>
+                <span class="text-xs text-slate-400 font-medium">Currency</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario Analysis -->
+          <div class="lg:col-span-4 bg-surface-dark rounded-xl border border-surface-highlight p-6 flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-white font-bold text-lg">Scenario Analysis</h3>
+              <span class="text-primary text-xs font-bold uppercase tracking-wider">Interactive</span>
+            </div>
+            <div class="flex-1 flex flex-col gap-6">
+              <div class="bg-surface-highlight/30 p-4 rounded-lg border border-surface-highlight">
+                <div class="flex justify-between items-end mb-2">
+                  <span class="text-slate-300 text-sm font-medium">Projected Impact</span>
+                  <span class="text-rose-500 text-2xl font-bold">-4.5%</span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div class="h-full bg-rose-500 w-[70%]"></div>
+                </div>
+              </div>
+              <div class="space-y-5">
+                <div>
+                  <div class="flex justify-between text-xs mb-2">
+                    <span class="text-slate-400">Interest Rates</span>
+                    <span class="text-white font-mono">+2.0%</span>
+                  </div>
+                  <input class="w-full h-1 bg-surface-highlight rounded-lg appearance-none cursor-pointer accent-primary hover:accent-primary/80" max="100" min="0" type="range" value="70">
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs mb-2">
+                    <span class="text-slate-400">Inflation CPI</span>
+                    <span class="text-white font-mono">+4.2%</span>
+                  </div>
+                  <input class="w-full h-1 bg-surface-highlight rounded-lg appearance-none cursor-pointer accent-primary hover:accent-primary/80" max="100" min="0" type="range" value="40">
+                </div>
+              </div>
+              <a href="/risk-analytics" class="mt-auto w-full py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-colors text-center block">
+                Run Full Stress Test
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- MULTI-CHART LAYOUT -->
+        <div class="bg-surface-dark rounded-xl border border-surface-highlight flex flex-col relative overflow-hidden" style="min-height: 500px;">
+          <!-- Chart Controls -->
+          <div class="flex flex-wrap items-center justify-between p-4 border-b border-surface-highlight">
+            <div class="flex items-center gap-4">
+              <h3 class="text-white font-bold text-lg pl-2">Comparative Performance</h3>
+              <div class="h-6 w-px bg-surface-highlight"></div>
+              <div class="flex bg-surface-highlight rounded-lg p-0.5">
+                <button class="px-3 py-1 rounded-md bg-surface-dark text-white text-xs font-bold shadow-sm">Price</button>
+                <button class="px-3 py-1 rounded-md text-slate-400 hover:text-white text-xs font-medium transition-colors">Volume</button>
+                <button class="px-3 py-1 rounded-md text-slate-400 hover:text-white text-xs font-medium transition-colors">Volatility</button>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-sm">
+                <span class="size-3 rounded-full bg-primary"></span>
+                <span class="text-slate-300">Portfolio</span>
+              </div>
+              <div class="flex items-center gap-2 text-sm">
+                <span class="size-3 rounded-full bg-emerald-500"></span>
+                <span class="text-slate-300">S&P 500</span>
+              </div>
+            </div>
+          </div>
+          <!-- Chart Area -->
+          <div class="flex-1 p-6 relative">
+            <canvas id="comparativeChart" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Holdings Table -->
+        <div class="bg-surface-dark rounded-xl border border-surface-highlight overflow-hidden">
+          <div class="p-6 border-b border-surface-highlight flex justify-between items-center">
+            <h3 class="text-white font-bold text-lg">Holdings Overview</h3>
+            <a href="/holdings" class="text-primary text-sm font-semibold hover:text-primary/80">View All</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-background-dark/50 text-xs uppercase text-slate-400 font-semibold">
+                <tr>
+                  <th class="px-6 py-4">Stock</th>
+                  <th class="px-6 py-4 text-right">Shares</th>
+                  <th class="px-6 py-4 text-right">Price</th>
+                  <th class="px-6 py-4 text-right">Value</th>
+                  <th class="px-6 py-4 text-right">Gain/Loss</th>
+                  <th class="px-6 py-4 text-right">Weight</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-surface-highlight text-sm font-mono">
+                <% if (safeHoldings && safeHoldings.length > 0) { %>
+                  <% safeHoldings.forEach(holding => { %>
+                    <tr class="hover:bg-white/5 transition-colors">
+                      <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                          <div class="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span class="text-primary text-xs font-bold"><%= (holding.symbol || 'XX').substring(0, 2) %></span>
+                          </div>
+                          <span class="text-white font-semibold"><%= holding.symbol || 'N/A' %></span>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 text-right text-slate-300"><%= typeof fmt !== 'undefined' ? fmt.number(holding.quantity || 0) : (holding.quantity || 0) %></td>
+                      <td class="px-6 py-4 text-right text-white"><%= typeof fmt !== 'undefined' ? fmt.money(holding.currentPrice || 0) : '$0.00' %></td>
+                      <td class="px-6 py-4 text-right text-white"><%= typeof fmt !== 'undefined' ? fmt.money(holding.marketValue || 0) : '$0.00' %></td>
+                      <td class="px-6 py-4 text-right <%= (holding.gain || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400' %>">
+                        <%= typeof fmt !== 'undefined' ? fmt.pct(((holding.gain || 0) / (holding.costTotal || 1)) * 100) : '0%' %>
+                      </td>
+                      <td class="px-6 py-4 text-right text-primary">
+                        <%= ((holding.marketValue || 0) / (safeTotals.value || 1) * 100).toFixed(2) %>%
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                      <div class="flex flex-col items-center gap-2">
+                        <span class="material-symbols-outlined text-4xl text-slate-500/50">folder_open</span>
+                        <p>No holdings found. <a href="/holdings/add" class="text-primary hover:underline">Add your first holding</a></p>
+                      </div>
+                    </td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div id="mobileSidebar" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/50" id="sidebarOverlay"></div>
+  <aside class="absolute left-0 top-0 h-full w-72 bg-background-dark border-r border-surface-highlight p-6 flex flex-col justify-between">
+    <div class="flex flex-col gap-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center">
+            <span class="material-symbols-outlined text-white">flight_takeoff</span>
+          </div>
+          <span class="text-white font-bold">WealthPilot</span>
+        </div>
+        <button id="closeSidebar" class="text-slate-400 hover:text-white">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <nav class="flex flex-col gap-2">
+        <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:bg-surface-highlight hover:text-white" href="/dashboard">
+          <span class="material-symbols-outlined">dashboard</span>
+          <span class="text-sm font-semibold">Dashboard</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-lg bg-surface-highlight text-white" href="/dashboard/analytics">
+          <span class="material-symbols-outlined text-primary">analytics</span>
+          <span class="text-sm font-semibold">Analytics</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:bg-surface-highlight hover:text-white" href="/holdings">
+          <span class="material-symbols-outlined">work</span>
+          <span class="text-sm font-semibold">Holdings</span>
+        </a>
+        <a class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:bg-surface-highlight hover:text-white" href="/settings">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="text-sm font-semibold">Settings</span>
+        </a>
+      </nav>
+    </div>
+    <a href="/auth/logout" class="flex items-center gap-4 px-4 py-3 rounded-lg text-slate-400 hover:bg-surface-highlight hover:text-white">
+      <span class="material-symbols-outlined">logout</span>
+      <span class="text-sm font-semibold">Log Out</span>
+    </a>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Mobile menu
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const mobileSidebar = document.getElementById('mobileSidebar');
+const closeSidebar = document.getElementById('closeSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener('click', () => mobileSidebar.classList.remove('hidden'));
+}
+if (closeSidebar) {
+  closeSidebar.addEventListener('click', () => mobileSidebar.classList.add('hidden'));
+}
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener('click', () => mobileSidebar.classList.add('hidden'));
+}
+
+// Comparative Performance Chart
+const ctx = document.getElementById('comparativeChart');
+if (ctx) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Generate portfolio and benchmark data
+  let portfolioValue = 100000;
+  let spyValue = 100000;
+  const portfolioData = [portfolioValue];
+  const spyData = [spyValue];
+
+  for (let i = 1; i < 12; i++) {
+    portfolioValue *= (1 + (Math.random() * 0.1 - 0.03));
+    spyValue *= (1 + (Math.random() * 0.08 - 0.02));
+    portfolioData.push(portfolioValue);
+    spyData.push(spyValue);
+  }
+
+  const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, 'rgba(72, 80, 229, 0.4)');
+  gradient.addColorStop(1, 'rgba(72, 80, 229, 0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'Portfolio',
+        data: portfolioData,
+        borderColor: '#4850e5',
+        backgroundColor: gradient,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#4850e5',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }, {
+        label: 'S&P 500',
+        data: spyData,
+        borderColor: '#10b981',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#10b981',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2130',
+          titleColor: '#fff',
+          bodyColor: '#9e9fb7',
+          borderColor: '#292a38',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            label: (context) => `${context.dataset.label}: $${context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 0})}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          grid: { color: 'rgba(41, 42, 56, 0.5)', drawBorder: false },
+          ticks: {
+            color: '#9e9fb7',
+            callback: (value) => '$' + (value / 1000).toFixed(0) + 'K'
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#9e9fb7' }
+        }
+      }
+    }
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

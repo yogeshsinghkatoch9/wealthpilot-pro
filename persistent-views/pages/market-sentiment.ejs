@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Sentiment | WealthPilot Pro</title>
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Theme Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4850e5",
+            "background-light": "#f6f6f8",
+            "background-dark": "#111217",
+            "surface-dark": "#1a1d24",
+            "surface-border": "#292a38",
+            "bullish": "#10b981",
+            "bearish": "#f43f5e",
+            "text-secondary": "#9e9fb7",
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111217;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #292a38;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3d3e52;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24
+    }
+
+    .gauge-arc-bg {
+      fill: none;
+      stroke: #292a38;
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+
+    .gauge-arc-val {
+      fill: none;
+      stroke: url(#gaugeGradient);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 251.2;
+      transition: stroke-dashoffset 1s ease-out;
+    }
+
+    .chip-active {
+      background: white;
+      color: #111217;
+    }
+
+    .factor-card:hover {
+      border-color: rgba(72, 80, 229, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden">
+  <div class="relative flex h-screen w-full overflow-hidden">
+    <%- include('../partials/sidebar') %>
+
+    <!-- Main Content -->
+    <div class="flex flex-col flex-1 h-full min-w-0 bg-background-dark overflow-y-auto">
+      <%- include('../partials/header') %>
+
+      <!-- Page Content -->
+      <main class="flex-1 p-6 lg:p-10 max-w-[1600px] w-full mx-auto">
+        <!-- Page Heading & Filters -->
+        <div class="flex flex-col gap-6 mb-8">
+          <div class="flex flex-wrap justify-between items-end gap-4">
+            <div class="flex flex-col gap-1">
+              <h1 class="text-white text-3xl font-bold leading-tight tracking-tight">Market Sentiment</h1>
+              <div class="flex items-center gap-2 text-text-secondary text-sm">
+                <span class="material-symbols-outlined text-[16px]">schedule</span>
+                <span>Last updated: <%= new Date().toLocaleTimeString() %></span>
+                <span class="mx-1">•</span>
+                <%
+                  const sentimentBias = typeof data !== 'undefined' && data?.overall?.sentiment || 'NEUTRAL';
+                  const isBullish = sentimentBias.includes('BULLISH');
+                  const isBearish = sentimentBias.includes('BEARISH');
+                %>
+                <span class="<%= isBullish ? 'text-bullish' : isBearish ? 'text-bearish' : 'text-text-secondary' %> flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px]"><%= isBullish ? 'trending_up' : isBearish ? 'trending_down' : 'remove' %></span>
+                  <%= isBullish ? 'Bullish Bias' : isBearish ? 'Bearish Bias' : 'Neutral' %>
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button class="hidden sm:flex items-center gap-2 px-4 h-10 rounded-lg border border-surface-border bg-surface-dark hover:bg-surface-border text-white text-sm font-medium transition-colors">
+                <span class="material-symbols-outlined text-[18px]">share</span>
+                Share
+              </button>
+              <button class="flex items-center gap-2 px-4 h-10 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all">
+                <span class="material-symbols-outlined text-[18px]">download</span>
+                Export Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Chips -->
+          <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button class="chip-active flex h-9 items-center justify-center px-4 rounded-full text-sm font-bold transition-colors">
+              All Markets
+            </button>
+            <button class="flex h-9 items-center justify-center px-4 rounded-full bg-surface-dark border border-surface-border text-text-secondary hover:text-white hover:border-[#555668] text-sm font-medium transition-colors whitespace-nowrap">
+              Equities
+            </button>
+            <button class="flex h-9 items-center justify-center px-4 rounded-full bg-surface-dark border border-surface-border text-text-secondary hover:text-white hover:border-[#555668] text-sm font-medium transition-colors whitespace-nowrap">
+              Crypto
+            </button>
+            <button class="flex h-9 items-center justify-center px-4 rounded-full bg-surface-dark border border-surface-border text-text-secondary hover:text-white hover:border-[#555668] text-sm font-medium transition-colors whitespace-nowrap">
+              Forex
+            </button>
+            <button class="flex h-9 items-center justify-center px-4 rounded-full bg-surface-dark border border-surface-border text-text-secondary hover:text-white hover:border-[#555668] text-sm font-medium transition-colors whitespace-nowrap">
+              Commodities
+            </button>
+          </div>
+        </div>
+
+        <!-- Top Section: Main Indicators -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+          <!-- Central Sentiment Gauge -->
+          <div class="lg:col-span-5 flex flex-col bg-surface-dark border border-surface-border rounded-xl p-6 relative overflow-hidden">
+            <div class="flex justify-between items-start z-10">
+              <div>
+                <h3 class="text-white text-lg font-bold">Fear & Greed Index</h3>
+                <p class="text-text-secondary text-sm">Multi-factor market emotion analysis</p>
+              </div>
+              <button class="text-text-secondary hover:text-white">
+                <span class="material-symbols-outlined">info</span>
+              </button>
+            </div>
+            <div class="flex-1 flex flex-col items-center justify-center mt-6 z-10">
+              <div class="relative w-64 h-32">
+                <svg class="w-full h-full overflow-visible" viewBox="0 0 200 100">
+                  <defs>
+                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" style="stop-color:#f43f5e"></stop>
+                      <stop offset="50%" style="stop-color:#eab308"></stop>
+                      <stop offset="100%" style="stop-color:#10b981"></stop>
+                    </linearGradient>
+                  </defs>
+                  <path class="gauge-arc-bg" d="M 10 100 A 90 90 0 0 1 190 100"></path>
+                  <%
+                    const score = typeof data !== 'undefined' && data?.overall?.score ? data.overall.score : 68;
+                    const dashOffset = 251.2 - (score / 100 * 251.2);
+                  %>
+                  <path class="gauge-arc-val" d="M 10 100 A 90 90 0 0 1 190 100" style="stroke-dashoffset: <%= dashOffset %>"></path>
+                  <circle cx="100" cy="100" r="4" fill="white"></circle>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-end pb-0">
+                  <span class="text-5xl font-black text-white tracking-tighter"><%= Math.round(score) %></span>
+                </div>
+              </div>
+              <div class="mt-4 text-center">
+                <%
+                  let sentimentLabel = 'NEUTRAL';
+                  let sentimentClass = 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+                  if (score >= 75) {
+                    sentimentLabel = 'EXTREME GREED';
+                    sentimentClass = 'bg-bullish/10 text-bullish border-bullish/20';
+                  } else if (score >= 55) {
+                    sentimentLabel = 'GREED';
+                    sentimentClass = 'bg-bullish/10 text-bullish border-bullish/20';
+                  } else if (score <= 25) {
+                    sentimentLabel = 'EXTREME FEAR';
+                    sentimentClass = 'bg-bearish/10 text-bearish border-bearish/20';
+                  } else if (score <= 45) {
+                    sentimentLabel = 'FEAR';
+                    sentimentClass = 'bg-bearish/10 text-bearish border-bearish/20';
+                  }
+                %>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full <%= sentimentClass %> text-sm font-bold border">
+                  <%= sentimentLabel %>
+                </span>
+                <p class="mt-2 text-text-secondary text-sm font-medium">
+                  <span class="text-bullish font-bold">+4 pts</span> since yesterday
+                </p>
+              </div>
+            </div>
+            <!-- Decorative background glow -->
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-bullish/5 blur-3xl rounded-full z-0 pointer-events-none"></div>
+          </div>
+
+          <!-- Historical Trend Chart -->
+          <div class="lg:col-span-7 flex flex-col bg-surface-dark border border-surface-border rounded-xl p-6">
+            <div class="flex justify-between items-center mb-6">
+              <div>
+                <h3 class="text-white text-lg font-bold">Sentiment Trend</h3>
+                <p class="text-text-secondary text-sm">Historical movement over time</p>
+              </div>
+              <div class="flex bg-background-dark rounded-lg p-1 border border-surface-border">
+                <button class="trend-period-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded" data-period="24H">24H</button>
+                <button class="trend-period-btn px-3 py-1 text-xs font-medium bg-surface-border text-white rounded shadow-sm" data-period="7D">7D</button>
+                <button class="trend-period-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded" data-period="1M">1M</button>
+                <button class="trend-period-btn px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded" data-period="3M">3M</button>
+              </div>
+            </div>
+            <div class="flex-1 w-full min-h-[200px] relative">
+              <canvas id="sentimentTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contributing Factors -->
+        <h2 class="text-white text-xl font-bold mb-4">Contributing Factors</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <!-- News Volume Card -->
+          <div class="factor-card bg-surface-dark border border-surface-border rounded-xl p-5 hover:border-primary/30 transition-colors group">
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-2">
+                <div class="bg-primary/10 p-1.5 rounded-lg text-primary">
+                  <span class="material-symbols-outlined text-[20px]">feed</span>
+                </div>
+                <h4 class="text-white font-semibold text-sm">News Volume</h4>
+              </div>
+              <span class="text-bullish text-xs font-bold bg-bullish/10 px-2 py-0.5 rounded">+12%</span>
+            </div>
+            <div class="flex items-end gap-1 h-16 mb-2">
+              <div class="flex-1 bg-surface-border rounded-sm h-[40%] group-hover:bg-primary/40 transition-all"></div>
+              <div class="flex-1 bg-surface-border rounded-sm h-[60%] group-hover:bg-primary/50 transition-all"></div>
+              <div class="flex-1 bg-surface-border rounded-sm h-[30%] group-hover:bg-primary/40 transition-all"></div>
+              <div class="flex-1 bg-surface-border rounded-sm h-[80%] group-hover:bg-primary/70 transition-all"></div>
+              <div class="flex-1 bg-primary rounded-sm h-[100%]"></div>
+            </div>
+            <div class="flex justify-between items-center">
+              <p class="text-2xl font-bold text-white">12.5k</p>
+              <p class="text-text-secondary text-xs">Articles / 24h</p>
+            </div>
+          </div>
+
+          <!-- Social Buzz Card -->
+          <div class="factor-card bg-surface-dark border border-surface-border rounded-xl p-5 hover:border-blue-400/30 transition-colors">
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-2">
+                <div class="bg-blue-500/10 p-1.5 rounded-lg text-blue-400">
+                  <span class="material-symbols-outlined text-[20px]">public</span>
+                </div>
+                <h4 class="text-white font-semibold text-sm">Social Buzz</h4>
+              </div>
+              <span class="text-bullish text-xs font-bold bg-bullish/10 px-2 py-0.5 rounded">High</span>
+            </div>
+            <div class="relative h-16 w-full mb-2">
+              <svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 50">
+                <path d="M0,45 L10,40 L20,42 L30,20 L40,35 L50,25 L60,30 L70,15 L80,20 L90,10 L100,5" fill="none" stroke="#60a5fa" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+              </svg>
+            </div>
+            <div class="flex justify-between items-center">
+              <p class="text-2xl font-bold text-white">84%</p>
+              <p class="text-text-secondary text-xs">Positive Mentions</p>
+            </div>
+          </div>
+
+          <!-- Analyst Consensus Card -->
+          <div class="factor-card bg-surface-dark border border-surface-border rounded-xl p-5 hover:border-purple-500/30 transition-colors">
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center gap-2">
+                <div class="bg-purple-500/10 p-1.5 rounded-lg text-purple-400">
+                  <span class="material-symbols-outlined text-[20px]">groups</span>
+                </div>
+                <h4 class="text-white font-semibold text-sm">Consensus</h4>
+              </div>
+            </div>
+            <div class="flex w-full h-4 rounded-full overflow-hidden mb-4">
+              <div class="bg-bullish h-full" style="width: 65%"></div>
+              <div class="bg-[#eab308] h-full" style="width: 25%"></div>
+              <div class="bg-bearish h-full" style="width: 10%"></div>
+            </div>
+            <div class="flex justify-between text-xs">
+              <div class="flex items-center gap-1.5">
+                <div class="size-2 rounded-full bg-bullish"></div>
+                <span class="text-white font-medium">Buy 65%</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <div class="size-2 rounded-full bg-[#eab308]"></div>
+                <span class="text-text-secondary">Hold 25%</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <div class="size-2 rounded-full bg-bearish"></div>
+                <span class="text-text-secondary">Sell 10%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Technical Indicators Card -->
+          <div class="factor-card bg-surface-dark border border-surface-border rounded-xl p-5 hover:border-orange-500/30 transition-colors">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2">
+                <div class="bg-orange-500/10 p-1.5 rounded-lg text-orange-400">
+                  <span class="material-symbols-outlined text-[20px]">query_stats</span>
+                </div>
+                <h4 class="text-white font-semibold text-sm">Technicals</h4>
+              </div>
+              <a href="/technical-summary" class="text-text-secondary hover:text-white">
+                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+              </a>
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex justify-between items-center py-1 border-b border-surface-border/50">
+                <span class="text-text-secondary text-xs">RSI (14)</span>
+                <span class="text-white text-xs font-mono">62.4 <span class="text-[#555668] ml-1">Neutral</span></span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-surface-border/50">
+                <span class="text-text-secondary text-xs">MACD</span>
+                <span class="text-bullish text-xs font-bold font-mono">Buy Signal</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="text-text-secondary text-xs">Bollinger Bands</span>
+                <span class="text-bullish text-xs font-bold font-mono">Wide</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Market Health Strip -->
+        <div class="bg-surface-dark border border-surface-border rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+          <div class="flex items-center gap-4 text-sm font-bold text-white whitespace-nowrap">
+            <span>Market Health</span>
+            <div class="h-4 w-px bg-surface-border"></div>
+          </div>
+          <div class="flex flex-1 gap-2 md:gap-4 overflow-x-auto w-full scrollbar-hide">
+            <a href="/stock/SPY" class="flex items-center gap-3 bg-background-dark rounded px-3 py-2 min-w-[140px] border border-bullish/20 shadow-[0_0_10px_rgba(16,185,129,0.05)] hover:border-bullish/40 transition-colors">
+              <div class="size-8 rounded bg-white flex items-center justify-center p-1">
+                <span class="material-symbols-outlined text-black text-[18px]">attach_money</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-white text-xs font-bold">S&P 500</span>
+                <span class="text-bullish text-xs font-mono">+1.24%</span>
+              </div>
+            </a>
+            <a href="/stock/QQQ" class="flex items-center gap-3 bg-background-dark rounded px-3 py-2 min-w-[140px] border border-bullish/20 shadow-[0_0_10px_rgba(16,185,129,0.05)] hover:border-bullish/40 transition-colors">
+              <div class="size-8 rounded bg-white flex items-center justify-center p-1">
+                <span class="material-symbols-outlined text-black text-[18px]">memory</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-white text-xs font-bold">NASDAQ</span>
+                <span class="text-bullish text-xs font-mono">+1.85%</span>
+              </div>
+            </a>
+            <div class="flex items-center gap-3 bg-background-dark rounded px-3 py-2 min-w-[140px] border border-bearish/20 shadow-[0_0_10px_rgba(244,63,94,0.05)]">
+              <div class="size-8 rounded bg-white flex items-center justify-center p-1">
+                <span class="material-symbols-outlined text-black text-[18px]">language</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-white text-xs font-bold">DXY</span>
+                <span class="text-bearish text-xs font-mono">-0.42%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 bg-background-dark rounded px-3 py-2 min-w-[140px] border border-bullish/20 shadow-[0_0_10px_rgba(16,185,129,0.05)]">
+              <div class="size-8 rounded bg-white flex items-center justify-center p-1">
+                <span class="material-symbols-outlined text-black text-[18px]">currency_bitcoin</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-white text-xs font-bold">BTC</span>
+                <span class="text-bullish text-xs font-mono">+4.12%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 bg-background-dark rounded px-3 py-2 min-w-[140px] border border-bullish/20 shadow-[0_0_10px_rgba(16,185,129,0.05)]">
+              <div class="size-8 rounded bg-white flex items-center justify-center p-1">
+                <span class="material-symbols-outlined text-black text-[18px]">oil_barrel</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-white text-xs font-bold">Crude Oil</span>
+                <span class="text-bullish text-xs font-mono">+0.85%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <a href="/sentiment" class="p-4 rounded-xl bg-surface-dark border border-surface-border hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">psychology</span>
+            <p class="text-white font-bold text-sm">Stock Sentiment</p>
+            <p class="text-text-secondary text-xs mt-1">Analyze by symbol</p>
+          </a>
+          <a href="/news-sentiment" class="p-4 rounded-xl bg-surface-dark border border-surface-border hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">newspaper</span>
+            <p class="text-white font-bold text-sm">News Analysis</p>
+            <p class="text-text-secondary text-xs mt-1">Latest headlines</p>
+          </a>
+          <a href="/social-sentiment" class="p-4 rounded-xl bg-surface-dark border border-surface-border hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">forum</span>
+            <p class="text-white font-bold text-sm">Social Trends</p>
+            <p class="text-text-secondary text-xs mt-1">Twitter & Reddit</p>
+          </a>
+          <a href="/fear-greed" class="p-4 rounded-xl bg-surface-dark border border-surface-border hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">speed</span>
+            <p class="text-white font-bold text-sm">Fear & Greed</p>
+            <p class="text-text-secondary text-xs mt-1">Detailed breakdown</p>
+          </a>
+        </div>
+
+        <footer class="py-6 text-center text-text-secondary text-sm mt-6">
+          © 2024 WealthPilot Pro. Data provided for informational purposes only.
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Sentiment Trend Chart
+    const ctx = document.getElementById('sentimentTrendChart').getContext('2d');
+
+    // Generate sample historical data
+    const labels = [];
+    const values = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      values.push(Math.floor(Math.random() * 30) + 50); // Random values 50-80
+    }
+    values[values.length - 1] = <%= typeof data !== 'undefined' && data?.overall?.score ? data.overall.score : 68 %>;
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, 'rgba(72, 80, 229, 0.2)');
+    gradient.addColorStop(1, 'rgba(72, 80, 229, 0)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Sentiment Score',
+          data: values,
+          borderColor: '#4850e5',
+          backgroundColor: gradient,
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#4850e5',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            padding: 12,
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            borderColor: '#4850e5',
+            borderWidth: 1,
+            displayColors: false,
+            callbacks: {
+              label: (context) => `Score: ${context.parsed.y}/100`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            min: 0,
+            max: 100,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#555668',
+              font: { size: 11 }
+            }
+          },
+          x: {
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#555668',
+              font: { size: 11 },
+              maxRotation: 0
+            }
+          }
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        }
+      }
+    });
+
+    // Period button switching
+    document.querySelectorAll('.trend-period-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.trend-period-btn').forEach(b => {
+          b.classList.remove('bg-surface-border', 'text-white', 'shadow-sm');
+          b.classList.add('text-text-secondary');
+        });
+        this.classList.remove('text-text-secondary');
+        this.classList.add('bg-surface-border', 'text-white', 'shadow-sm');
+      });
+    });
+
+    // Filter chip switching
+    document.querySelectorAll('.flex.gap-2.overflow-x-auto button').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.flex.gap-2.overflow-x-auto button').forEach(b => {
+          b.classList.remove('chip-active');
+          b.classList.add('bg-surface-dark', 'border', 'border-surface-border', 'text-text-secondary');
+        });
+        this.classList.add('chip-active');
+        this.classList.remove('bg-surface-dark', 'border', 'border-surface-border', 'text-text-secondary');
+      });
+    });
+  </script>
+</body>
+</html>

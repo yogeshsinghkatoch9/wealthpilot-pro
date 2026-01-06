@@ -1,0 +1,1229 @@
+<%
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+%>
+<%- include('../partials/header', { pageTitle: 'Gross Margin Analysis' }) %>
+
+<style>
+/* Professional Margin Analysis Styles */
+:root {
+  --margin-excellent: #22c55e;
+  --margin-good: #3b82f6;
+  --margin-average: #eab308;
+  --margin-poor: #ef4444;
+}
+
+.margin-hero {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.stat-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+.stat-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.margin-bar {
+  height: 8px;
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.margin-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.insight-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.trend-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.trend-expanding { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.trend-stable { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+.trend-contracting { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.holdings-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.holdings-table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: rgba(15, 23, 42, 0.4);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.holdings-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+}
+.holdings-table tr:hover td {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.chart-container {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.loading-skeleton {
+  background: linear-gradient(90deg, rgba(100, 116, 139, 0.1) 25%, rgba(100, 116, 139, 0.2) 50%, rgba(100, 116, 139, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+/* Chart Control Buttons */
+.trend-period-btn {
+  color: #94a3b8;
+  background: transparent;
+}
+.trend-period-btn:hover {
+  color: #e2e8f0;
+  background: rgba(148, 163, 184, 0.1);
+}
+.trend-period-btn.active {
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+}
+
+.chart-type-btn {
+  color: #64748b;
+  background: transparent;
+}
+.chart-type-btn:hover {
+  color: #94a3b8;
+}
+.chart-type-btn.active {
+  color: #fff;
+  background: rgba(139, 92, 246, 0.3);
+}
+
+#compareToggle.active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%);
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+/* Crosshair Cursor */
+#trendChart {
+  cursor: crosshair;
+}
+
+/* Animated gradient background for chart */
+.chart-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+  animation: chartGlow 15s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes chartGlow {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+}
+
+.chart-container > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Range marker animation */
+@keyframes markerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+}
+
+#grossRangeMarker, #opRangeMarker, #netRangeMarker {
+  animation: markerPulse 2s ease-in-out infinite;
+}
+</style>
+
+<div class="p-4 md:p-6 space-y-6">
+  <!-- Page Header -->
+  <div class="margin-hero">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">Gross Margin Analysis</h1>
+            <p class="text-slate-400 text-sm">Profitability metrics & margin trends</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <select id="portfolioSelect" class="form-input bg-slate-800/50 border-slate-700 rounded-lg px-4 py-2 text-white min-w-[160px]">
+          <option value="all">All Portfolios</option>
+          <% safePortfolios.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.name %></option>
+          <% }) %>
+        </select>
+
+        <select id="yearsSelect" class="form-input bg-slate-800/50 border-slate-700 rounded-lg px-4 py-2 text-white">
+          <option value="5">5 Years</option>
+          <option value="3">3 Years</option>
+          <option value="1">1 Year</option>
+        </select>
+
+        <button id="updateBtn" onclick="loadMarginData()" class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:from-emerald-600 hover:to-teal-600 transition-all flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span id="btnText">Analyze</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="hidden">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <% for(let i = 0; i < 5; i++) { %>
+        <div class="stat-card">
+          <div class="loading-skeleton h-4 w-20 mb-2"></div>
+          <div class="loading-skeleton h-8 w-16 mb-2"></div>
+          <div class="loading-skeleton h-3 w-24"></div>
+        </div>
+      <% } %>
+    </div>
+    <div class="stat-card p-8 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-500 border-t-transparent mx-auto mb-4"></div>
+      <p class="text-slate-400">Analyzing margin data across multiple providers...</p>
+      <p class="text-xs text-slate-500 mt-2">This may take a moment for large portfolios</p>
+    </div>
+  </div>
+
+  <!-- Data Container -->
+  <div id="dataContainer" class="space-y-6">
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="stat-card text-center">
+        <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Avg Gross Margin</p>
+        <p id="avgGrossMargin" class="text-3xl font-bold text-emerald-400 tabular-nums">--%</p>
+        <div class="margin-bar">
+          <div id="grossMarginBar" class="margin-fill bg-gradient-to-r from-emerald-500 to-teal-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card text-center">
+        <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Avg Operating Margin</p>
+        <p id="avgOperatingMargin" class="text-3xl font-bold text-sky-400 tabular-nums">--%</p>
+        <div class="margin-bar">
+          <div id="operatingMarginBar" class="margin-fill bg-gradient-to-r from-sky-500 to-blue-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card text-center">
+        <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Avg Net Margin</p>
+        <p id="avgNetMargin" class="text-3xl font-bold text-purple-400 tabular-nums">--%</p>
+        <div class="margin-bar">
+          <div id="netMarginBar" class="margin-fill bg-gradient-to-r from-purple-500 to-pink-500" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="stat-card text-center">
+        <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Expanding</p>
+        <p id="expandingCount" class="text-3xl font-bold text-emerald-400 tabular-nums">0</p>
+        <p class="text-xs text-emerald-400 mt-1">Growing margins</p>
+      </div>
+
+      <div class="stat-card text-center">
+        <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Contracting</p>
+        <p id="contractingCount" class="text-3xl font-bold text-red-400 tabular-nums">0</p>
+        <p class="text-xs text-red-400 mt-1">Shrinking margins</p>
+      </div>
+    </div>
+
+    <!-- Insights Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Highest Margins -->
+      <div class="insight-card">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+          </svg>
+          <h3 class="font-semibold text-white">Highest Margins</h3>
+        </div>
+        <div id="highestMargins" class="space-y-2">
+          <p class="text-slate-400 text-sm text-center py-4">Click Analyze to load</p>
+        </div>
+      </div>
+
+      <!-- Biggest Expansion -->
+      <div class="insight-card">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+          <h3 class="font-semibold text-white">Biggest Expansion</h3>
+        </div>
+        <div id="biggestExpansion" class="space-y-2">
+          <p class="text-slate-400 text-sm text-center py-4">Click Analyze to load</p>
+        </div>
+      </div>
+
+      <!-- Watch List -->
+      <div class="insight-card" style="border-color: rgba(239, 68, 68, 0.2); background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);">
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <h3 class="font-semibold text-white">Watch List</h3>
+        </div>
+        <div id="watchList" class="space-y-2">
+          <p class="text-slate-400 text-sm text-center py-4">Click Analyze to load</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Margin Trend Chart -->
+    <div class="chart-container relative overflow-hidden" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%);">
+      <!-- Chart Header -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-white text-lg">Margin Trend Analysis</h3>
+            <p class="text-xs text-slate-400">Interactive historical margin performance</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Stock Selector -->
+          <select id="trendSymbol" class="form-input bg-slate-800/80 border-slate-600 rounded-lg px-4 py-2 text-sm text-white min-w-[180px] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all" onchange="loadTrendData()">
+            <option value="">Select a stock</option>
+          </select>
+
+          <!-- Time Period Buttons -->
+          <div class="flex bg-slate-800/60 rounded-lg p-1 border border-slate-700/50">
+            <button onclick="setTrendPeriod('1')" class="trend-period-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="1">1Y</button>
+            <button onclick="setTrendPeriod('3')" class="trend-period-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="3">3Y</button>
+            <button onclick="setTrendPeriod('5')" class="trend-period-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all active" data-period="5">5Y</button>
+            <button onclick="setTrendPeriod('10')" class="trend-period-btn px-3 py-1.5 text-xs font-medium rounded-md transition-all" data-period="10">10Y</button>
+          </div>
+
+          <!-- Chart Type Toggle -->
+          <div class="flex bg-slate-800/60 rounded-lg p-1 border border-slate-700/50">
+            <button onclick="setChartType('line')" class="chart-type-btn px-3 py-1.5 text-xs rounded-md transition-all active" data-type="line" title="Line Chart">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4"/></svg>
+            </button>
+            <button onclick="setChartType('area')" class="chart-type-btn px-3 py-1.5 text-xs rounded-md transition-all" data-type="area" title="Area Chart">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+            </button>
+          </div>
+
+          <!-- Compare Toggle -->
+          <button id="compareToggle" onclick="toggleCompareMode()" class="px-3 py-2 text-xs font-medium rounded-lg border border-slate-600 text-slate-300 hover:border-violet-500 hover:text-violet-400 transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            vs Sector
+          </button>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap items-center gap-6 mb-4 px-2">
+        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleDataset(0)">
+          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500"></span>
+          <span class="text-xs text-slate-300 font-medium">Gross Margin</span>
+          <span id="legend-gross" class="text-xs text-emerald-400 font-bold">--%</span>
+        </div>
+        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleDataset(1)">
+          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-sky-400 to-blue-500"></span>
+          <span class="text-xs text-slate-300 font-medium">Operating Margin</span>
+          <span id="legend-operating" class="text-xs text-sky-400 font-bold">--%</span>
+        </div>
+        <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleDataset(2)">
+          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-violet-400 to-purple-500"></span>
+          <span class="text-xs text-slate-300 font-medium">Net Margin</span>
+          <span id="legend-net" class="text-xs text-violet-400 font-bold">--%</span>
+        </div>
+        <div id="sectorLegend" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity hidden" onclick="toggleDataset(3)">
+          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 opacity-50" style="border: 1px dashed #fbbf24;"></span>
+          <span class="text-xs text-slate-300 font-medium">Sector Avg</span>
+          <span id="legend-sector" class="text-xs text-amber-400 font-bold">--%</span>
+        </div>
+      </div>
+
+      <!-- Main Chart Area -->
+      <div class="relative" style="height: 380px;">
+        <!-- Crosshair Value Display -->
+        <div id="crosshairTooltip" class="absolute top-4 left-4 z-20 hidden">
+          <div class="bg-slate-900/95 backdrop-blur-sm border border-slate-700 rounded-xl p-4 shadow-xl min-w-[220px]">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-700/50">
+              <span id="tooltipDate" class="text-sm font-bold text-white">Q4 2024</span>
+              <span id="tooltipSymbol" class="text-xs px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400">AAPL</span>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-400">Gross</span>
+                <span id="tooltipGross" class="text-sm font-bold text-emerald-400">46.5%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-400">Operating</span>
+                <span id="tooltipOperating" class="text-sm font-bold text-sky-400">32.1%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-400">Net</span>
+                <span id="tooltipNet" class="text-sm font-bold text-violet-400">26.9%</span>
+              </div>
+              <div id="tooltipSectorRow" class="flex items-center justify-between hidden pt-2 border-t border-slate-700/50">
+                <span class="text-xs text-slate-400">Sector Avg</span>
+                <span id="tooltipSector" class="text-sm font-bold text-amber-400">40.0%</span>
+              </div>
+            </div>
+            <div id="tooltipChange" class="mt-3 pt-2 border-t border-slate-700/50 text-center">
+              <span class="text-xs text-slate-400">YoY Change: </span>
+              <span id="tooltipChangeValue" class="text-xs font-bold text-emerald-400">+2.3%</span>
+            </div>
+          </div>
+        </div>
+
+        <canvas id="trendChart"></canvas>
+
+        <!-- Chart Loading Overlay -->
+        <div id="chartLoading" class="absolute inset-0 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm rounded-xl hidden z-10">
+          <div class="text-center">
+            <div class="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p class="text-sm text-slate-300">Loading trend data...</p>
+          </div>
+        </div>
+
+        <!-- No Data State -->
+        <div id="chartNoData" class="absolute inset-0 flex items-center justify-center">
+          <div class="text-center">
+            <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <p class="text-slate-400 font-medium mb-1">Select a stock to view trends</p>
+            <p class="text-xs text-slate-500">Click on any stock above or use the dropdown</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Panel Below Chart -->
+      <div id="chartStats" class="hidden mt-6 pt-6 border-t border-slate-700/50">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <!-- Gross Margin CAGR -->
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+              <span class="text-xs text-slate-400 font-medium">Gross Margin CAGR</span>
+            </div>
+            <p id="statGrossCAGR" class="text-xl font-bold text-emerald-400">+2.1%</p>
+            <p class="text-xs text-slate-500 mt-1">5-Year compound growth</p>
+          </div>
+
+          <!-- Operating Margin CAGR -->
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-sky-400"></div>
+              <span class="text-xs text-slate-400 font-medium">Operating CAGR</span>
+            </div>
+            <p id="statOpCAGR" class="text-xl font-bold text-sky-400">+1.8%</p>
+            <p class="text-xs text-slate-500 mt-1">5-Year compound growth</p>
+          </div>
+
+          <!-- Net Margin CAGR -->
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-2 h-2 rounded-full bg-violet-400"></div>
+              <span class="text-xs text-slate-400 font-medium">Net Margin CAGR</span>
+            </div>
+            <p id="statNetCAGR" class="text-xl font-bold text-violet-400">+3.2%</p>
+            <p class="text-xs text-slate-500 mt-1">5-Year compound growth</p>
+          </div>
+
+          <!-- Trend Direction -->
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+              <span class="text-xs text-slate-400 font-medium">Trend Direction</span>
+            </div>
+            <p id="statTrendDir" class="text-xl font-bold text-emerald-400 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+              Expanding
+            </p>
+            <p class="text-xs text-slate-500 mt-1">Overall margin trajectory</p>
+          </div>
+
+          <!-- Volatility -->
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span class="text-xs text-slate-400 font-medium">Margin Volatility</span>
+            </div>
+            <p id="statVolatility" class="text-xl font-bold text-amber-400">Low</p>
+            <p id="statVolatilityDesc" class="text-xs text-slate-500 mt-1">±1.2% std deviation</p>
+          </div>
+
+          <!-- vs Sector -->
+          <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              <span class="text-xs text-slate-400 font-medium">vs Sector Avg</span>
+            </div>
+            <p id="statVsSector" class="text-xl font-bold text-emerald-400">+6.9%</p>
+            <p class="text-xs text-slate-500 mt-1">Above industry average</p>
+          </div>
+        </div>
+
+        <!-- Margin Range Visualization -->
+        <div class="mt-6 bg-slate-800/30 rounded-xl p-4 border border-slate-700/30">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="text-sm font-semibold text-white">Historical Margin Range (5Y)</h4>
+            <span class="text-xs text-slate-400">Min • Current • Max</span>
+          </div>
+          <div class="space-y-4">
+            <!-- Gross Margin Range -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400">Gross Margin</span>
+                <div class="flex items-center gap-4 text-xs">
+                  <span id="grossMin" class="text-slate-500">40.2%</span>
+                  <span id="grossCurrent" class="font-bold text-emerald-400">46.9%</span>
+                  <span id="grossMax" class="text-slate-500">48.1%</span>
+                </div>
+              </div>
+              <div class="relative h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                <div id="grossRangeFill" class="absolute h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full" style="left: 0%; width: 100%;"></div>
+                <div id="grossRangeMarker" class="absolute w-3 h-3 bg-white rounded-full shadow-lg border-2 border-emerald-400 top-0" style="left: 80%;"></div>
+              </div>
+            </div>
+
+            <!-- Operating Margin Range -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400">Operating Margin</span>
+                <div class="flex items-center gap-4 text-xs">
+                  <span id="opMin" class="text-slate-500">28.5%</span>
+                  <span id="opCurrent" class="font-bold text-sky-400">32.0%</span>
+                  <span id="opMax" class="text-slate-500">35.2%</span>
+                </div>
+              </div>
+              <div class="relative h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                <div id="opRangeFill" class="absolute h-full bg-gradient-to-r from-sky-600 to-sky-400 rounded-full" style="left: 0%; width: 100%;"></div>
+                <div id="opRangeMarker" class="absolute w-3 h-3 bg-white rounded-full shadow-lg border-2 border-sky-400 top-0" style="left: 50%;"></div>
+              </div>
+            </div>
+
+            <!-- Net Margin Range -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-slate-400">Net Margin</span>
+                <div class="flex items-center gap-4 text-xs">
+                  <span id="netMin" class="text-slate-500">22.1%</span>
+                  <span id="netCurrent" class="font-bold text-violet-400">26.9%</span>
+                  <span id="netMax" class="text-slate-500">28.8%</span>
+                </div>
+              </div>
+              <div class="relative h-3 bg-slate-700/50 rounded-full overflow-hidden">
+                <div id="netRangeFill" class="absolute h-full bg-gradient-to-r from-violet-600 to-violet-400 rounded-full" style="left: 0%; width: 100%;"></div>
+                <div id="netRangeMarker" class="absolute w-3 h-3 bg-white rounded-full shadow-lg border-2 border-violet-400 top-0" style="left: 70%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="stat-card p-0 overflow-hidden">
+      <div class="p-4 border-b border-slate-700/50 flex items-center justify-between">
+        <div>
+          <h3 class="font-semibold text-white">Holdings Margin Analysis</h3>
+          <p id="holdingsCount" class="text-xs text-slate-400">0 stocks analyzed</p>
+        </div>
+        <input type="text" id="searchHoldings" placeholder="Search stocks..." class="form-input bg-slate-800/50 border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white w-48" oninput="filterHoldings()">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="holdings-table">
+          <thead>
+            <tr>
+              <th>Stock</th>
+              <th class="text-center">Gross Margin</th>
+              <th class="text-center">Operating</th>
+              <th class="text-center">Net</th>
+              <th class="text-center">vs Peers</th>
+              <th class="text-center">Trend</th>
+              <th class="text-center">Sector</th>
+            </tr>
+          </thead>
+          <tbody id="holdingsTableBody">
+            <tr>
+              <td colspan="7" class="text-center py-12 text-slate-400">
+                <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <p class="font-medium">No margin data loaded</p>
+                <p class="text-sm mt-1">Select a portfolio and click Analyze to start</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
+<script>
+let holdingsData = [];
+let trendChart = null;
+let currentTrendData = [];
+let currentSymbol = '';
+let chartPeriod = '5';
+let chartType = 'line';
+let compareMode = false;
+
+// Sector averages for comparison
+const SECTOR_AVERAGES = {
+  'Technology': { gross: 55, operating: 25, net: 20 },
+  'Healthcare': { gross: 50, operating: 20, net: 15 },
+  'Consumer': { gross: 35, operating: 12, net: 8 },
+  'Financial': { gross: 60, operating: 35, net: 25 },
+  'Industrial': { gross: 30, operating: 12, net: 8 },
+  'Energy': { gross: 40, operating: 15, net: 10 },
+  'Materials': { gross: 30, operating: 12, net: 8 },
+  'Utilities': { gross: 35, operating: 20, net: 12 },
+  'Real Estate': { gross: 55, operating: 30, net: 20 },
+  'default': { gross: 40, operating: 15, net: 10 }
+};
+
+function getToken() {
+  return localStorage.getItem('wealthpilot_token') || '';
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+}
+
+function showLoading(show) {
+  document.getElementById('loadingState').classList.toggle('hidden', !show);
+  document.getElementById('dataContainer').classList.toggle('hidden', show);
+  document.getElementById('updateBtn').disabled = show;
+  document.getElementById('btnText').textContent = show ? 'Loading...' : 'Analyze';
+}
+
+function showChartLoading(show) {
+  document.getElementById('chartLoading').classList.toggle('hidden', !show);
+}
+
+function setTrendPeriod(period) {
+  chartPeriod = period;
+  document.querySelectorAll('.trend-period-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.period === period);
+  });
+  if (currentSymbol) loadTrendData();
+}
+
+function setChartType(type) {
+  chartType = type;
+  document.querySelectorAll('.chart-type-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  if (currentTrendData.length > 0) {
+    renderTrendChart(currentTrendData, currentSymbol);
+  }
+}
+
+function toggleCompareMode() {
+  compareMode = !compareMode;
+  document.getElementById('compareToggle').classList.toggle('active', compareMode);
+  document.getElementById('sectorLegend').classList.toggle('hidden', !compareMode);
+  if (currentTrendData.length > 0) {
+    renderTrendChart(currentTrendData, currentSymbol);
+  }
+}
+
+function toggleDataset(index) {
+  if (trendChart && trendChart.data.datasets[index]) {
+    const meta = trendChart.getDatasetMeta(index);
+    meta.hidden = !meta.hidden;
+    trendChart.update();
+  }
+}
+
+async function loadMarginData() {
+  const portfolioId = document.getElementById('portfolioSelect').value;
+  const years = document.getElementById('yearsSelect').value;
+
+  showLoading(true);
+
+  try {
+    const response = await authFetch(`/api/margins/portfolio/${portfolioId}?years=${years}`);
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    holdingsData = data.holdings || [];
+
+    // Update summary stats
+    const summary = data.summary || {};
+    const grossMargin = parseFloat(summary.avgGrossMargin) || 0;
+    const operatingMargin = parseFloat(summary.avgOperatingMargin) || 0;
+    const netMargin = parseFloat(summary.avgNetMargin) || 0;
+
+    document.getElementById('avgGrossMargin').textContent = grossMargin.toFixed(1) + '%';
+    document.getElementById('avgOperatingMargin').textContent = operatingMargin.toFixed(1) + '%';
+    document.getElementById('avgNetMargin').textContent = netMargin.toFixed(1) + '%';
+    document.getElementById('expandingCount').textContent = summary.expanding || 0;
+    document.getElementById('contractingCount').textContent = summary.contracting || 0;
+
+    // Animate margin bars
+    document.getElementById('grossMarginBar').style.width = Math.min(grossMargin, 100) + '%';
+    document.getElementById('operatingMarginBar').style.width = Math.min(operatingMargin * 2, 100) + '%';
+    document.getElementById('netMarginBar').style.width = Math.min(netMargin * 3, 100) + '%';
+
+    // Update insights
+    updateInsights(data.insights);
+
+    // Update holdings table
+    updateHoldingsTable(holdingsData);
+
+    // Update trend symbol dropdown
+    updateTrendDropdown(holdingsData);
+
+    // Update count
+    document.getElementById('holdingsCount').textContent = `${holdingsData.length} stocks analyzed`;
+
+    showToast(`Analyzed ${holdingsData.length} stocks`, 'success');
+
+  } catch (error) {
+    console.error('Error loading margins:', error);
+    showToast('Error loading margin data: ' + error.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function updateInsights(insights) {
+  const formatInsight = (items, type) => {
+    if (!items || items.length === 0) {
+      return '<p class="text-slate-500 text-sm text-center py-2">No data</p>';
+    }
+
+    return items.slice(0, 5).map(item => {
+      const changeClass = item.marginChange >= 0 ? 'text-emerald-400' : 'text-red-400';
+      const changeSign = item.marginChange >= 0 ? '+' : '';
+      return `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 cursor-pointer" onclick="selectStock('${item.symbol}')">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-white">${item.symbol}</span>
+            <span class="text-xs text-slate-400">${item.name?.substring(0, 15) || ''}</span>
+          </div>
+          <div class="text-right">
+            <span class="font-bold ${type === 'watch' ? 'text-red-400' : 'text-emerald-400'}">${item.grossMargin.toFixed(1)}%</span>
+            ${item.marginChange ? `<span class="text-xs ${changeClass} ml-2">${changeSign}${item.marginChange.toFixed(1)}%</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  document.getElementById('highestMargins').innerHTML = formatInsight(insights?.highestMargins, 'high');
+  document.getElementById('biggestExpansion').innerHTML = formatInsight(insights?.biggestExpansion, 'expansion');
+  document.getElementById('watchList').innerHTML = formatInsight(insights?.watchList, 'watch');
+}
+
+function updateHoldingsTable(holdings) {
+  const tbody = document.getElementById('holdingsTableBody');
+
+  if (!holdings || holdings.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="text-center py-12 text-slate-400">
+          <p>No holdings found in this portfolio</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = holdings.map(h => {
+    const grossColor = h.grossMargin >= 50 ? 'text-emerald-400' : h.grossMargin >= 30 ? 'text-sky-400' : h.grossMargin >= 15 ? 'text-amber-400' : 'text-red-400';
+    const opColor = h.operatingMargin >= 25 ? 'text-emerald-400' : h.operatingMargin >= 15 ? 'text-sky-400' : h.operatingMargin >= 5 ? 'text-amber-400' : 'text-red-400';
+    const netColor = h.netMargin >= 20 ? 'text-emerald-400' : h.netMargin >= 10 ? 'text-sky-400' : h.netMargin >= 0 ? 'text-amber-400' : 'text-red-400';
+    const peerColor = h.vsPeers >= 10 ? 'text-emerald-400' : h.vsPeers >= 0 ? 'text-sky-400' : h.vsPeers >= -10 ? 'text-amber-400' : 'text-red-400';
+    const trendClass = h.trend === 'Expanding' ? 'trend-expanding' : h.trend === 'Contracting' ? 'trend-contracting' : 'trend-stable';
+
+    return `
+      <tr class="hover:bg-slate-800/30 cursor-pointer" onclick="selectStock('${h.symbol}')">
+        <td>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-white font-bold text-xs">${h.symbol.substring(0, 3)}</div>
+            <div>
+              <p class="font-semibold text-white">${h.symbol}</p>
+              <p class="text-xs text-slate-400">${h.name?.substring(0, 20) || h.industry || ''}</p>
+            </div>
+          </div>
+        </td>
+        <td class="text-center">
+          <span class="font-bold ${grossColor}">${h.grossMargin.toFixed(1)}%</span>
+          <div class="w-16 h-1.5 bg-slate-700 rounded-full mx-auto mt-1">
+            <div class="h-full rounded-full ${grossColor.replace('text-', 'bg-')}" style="width: ${Math.min(h.grossMargin, 100)}%"></div>
+          </div>
+        </td>
+        <td class="text-center">
+          <span class="font-medium ${opColor}">${h.operatingMargin.toFixed(1)}%</span>
+        </td>
+        <td class="text-center">
+          <span class="font-medium ${netColor}">${h.netMargin.toFixed(1)}%</span>
+        </td>
+        <td class="text-center">
+          <span class="font-medium ${peerColor}">${h.vsPeers >= 0 ? '+' : ''}${h.vsPeers.toFixed(1)}%</span>
+        </td>
+        <td class="text-center">
+          <span class="trend-badge ${trendClass}">${h.trend}</span>
+        </td>
+        <td class="text-center text-xs text-slate-400">${h.sector || '-'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateTrendDropdown(holdings) {
+  const select = document.getElementById('trendSymbol');
+  select.innerHTML = '<option value="">Select a stock</option>' +
+    holdings.map(h => `<option value="${h.symbol}">${h.symbol} - ${h.name?.substring(0, 20) || ''}</option>`).join('');
+}
+
+function selectStock(symbol) {
+  document.getElementById('trendSymbol').value = symbol;
+  loadTrendData();
+}
+
+async function loadTrendData() {
+  const symbol = document.getElementById('trendSymbol').value;
+  if (!symbol) return;
+
+  currentSymbol = symbol;
+  showChartLoading(true);
+  document.getElementById('chartNoData').classList.add('hidden');
+
+  try {
+    const response = await authFetch(`/api/margins/trend/${symbol}?years=${chartPeriod}`);
+    const data = await response.json();
+
+    if (data.trendData && data.trendData.length > 0) {
+      currentTrendData = data.trendData;
+      renderTrendChart(data.trendData, symbol);
+      updateChartStats(data.trendData, symbol);
+      document.getElementById('chartStats').classList.remove('hidden');
+    } else {
+      document.getElementById('chartNoData').classList.remove('hidden');
+    }
+  } catch (error) {
+    console.error('Error loading trend:', error);
+    document.getElementById('chartNoData').classList.remove('hidden');
+  } finally {
+    showChartLoading(false);
+  }
+}
+
+function renderTrendChart(trendData, symbol) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+
+  if (trendChart) {
+    trendChart.destroy();
+  }
+
+  // Create gradient fills
+  const grossGradient = ctx.createLinearGradient(0, 0, 0, 380);
+  grossGradient.addColorStop(0, 'rgba(34, 197, 94, 0.3)');
+  grossGradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+
+  const opGradient = ctx.createLinearGradient(0, 0, 0, 380);
+  opGradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+  opGradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+  const netGradient = ctx.createLinearGradient(0, 0, 0, 380);
+  netGradient.addColorStop(0, 'rgba(168, 85, 247, 0.2)');
+  netGradient.addColorStop(1, 'rgba(168, 85, 247, 0)');
+
+  const isFill = chartType === 'area';
+
+  // Get stock sector for comparison
+  const stockInfo = holdingsData.find(h => h.symbol === symbol);
+  const sector = stockInfo?.sector?.includes('TECH') ? 'Technology' :
+                 stockInfo?.sector?.includes('HEALTH') ? 'Healthcare' :
+                 stockInfo?.sector?.includes('CONSUMER') ? 'Consumer' :
+                 stockInfo?.sector?.includes('FINANCIAL') ? 'Financial' : 'default';
+  const sectorAvg = SECTOR_AVERAGES[sector] || SECTOR_AVERAGES['default'];
+
+  const datasets = [
+    {
+      label: 'Gross Margin',
+      data: trendData.map(d => d.grossMargin),
+      borderColor: '#22c55e',
+      backgroundColor: isFill ? grossGradient : 'transparent',
+      borderWidth: 3,
+      tension: 0.4,
+      fill: isFill,
+      pointRadius: 4,
+      pointHoverRadius: 8,
+      pointBackgroundColor: '#22c55e',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      pointHoverBackgroundColor: '#fff',
+      pointHoverBorderColor: '#22c55e',
+      pointHoverBorderWidth: 3
+    },
+    {
+      label: 'Operating Margin',
+      data: trendData.map(d => d.operatingMargin),
+      borderColor: '#3b82f6',
+      backgroundColor: isFill ? opGradient : 'transparent',
+      borderWidth: 2,
+      tension: 0.4,
+      fill: isFill,
+      pointRadius: 3,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#3b82f6',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    },
+    {
+      label: 'Net Margin',
+      data: trendData.map(d => d.netMargin),
+      borderColor: '#a855f7',
+      backgroundColor: isFill ? netGradient : 'transparent',
+      borderWidth: 2,
+      tension: 0.4,
+      fill: isFill,
+      pointRadius: 3,
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#a855f7',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2
+    }
+  ];
+
+  // Add sector average line if compare mode is on
+  if (compareMode) {
+    datasets.push({
+      label: 'Sector Avg (Gross)',
+      data: trendData.map(() => sectorAvg.gross),
+      borderColor: '#fbbf24',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderDash: [8, 4],
+      tension: 0,
+      fill: false,
+      pointRadius: 0,
+      pointHoverRadius: 0
+    });
+    document.getElementById('legend-sector').textContent = sectorAvg.gross.toFixed(1) + '%';
+  }
+
+  // Update legend values
+  const latestData = trendData[trendData.length - 1];
+  document.getElementById('legend-gross').textContent = latestData.grossMargin.toFixed(1) + '%';
+  document.getElementById('legend-operating').textContent = latestData.operatingMargin.toFixed(1) + '%';
+  document.getElementById('legend-net').textContent = latestData.netMargin.toFixed(1) + '%';
+
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: trendData.map(d => d.year || d.period),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index',
+        axis: 'x'
+      },
+      plugins: {
+        legend: { display: false },
+        title: { display: false },
+        tooltip: {
+          enabled: false,
+          external: function(context) {
+            const tooltip = document.getElementById('crosshairTooltip');
+            if (context.tooltip.opacity === 0) {
+              tooltip.classList.add('hidden');
+              return;
+            }
+
+            const dataIndex = context.tooltip.dataPoints?.[0]?.dataIndex;
+            if (dataIndex === undefined) return;
+
+            const data = trendData[dataIndex];
+            if (!data) return;
+
+            tooltip.classList.remove('hidden');
+            document.getElementById('tooltipDate').textContent = data.year || data.period;
+            document.getElementById('tooltipSymbol').textContent = symbol;
+            document.getElementById('tooltipGross').textContent = data.grossMargin.toFixed(1) + '%';
+            document.getElementById('tooltipOperating').textContent = data.operatingMargin.toFixed(1) + '%';
+            document.getElementById('tooltipNet').textContent = data.netMargin.toFixed(1) + '%';
+
+            if (compareMode) {
+              document.getElementById('tooltipSectorRow').classList.remove('hidden');
+              document.getElementById('tooltipSector').textContent = sectorAvg.gross.toFixed(1) + '%';
+            } else {
+              document.getElementById('tooltipSectorRow').classList.add('hidden');
+            }
+
+            // Calculate YoY change
+            if (dataIndex > 0) {
+              const prevData = trendData[dataIndex - 1];
+              const change = data.grossMargin - prevData.grossMargin;
+              const changeEl = document.getElementById('tooltipChangeValue');
+              changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+              changeEl.className = `text-xs font-bold ${change >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(148, 163, 184, 0.08)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#64748b',
+            font: { size: 11 },
+            maxRotation: 0
+          }
+        },
+        y: {
+          grid: {
+            color: 'rgba(148, 163, 184, 0.08)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#64748b',
+            font: { size: 11 },
+            callback: v => v.toFixed(0) + '%',
+            stepSize: 10
+          },
+          min: 0,
+          suggestedMax: Math.max(...trendData.map(d => d.grossMargin)) + 10
+        }
+      },
+      animation: {
+        duration: 800,
+        easing: 'easeOutQuart'
+      },
+      hover: {
+        animationDuration: 200
+      }
+    }
+  });
+
+  // Hide no data message
+  document.getElementById('chartNoData').classList.add('hidden');
+}
+
+function updateChartStats(trendData, symbol) {
+  if (!trendData || trendData.length < 2) return;
+
+  const first = trendData[0];
+  const last = trendData[trendData.length - 1];
+  const years = trendData.length;
+
+  // Calculate CAGRs
+  const grossCAGR = calculateCAGR(first.grossMargin, last.grossMargin, years);
+  const opCAGR = calculateCAGR(first.operatingMargin, last.operatingMargin, years);
+  const netCAGR = calculateCAGR(first.netMargin, last.netMargin, years);
+
+  document.getElementById('statGrossCAGR').textContent = formatChange(grossCAGR);
+  document.getElementById('statGrossCAGR').className = `text-xl font-bold ${grossCAGR >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+  document.getElementById('statOpCAGR').textContent = formatChange(opCAGR);
+  document.getElementById('statOpCAGR').className = `text-xl font-bold ${opCAGR >= 0 ? 'text-sky-400' : 'text-red-400'}`;
+
+  document.getElementById('statNetCAGR').textContent = formatChange(netCAGR);
+  document.getElementById('statNetCAGR').className = `text-xl font-bold ${netCAGR >= 0 ? 'text-violet-400' : 'text-red-400'}`;
+
+  // Trend direction
+  const avgChange = (grossCAGR + opCAGR + netCAGR) / 3;
+  const trendDir = document.getElementById('statTrendDir');
+  if (avgChange > 1) {
+    trendDir.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg> Expanding';
+    trendDir.className = 'text-xl font-bold text-emerald-400 flex items-center gap-2';
+  } else if (avgChange < -1) {
+    trendDir.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg> Contracting';
+    trendDir.className = 'text-xl font-bold text-red-400 flex items-center gap-2';
+  } else {
+    trendDir.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/></svg> Stable';
+    trendDir.className = 'text-xl font-bold text-slate-400 flex items-center gap-2';
+  }
+
+  // Volatility
+  const grossValues = trendData.map(d => d.grossMargin);
+  const stdDev = calculateStdDev(grossValues);
+  const volatility = document.getElementById('statVolatility');
+  const volatilityDesc = document.getElementById('statVolatilityDesc');
+  if (stdDev < 2) {
+    volatility.textContent = 'Low';
+    volatility.className = 'text-xl font-bold text-emerald-400';
+  } else if (stdDev < 5) {
+    volatility.textContent = 'Medium';
+    volatility.className = 'text-xl font-bold text-amber-400';
+  } else {
+    volatility.textContent = 'High';
+    volatility.className = 'text-xl font-bold text-red-400';
+  }
+  volatilityDesc.textContent = `±${stdDev.toFixed(1)}% std deviation`;
+
+  // vs Sector
+  const stockInfo = holdingsData.find(h => h.symbol === symbol);
+  const vsSector = stockInfo?.vsPeers || (last.grossMargin - 40);
+  const vsSectorEl = document.getElementById('statVsSector');
+  vsSectorEl.textContent = formatChange(vsSector);
+  vsSectorEl.className = `text-xl font-bold ${vsSector >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+
+  // Update range visualizations
+  updateRangeVisualization(trendData);
+}
+
+function updateRangeVisualization(trendData) {
+  const grossValues = trendData.map(d => d.grossMargin);
+  const opValues = trendData.map(d => d.operatingMargin);
+  const netValues = trendData.map(d => d.netMargin);
+
+  const grossMin = Math.min(...grossValues);
+  const grossMax = Math.max(...grossValues);
+  const grossCurrent = grossValues[grossValues.length - 1];
+
+  const opMin = Math.min(...opValues);
+  const opMax = Math.max(...opValues);
+  const opCurrent = opValues[opValues.length - 1];
+
+  const netMin = Math.min(...netValues);
+  const netMax = Math.max(...netValues);
+  const netCurrent = netValues[netValues.length - 1];
+
+  // Update gross range
+  document.getElementById('grossMin').textContent = grossMin.toFixed(1) + '%';
+  document.getElementById('grossMax').textContent = grossMax.toFixed(1) + '%';
+  document.getElementById('grossCurrent').textContent = grossCurrent.toFixed(1) + '%';
+  const grossPos = grossMax > grossMin ? ((grossCurrent - grossMin) / (grossMax - grossMin)) * 100 : 50;
+  document.getElementById('grossRangeMarker').style.left = `calc(${grossPos}% - 6px)`;
+
+  // Update operating range
+  document.getElementById('opMin').textContent = opMin.toFixed(1) + '%';
+  document.getElementById('opMax').textContent = opMax.toFixed(1) + '%';
+  document.getElementById('opCurrent').textContent = opCurrent.toFixed(1) + '%';
+  const opPos = opMax > opMin ? ((opCurrent - opMin) / (opMax - opMin)) * 100 : 50;
+  document.getElementById('opRangeMarker').style.left = `calc(${opPos}% - 6px)`;
+
+  // Update net range
+  document.getElementById('netMin').textContent = netMin.toFixed(1) + '%';
+  document.getElementById('netMax').textContent = netMax.toFixed(1) + '%';
+  document.getElementById('netCurrent').textContent = netCurrent.toFixed(1) + '%';
+  const netPos = netMax > netMin ? ((netCurrent - netMin) / (netMax - netMin)) * 100 : 50;
+  document.getElementById('netRangeMarker').style.left = `calc(${netPos}% - 6px)`;
+}
+
+function calculateCAGR(startValue, endValue, years) {
+  if (startValue <= 0 || years <= 0) return 0;
+  return (Math.pow(endValue / startValue, 1 / years) - 1) * 100;
+}
+
+function calculateStdDev(values) {
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+  return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
+}
+
+function formatChange(value) {
+  return (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
+}
+
+function filterHoldings() {
+  const query = document.getElementById('searchHoldings').value.toLowerCase();
+  const filtered = holdingsData.filter(h =>
+    h.symbol.toLowerCase().includes(query) ||
+    (h.name && h.name.toLowerCase().includes(query)) ||
+    (h.sector && h.sector.toLowerCase().includes(query))
+  );
+  updateHoldingsTable(filtered);
+}
+
+// Load on page ready
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize empty chart
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { display: false },
+        y: { display: false }
+      }
+    }
+  });
+});
+</script>
+<%- include('../partials/footer') %>

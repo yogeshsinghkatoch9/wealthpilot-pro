@@ -1,0 +1,379 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const str = straddles || {};
+const quote = str.quote || {};
+const price = quote.price || str.currentPrice || 485.02;
+const atmStraddle = str.atmStraddle || {};
+const strangle = str.strangle || {};
+const ivMetrics = str.ivMetrics || {};
+
+// Demo values
+const atmStrike = atmStraddle.strike || 485;
+const atmCall = atmStraddle.call || {};
+const atmPut = atmStraddle.put || {};
+const atmCallPrice = atmCall.price || 21.50;
+const atmPutPrice = atmPut.price || 21.00;
+const totalPremium = atmStraddle.totalPremium || (atmCallPrice + atmPutPrice);
+const impliedMove = atmStraddle.impliedMove || (price > 0 ? (totalPremium / price) * 100 : 8.8);
+const upperBreakeven = atmStrike + totalPremium;
+const lowerBreakeven = atmStrike - totalPremium;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(1) + '%'; }
+%>
+<%- include('../partials/header', { pageTitle: 'Options Straddle Strategies' }) %>
+
+<!-- Stitch Design System -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#4850e5",
+        "background-dark": "#111221",
+        "surface-dark": "#1c1d26",
+        "border-dark": "#292a38",
+        "text-secondary": "#9e9fb7"
+      },
+      fontFamily: {
+        "display": ["Manrope", "sans-serif"]
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { font-family: 'Manrope', sans-serif; }
+</style>
+
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-[#292a38] bg-[#111217] px-6 py-3 lg:px-10">
+  <div class="flex items-center gap-8">
+    <div class="flex items-center gap-4 text-white">
+      <div class="size-8 flex items-center justify-center text-[#4850e5]">
+        <span class="material-symbols-outlined text-3xl">token</span>
+      </div>
+      <h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">WealthPilot Pro</h2>
+    </div>
+    <nav class="hidden lg:flex items-center gap-9">
+      <a class="text-white hover:text-[#4850e5] transition-colors text-sm font-medium leading-normal" href="/dashboard">Dashboard</a>
+      <a class="text-white hover:text-[#4850e5] transition-colors text-sm font-medium leading-normal" href="/portfolio">Portfolio</a>
+      <a class="text-[#4850e5] text-sm font-medium leading-normal" href="#">Analysis</a>
+      <a class="text-white hover:text-[#4850e5] transition-colors text-sm font-medium leading-normal" href="/trading-journal">Trade</a>
+      <a class="text-white hover:text-[#4850e5] transition-colors text-sm font-medium leading-normal" href="/reports">Reports</a>
+    </nav>
+  </div>
+  <div class="flex flex-1 justify-end gap-6 items-center">
+    <label class="hidden md:flex flex-col min-w-40 h-10 max-w-64">
+      <div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-[#292a38] overflow-hidden">
+        <div class="text-[#9e9fb7] flex border-none bg-[#292a38] items-center justify-center pl-3">
+          <span class="material-symbols-outlined text-[20px]">search</span>
+        </div>
+        <input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-none bg-[#292a38] h-full placeholder:text-[#9e9fb7] px-3 text-sm font-normal leading-normal" placeholder="Search markets...">
+      </div>
+    </label>
+    <button class="flex items-center justify-center text-white hover:text-[#4850e5]">
+      <span class="material-symbols-outlined">notifications</span>
+    </button>
+    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 ring-2 ring-[#4850e5]/20 bg-gradient-to-br from-[#4850e5] to-[#6366f1]"></div>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="flex-1 flex flex-col items-center py-6 px-4 md:px-8 lg:px-12 w-full max-w-[1440px] mx-auto bg-[#111221] min-h-screen">
+  <!-- Page Header -->
+  <div class="w-full mb-8 flex flex-wrap justify-between items-end gap-4 border-b border-[#292a38] pb-6">
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-1 rounded bg-[#4850e5]/10 text-[#4850e5] text-xs font-bold uppercase tracking-wider">Strategy Builder</span>
+      </div>
+      <h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Options Straddle Strategies</h1>
+      <p class="text-[#9e9fb7] text-base font-normal leading-normal max-w-2xl">
+        Volatility capture strategy. Profit from significant price movements in either direction by purchasing both a call and a put at the same strike.
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button class="px-4 py-2 rounded-lg border border-[#292a38] text-white hover:bg-[#292a38] font-medium transition-colors flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">save</span>
+        Save Draft
+      </button>
+      <button class="px-4 py-2 rounded-lg bg-[#4850e5] text-white hover:bg-[#5a62f0] font-medium transition-colors shadow-lg shadow-[#4850e5]/25 flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">play_arrow</span>
+        Simulate Trade
+      </button>
+    </div>
+  </div>
+
+  <!-- Strategy Content Grid -->
+  <div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 h-full">
+    <!-- Left Column: Configuration & Inputs -->
+    <div class="lg:col-span-4 flex flex-col gap-6">
+      <!-- Configuration Card -->
+      <div class="bg-[#1c1d26] rounded-xl border border-[#292a38] p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#4850e5]">tune</span>
+            Parameters
+          </h3>
+          <span class="text-xs font-medium text-[#9e9fb7] bg-[#292a38] px-2 py-1 rounded">Long Straddle</span>
+        </div>
+        <form method="GET" action="/options-straddle" class="space-y-5">
+          <!-- Asset Input -->
+          <div class="flex flex-col gap-2">
+            <label class="text-gray-300 text-sm font-medium">Underlying Asset</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#9e9fb7] material-symbols-outlined text-[20px]">search</span>
+              <input name="symbol" class="w-full bg-[#111217] border border-[#292a38] rounded-lg py-3 pl-11 pr-4 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] transition-all placeholder:text-[#9e9fb7] uppercase" placeholder="Symbol (e.g. SPY, NVDA)" value="<%= symbol || 'NVDA' %>">
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 text-xs font-bold">+<%= formatPrice(price) %> (+1.2%)</span>
+            </div>
+          </div>
+
+          <!-- Date & Quantity Row -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-2">
+              <label class="text-gray-300 text-sm font-medium">Expiration</label>
+              <input class="w-full bg-[#111217] border border-[#292a38] rounded-lg py-3 px-4 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] transition-all text-sm" type="date" value="2023-11-17">
+            </div>
+            <div class="flex flex-col gap-2">
+              <label class="text-gray-300 text-sm font-medium">Quantity</label>
+              <input class="w-full bg-[#111217] border border-[#292a38] rounded-lg py-3 px-4 text-white focus:ring-1 focus:ring-[#4850e5] focus:border-[#4850e5] transition-all text-sm" type="number" value="10">
+            </div>
+          </div>
+
+          <!-- Strike Price -->
+          <div class="flex flex-col gap-3 pt-2">
+            <div class="flex justify-between items-center">
+              <label class="text-gray-300 text-sm font-medium">Strike Price</label>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-[#9e9fb7]">Current: <%= formatPrice(price) %></span>
+                <input class="w-24 bg-[#111217] border border-[#292a38] rounded px-2 py-1 text-right text-white text-sm font-bold focus:ring-[#4850e5] focus:border-[#4850e5]" value="<%= atmStrike.toFixed(2) %>">
+              </div>
+            </div>
+            <div class="relative h-6 flex items-center">
+              <div class="absolute w-full h-1 bg-[#292a38] rounded-full"></div>
+              <div class="absolute w-1/2 h-1 bg-[#4850e5] rounded-l-full"></div>
+              <div class="absolute left-1/2 -translate-x-1/2 size-5 bg-white border-2 border-[#4850e5] rounded-full shadow cursor-pointer hover:scale-110 transition-transform"></div>
+            </div>
+            <div class="flex justify-between text-xs text-[#9e9fb7] font-mono">
+              <span>OTM Put</span>
+              <span>ATM</span>
+              <span>OTM Call</span>
+            </div>
+          </div>
+
+          <!-- Greeks Mini-View -->
+          <div class="grid grid-cols-4 gap-2 pt-4 border-t border-[#292a38]">
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-[#9e9fb7] font-bold">Delta</p>
+              <p class="text-sm font-mono text-gray-300">0.02</p>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-[#9e9fb7] font-bold">Gamma</p>
+              <p class="text-sm font-mono text-gray-300">0.08</p>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-[#9e9fb7] font-bold">Theta</p>
+              <p class="text-sm font-mono text-red-400">-0.45</p>
+            </div>
+            <div class="text-center">
+              <p class="text-[10px] uppercase text-[#9e9fb7] font-bold">Vega</p>
+              <p class="text-sm font-mono text-green-400">0.12</p>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Strategy Insight Card -->
+      <div class="bg-[#4850e5]/5 border border-[#4850e5]/20 rounded-xl p-5">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-[#4850e5] mt-1">lightbulb</span>
+          <div>
+            <h4 class="text-white font-bold mb-1">Strategy Insight</h4>
+            <p class="text-sm text-gray-400 leading-relaxed mb-3">
+              A Long Straddle is market neutral. You are betting on high volatility regardless of direction.
+            </p>
+            <ul class="text-xs text-gray-400 space-y-1 list-disc pl-4">
+              <li><strong class="text-gray-200">Max Risk:</strong> Limited to premium paid.</li>
+              <li><strong class="text-gray-200">Max Reward:</strong> Unlimited.</li>
+              <li><strong class="text-gray-200">Ideal Environment:</strong> Earnings, FDA approvals, or economic data releases.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Visualization & Metrics -->
+    <div class="lg:col-span-8 flex flex-col gap-6">
+      <!-- Chart Container -->
+      <div class="bg-[#1c1d26] rounded-xl border border-[#292a38] p-6 shadow-sm flex flex-col h-[500px]">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-bold text-white">P&L at Expiration</h3>
+          <div class="flex gap-2">
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded bg-green-500/10 border border-green-500/20">
+              <div class="size-2 rounded-full bg-green-500"></div>
+              <span class="text-xs font-medium text-green-400">Profit Zone</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-3 py-1 rounded bg-red-500/10 border border-red-500/20">
+              <div class="size-2 rounded-full bg-red-500"></div>
+              <span class="text-xs font-medium text-red-400">Loss Zone</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Canvas -->
+        <div class="flex-1 w-full relative">
+          <canvas id="pnlChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Analysis Summary Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Max Profit -->
+        <div class="bg-[#1c1d26] border border-[#292a38] p-4 rounded-xl flex flex-col justify-between h-32 relative overflow-hidden group">
+          <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="material-symbols-outlined text-6xl text-green-500">trending_up</span>
+          </div>
+          <p class="text-[#9e9fb7] text-sm font-medium z-10">Max Profit</p>
+          <div class="z-10">
+            <p class="text-2xl font-black text-green-400 tracking-tight">Unlimited</p>
+            <p class="text-xs text-[#9e9fb7] mt-1">If price moves significantly</p>
+          </div>
+          <div class="absolute bottom-0 left-0 h-1 bg-green-500 w-full"></div>
+        </div>
+
+        <!-- Max Loss -->
+        <div class="bg-[#1c1d26] border border-[#292a38] p-4 rounded-xl flex flex-col justify-between h-32 relative overflow-hidden group">
+          <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="material-symbols-outlined text-6xl text-red-500">trending_down</span>
+          </div>
+          <p class="text-[#9e9fb7] text-sm font-medium z-10">Max Risk</p>
+          <div class="z-10">
+            <p class="text-2xl font-black text-red-400 tracking-tight font-mono"><%= formatPrice(totalPremium * 100) %></p>
+            <p class="text-xs text-[#9e9fb7] mt-1">Total Premium Paid</p>
+          </div>
+          <div class="absolute bottom-0 left-0 h-1 bg-red-500 w-full"></div>
+        </div>
+
+        <!-- Breakeven -->
+        <div class="bg-[#1c1d26] border border-[#292a38] p-4 rounded-xl flex flex-col justify-between h-32 relative overflow-hidden group">
+          <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+            <span class="material-symbols-outlined text-6xl text-[#4850e5]">balance</span>
+          </div>
+          <p class="text-[#9e9fb7] text-sm font-medium z-10">Breakeven Points</p>
+          <div class="z-10 flex flex-col gap-1">
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-400">Lower</span>
+              <span class="font-mono font-bold text-white"><%= formatPrice(lowerBreakeven) %></span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-400">Upper</span>
+              <span class="font-mono font-bold text-white"><%= formatPrice(upperBreakeven) %></span>
+            </div>
+          </div>
+          <div class="absolute bottom-0 left-0 h-1 bg-[#4850e5] w-full"></div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="flex flex-col md:flex-row items-center justify-between bg-[#1c1d26] border border-[#292a38] rounded-xl p-4 gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex flex-col">
+            <span class="text-[#9e9fb7] text-xs uppercase font-bold tracking-wider">Total Cost</span>
+            <span class="text-white text-xl font-mono font-bold"><%= formatPrice(totalPremium * 100) %></span>
+          </div>
+          <div class="h-8 w-px bg-[#292a38] mx-2"></div>
+          <div class="flex flex-col">
+            <span class="text-[#9e9fb7] text-xs uppercase font-bold tracking-wider">Commission</span>
+            <span class="text-white text-base font-mono">$12.50</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <button class="flex-1 md:flex-none py-3 px-6 rounded-lg border border-[#292a38] text-white hover:bg-white/5 transition-colors font-semibold text-sm">
+            Add to Watchlist
+          </button>
+          <button class="flex-1 md:flex-none py-3 px-8 rounded-lg bg-[#4850e5] text-white hover:bg-[#5a62f0] transition-colors font-bold text-sm shadow-lg shadow-[#4850e5]/25">
+            Place Order
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const strike = <%= atmStrike %>;
+const straddlePremium = <%= totalPremium %>;
+
+// Generate price points
+const priceRange = strike * 0.15;
+const prices = [];
+const pnlData = [];
+
+for (let p = strike - priceRange; p <= strike + priceRange; p += priceRange / 10) {
+  prices.push('$' + p.toFixed(0));
+  const profit = Math.max(p - strike, 0) + Math.max(strike - p, 0) - straddlePremium;
+  pnlData.push((profit * 100).toFixed(0));
+}
+
+new Chart(document.getElementById('pnlChart'), {
+  type: 'line',
+  data: {
+    labels: prices,
+    datasets: [{
+      label: 'P&L',
+      data: pnlData,
+      borderColor: '#4850e5',
+      backgroundColor: (context) => {
+        const chart = context.chart;
+        const {ctx, chartArea} = chart;
+        if (!chartArea) return null;
+        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.2)');
+        gradient.addColorStop(0.5, 'rgba(72, 80, 229, 0.1)');
+        gradient.addColorStop(1, 'rgba(34, 197, 94, 0.2)');
+        return gradient;
+      },
+      fill: true,
+      tension: 0.1,
+      pointRadius: 0,
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1c1d26',
+        borderColor: '#292a38',
+        borderWidth: 1,
+        titleColor: '#9e9fb7',
+        bodyColor: '#fff',
+        bodyFont: { weight: 'bold' },
+        padding: 12
+      }
+    },
+    scales: {
+      y: {
+        grid: { color: '#292a38', drawBorder: false },
+        ticks: {
+          color: '#9e9fb7',
+          callback: v => '$' + v
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#9e9fb7' }
+      }
+    }
+  }
+});
+</script>
+<%- include('../partials/footer') %>

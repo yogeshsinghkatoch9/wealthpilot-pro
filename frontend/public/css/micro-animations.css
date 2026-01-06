@@ -1,0 +1,639 @@
+/* ============================================================================
+   MICRO-ANIMATIONS
+   Subtle animations that make the app feel responsive and polished
+   ============================================================================ */
+
+/* ============================================================================
+   1. BUTTON & INTERACTIVE ELEMENTS
+   ============================================================================ */
+
+/* Button Hover Effects */
+button:not(:disabled),
+.btn:not(:disabled),
+a.btn:not(.disabled) {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+button:not(:disabled):hover,
+.btn:not(:disabled):hover,
+a.btn:not(.disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+button:not(:disabled):active,
+.btn:not(:disabled):active,
+a.btn:not(.disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Primary Button Glow */
+.btn-primary:hover,
+button.bg-blue-600:hover,
+button.bg-orange-500:hover {
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.4),
+              0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Icon Buttons */
+.icon-button,
+button[aria-label],
+.nav-icon {
+  transition: all 0.2s ease;
+}
+
+.icon-button:hover,
+button[aria-label]:hover,
+.nav-icon:hover {
+  transform: scale(1.1);
+  color: var(--accent-primary, #ff6600);
+}
+
+/* Link Underline Animation */
+a:not(.btn):not(.nav-link) {
+  position: relative;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:not(.btn):not(.nav-link)::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+a:not(.btn):not(.nav-link):hover::after {
+  width: 100%;
+}
+
+/* ============================================================================
+   2. CARD & CONTAINER ANIMATIONS
+   ============================================================================ */
+
+/* Card Hover Effect */
+.card,
+.portfolio-card,
+.holding-card,
+.stat-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover,
+.portfolio-card:hover,
+.holding-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  border-color: var(--accent-primary, #ff6600);
+}
+
+/* Stat Card Number Pulse on Update */
+@keyframes pulse-update {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.stat-value.updating,
+.price-value.updating {
+  animation: pulse-update 0.5s ease-out;
+}
+
+/* ============================================================================
+   3. PRICE & VALUE ANIMATIONS
+   ============================================================================ */
+
+/* Price Flash (Green for increase, Red for decrease) */
+@keyframes flash-green {
+  0% { background-color: transparent; }
+  50% { background-color: rgba(16, 185, 129, 0.2); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-red {
+  0% { background-color: transparent; }
+  50% { background-color: rgba(239, 68, 68, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.price-increase {
+  animation: flash-green 0.6s ease-out;
+}
+
+.price-decrease {
+  animation: flash-red 0.6s ease-out;
+}
+
+/* Number Count Up Animation */
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-count {
+  animation: count-up 0.4s ease-out;
+}
+
+/* Percentage Change Indicator */
+.percent-change {
+  transition: all 0.3s ease;
+}
+
+.percent-change.positive {
+  color: #10b981;
+}
+
+.percent-change.negative {
+  color: #ef4444;
+}
+
+/* Arrow Indicators */
+.trend-arrow {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.trend-arrow.up {
+  animation: bounce-up 0.6s ease-out;
+}
+
+.trend-arrow.down {
+  animation: bounce-down 0.6s ease-out;
+}
+
+@keyframes bounce-up {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+/* ============================================================================
+   4. LIST & TABLE ANIMATIONS
+   ============================================================================ */
+
+/* Table Row Hover */
+table tbody tr,
+.table-row {
+  transition: all 0.2s ease;
+}
+
+table tbody tr:hover,
+.table-row:hover {
+  background-color: rgba(255, 102, 0, 0.05);
+  transform: translateX(4px);
+}
+
+/* Staggered List Animation */
+.stagger-item {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0.05s; }
+.stagger-item:nth-child(2) { animation-delay: 0.1s; }
+.stagger-item:nth-child(3) { animation-delay: 0.15s; }
+.stagger-item:nth-child(4) { animation-delay: 0.2s; }
+.stagger-item:nth-child(5) { animation-delay: 0.25s; }
+.stagger-item:nth-child(n+6) { animation-delay: 0.3s; }
+
+@keyframes fade-in-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   5. MODAL & DROPDOWN ANIMATIONS
+   ============================================================================ */
+
+/* Modal Entrance */
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal,
+.dialog,
+[role="dialog"] {
+  animation: modal-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dropdown Menu Slide */
+@keyframes dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-menu,
+.context-menu {
+  animation: dropdown-enter 0.2s ease-out;
+}
+
+/* ============================================================================
+   6. FORM INPUT ANIMATIONS
+   ============================================================================ */
+
+/* Input Focus Effect */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-primary, #30363d);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-primary, #ff6600);
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Checkbox & Radio Animation */
+input[type="checkbox"],
+input[type="radio"] {
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  transform: scale(1.1);
+}
+
+/* Label Float Animation */
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label {
+  transform: translateY(-20px) scale(0.85);
+  color: var(--accent-primary, #ff6600);
+}
+
+.floating-label label {
+  transition: all 0.2s ease;
+  transform-origin: left top;
+}
+
+/* ============================================================================
+   7. LOADING & PROGRESS ANIMATIONS
+   ============================================================================ */
+
+/* Spinner Rotation */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner,
+.loading-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Progress Bar Fill */
+@keyframes progress-fill {
+  from { width: 0; }
+}
+
+.progress-bar {
+  animation: progress-fill 1s ease-out;
+}
+
+/* Pulse Animation for Loading States */
+@keyframes pulse-loading {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loading-pulse {
+  animation: pulse-loading 1.5s ease-in-out infinite;
+}
+
+/* Dots Loading Animation */
+@keyframes dots-loading {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+.loading-dots::after {
+  content: '.';
+  animation: dots-loading 1.5s steps(1) infinite;
+}
+
+/* ============================================================================
+   8. CHART & VISUALIZATION ANIMATIONS
+   ============================================================================ */
+
+/* Chart Bars Grow Animation */
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.chart-bar {
+  animation: bar-grow 0.6s ease-out;
+}
+
+.chart-bar:nth-child(1) { animation-delay: 0.05s; }
+.chart-bar:nth-child(2) { animation-delay: 0.1s; }
+.chart-bar:nth-child(3) { animation-delay: 0.15s; }
+.chart-bar:nth-child(4) { animation-delay: 0.2s; }
+.chart-bar:nth-child(5) { animation-delay: 0.25s; }
+
+/* Line Chart Draw Animation */
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-line {
+  stroke-dasharray: 1000;
+  animation: line-draw 1.5s ease-out forwards;
+}
+
+/* ============================================================================
+   9. BADGE & NOTIFICATION ANIMATIONS
+   ============================================================================ */
+
+/* Badge Pulse */
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.badge.pulse,
+.notification-badge {
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* Badge Pop In */
+@keyframes badge-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.badge.new {
+  animation: badge-pop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* ============================================================================
+   10. PAGE TRANSITION ANIMATIONS
+   ============================================================================ */
+
+/* Page Fade In */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-content {
+  animation: page-fade-in 0.3s ease-out;
+}
+
+/* Slide In from Right */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slide-in-right 0.4s ease-out;
+}
+
+/* Slide In from Left */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-left {
+  animation: slide-in-left 0.4s ease-out;
+}
+
+/* ============================================================================
+   11. TOGGLE & SWITCH ANIMATIONS
+   ============================================================================ */
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-switch::before {
+  content: '';
+  position: absolute;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.toggle-switch.on::before {
+  transform: translateX(20px);
+}
+
+/* Tab Switch Animation */
+.tab-indicator {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================================
+   12. SCROLL ANIMATIONS
+   ============================================================================ */
+
+/* Scroll Reveal */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s ease-out;
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Sticky Header on Scroll */
+.sticky-header {
+  transition: all 0.3s ease;
+}
+
+.sticky-header.scrolled {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  background-color: rgba(10, 14, 23, 0.95);
+}
+
+/* ============================================================================
+   13. UTILITY CLASSES
+   ============================================================================ */
+
+/* Quick animation utilities */
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================================
+   14. HOVER EFFECTS FOR SPECIFIC COMPONENTS
+   ============================================================================ */
+
+/* Nav Menu Items */
+.nav-link {
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent-primary, #ff6600);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link:hover::before,
+.nav-link.active::before {
+  width: 100%;
+}
+
+/* Portfolio Cards */
+.portfolio-card .portfolio-value {
+  transition: all 0.3s ease;
+}
+
+.portfolio-card:hover .portfolio-value {
+  transform: scale(1.05);
+  color: var(--accent-primary, #ff6600);
+}
+
+/* Action Buttons with Icons */
+.action-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.action-btn:active::before {
+  width: 300px;
+  height: 300px;
+}

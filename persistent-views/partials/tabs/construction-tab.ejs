@@ -1,0 +1,351 @@
+<%
+  const efficientFrontier = data.efficientFrontier || null;
+  const turnover = data.turnover || null;
+  const liquidity = data.liquidity || null;
+  const tca = data.tca || null;
+%>
+
+<!-- Construction Tab Content -->
+<div class="space-y-6">
+
+  <!-- ========== ANALYSIS 14: Optimization / Efficient Frontier ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        14. Efficient Frontier / Portfolio Optimization
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">MEAN-VARIANCE</span>
+    </div>
+
+    <% if (efficientFrontier && !efficientFrontier.error) { %>
+      <!-- Current vs Optimal Metrics -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Current Sharpe</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (efficientFrontier.currentPortfolio?.sharpe || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Max Sharpe</div>
+          <div class="text-2xl font-bold text-bloomberg-amber font-mono">
+            <%= (efficientFrontier.maxSharpe?.sharpe || 0).toFixed(2) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Current Vol</div>
+          <div class="text-xl font-bold text-white font-mono">
+            <%= (efficientFrontier.currentPortfolio?.volatility || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Min Vol</div>
+          <div class="text-xl font-bold text-emerald-400 font-mono">
+            <%= (efficientFrontier.minVol?.volatility || 0).toFixed(2) %>%
+          </div>
+        </div>
+      </div>
+
+      <!-- Efficient Frontier Scatter Plot -->
+      <div class="h-96 mb-6">
+        <canvas id="efficient-frontier-chart"></canvas>
+      </div>
+
+      <!-- Optimization Controls -->
+      <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-4">Optimization Constraints</h3>
+        <div class="grid grid-cols-3 gap-6">
+          <div>
+            <label class="block text-xs text-slate-400 mb-2">Target Return (%)</label>
+            <input type="range" min="5" max="25" value="12" class="w-full" id="target-return-slider">
+            <div class="text-sm text-white font-mono mt-1" id="target-return-value">12.0%</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-2">Max Volatility (%)</label>
+            <input type="range" min="5" max="30" value="15" class="w-full" id="max-vol-slider">
+            <div class="text-sm text-white font-mono mt-1" id="max-vol-value">15.0%</div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-2">Max Position Size (%)</label>
+            <input type="range" min="5" max="25" value="10" class="w-full" id="max-position-slider">
+            <div class="text-sm text-white font-mono mt-1" id="max-position-value">10.0%</div>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No optimization data available. Requires historical returns for all holdings.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 15: Holdings Turnover & Trade Cadence ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        15. Holdings Turnover & Trade Cadence
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">TRADING ACTIVITY</span>
+    </div>
+
+    <% if (turnover && !turnover.error) { %>
+      <!-- Turnover Metrics -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Annual Turnover</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (turnover.annualTurnover || 0).toFixed(1) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Avg Holding Period</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= Math.round(turnover.avgHoldingPeriod || 0) %><span class="text-sm"> days</span>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Trades/Month</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= Math.round(turnover.tradesPerMonth || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Churn Rate</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (turnover.churnRate || 0).toFixed(1) %>%
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Turnover Bar Chart -->
+      <div class="h-80 mb-6">
+        <canvas id="turnover-bar-chart"></canvas>
+      </div>
+
+      <!-- Trade Cadence Calendar Heatmap -->
+      <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Trade Cadence Calendar</h3>
+        <div class="h-48">
+          <canvas id="trade-cadence-heatmap"></canvas>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No turnover data available. Requires transaction history.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 16: Liquidity and Market Impact ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        16. Liquidity and Market Impact
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">TRADING LIQUIDITY</span>
+    </div>
+
+    <% if (liquidity && !liquidity.error) { %>
+      <!-- Liquidity Metrics -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Avg Liquidity Score</div>
+          <div class="text-2xl font-bold <%= liquidity.avgScore >= 70 ? 'text-emerald-400' : liquidity.avgScore >= 40 ? 'text-bloomberg-amber' : 'text-red-400' %> font-mono">
+            <%= (liquidity.avgScore || 0).toFixed(0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Days to Liquidate</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= Math.round(liquidity.daysToLiquidate || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Est. Market Impact</div>
+          <div class="text-2xl font-bold text-red-400 font-mono">
+            <%= (liquidity.marketImpact || 0).toFixed(2) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Avg Bid-Ask Spread</div>
+          <div class="text-xl font-bold text-white font-mono">
+            <%= (liquidity.avgSpread || 0).toFixed(3) %>%
+          </div>
+        </div>
+      </div>
+
+      <!-- Liquidity Scatter Plot (Position Size vs ADV) -->
+      <div class="h-96 mb-6">
+        <canvas id="liquidity-scatter-chart"></canvas>
+      </div>
+
+      <!-- Liquidity Breakdown Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-bloomberg-surface border-b border-bloomberg-border">
+            <tr>
+              <th class="px-4 py-3 text-left text-slate-400 font-semibold">Symbol</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Position Size</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">ADV</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">% of ADV</th>
+              <th class="px-4 py-3 text-right text-slate-400 font-semibold">Liquidity Score</th>
+            </tr>
+          </thead>
+          <tbody class="font-mono">
+            <% if (liquidity.holdings && liquidity.holdings.length > 0) { %>
+              <% liquidity.holdings.slice(0, 10).forEach(holding => { %>
+                <tr class="border-b border-slate-800 hover:bg-slate-900/50">
+                  <td class="px-4 py-3 text-white"><%= holding.symbol %></td>
+                  <td class="px-4 py-3 text-right text-white">
+                    <%= fmt.money(holding.marketValue) %>
+                  </td>
+                  <td class="px-4 py-3 text-right text-slate-400">
+                    <%= fmt.compact(holding.avgDollarVolume) %>
+                  </td>
+                  <td class="px-4 py-3 text-right <%= holding.percentOfAdv > 5 ? 'text-red-400' : 'text-emerald-400' %>">
+                    <%= holding.percentOfAdv.toFixed(2) %>%
+                  </td>
+                  <td class="px-4 py-3 text-right <%= holding.liquidityScore >= 70 ? 'text-emerald-400' : holding.liquidityScore >= 40 ? 'text-bloomberg-amber' : 'text-red-400' %>">
+                    <%= holding.liquidityScore.toFixed(0) %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No liquidity data available. Requires volume and bid-ask spread data.
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========== ANALYSIS 17: Transaction Cost Analysis (TCA) ========== -->
+  <div class="bg-bloomberg-dark border border-bloomberg-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-bloomberg-amber uppercase tracking-wide">
+        17. Transaction Cost Analysis (TCA)
+      </h2>
+      <span class="text-xs text-slate-500 font-mono">EXECUTION QUALITY</span>
+    </div>
+
+    <% if (tca && !tca.error) { %>
+      <!-- TCA Summary Metrics -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Costs</div>
+          <div class="text-2xl font-bold text-red-400 font-mono">
+            <%= fmt.money(tca.summary?.totalCosts || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Cost per Trade</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= fmt.money(tca.summary?.costPerTrade || 0) %>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Cost as % Volume</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= (tca.summary?.costAsPercent || 0).toFixed(3) %>%
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <div class="text-xs text-slate-500 uppercase tracking-wide mb-1">Transaction Count</div>
+          <div class="text-2xl font-bold text-white font-mono">
+            <%= tca.summary?.transactionCount || 0 %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost Breakdown (Buy vs Sell) -->
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Buy Transactions</h3>
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-xs text-slate-500">Total Costs</div>
+              <div class="text-xl font-bold text-white font-mono">
+                <%= fmt.money(tca.byType?.buyCosts || 0) %>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500">Count</div>
+              <div class="text-xl font-bold text-white font-mono">
+                <%= tca.byType?.buyCount || 0 %>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-bloomberg-surface border border-bloomberg-border rounded p-4">
+          <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">Sell Transactions</h3>
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="text-xs text-slate-500">Total Costs</div>
+              <div class="text-xl font-bold text-white font-mono">
+                <%= fmt.money(tca.byType?.sellCosts || 0) %>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500">Count</div>
+              <div class="text-xl font-bold text-white font-mono">
+                <%= tca.byType?.sellCount || 0 %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost Distribution Boxplot -->
+      <div class="h-64 mb-6">
+        <canvas id="tca-boxplot-chart"></canvas>
+      </div>
+
+      <!-- Cost Timeline -->
+      <div class="h-80">
+        <canvas id="tca-timeline-chart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="text-center py-12 text-slate-500">
+        No transaction cost data available. Requires transaction history with fees.
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+  // Store chart data for later initialization
+  window.constructionTabData = {
+    efficientFrontier: <%- JSON.stringify(efficientFrontier) %>,
+    turnover: <%- JSON.stringify(turnover) %>,
+    liquidity: <%- JSON.stringify(liquidity) %>,
+    tca: <%- JSON.stringify(tca) %>
+  };
+
+  // Interactive sliders
+  document.addEventListener('DOMContentLoaded', () => {
+    const targetReturnSlider = document.getElementById('target-return-slider');
+    const maxVolSlider = document.getElementById('max-vol-slider');
+    const maxPositionSlider = document.getElementById('max-position-slider');
+
+    if (targetReturnSlider) {
+      targetReturnSlider.addEventListener('input', (e) => {
+        document.getElementById('target-return-value').textContent = e.target.value + '.0%';
+      });
+    }
+
+    if (maxVolSlider) {
+      maxVolSlider.addEventListener('input', (e) => {
+        document.getElementById('max-vol-value').textContent = e.target.value + '.0%';
+      });
+    }
+
+    if (maxPositionSlider) {
+      maxPositionSlider.addEventListener('input', (e) => {
+        document.getElementById('max-position-value').textContent = e.target.value + '.0%';
+      });
+    }
+  });
+</script>

@@ -1,0 +1,1694 @@
+<%- include('../partials/header', { pageTitle: 'Research Center' }) %>
+
+<style>
+/* === RESEARCH CENTER PROFESSIONAL UX DESIGN === */
+:root {
+  --chart-height-hero: 380px;
+  --chart-height-segment: 280px;
+  --signal-bullish: #22c55e;
+  --signal-bearish: #ef4444;
+  --signal-neutral: #64748b;
+}
+
+/* Hero Section */
+.research-hero {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+/* 52-Week Range Slider */
+.range-slider {
+  position: relative;
+  height: 6px;
+  background: linear-gradient(90deg, #ef4444 0%, #eab308 50%, #22c55e 100%);
+  border-radius: 3px;
+  margin: 8px 0;
+}
+.range-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: white;
+  border: 3px solid #3b82f6;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* AI Insights Banner */
+.ai-banner {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.ai-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4);
+}
+
+/* Stat Cards Enhanced */
+.stat-card-enhanced {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+.stat-card-enhanced:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+.stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  font-variant-numeric: tabular-nums;
+}
+.stat-context {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* Technical Signals */
+.signal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.4);
+  margin-bottom: 8px;
+}
+.signal-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.signal-bullish { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.signal-bearish { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.signal-neutral { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+/* Analyst Rating Bar */
+.rating-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.rating-segment { height: 100%; }
+
+/* Price Target Range */
+.target-range {
+  position: relative;
+  height: 24px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 12px;
+  margin: 16px 0;
+}
+.target-fill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 8px;
+}
+.target-current {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 4px;
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* Peer Comparison Table */
+.peer-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.peer-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+.peer-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.05);
+}
+.peer-table tr:hover td {
+  background: rgba(59, 130, 246, 0.05);
+}
+.peer-table tr.current-stock td {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Quick Action Buttons */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+  color: #e2e8f0;
+}
+.action-btn:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.1);
+}
+.action-btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border-color: transparent;
+  color: white;
+}
+.action-btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+/* Chart Container */
+.chart-container-hero {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* Research Tabs */
+.research-tab {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.research-tab:not(.active) {
+  color: #94a3b8;
+}
+.research-tab:not(.active):hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+.research-tab.active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+/* Management Card */
+.mgmt-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: white;
+}
+
+/* Live Indicator */
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+</style>
+
+<div class="p-4 md:p-6 space-y-6">
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Research Center</h1>
+      <p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Deep-dive company analysis and SEC filings</p>
+    </div>
+    <div class="flex gap-2">
+      <div class="relative">
+        <input type="text" id="symbolSearch" class="form-input pl-10 w-64" placeholder="Search ticker (e.g., AAPL)" onkeyup="if(event.key==='Enter')loadResearch()">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 <%= theme === 'light' ? 'text-gray-400' : 'text-slate-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+      <button onclick="loadResearch()" class="btn-primary">Research</button>
+    </div>
+  </div>
+
+  <!-- PHASE 1: Enhanced Hero Section -->
+  <div class="research-hero" id="companyHeader">
+    <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+      <!-- Left: Company Info -->
+      <div class="flex items-start gap-4 flex-1">
+        <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-sky-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold" id="symbolBadge">AAPL</div>
+        <div class="flex-1">
+          <div class="flex flex-wrap items-center gap-3 mb-2">
+            <h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="companyName">Apple Inc.</h2>
+            <span class="px-3 py-1 bg-sky-500/20 text-sky-400 rounded-lg text-xs font-medium" id="sectorTag">Technology</span>
+            <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-lg text-xs font-medium" id="industryTag">Consumer Electronics</span>
+          </div>
+          <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>" id="companyMeta">NASDAQ: AAPL • Cupertino, CA • Founded 1976</p>
+
+          <!-- 52-Week Range -->
+          <div class="mt-4 max-w-md">
+            <div class="flex justify-between text-xs text-slate-400 mb-1">
+              <span>52W Low: <span class="text-red-400" id="week52Low">$164.08</span></span>
+              <span>52W High: <span class="text-emerald-400" id="week52High">$199.62</span></span>
+            </div>
+            <div class="range-slider">
+              <div class="range-marker" id="priceMarker" style="left: 72%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Price & Actions -->
+      <div class="text-right">
+        <div class="flex items-center justify-end gap-2 mb-1">
+          <div class="live-pulse"></div>
+          <span class="text-xs text-slate-400">LIVE</span>
+        </div>
+        <p class="text-4xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="currentPrice">$189.84</p>
+        <p class="text-lg" id="priceChange"><span class="text-emerald-400">+$2.47 (+1.32%)</span></p>
+
+        <!-- Price Target -->
+        <div class="mt-3 p-3 rounded-lg bg-slate-800/50 text-left">
+          <div class="text-xs text-slate-400 mb-1">Analyst Target</div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-xl font-bold text-white" id="priceTarget">$210.00</span>
+            <span class="text-emerald-400 text-sm" id="targetUpside">+10.6% upside</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex flex-wrap gap-2 mt-4 justify-end">
+          <button onclick="addToWatchlist()" class="action-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+            Watchlist
+          </button>
+          <button onclick="addToPortfolio()" class="action-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+            Portfolio
+          </button>
+          <button onclick="setAlert()" class="action-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            Alert
+          </button>
+          <a href="/stock-compare" class="action-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Compare
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Research Tabs -->
+  <div class="flex flex-wrap gap-2 p-1 bg-slate-800/30 rounded-xl">
+    <button onclick="showTab('overview')" class="research-tab active" data-tab="overview">Overview</button>
+    <button onclick="showTab('financials')" class="research-tab" data-tab="financials">Financials</button>
+    <button onclick="showTab('filings')" class="research-tab" data-tab="filings">SEC Filings</button>
+    <button onclick="showTab('earnings')" class="research-tab" data-tab="earnings">Earnings</button>
+    <button onclick="showTab('analysts')" class="research-tab" data-tab="analysts">Analysts</button>
+    <button onclick="showTab('news')" class="research-tab" data-tab="news">News</button>
+  </div>
+
+  <!-- PHASE 2: AI Insights Banner -->
+  <div class="ai-banner" id="overview-tab">
+    <div class="flex items-start justify-between gap-4 mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        </div>
+        <div>
+          <h3 class="font-semibold text-white">AI Analysis</h3>
+          <p class="text-xs text-slate-400">Powered by Claude AI</p>
+        </div>
+      </div>
+      <button onclick="refreshAISummary()" class="action-btn text-xs">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        Refresh
+      </button>
+    </div>
+    <p id="aiSummary" class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> leading-relaxed mb-4">Apple remains a dominant force in consumer tech with strong iPhone sales and growing services revenue. The company's AI initiatives and Vision Pro launch signal expansion into new markets. Key risks include China exposure and regulatory scrutiny.</p>
+    <div class="flex flex-wrap gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-400">Sentiment:</span>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400" id="sentimentBadge">BULLISH</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-400">Risk Level:</span>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400" id="riskBadge">MODERATE</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-400">Confidence:</span>
+        <span class="text-white font-semibold" id="confidenceScore">85%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 3: Interactive Price Chart -->
+  <div class="chart-container-hero">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <h3 class="text-lg font-semibold text-white">Price Chart</h3>
+      <div class="flex gap-1 p-1 bg-slate-800/50 rounded-lg">
+        <button onclick="loadChart('1D')" class="px-3 py-1.5 text-xs rounded-md transition-colors chart-period" data-period="1D">1D</button>
+        <button onclick="loadChart('1W')" class="px-3 py-1.5 text-xs rounded-md transition-colors chart-period" data-period="1W">1W</button>
+        <button onclick="loadChart('1M')" class="px-3 py-1.5 text-xs rounded-md transition-colors chart-period active bg-blue-500 text-white" data-period="1M">1M</button>
+        <button onclick="loadChart('3M')" class="px-3 py-1.5 text-xs rounded-md transition-colors chart-period" data-period="3M">3M</button>
+        <button onclick="loadChart('1Y')" class="px-3 py-1.5 text-xs rounded-md transition-colors chart-period" data-period="1Y">1Y</button>
+        <button onclick="loadChart('5Y')" class="px-3 py-1.5 text-xs rounded-md transition-colors chart-period" data-period="5Y">5Y</button>
+      </div>
+    </div>
+    <div style="height: 380px;">
+      <canvas id="priceChart"></canvas>
+    </div>
+    <!-- OHLCV Bar -->
+    <div class="flex flex-wrap gap-6 mt-4 pt-4 border-t border-slate-700/50 text-sm">
+      <div><span class="text-slate-400">Open:</span> <span class="text-white font-medium" id="ohlcOpen">$188.42</span></div>
+      <div><span class="text-slate-400">High:</span> <span class="text-emerald-400 font-medium" id="ohlcHigh">$190.21</span></div>
+      <div><span class="text-slate-400">Low:</span> <span class="text-red-400 font-medium" id="ohlcLow">$187.95</span></div>
+      <div><span class="text-slate-400">Close:</span> <span class="text-white font-medium" id="ohlcClose">$189.84</span></div>
+      <div><span class="text-slate-400">Volume:</span> <span class="text-white font-medium" id="ohlcVolume">54.2M</span></div>
+    </div>
+  </div>
+
+  <!-- PHASE 4: Enhanced Key Statistics -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="keyStatistics">
+    <div class="stat-card-enhanced">
+      <div class="stat-label">Market Cap</div>
+      <div class="stat-value" id="statMarketCap">$2.94T</div>
+      <div class="stat-context text-sky-400" id="statMarketCapContext">Mega Cap</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">P/E Ratio</div>
+      <div class="stat-value" id="statPE">29.4</div>
+      <div class="stat-context" id="statPEContext">vs Sector: 24.2</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">EPS (TTM)</div>
+      <div class="stat-value" id="statEPS">$6.46</div>
+      <div class="stat-context text-emerald-400" id="statEPSContext">+5.4% YoY</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">Dividend Yield</div>
+      <div class="stat-value" id="statDividend">0.51%</div>
+      <div class="stat-context" id="statDividendContext">$0.96/share</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">52-Week High</div>
+      <div class="stat-value" id="stat52High">$199.62</div>
+      <div class="stat-context text-red-400" id="stat52HighContext">-4.9% from high</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">52-Week Low</div>
+      <div class="stat-value" id="stat52Low">$164.08</div>
+      <div class="stat-context text-emerald-400" id="stat52LowContext">+15.7% from low</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">Avg Volume</div>
+      <div class="stat-value" id="statVolume">54.2M</div>
+      <div class="stat-context" id="statVolumeContext">vs 50D: +12%</div>
+    </div>
+    <div class="stat-card-enhanced">
+      <div class="stat-label">Beta</div>
+      <div class="stat-value" id="statBeta">1.28</div>
+      <div class="stat-context text-amber-400" id="statBetaContext">High Volatility</div>
+    </div>
+  </div>
+
+  <!-- Two Column Grid: Revenue + Technical Signals -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- PHASE 9: Revenue by Segment (Enlarged) -->
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue by Segment</h3>
+      <div style="height: 280px;"><canvas id="segmentChart"></canvas></div>
+    </div>
+
+    <!-- PHASE 5: Technical Signals Panel -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Technical Signals</h3>
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400" id="overallSignal">BUY</span>
+      </div>
+      <div id="technicalSignals">
+        <div class="signal-row">
+          <div>
+            <span class="text-white font-medium">RSI (14)</span>
+            <span class="text-slate-400 text-sm ml-2" id="rsiValue">62.4</span>
+          </div>
+          <span class="signal-badge signal-neutral" id="rsiBadge">NEUTRAL</span>
+        </div>
+        <div class="signal-row">
+          <div>
+            <span class="text-white font-medium">MACD</span>
+            <span class="text-slate-400 text-sm ml-2" id="macdValue">+1.24</span>
+          </div>
+          <span class="signal-badge signal-bullish" id="macdBadge">BULLISH</span>
+        </div>
+        <div class="signal-row">
+          <div>
+            <span class="text-white font-medium">SMA 50</span>
+            <span class="text-slate-400 text-sm ml-2" id="sma50Value">$186.20</span>
+          </div>
+          <span class="signal-badge signal-bullish" id="sma50Badge">ABOVE</span>
+        </div>
+        <div class="signal-row">
+          <div>
+            <span class="text-white font-medium">SMA 200</span>
+            <span class="text-slate-400 text-sm ml-2" id="sma200Value">$178.45</span>
+          </div>
+          <span class="signal-badge signal-bullish" id="sma200Badge">ABOVE</span>
+        </div>
+        <div class="signal-row">
+          <div>
+            <span class="text-white font-medium">Bollinger</span>
+            <span class="text-slate-400 text-sm ml-2">Upper Band</span>
+          </div>
+          <span class="signal-badge signal-bearish" id="bollingerBadge">OVERBOUGHT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Column Grid: Analyst Ratings + Management -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- PHASE 6: Analyst Ratings Visualization -->
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Analyst Ratings</h3>
+
+      <!-- Rating Distribution Bar -->
+      <div class="mb-4">
+        <div class="rating-bar">
+          <div class="rating-segment bg-emerald-500" id="buySegment" style="width: 71%;"></div>
+          <div class="rating-segment bg-amber-500" id="holdSegment" style="width: 24%;"></div>
+          <div class="rating-segment bg-red-500" id="sellSegment" style="width: 5%;"></div>
+        </div>
+        <div class="flex justify-between text-xs mt-2">
+          <span class="text-emerald-400"><span id="buyCount">30</span> Buy</span>
+          <span class="text-amber-400"><span id="holdCount">10</span> Hold</span>
+          <span class="text-red-400"><span id="sellCount">2</span> Sell</span>
+        </div>
+      </div>
+
+      <!-- Price Target Range -->
+      <div class="mb-4">
+        <div class="flex justify-between text-xs text-slate-400 mb-1">
+          <span>Low: <span class="text-white" id="targetLow">$165</span></span>
+          <span>Avg: <span class="text-sky-400" id="targetAvg">$210</span></span>
+          <span>High: <span class="text-white" id="targetHigh">$250</span></span>
+        </div>
+        <div class="target-range">
+          <div class="target-fill" style="left: 15%; right: 20%;"></div>
+          <div class="target-current" id="currentPriceMarker" style="left: 30%;"></div>
+        </div>
+      </div>
+
+      <!-- Consensus -->
+      <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+        <div>
+          <div class="text-xs text-slate-400">Consensus Rating</div>
+          <div class="text-xl font-bold text-sky-400" id="consensusRating">BUY</div>
+        </div>
+        <div class="text-right">
+          <div class="text-xs text-slate-400">Upside Potential</div>
+          <div class="text-xl font-bold text-emerald-400" id="upsidePotential">+10.6%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 7: Management Section Enhanced -->
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Management</h3>
+      <div id="managementList" class="space-y-3">
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-800/30">
+          <div class="mgmt-avatar bg-gradient-to-br from-blue-500 to-cyan-500">TC</div>
+          <div class="flex-1">
+            <p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Tim Cook</p>
+            <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CEO • Since 2011</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-800/30">
+          <div class="mgmt-avatar bg-gradient-to-br from-purple-500 to-pink-500">LM</div>
+          <div class="flex-1">
+            <p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Luca Maestri</p>
+            <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">CFO</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-800/30">
+          <div class="mgmt-avatar bg-gradient-to-br from-amber-500 to-orange-500">JW</div>
+          <div class="flex-1">
+            <p class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Jeff Williams</p>
+            <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">COO</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 8: Peer Comparison Table -->
+  <div class="card p-5">
+    <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Peer Comparison</h3>
+    <div class="overflow-x-auto">
+      <table class="peer-table">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Company</th>
+            <th class="text-right">Price</th>
+            <th class="text-right">Change</th>
+            <th class="text-right">Market Cap</th>
+            <th class="text-right">P/E</th>
+            <th class="text-right">Div Yield</th>
+          </tr>
+        </thead>
+        <tbody id="peerTableBody">
+          <tr class="current-stock">
+            <td><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 font-semibold">AAPL</span></td>
+            <td class="text-white">Apple Inc.</td>
+            <td class="text-right text-white font-medium">$189.84</td>
+            <td class="text-right text-emerald-400">+1.32%</td>
+            <td class="text-right text-slate-300">$2.94T</td>
+            <td class="text-right text-slate-300">29.4</td>
+            <td class="text-right text-slate-300">0.51%</td>
+          </tr>
+          <tr>
+            <td class="text-slate-300 font-medium">MSFT</td>
+            <td class="text-slate-400">Microsoft Corp.</td>
+            <td class="text-right text-white">$378.91</td>
+            <td class="text-right text-emerald-400">+0.82%</td>
+            <td class="text-right text-slate-300">$2.81T</td>
+            <td class="text-right text-slate-300">35.2</td>
+            <td class="text-right text-slate-300">0.74%</td>
+          </tr>
+          <tr>
+            <td class="text-slate-300 font-medium">GOOGL</td>
+            <td class="text-slate-400">Alphabet Inc.</td>
+            <td class="text-right text-white">$141.80</td>
+            <td class="text-right text-red-400">-0.31%</td>
+            <td class="text-right text-slate-300">$1.78T</td>
+            <td class="text-right text-slate-300">24.8</td>
+            <td class="text-right text-slate-300">0.00%</td>
+          </tr>
+          <tr>
+            <td class="text-slate-300 font-medium">AMZN</td>
+            <td class="text-slate-400">Amazon.com Inc.</td>
+            <td class="text-right text-white">$186.47</td>
+            <td class="text-right text-emerald-400">+1.21%</td>
+            <td class="text-right text-slate-300">$1.95T</td>
+            <td class="text-right text-slate-300">58.3</td>
+            <td class="text-right text-slate-300">0.00%</td>
+          </tr>
+          <tr>
+            <td class="text-slate-300 font-medium">META</td>
+            <td class="text-slate-400">Meta Platforms</td>
+            <td class="text-right text-white">$519.65</td>
+            <td class="text-right text-emerald-400">+2.14%</td>
+            <td class="text-right text-slate-300">$1.32T</td>
+            <td class="text-right text-slate-300">28.1</td>
+            <td class="text-right text-slate-300">0.00%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Company Description (Moved Lower) -->
+  <div class="card p-5">
+    <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">About the Company</h3>
+    <p id="companyDescription" class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> leading-relaxed">Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. The company offers iPhone, Mac, iPad, and wearables including Apple Watch, AirPods, Beats, and Apple TV. It also provides AppleCare support, cloud services, operating licensing, and other services. The company was founded in 1976 and is headquartered in Cupertino, California.</p>
+  </div>
+</div>
+
+<!-- Hidden Tab Panels -->
+<div id="financials-tab" class="research-panel hidden p-4 md:p-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold text-white mb-4">Income Statement (Annual)</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-slate-400 text-left border-b border-slate-700"><th class="pb-2">Metric</th><th class="pb-2">2024</th><th class="pb-2">2023</th><th class="pb-2">2022</th></tr></thead>
+          <tbody>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Revenue</td><td class="py-2 text-slate-300">$385B</td><td>$383B</td><td>$394B</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Gross Profit</td><td class="py-2 text-slate-300">$170B</td><td>$169B</td><td>$171B</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Operating Income</td><td class="py-2 text-slate-300">$115B</td><td>$114B</td><td>$119B</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Net Income</td><td class="py-2 text-slate-300">$97B</td><td>$97B</td><td>$100B</td></tr>
+            <tr><td class="py-2 text-white">EPS</td><td class="py-2 text-slate-300">$6.46</td><td>$6.13</td><td>$6.11</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold text-white mb-4">Balance Sheet</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-slate-400 text-left border-b border-slate-700"><th class="pb-2">Metric</th><th class="pb-2">2024</th><th class="pb-2">2023</th></tr></thead>
+          <tbody>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Total Assets</td><td class="py-2 text-slate-300">$352B</td><td>$353B</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Total Liabilities</td><td class="py-2 text-slate-300">$290B</td><td>$290B</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Cash & Equiv</td><td class="py-2 text-slate-300">$62B</td><td>$62B</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Long-term Debt</td><td class="py-2 text-slate-300">$98B</td><td>$98B</td></tr>
+            <tr><td class="py-2 text-white">Shareholders' Equity</td><td class="py-2 text-slate-300">$62B</td><td>$62B</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card p-5 lg:col-span-2">
+      <h3 class="text-lg font-semibold text-white mb-4">Revenue & Earnings Trend</h3>
+      <div class="h-64"><canvas id="financialsChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div id="filings-tab" class="research-panel hidden p-4 md:p-6">
+  <div class="card p-5">
+    <h3 class="text-lg font-semibold text-white mb-4">Recent SEC Filings</h3>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between p-4 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer transition-colors">
+        <div class="flex items-center gap-4">
+          <span class="px-3 py-1 bg-sky-500/20 text-sky-400 rounded font-mono text-sm">10-K</span>
+          <div>
+            <p class="text-white font-medium">Annual Report</p>
+            <p class="text-sm text-slate-400">Filed Nov 3, 2024 • Fiscal Year 2024</p>
+          </div>
+        </div>
+        <button class="action-btn text-sm">View PDF</button>
+      </div>
+      <div class="flex items-center justify-between p-4 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer transition-colors">
+        <div class="flex items-center gap-4">
+          <span class="px-3 py-1 bg-purple-500/20 text-purple-400 rounded font-mono text-sm">10-Q</span>
+          <div>
+            <p class="text-white font-medium">Quarterly Report</p>
+            <p class="text-sm text-slate-400">Filed Aug 4, 2024 • Q3 FY2024</p>
+          </div>
+        </div>
+        <button class="action-btn text-sm">View PDF</button>
+      </div>
+      <div class="flex items-center justify-between p-4 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer transition-colors">
+        <div class="flex items-center gap-4">
+          <span class="px-3 py-1 bg-amber-500/20 text-amber-400 rounded font-mono text-sm">8-K</span>
+          <div>
+            <p class="text-white font-medium">Current Report</p>
+            <p class="text-sm text-slate-400">Filed Oct 31, 2024 • Earnings Release</p>
+          </div>
+        </div>
+        <button class="action-btn text-sm">View PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="earnings-tab" class="research-panel hidden p-4 md:p-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold text-white mb-4">Earnings History</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead><tr class="text-slate-400 text-left border-b border-slate-700"><th class="pb-2">Quarter</th><th class="pb-2">EPS Est</th><th class="pb-2">EPS Act</th><th class="pb-2">Surprise</th></tr></thead>
+          <tbody>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Q4 2024</td><td class="py-2">$2.10</td><td>$2.18</td><td class="text-emerald-400">+3.8%</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Q3 2024</td><td class="py-2">$1.35</td><td>$1.40</td><td class="text-emerald-400">+3.7%</td></tr>
+            <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Q2 2024</td><td class="py-2">$1.50</td><td>$1.53</td><td class="text-emerald-400">+2.0%</td></tr>
+            <tr><td class="py-2 text-white">Q1 2024</td><td class="py-2">$1.42</td><td>$1.43</td><td class="text-emerald-400">+0.7%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card p-5">
+      <h3 class="text-lg font-semibold text-white mb-4">Upcoming Earnings</h3>
+      <div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+        <p class="font-semibold text-white">Q1 FY2025 Earnings</p>
+        <p class="text-slate-400 text-sm mt-1">Expected: January 30, 2025</p>
+        <div class="mt-3 flex gap-4">
+          <div><p class="text-xs text-slate-400">EPS Estimate</p><p class="font-semibold text-white">$2.35</p></div>
+          <div><p class="text-xs text-slate-400">Revenue Est</p><p class="font-semibold text-white">$118B</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="analysts-tab" class="research-panel hidden p-4 md:p-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="card p-4 text-center">
+      <p class="text-slate-400 text-sm">Price Target</p>
+      <p class="text-3xl font-bold text-emerald-400">$210</p>
+      <p class="text-sm text-slate-400">+10.6% upside</p>
+    </div>
+    <div class="card p-4 text-center">
+      <p class="text-slate-400 text-sm">Consensus</p>
+      <p class="text-3xl font-bold text-sky-400">BUY</p>
+      <p class="text-sm text-slate-400">42 analysts</p>
+    </div>
+    <div class="card p-4 text-center">
+      <p class="text-slate-400 text-sm">Rating Distribution</p>
+      <p class="text-sm mt-2"><span class="text-emerald-400">30 Buy</span> • <span class="text-slate-400">10 Hold</span> • <span class="text-red-400">2 Sell</span></p>
+    </div>
+  </div>
+  <div class="card p-5">
+    <h3 class="text-lg font-semibold text-white mb-4">Recent Analyst Actions</h3>
+    <div class="space-y-3">
+      <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+        <div><p class="text-white font-medium">Morgan Stanley</p><p class="text-sm text-slate-400">Dec 5, 2024</p></div>
+        <div class="text-right"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Overweight</span><p class="text-sm mt-1">PT: $220</p></div>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+        <div><p class="text-white font-medium">Goldman Sachs</p><p class="text-sm text-slate-400">Dec 3, 2024</p></div>
+        <div class="text-right"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Buy</span><p class="text-sm mt-1">PT: $215</p></div>
+      </div>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+        <div><p class="text-white font-medium">JP Morgan</p><p class="text-sm text-slate-400">Nov 28, 2024</p></div>
+        <div class="text-right"><span class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Neutral</span><p class="text-sm mt-1">PT: $195</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="news-tab" class="research-panel hidden p-4 md:p-6">
+  <div class="space-y-4">
+    <div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors">
+      <div class="flex gap-4">
+        <div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>
+        <div>
+          <p class="text-white font-medium">Apple's AI Strategy: What Vision Pro Means for the Future</p>
+          <p class="text-sm text-slate-400 mt-1">Reuters • 2 hours ago</p>
+        </div>
+      </div>
+    </div>
+    <div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors">
+      <div class="flex gap-4">
+        <div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>
+        <div>
+          <p class="text-white font-medium">iPhone Sales in China Show Signs of Recovery</p>
+          <p class="text-sm text-slate-400 mt-1">Bloomberg • 5 hours ago</p>
+        </div>
+      </div>
+    </div>
+    <div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors">
+      <div class="flex gap-4">
+        <div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>
+        <div>
+          <p class="text-white font-medium">Apple Services Revenue Hits New Record</p>
+          <p class="text-sm text-slate-400 mt-1">CNBC • 1 day ago</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Global variables
+let currentSymbol = 'AAPL';
+let priceChart = null;
+let segmentChart = null;
+
+// Auth helper
+function getToken() {
+  return localStorage.getItem('wealthpilot_token') || '';
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+}
+
+// Track loaded tabs to avoid re-fetching
+const loadedTabs = new Set(['overview']);
+
+// Tab Navigation
+function showTab(tab) {
+  document.querySelectorAll('.research-panel').forEach(p => p.classList.add('hidden'));
+  document.querySelectorAll('.research-tab').forEach(t => t.classList.remove('active'));
+
+  const tabElement = document.getElementById(tab + '-tab');
+  if (tabElement) tabElement.classList.remove('hidden');
+
+  const tabButton = document.querySelector(`[data-tab="${tab}"]`);
+  if (tabButton) tabButton.classList.add('active');
+
+  // Load tab data if not already loaded
+  if (!loadedTabs.has(tab) && currentSymbol) {
+    loadTabData(tab, currentSymbol);
+  }
+}
+
+// Load data for specific tab
+async function loadTabData(tab, symbol) {
+  switch(tab) {
+    case 'financials':
+      await loadFinancials(symbol);
+      break;
+    case 'filings':
+      await loadSECFilings(symbol);
+      break;
+    case 'earnings':
+      await loadEarnings(symbol);
+      break;
+    case 'analysts':
+      await loadAnalysts(symbol);
+      break;
+    case 'news':
+      await loadNews(symbol);
+      break;
+  }
+  loadedTabs.add(tab);
+}
+
+// Chart Period Selection
+function loadChart(period) {
+  document.querySelectorAll('.chart-period').forEach(btn => {
+    btn.classList.remove('active', 'bg-blue-500', 'text-white');
+    btn.classList.add('text-slate-400');
+  });
+  const activeBtn = document.querySelector(`[data-period="${period}"]`);
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'bg-blue-500', 'text-white');
+    activeBtn.classList.remove('text-slate-400');
+  }
+
+  // Fetch new chart data
+  fetchChartData(currentSymbol, period);
+}
+
+// Initialize Price Chart
+function initPriceChart() {
+  const ctx = document.getElementById('priceChart');
+  if (!ctx) return;
+
+  const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 380);
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Price',
+        data: [],
+        borderColor: '#3b82f6',
+        backgroundColor: gradient,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#3b82f6',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 23, 42, 0.9)',
+          titleColor: '#fff',
+          bodyColor: '#94a3b8',
+          borderColor: 'rgba(59, 130, 246, 0.3)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => `$${ctx.raw.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+          ticks: { color: '#64748b', maxTicksLimit: 8 }
+        },
+        y: {
+          grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+          ticks: { color: '#64748b', callback: (v) => '$' + v }
+        }
+      }
+    }
+  });
+
+  // Load initial data
+  fetchChartData(currentSymbol, '1M');
+}
+
+// Fetch Chart Data from Database-backed API
+async function fetchChartData(symbol, period) {
+  try {
+    const days = { '1D': 1, '1W': 7, '1M': 30, '3M': 90, '1Y': 365, '5Y': 1825 }[period] || 30;
+    const response = await authFetch(`/api/market/history/${symbol}?days=${days}`);
+    const result = await response.json();
+
+    // API returns { symbol, days, interval, data: [...], count }
+    const priceData = result.data || [];
+
+    if (priceData.length > 0 && priceChart) {
+      // Sample data for display (max 100 points for performance)
+      const sampleRate = Math.max(1, Math.floor(priceData.length / 100));
+      const sampled = priceData.filter((_, i) => i % sampleRate === 0 || i === priceData.length - 1);
+
+      const labels = sampled.map(p => {
+        const d = new Date(p.date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      const prices = sampled.map(p => p.close);
+
+      priceChart.data.labels = labels;
+      priceChart.data.datasets[0].data = prices;
+      priceChart.update();
+
+      // Update OHLCV with latest data
+      const latest = priceData[priceData.length - 1];
+      const periodHigh = Math.max(...priceData.map(p => p.high));
+      const periodLow = Math.min(...priceData.map(p => p.low));
+      const totalVolume = priceData.reduce((sum, p) => sum + (p.volume || 0), 0);
+
+      document.getElementById('ohlcOpen').textContent = `$${(latest.open || 0).toFixed(2)}`;
+      document.getElementById('ohlcHigh').textContent = `$${periodHigh.toFixed(2)}`;
+      document.getElementById('ohlcLow').textContent = `$${periodLow.toFixed(2)}`;
+      document.getElementById('ohlcClose').textContent = `$${(latest.close || 0).toFixed(2)}`;
+      document.getElementById('ohlcVolume').textContent = formatVolume(totalVolume / priceData.length);
+    }
+  } catch (error) {
+    console.error('Error fetching chart data:', error);
+    showToast('Error loading chart data', 'error');
+  }
+}
+
+// Format volume to human readable (e.g., 54.2M)
+function formatVolume(vol) {
+  if (vol >= 1e9) return (vol / 1e9).toFixed(1) + 'B';
+  if (vol >= 1e6) return (vol / 1e6).toFixed(1) + 'M';
+  if (vol >= 1e3) return (vol / 1e3).toFixed(1) + 'K';
+  return vol.toFixed(0);
+}
+
+// Initialize Segment Chart
+function initSegmentChart() {
+  const ctx = document.getElementById('segmentChart');
+  if (!ctx) return;
+
+  segmentChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Products', 'Services', 'Other'],
+      datasets: [{
+        data: [65, 25, 10],
+        backgroundColor: ['#3b82f6', '#8b5cf6', '#06b6d4'],
+        borderWidth: 0,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: '#94a3b8', padding: 16, font: { size: 12 } }
+        }
+      }
+    }
+  });
+}
+
+// Quick Actions
+function addToWatchlist() {
+  authFetch('/api/watchlist', {
+    method: 'POST',
+    body: JSON.stringify({ symbol: currentSymbol })
+  }).then(() => {
+    showToast(`${currentSymbol} added to watchlist!`, 'success');
+  }).catch(() => {
+    showToast('Error adding to watchlist', 'error');
+  });
+}
+
+function addToPortfolio() {
+  window.location.href = `/portfolios?action=add&symbol=${currentSymbol}`;
+}
+
+function setAlert() {
+  window.location.href = `/alerts?symbol=${currentSymbol}`;
+}
+
+function refreshAISummary() {
+  showToast('Refreshing AI analysis...', 'info');
+  // TODO: Call AI endpoint
+}
+
+// Load Research Data
+async function loadResearch() {
+  const symbol = document.getElementById('symbolSearch').value.toUpperCase() || 'AAPL';
+  currentSymbol = symbol;
+
+  // Reset loaded tabs for new symbol
+  loadedTabs.clear();
+  loadedTabs.add('overview');
+
+  showToast(`Loading research for ${symbol}...`, 'info');
+
+  try {
+    const response = await authFetch(`/api/research/stock/${symbol}`);
+    const data = await response.json();
+
+    // Update UI
+    updateCompanyHeader(data);
+    updateKeyStatistics(data);
+    updateManagement(data);
+    fetchChartData(symbol, '1M');
+
+    // Load technical signals for overview
+    loadTechnicals(symbol);
+
+    // Update competitors in peer table
+    updatePeerTable(data.competitors, symbol);
+
+    // Update revenue segments chart
+    if (data.revenueSegments && data.revenueSegments.length > 0) {
+      updateSegmentChart(data.revenueSegments);
+    }
+
+    // Update AI summary if available
+    if (data.aiSummary) {
+      document.getElementById('aiSummary').textContent = data.aiSummary;
+    }
+
+    showToast(`Research loaded for ${symbol}`, 'success');
+  } catch (error) {
+    console.error('Error loading research:', error);
+    showToast(`Error loading data for ${symbol}`, 'error');
+  }
+}
+
+// Update Peer Comparison Table
+function updatePeerTable(competitors, currentSymbol) {
+  const tbody = document.getElementById('peerTableBody');
+  if (!tbody || !competitors || competitors.length === 0) return;
+
+  // Keep current stock row and add competitors
+  const rows = competitors.map(comp => `
+    <tr>
+      <td class="text-slate-300 font-medium">${comp.symbol}</td>
+      <td class="text-slate-400">${comp.name}</td>
+      <td class="text-right text-white">$${(comp.price || 0).toFixed(2)}</td>
+      <td class="text-right ${parseFloat(comp.change) >= 0 ? 'text-emerald-400' : 'text-red-400'}">${comp.change}%</td>
+      <td class="text-right text-slate-300">${comp.marketCap || '-'}</td>
+      <td class="text-right text-slate-300">${comp.peRatio || '-'}</td>
+      <td class="text-right text-slate-300">${comp.dividendYield || '-'}</td>
+    </tr>
+  `).join('');
+
+  // Insert after the first row (current stock)
+  const firstRow = tbody.querySelector('tr.current-stock');
+  if (firstRow) {
+    firstRow.nextSibling?.remove();
+    firstRow.nextSibling?.remove();
+    firstRow.nextSibling?.remove();
+    firstRow.nextSibling?.remove();
+    firstRow.insertAdjacentHTML('afterend', rows);
+  }
+}
+
+// Update Segment Chart with real data
+function updateSegmentChart(segments) {
+  if (!segmentChart || !segments || segments.length === 0) return;
+
+  const labels = segments.map(s => s.name);
+  const values = segments.map(s => s.value);
+  const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#22c55e', '#eab308'];
+
+  segmentChart.data.labels = labels;
+  segmentChart.data.datasets[0].data = values;
+  segmentChart.data.datasets[0].backgroundColor = colors.slice(0, labels.length);
+  segmentChart.update();
+}
+
+function updateCompanyHeader(data) {
+  document.getElementById('symbolBadge').textContent = data.symbol || currentSymbol;
+  document.getElementById('companyName').textContent = data.name || currentSymbol;
+  if (data.sector) document.getElementById('sectorTag').textContent = data.sector;
+  if (data.industry) document.getElementById('industryTag').textContent = data.industry;
+
+  if (data.price) {
+    document.getElementById('currentPrice').textContent = `$${data.price.toFixed(2)}`;
+    const changeClass = (data.changePercent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400';
+    const sign = (data.changePercent || 0) >= 0 ? '+' : '';
+    document.getElementById('priceChange').innerHTML = `<span class="${changeClass}">${sign}$${Math.abs(data.change || 0).toFixed(2)} (${sign}${Math.abs(data.changePercent || 0).toFixed(2)}%)</span>`;
+  }
+
+  if (data.description) {
+    document.getElementById('companyDescription').textContent = data.description;
+  }
+}
+
+function updateKeyStatistics(data) {
+  if (!data.stats) return;
+  const s = data.stats;
+  if (s.marketCap) document.getElementById('statMarketCap').textContent = s.marketCap;
+  if (s.peRatio) document.getElementById('statPE').textContent = s.peRatio;
+  if (s.eps) document.getElementById('statEPS').textContent = `$${s.eps}`;
+  if (s.dividendYield) document.getElementById('statDividend').textContent = `${s.dividendYield}%`;
+  if (s.week52High) document.getElementById('stat52High').textContent = `$${s.week52High}`;
+  if (s.week52Low) document.getElementById('stat52Low').textContent = `$${s.week52Low}`;
+  if (s.avgVolume) document.getElementById('statVolume').textContent = s.avgVolume;
+  if (s.beta) document.getElementById('statBeta').textContent = s.beta;
+}
+
+function updateManagement(data) {
+  if (!data.management || !data.management.length) return;
+
+  const colors = [
+    'from-blue-500 to-cyan-500',
+    'from-purple-500 to-pink-500',
+    'from-amber-500 to-orange-500',
+    'from-emerald-500 to-teal-500'
+  ];
+
+  const html = data.management.slice(0, 3).map((exec, i) => {
+    const initials = exec.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+    return `
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-slate-800/30">
+        <div class="mgmt-avatar bg-gradient-to-br ${colors[i % colors.length]}">${initials}</div>
+        <div class="flex-1">
+          <p class="text-white font-medium">${exec.name}</p>
+          <p class="text-xs text-slate-400">${exec.title}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('managementList').innerHTML = html;
+}
+
+// ==================== TAB DATA LOADERS ====================
+
+// Load Financials Tab
+async function loadFinancials(symbol) {
+  try {
+    const response = await authFetch(`/api/research/fundamentals/${symbol}`);
+    const data = await response.json();
+
+    if (data.error) {
+      console.warn('Financials API error:', data.error);
+      return;
+    }
+
+    // Update Income Statement table
+    const incomeTable = document.querySelector('#financials-tab table:first-of-type tbody');
+    if (incomeTable && data.totalRevenue) {
+      incomeTable.innerHTML = `
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Revenue</td><td class="py-2 text-slate-300">${formatLargeNumber(data.totalRevenue)}</td><td>-</td><td>-</td></tr>
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Gross Profit</td><td class="py-2 text-slate-300">${formatLargeNumber(data.grossProfit)}</td><td>-</td><td>-</td></tr>
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Operating Margin</td><td class="py-2 text-slate-300">${(data.operatingMargin * 100).toFixed(1)}%</td><td>-</td><td>-</td></tr>
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Profit Margin</td><td class="py-2 text-slate-300">${(data.profitMargin * 100).toFixed(1)}%</td><td>-</td><td>-</td></tr>
+        <tr><td class="py-2 text-white">EPS</td><td class="py-2 text-slate-300">$${(data.revenue / data.marketCap * data.price).toFixed(2)}</td><td>-</td><td>-</td></tr>
+      `;
+    }
+
+    // Update Balance Sheet table
+    const balanceTable = document.querySelector('#financials-tab .card:nth-child(2) table tbody');
+    if (balanceTable && data.totalDebt !== undefined) {
+      balanceTable.innerHTML = `
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Total Cash</td><td class="py-2 text-slate-300">${formatLargeNumber(data.totalCash)}</td><td>-</td></tr>
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Total Debt</td><td class="py-2 text-slate-300">${formatLargeNumber(data.totalDebt)}</td><td>-</td></tr>
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Debt to Equity</td><td class="py-2 text-slate-300">${(data.debtToEquity || 0).toFixed(2)}</td><td>-</td></tr>
+        <tr class="border-b border-slate-700/50"><td class="py-2 text-white">Current Ratio</td><td class="py-2 text-slate-300">${(data.currentRatio || 0).toFixed(2)}</td><td>-</td></tr>
+        <tr><td class="py-2 text-white">Working Capital</td><td class="py-2 text-slate-300">${formatLargeNumber(data.workingCapital)}</td><td>-</td></tr>
+      `;
+    }
+
+    // Update Financials Chart
+    updateFinancialsChart(data);
+
+    showToast('Financials loaded', 'success');
+  } catch (error) {
+    console.error('Error loading financials:', error);
+    showToast('Error loading financials', 'error');
+  }
+}
+
+// Load SEC Filings Tab
+async function loadSECFilings(symbol) {
+  try {
+    const response = await authFetch(`/api/research/sec-filings/${symbol}`);
+    const data = await response.json();
+
+    const filingsContainer = document.querySelector('#filings-tab .card .space-y-3');
+    if (!filingsContainer) return;
+
+    if (!data.filings || data.filings.length === 0) {
+      filingsContainer.innerHTML = '<p class="text-slate-400 text-center py-8">No SEC filings found for this symbol.</p>';
+      return;
+    }
+
+    const formColors = {
+      '10-K': 'bg-sky-500/20 text-sky-400',
+      '10-Q': 'bg-purple-500/20 text-purple-400',
+      '8-K': 'bg-amber-500/20 text-amber-400',
+      '4': 'bg-emerald-500/20 text-emerald-400',
+      'DEF 14A': 'bg-pink-500/20 text-pink-400'
+    };
+
+    const formDescriptions = {
+      '10-K': 'Annual Report',
+      '10-Q': 'Quarterly Report',
+      '8-K': 'Current Report',
+      '4': 'Insider Transaction',
+      'DEF 14A': 'Proxy Statement'
+    };
+
+    filingsContainer.innerHTML = data.filings.slice(0, 10).map(filing => {
+      const formType = filing.form || filing.type || 'Filing';
+      const colorClass = formColors[formType] || 'bg-slate-500/20 text-slate-400';
+      const description = formDescriptions[formType] || formType;
+      const date = filing.filingDate || filing.date || 'N/A';
+      const url = filing.filingUrl || filing.url || '#';
+
+      return `
+        <div class="flex items-center justify-between p-4 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer transition-colors">
+          <div class="flex items-center gap-4">
+            <span class="px-3 py-1 ${colorClass} rounded font-mono text-sm">${formType}</span>
+            <div>
+              <p class="text-white font-medium">${description}</p>
+              <p class="text-sm text-slate-400">Filed ${date}</p>
+            </div>
+          </div>
+          <a href="${url}" target="_blank" class="action-btn text-sm">View</a>
+        </div>
+      `;
+    }).join('');
+
+    showToast('SEC filings loaded', 'success');
+  } catch (error) {
+    console.error('Error loading SEC filings:', error);
+    showToast('Error loading SEC filings', 'error');
+  }
+}
+
+// Load Earnings Tab
+async function loadEarnings(symbol) {
+  try {
+    const response = await authFetch(`/api/research/earnings-whispers/${symbol}`);
+    const data = await response.json();
+
+    // Update earnings history table
+    const historyTable = document.querySelector('#earnings-tab table tbody');
+    if (historyTable && data.earningsHistory?.history) {
+      const history = data.earningsHistory.history.slice(0, 4);
+      historyTable.innerHTML = history.map(q => {
+        const surprise = q.epsActual && q.epsEstimate
+          ? ((q.epsActual - q.epsEstimate) / Math.abs(q.epsEstimate) * 100).toFixed(1)
+          : 'N/A';
+        const surpriseClass = parseFloat(surprise) >= 0 ? 'text-emerald-400' : 'text-red-400';
+        return `
+          <tr class="border-b border-slate-700/50">
+            <td class="py-2 text-white">${q.quarter || 'N/A'}</td>
+            <td class="py-2">$${(q.epsEstimate || 0).toFixed(2)}</td>
+            <td>$${(q.epsActual || 0).toFixed(2)}</td>
+            <td class="${surpriseClass}">${surprise}%</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Update upcoming earnings
+    const upcomingDiv = document.querySelector('#earnings-tab .card:nth-child(2) .p-4');
+    if (upcomingDiv && data.earningsTrend?.trend) {
+      const nextEarnings = data.earningsTrend.trend[0];
+      upcomingDiv.innerHTML = `
+        <p class="font-semibold text-white">Next Earnings</p>
+        <p class="text-slate-400 text-sm mt-1">${nextEarnings?.endDate || 'TBD'}</p>
+        <div class="mt-3 flex gap-4">
+          <div><p class="text-xs text-slate-400">EPS Estimate</p><p class="font-semibold text-white">$${(nextEarnings?.earningsEstimate?.avg || 0).toFixed(2)}</p></div>
+          <div><p class="text-xs text-slate-400">Revenue Est</p><p class="font-semibold text-white">${formatLargeNumber(nextEarnings?.revenueEstimate?.avg)}</p></div>
+        </div>
+      `;
+    }
+
+    showToast('Earnings loaded', 'success');
+  } catch (error) {
+    console.error('Error loading earnings:', error);
+    showToast('Error loading earnings', 'error');
+  }
+}
+
+// Load Analysts Tab
+async function loadAnalysts(symbol) {
+  try {
+    const response = await authFetch(`/api/research/company-summary/${symbol}`);
+    const data = await response.json();
+
+    // Update analyst ratings
+    const recommendations = data.recommendationTrend?.trend?.[0] || {};
+    const buy = (recommendations.strongBuy || 0) + (recommendations.buy || 0);
+    const hold = recommendations.hold || 0;
+    const sell = (recommendations.sell || 0) + (recommendations.strongSell || 0);
+    const total = buy + hold + sell;
+
+    // Update summary cards
+    const priceTarget = data.financialData?.targetMeanPrice || 0;
+    const currentPrice = data.price?.regularMarketPrice || 0;
+    const upside = currentPrice > 0 ? ((priceTarget - currentPrice) / currentPrice * 100).toFixed(1) : 0;
+
+    const cards = document.querySelectorAll('#analysts-tab .card.p-4');
+    if (cards[0]) {
+      cards[0].innerHTML = `
+        <p class="text-slate-400 text-sm">Price Target</p>
+        <p class="text-3xl font-bold ${upside >= 0 ? 'text-emerald-400' : 'text-red-400'}">$${priceTarget.toFixed(0)}</p>
+        <p class="text-sm text-slate-400">${upside >= 0 ? '+' : ''}${upside}% ${upside >= 0 ? 'upside' : 'downside'}</p>
+      `;
+    }
+    if (cards[1]) {
+      const consensus = buy > hold && buy > sell ? 'BUY' : sell > buy && sell > hold ? 'SELL' : 'HOLD';
+      const consensusColor = consensus === 'BUY' ? 'text-emerald-400' : consensus === 'SELL' ? 'text-red-400' : 'text-amber-400';
+      cards[1].innerHTML = `
+        <p class="text-slate-400 text-sm">Consensus</p>
+        <p class="text-3xl font-bold ${consensusColor}">${consensus}</p>
+        <p class="text-sm text-slate-400">${total} analysts</p>
+      `;
+    }
+    if (cards[2]) {
+      cards[2].innerHTML = `
+        <p class="text-slate-400 text-sm">Rating Distribution</p>
+        <p class="text-sm mt-2"><span class="text-emerald-400">${buy} Buy</span> • <span class="text-slate-400">${hold} Hold</span> • <span class="text-red-400">${sell} Sell</span></p>
+      `;
+    }
+
+    // Update analyst actions
+    const actionsContainer = document.querySelector('#analysts-tab .card:last-child .space-y-3');
+    if (actionsContainer && data.upgradeDowngradeHistory?.history) {
+      const history = data.upgradeDowngradeHistory.history.slice(0, 5);
+      actionsContainer.innerHTML = history.map(action => {
+        const gradeColor = action.toGrade?.includes('Buy') || action.toGrade?.includes('Overweight')
+          ? 'bg-emerald-500/20 text-emerald-400'
+          : action.toGrade?.includes('Sell') || action.toGrade?.includes('Underweight')
+          ? 'bg-red-500/20 text-red-400'
+          : 'bg-amber-500/20 text-amber-400';
+        return `
+          <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800">
+            <div><p class="text-white font-medium">${action.firm}</p><p class="text-sm text-slate-400">${new Date(action.epochGradeDate * 1000).toLocaleDateString()}</p></div>
+            <div class="text-right"><span class="px-2 py-1 ${gradeColor} rounded text-xs">${action.toGrade}</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    showToast('Analyst data loaded', 'success');
+  } catch (error) {
+    console.error('Error loading analysts:', error);
+    showToast('Error loading analyst data', 'error');
+  }
+}
+
+// Load News Tab
+async function loadNews(symbol) {
+  try {
+    // Try to fetch news from Finnhub or Yahoo
+    const response = await authFetch(`/api/research/stock/${symbol}/news`);
+    const data = await response.json();
+
+    const newsContainer = document.querySelector('#news-tab .space-y-4');
+    if (!newsContainer) return;
+
+    if (!data || data.length === 0) {
+      // Try alternative: show link to Yahoo Finance news
+      newsContainer.innerHTML = `
+        <div class="card p-4">
+          <p class="text-slate-400 text-center py-4">
+            <a href="https://finance.yahoo.com/quote/${symbol}/news" target="_blank" class="text-sky-400 hover:underline">
+              View latest news on Yahoo Finance →
+            </a>
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    newsContainer.innerHTML = data.slice(0, 10).map(article => `
+      <div class="card p-4 hover:border-sky-500/50 cursor-pointer transition-colors" onclick="window.open('${article.url}', '_blank')">
+        <div class="flex gap-4">
+          ${article.image ? `<img src="${article.image}" class="w-24 h-16 rounded-lg object-cover flex-shrink-0" onerror="this.style.display='none'">` :
+            '<div class="w-24 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0"></div>'}
+          <div>
+            <p class="text-white font-medium line-clamp-2">${article.title}</p>
+            <p class="text-sm text-slate-400 mt-1">${article.source || 'News'} • ${formatTimeAgo(article.date)}</p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    showToast('News loaded', 'success');
+  } catch (error) {
+    console.error('Error loading news:', error);
+    // Fallback: show link to Yahoo Finance
+    const newsContainer = document.querySelector('#news-tab .space-y-4');
+    if (newsContainer) {
+      newsContainer.innerHTML = `
+        <div class="card p-4">
+          <p class="text-slate-400 text-center py-4">
+            <a href="https://finance.yahoo.com/quote/${symbol}/news" target="_blank" class="text-sky-400 hover:underline">
+              View latest news on Yahoo Finance →
+            </a>
+          </p>
+        </div>
+      `;
+    }
+  }
+}
+
+// Load Technical Signals
+async function loadTechnicals(symbol) {
+  try {
+    const response = await authFetch(`/api/research/technicals/${symbol}`);
+    const data = await response.json();
+
+    if (data.error) return;
+
+    const t = data.technicals || {};
+    const price = data.currentPrice || 0;
+
+    // Update RSI
+    document.getElementById('rsiValue').textContent = (t.rsi || 0).toFixed(1);
+    const rsiBadge = document.getElementById('rsiBadge');
+    if (t.rsi > 70) {
+      rsiBadge.textContent = 'OVERBOUGHT';
+      rsiBadge.className = 'signal-badge signal-bearish';
+    } else if (t.rsi < 30) {
+      rsiBadge.textContent = 'OVERSOLD';
+      rsiBadge.className = 'signal-badge signal-bullish';
+    } else {
+      rsiBadge.textContent = 'NEUTRAL';
+      rsiBadge.className = 'signal-badge signal-neutral';
+    }
+
+    // Update MACD
+    const macdValue = t.macd || 0;
+    document.getElementById('macdValue').textContent = (macdValue >= 0 ? '+' : '') + macdValue.toFixed(2);
+    const macdBadge = document.getElementById('macdBadge');
+    if (macdValue > 0) {
+      macdBadge.textContent = 'BULLISH';
+      macdBadge.className = 'signal-badge signal-bullish';
+    } else {
+      macdBadge.textContent = 'BEARISH';
+      macdBadge.className = 'signal-badge signal-bearish';
+    }
+
+    // Update SMAs
+    if (t.sma50) {
+      document.getElementById('sma50Value').textContent = '$' + t.sma50.toFixed(2);
+      const sma50Badge = document.getElementById('sma50Badge');
+      sma50Badge.textContent = price > t.sma50 ? 'ABOVE' : 'BELOW';
+      sma50Badge.className = price > t.sma50 ? 'signal-badge signal-bullish' : 'signal-badge signal-bearish';
+    }
+
+    if (t.sma200) {
+      document.getElementById('sma200Value').textContent = '$' + t.sma200.toFixed(2);
+      const sma200Badge = document.getElementById('sma200Badge');
+      sma200Badge.textContent = price > t.sma200 ? 'ABOVE' : 'BELOW';
+      sma200Badge.className = price > t.sma200 ? 'signal-badge signal-bullish' : 'signal-badge signal-bearish';
+    }
+
+    // Update Bollinger
+    if (t.bollingerBands) {
+      const bb = t.bollingerBands;
+      const bollingerBadge = document.getElementById('bollingerBadge');
+      if (price > bb.upper) {
+        bollingerBadge.textContent = 'OVERBOUGHT';
+        bollingerBadge.className = 'signal-badge signal-bearish';
+      } else if (price < bb.lower) {
+        bollingerBadge.textContent = 'OVERSOLD';
+        bollingerBadge.className = 'signal-badge signal-bullish';
+      } else {
+        bollingerBadge.textContent = 'NEUTRAL';
+        bollingerBadge.className = 'signal-badge signal-neutral';
+      }
+    }
+
+    // Update Overall Signal
+    let bullishCount = 0;
+    let bearishCount = 0;
+    if (t.rsi < 30 || t.rsi > 70) { t.rsi < 30 ? bullishCount++ : bearishCount++; }
+    if (t.macd) { t.macd > 0 ? bullishCount++ : bearishCount++; }
+    if (t.sma50 && price > t.sma50) bullishCount++; else bearishCount++;
+    if (t.sma200 && price > t.sma200) bullishCount++; else bearishCount++;
+
+    const overallSignal = document.getElementById('overallSignal');
+    if (bullishCount > bearishCount) {
+      overallSignal.textContent = 'BUY';
+      overallSignal.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400';
+    } else if (bearishCount > bullishCount) {
+      overallSignal.textContent = 'SELL';
+      overallSignal.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400';
+    } else {
+      overallSignal.textContent = 'HOLD';
+      overallSignal.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400';
+    }
+
+  } catch (error) {
+    console.error('Error loading technicals:', error);
+  }
+}
+
+// ==================== HELPER FUNCTIONS ====================
+
+function formatLargeNumber(value) {
+  if (!value) return 'N/A';
+  if (value >= 1e12) return '$' + (value / 1e12).toFixed(2) + 'T';
+  if (value >= 1e9) return '$' + (value / 1e9).toFixed(2) + 'B';
+  if (value >= 1e6) return '$' + (value / 1e6).toFixed(2) + 'M';
+  if (value >= 1e3) return '$' + (value / 1e3).toFixed(2) + 'K';
+  return '$' + value.toFixed(2);
+}
+
+function formatTimeAgo(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return diffMins + ' minutes ago';
+  if (diffHours < 24) return diffHours + ' hours ago';
+  if (diffDays < 7) return diffDays + ' days ago';
+  return date.toLocaleDateString();
+}
+
+function updateFinancialsChart(data) {
+  const ctx = document.getElementById('financialsChart');
+  if (!ctx) return;
+
+  // Get existing chart and destroy if exists
+  const existingChart = Chart.getChart(ctx);
+  if (existingChart) existingChart.destroy();
+
+  // Build chart with available data
+  const revenue = data.totalRevenue || 0;
+  const grossProfit = data.grossProfit || 0;
+  const operatingCashflow = data.operatingCashflow || 0;
+  const freeCashflow = data.freeCashflow || 0;
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Revenue', 'Gross Profit', 'Op. Cash Flow', 'Free Cash Flow'],
+      datasets: [{
+        label: 'Financial Metrics',
+        data: [revenue / 1e9, grossProfit / 1e9, operatingCashflow / 1e9, freeCashflow / 1e9],
+        backgroundColor: ['#3b82f6', '#22c55e', '#8b5cf6', '#06b6d4']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => '$' + ctx.raw.toFixed(1) + 'B'
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b', callback: v => '$' + v + 'B' } }
+      }
+    }
+  });
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+  initPriceChart();
+  initSegmentChart();
+
+  // Initialize financials chart if exists
+  const financialsCtx = document.getElementById('financialsChart');
+  if (financialsCtx) {
+    new Chart(financialsCtx, {
+      type: 'bar',
+      data: {
+        labels: ['2020', '2021', '2022', '2023', '2024'],
+        datasets: [
+          { label: 'Revenue ($B)', data: [274, 366, 394, 383, 385], backgroundColor: '#3b82f6' },
+          { label: 'Net Income ($B)', data: [57, 95, 100, 97, 97], backgroundColor: '#22c55e' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#64748b' } },
+          y: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b' } }
+        }
+      }
+    });
+  }
+});
+</script>
+<%- include('../partials/footer') %>

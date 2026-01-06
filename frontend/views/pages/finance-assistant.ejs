@@ -1,0 +1,698 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const userName = safeUser?.name || safeUser?.firstName || 'User';
+const userInitial = userName.charAt(0).toUpperCase();
+const token = typeof authToken !== 'undefined' ? authToken : '';
+const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+const selectedPortfolio = typeof selectedPortfolioId !== 'undefined' ? selectedPortfolioId : '';
+%>
+<%- include('../partials/header', { pageTitle: 'Finance Assistant' }) %>
+
+<link rel="stylesheet" href="/css/finance-assistant.css">
+
+<div class="assistant-layout">
+  <!-- Sidebar: Sessions -->
+  <aside class="assistant-sidebar">
+    <div class="sidebar-header">
+      <button class="new-chat-btn" onclick="createNewSession()">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        New Chat
+      </button>
+    </div>
+
+    <div class="sessions-list" id="sessionsList">
+      <!-- Sessions loaded dynamically -->
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar"><%= userInitial %></div>
+        <div class="user-details">
+          <span class="user-name"><%= userName %></span>
+          <span class="user-plan"><%= safeUser.plan || 'Free' %> Plan</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Chat Area -->
+  <main class="assistant-main">
+    <!-- Header -->
+    <header class="assistant-header">
+      <div class="header-left">
+        <button class="mobile-menu-btn" onclick="toggleSidebar()">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        <h1 class="assistant-title">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+          Finance Assistant
+        </h1>
+      </div>
+      <div class="header-right">
+        <select id="portfolioSelect" class="portfolio-select" onchange="switchPortfolio(this.value)">
+          <option value="">All Portfolios</option>
+          <% safePortfolios.forEach(p => { %>
+            <option value="<%= p.id %>" <%= selectedPortfolio === p.id ? 'selected' : '' %>>
+              <%= p.name %>
+            </option>
+          <% }); %>
+        </select>
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Ready</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Messages Container -->
+    <div class="messages-container" id="messagesContainer">
+      <!-- Welcome Screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">
+          <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <h2 class="welcome-title">WealthPilot Finance Assistant</h2>
+        <p class="welcome-subtitle">Ask me anything about your portfolio, markets, or investments</p>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <button class="quick-action" onclick="askQuestion('Analyze my portfolio performance')">
+            <span class="quick-action-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </span>
+            <span class="quick-action-text">Analyze Portfolio</span>
+          </button>
+          <button class="quick-action" onclick="askQuestion('What are the top market movers today?')">
+            <span class="quick-action-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+            </span>
+            <span class="quick-action-text">Market Movers</span>
+          </button>
+          <button class="quick-action" onclick="askQuestion('Review my sector allocation')">
+            <span class="quick-action-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+              </svg>
+            </span>
+            <span class="quick-action-text">Sector Analysis</span>
+          </button>
+          <button class="quick-action" onclick="askQuestion('Find tax-loss harvesting opportunities')">
+            <span class="quick-action-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </span>
+            <span class="quick-action-text">Tax Optimization</span>
+          </button>
+        </div>
+
+        <!-- Capabilities -->
+        <div class="capabilities">
+          <div class="capability">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <span>Real-time market data</span>
+          </div>
+          <div class="capability">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span>Document analysis</span>
+          </div>
+          <div class="capability">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Tax optimization</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div class="chat-messages" id="chatMessages"></div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <!-- File Drop Zone -->
+      <div class="dropzone" id="dropzone">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <span>Drop files here to analyze (PDF, CSV, Excel)</span>
+      </div>
+
+      <!-- Attachments Preview -->
+      <div class="attachments-preview" id="attachmentsPreview"></div>
+
+      <!-- Input Box -->
+      <div class="input-box">
+        <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+          </svg>
+        </button>
+        <input type="file" id="fileInput" hidden accept=".pdf,.csv,.xlsx,.xls,.txt,.json" onchange="handleFileSelect(event)">
+
+        <textarea
+          id="chatInput"
+          class="chat-input"
+          placeholder="Ask about your portfolio, markets, or upload a document..."
+          rows="1"
+          onkeydown="handleKeyDown(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send message">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="input-footer">
+        <span class="input-hint">Press Enter to send, Shift+Enter for new line</span>
+        <span class="powered-by">Powered by Claude AI</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Marked.js for markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+  // State
+  let currentSessionId = null;
+  let currentPortfolioId = '<%= selectedPortfolio %>';
+  let isStreaming = false;
+  let pendingAttachments = [];
+  const API_BASE = '/api/assistant';
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSessions();
+    setupDragDrop();
+    setupMarked();
+    checkStatus();
+  });
+
+  // Setup marked.js
+  function setupMarked() {
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      headerIds: false,
+      mangle: false
+    });
+  }
+
+  // Get auth token
+  function getToken() {
+    return localStorage.getItem('token') || '<%= token %>';
+  }
+
+  // Check assistant status
+  async function checkStatus() {
+    try {
+      const response = await fetch(`${API_BASE}/status`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const data = await response.json();
+
+      const indicator = document.getElementById('statusIndicator');
+      if (data.success && data.status.ready) {
+        indicator.classList.add('ready');
+        indicator.querySelector('.status-text').textContent = 'Ready';
+      } else {
+        indicator.classList.remove('ready');
+        indicator.querySelector('.status-text').textContent = 'Offline';
+      }
+    } catch (error) {
+      console.error('Status check failed:', error);
+    }
+  }
+
+  // Load sessions
+  async function loadSessions() {
+    try {
+      const response = await fetch(`${API_BASE}/sessions?limit=20`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const data = await response.json();
+
+      const list = document.getElementById('sessionsList');
+      if (data.success && data.sessions?.length) {
+        list.innerHTML = data.sessions.map(s => `
+          <div class="session-item ${currentSessionId === s.id ? 'active' : ''}"
+               onclick="loadSession('${s.id}')">
+            <div class="session-title">${escapeHtml(s.title)}</div>
+            <div class="session-meta">${formatDate(s.updatedAt)}</div>
+            <button class="session-delete" onclick="event.stopPropagation(); deleteSession('${s.id}')" title="Delete">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </div>
+        `).join('');
+      } else {
+        list.innerHTML = '<div class="no-sessions">No conversations yet</div>';
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+  }
+
+  // Load a specific session
+  async function loadSession(sessionId) {
+    try {
+      const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+      const data = await response.json();
+
+      if (data.success && data.session) {
+        currentSessionId = sessionId;
+
+        // Hide welcome screen
+        document.getElementById('welcomeScreen').style.display = 'none';
+
+        // Clear and populate messages
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.innerHTML = '';
+
+        data.session.messages.forEach(msg => {
+          addMessage(msg.role === 'assistant' ? 'ai' : 'user', msg.content, false, true);
+        });
+
+        // Update sidebar
+        loadSessions();
+
+        // Scroll to bottom
+        scrollToBottom();
+      }
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      showToast('Failed to load conversation', 'error');
+    }
+  }
+
+  // Create new session
+  function createNewSession() {
+    currentSessionId = null;
+    pendingAttachments = [];
+    document.getElementById('welcomeScreen').style.display = 'flex';
+    document.getElementById('chatMessages').innerHTML = '';
+    document.getElementById('attachmentsPreview').innerHTML = '';
+    document.getElementById('chatInput').value = '';
+    loadSessions();
+  }
+
+  // Delete session
+  async function deleteSession(sessionId) {
+    if (!confirm('Delete this conversation?')) return;
+
+    try {
+      await fetch(`${API_BASE}/sessions/${sessionId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getToken()}` }
+      });
+
+      if (currentSessionId === sessionId) {
+        createNewSession();
+      } else {
+        loadSessions();
+      }
+      showToast('Conversation deleted', 'success');
+    } catch (error) {
+      showToast('Failed to delete', 'error');
+    }
+  }
+
+  // Send message
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message || isStreaming) return;
+
+    // Hide welcome, show user message
+    document.getElementById('welcomeScreen').style.display = 'none';
+    addMessage('user', message);
+    input.value = '';
+    autoResize(input);
+
+    // Add typing indicator
+    const aiMsgId = addMessage('ai', '', true);
+    isStreaming = true;
+    updateSendButton(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({
+          message,
+          sessionId: currentSessionId,
+          portfolioId: currentPortfolioId,
+          attachments: pendingAttachments.map(a => a.id)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to connect to assistant');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === 'text') {
+                fullContent += parsed.content;
+                updateMessage(aiMsgId, fullContent);
+              } else if (parsed.type === 'tool_call') {
+                showToolIndicator(aiMsgId, parsed.tool);
+              } else if (parsed.type === 'done') {
+                currentSessionId = parsed.sessionId;
+                updateMessage(aiMsgId, fullContent, true);
+              } else if (parsed.type === 'error') {
+                updateMessage(aiMsgId, `Error: ${parsed.error}`, true);
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+
+      // Clear attachments after sending
+      pendingAttachments = [];
+      document.getElementById('attachmentsPreview').innerHTML = '';
+
+      // Refresh sessions
+      loadSessions();
+    } catch (error) {
+      console.error('Chat error:', error);
+      updateMessage(aiMsgId, 'Sorry, I encountered an error. Please try again.', true);
+    } finally {
+      isStreaming = false;
+      updateSendButton(false);
+    }
+  }
+
+  // Add message to chat
+  function addMessage(role, content, isTyping = false, renderMarkdown = false) {
+    const container = document.getElementById('chatMessages');
+    const id = 'msg-' + Date.now();
+
+    const avatar = role === 'ai'
+      ? `<div class="message-avatar ai">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+         </div>`
+      : `<div class="message-avatar user"><%= userInitial %></div>`;
+
+    let bubbleContent = content;
+    if (isTyping) {
+      bubbleContent = `<div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>`;
+    } else if (renderMarkdown && content) {
+      bubbleContent = marked.parse(content);
+    }
+
+    const html = `
+      <div class="message-wrapper">
+        <div class="message ${role}" id="${id}">
+          ${avatar}
+          <div class="message-content">
+            <div class="message-bubble">${bubbleContent}</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', html);
+    scrollToBottom();
+    return id;
+  }
+
+  // Update message content
+  function updateMessage(id, content, renderMarkdown = false) {
+    const msg = document.getElementById(id);
+    if (!msg) return;
+
+    const bubble = msg.querySelector('.message-bubble');
+    if (bubble) {
+      if (renderMarkdown && content) {
+        bubble.innerHTML = marked.parse(content);
+      } else if (content) {
+        bubble.textContent = content;
+      }
+    }
+    scrollToBottom();
+  }
+
+  // Show tool execution indicator
+  function showToolIndicator(msgId, toolName) {
+    const msg = document.getElementById(msgId);
+    if (!msg) return;
+
+    const bubble = msg.querySelector('.message-bubble');
+    const indicator = `<div class="tool-indicator">
+      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span>Using ${toolName}...</span>
+    </div>`;
+
+    if (bubble) {
+      bubble.insertAdjacentHTML('beforeend', indicator);
+    }
+  }
+
+  // Ask a quick question
+  function askQuestion(question) {
+    document.getElementById('chatInput').value = question;
+    sendMessage();
+  }
+
+  // Handle keyboard input
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // Auto-resize textarea
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+  }
+
+  // Setup drag and drop
+  function setupDragDrop() {
+    const container = document.querySelector('.assistant-main');
+    const dropzone = document.getElementById('dropzone');
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('active');
+    });
+
+    container.addEventListener('dragleave', (e) => {
+      if (!container.contains(e.relatedTarget)) {
+        dropzone.classList.remove('active');
+      }
+    });
+
+    container.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('active');
+
+      const files = Array.from(e.dataTransfer.files);
+      for (const file of files) {
+        await uploadFile(file);
+      }
+    });
+  }
+
+  // Handle file selection
+  async function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    for (const file of files) {
+      await uploadFile(file);
+    }
+    event.target.value = '';
+  }
+
+  // Upload file
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (currentSessionId) {
+      formData.append('sessionId', currentSessionId);
+    }
+
+    try {
+      showToast('Uploading ' + file.name + '...', 'info');
+
+      const response = await fetch(`${API_BASE}/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        pendingAttachments.push(result.attachment);
+        currentSessionId = result.sessionId;
+        showAttachmentPreview(result.attachment);
+        showToast('File uploaded and analyzed', 'success');
+      } else {
+        showToast('Upload failed: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showToast('Upload failed', 'error');
+    }
+  }
+
+  // Show attachment preview
+  function showAttachmentPreview(attachment) {
+    const container = document.getElementById('attachmentsPreview');
+    const html = `
+      <div class="attachment-item" data-id="${attachment.id}">
+        <div class="attachment-icon">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <span class="attachment-name">${escapeHtml(attachment.filename)}</span>
+        <button class="attachment-remove" onclick="removeAttachment('${attachment.id}')">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+  }
+
+  // Remove attachment
+  function removeAttachment(id) {
+    pendingAttachments = pendingAttachments.filter(a => a.id !== id);
+    const el = document.querySelector(`.attachment-item[data-id="${id}"]`);
+    if (el) el.remove();
+  }
+
+  // Switch portfolio
+  function switchPortfolio(portfolioId) {
+    currentPortfolioId = portfolioId;
+    showToast(portfolioId ? 'Portfolio context updated' : 'Using all portfolios', 'info');
+  }
+
+  // Toggle sidebar (mobile)
+  function toggleSidebar() {
+    document.querySelector('.assistant-sidebar').classList.toggle('open');
+  }
+
+  // Update send button state
+  function updateSendButton(disabled) {
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = disabled;
+    btn.classList.toggle('disabled', disabled);
+  }
+
+  // Scroll to bottom
+  function scrollToBottom() {
+    const container = document.getElementById('messagesContainer');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  // Format date
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now - date;
+
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+    if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+
+    return date.toLocaleDateString();
+  }
+
+  // Escape HTML
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m]);
+  }
+
+  // Show toast notification
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <span>${escapeHtml(message)}</span>
+      <button onclick="this.parentElement.remove()">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,321 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Notifications';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 mb-1">NOTIFICATIONS CENTER</h1>
+      <p class="text-slate-400 text-sm">Manage alerts and push notifications</p>
+    </div>
+    <button onclick="requestPermission()" class="bloomberg-btn bloomberg-btn-primary" id="permBtn">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      Enable Push Notifications
+    </button>
+  </div>
+</div>
+
+<!-- Notification Status -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400 uppercase tracking-wide">Status</p>
+        <p class="font-semibold text-emerald-400" id="notifStatus">Enabled</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-sky-500/20 flex items-center justify-center">
+        <span class="text-sky-400 font-bold">12</span>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400 uppercase tracking-wide">Active Alerts</p>
+        <p class="font-semibold text-white">Monitoring</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+        <span class="text-amber-400 font-bold">3</span>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400 uppercase tracking-wide">Triggered Today</p>
+        <p class="font-semibold text-white">Alerts sent</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm text-slate-400 uppercase tracking-wide">Devices</p>
+        <p class="font-semibold text-white">2 connected</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Notification Settings -->
+  <div class="lg:col-span-2 space-y-6">
+    <div class="bloomberg-card p-5">
+      <h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Notification Preferences</h3>
+      <div class="space-y-4">
+
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">📈</span>
+            <div>
+              <p class="font-medium text-white">Price Alerts</p>
+              <p class="text-sm text-slate-400">When stocks hit target prices</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">📊</span>
+            <div>
+              <p class="font-medium text-white">Portfolio Changes</p>
+              <p class="text-sm text-slate-400">Daily gains/losses over ±2%</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">💰</span>
+            <div>
+              <p class="font-medium text-white">Dividend Payments</p>
+              <p class="text-sm text-slate-400">When dividends are paid</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">📰</span>
+            <div>
+              <p class="font-medium text-white">Breaking News</p>
+              <p class="text-sm text-slate-400">Major news for your holdings</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">📅</span>
+            <div>
+              <p class="font-medium text-white">Earnings Reminders</p>
+              <p class="text-sm text-slate-400">Upcoming earnings dates</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/50 hover:border-amber-500/30 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">🤖</span>
+            <div>
+              <p class="font-medium text-white">AI Insights</p>
+              <p class="text-sm text-slate-400">Smart recommendations</p>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" checked class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quiet Hours -->
+    <div class="bloomberg-card p-5">
+      <h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Quiet Hours</h3>
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-slate-400">Mute notifications during set hours</p>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" checked class="sr-only peer">
+          <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+        </label>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-1 uppercase tracking-wide">Start</label>
+          <input type="time" value="22:00" class="form-input bg-slate-800 border-slate-700 text-white focus:border-amber-500 focus:ring-amber-500/20">
+        </div>
+        <div>
+          <label class="block text-sm text-slate-400 mb-1 uppercase tracking-wide">End</label>
+          <input type="time" value="07:00" class="form-input bg-slate-800 border-slate-700 text-white focus:border-amber-500 focus:ring-amber-500/20">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Notifications -->
+  <div class="space-y-6">
+    <div class="bloomberg-card p-5">
+      <h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Recent Notifications</h3>
+      <div class="space-y-3">
+
+        <!-- Success/Positive notification -->
+        <div class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/50 transition-colors">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">📈</span>
+            <div class="flex-1">
+              <p class="font-medium text-white">NVDA hit your target!</p>
+              <p class="text-sm text-slate-400">Price reached $495, up 8.2% today</p>
+              <p class="text-xs text-emerald-400 mt-1">2 hours ago</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info notification -->
+        <div class="p-3 rounded-lg bg-sky-500/10 border border-sky-500/30 hover:border-sky-500/50 transition-colors">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">💰</span>
+            <div class="flex-1">
+              <p class="font-medium text-white">Dividend received: MSFT</p>
+              <p class="text-sm text-slate-400">$51.00 deposited to your account</p>
+              <p class="text-xs text-sky-400 mt-1">5 hours ago</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning notification -->
+        <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:border-amber-500/50 transition-colors">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">📰</span>
+            <div class="flex-1">
+              <p class="font-medium text-white">Breaking: AAPL announces...</p>
+              <p class="text-sm text-slate-400">New AI features coming to iPhone</p>
+              <p class="text-xs text-amber-400 mt-1">Yesterday</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Purple/AI notification -->
+        <div class="p-3 rounded-lg bg-purple-500/10 border border-purple-500/30 hover:border-purple-500/50 transition-colors">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">🤖</span>
+            <div class="flex-1">
+              <p class="font-medium text-white">AI Insight</p>
+              <p class="text-sm text-slate-400">Consider rebalancing—tech allocation at 48%</p>
+              <p class="text-xs text-purple-400 mt-1">Yesterday</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error/Alert notification -->
+        <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/30 hover:border-red-500/50 transition-colors">
+          <div class="flex items-start gap-3">
+            <span class="text-xl">⚠️</span>
+            <div class="flex-1">
+              <p class="font-medium text-white">Portfolio down 2.3%</p>
+              <p class="text-sm text-slate-400">Market selloff affects your holdings</p>
+              <p class="text-xs text-red-400 mt-1">2 days ago</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="w-full mt-4 bloomberg-btn bloomberg-btn-ghost text-sm">View All Notifications</button>
+    </div>
+
+    <!-- Test Notification -->
+    <div class="bloomberg-card p-5">
+      <h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Test Notifications</h3>
+      <p class="text-slate-400 text-sm mb-4">Send a test notification to verify your setup</p>
+      <button onclick="sendTestNotification()" class="bloomberg-btn bloomberg-btn-primary w-full">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        Send Test Notification
+      </button>
+    </div>
+  </div>
+</div>
+</div></div></main>
+
+<script>
+function requestPermission() {
+  if ('Notification' in window) {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        document.getElementById('notifStatus').textContent = 'Enabled';
+        document.getElementById('notifStatus').classList.remove('text-red-400');
+        document.getElementById('notifStatus').classList.add('text-emerald-400');
+        showToast('Push notifications enabled!', 'success');
+      } else {
+        document.getElementById('notifStatus').textContent = 'Blocked';
+        document.getElementById('notifStatus').classList.remove('text-emerald-400');
+        document.getElementById('notifStatus').classList.add('text-red-400');
+        showToast('Notifications blocked by browser', 'error');
+      }
+    });
+  } else {
+    showToast('Notifications not supported', 'error');
+  }
+}
+
+function sendTestNotification() {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('WealthPilot Pro', {
+      body: '🚀 Test notification successful! Your alerts are working.',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png'
+    });
+    showToast('Test notification sent!', 'success');
+  } else if (Notification.permission !== 'denied') {
+    requestPermission();
+  } else {
+    showToast('Please enable notifications first', 'error');
+  }
+}
+
+// Check initial status
+if ('Notification' in window) {
+  if (Notification.permission === 'granted') {
+    document.getElementById('notifStatus').textContent = 'Enabled';
+    document.getElementById('permBtn').textContent = 'Notifications Enabled';
+    document.getElementById('permBtn').disabled = true;
+  } else if (Notification.permission === 'denied') {
+    document.getElementById('notifStatus').textContent = 'Blocked';
+    document.getElementById('notifStatus').classList.remove('text-emerald-400');
+    document.getElementById('notifStatus').classList.add('text-red-400');
+  }
+}
+</script>
+<%- include('../partials/footer') %>

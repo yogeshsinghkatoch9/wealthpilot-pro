@@ -1,0 +1,384 @@
+<%
+// Safe defaults for undefined variables
+const safeTransactions = transactions || [];
+const safePortfolios = portfolios || [];
+const safeStats = stats || {};
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  money: (val) => `$${Number(val).toFixed(2)}`,
+  compact: (val) => Number(val).toLocaleString()
+};
+%>
+
+<%- include('../partials/header', { pageTitle: 'Transactions' }) %>
+
+<main class="p-4 lg:p-6 min-h-screen">
+  <div class="max-w-7xl mx-auto space-y-4">
+
+    <!-- Hero Header with Glassmorphism -->
+    <div class="relative overflow-hidden glass-card p-5">
+      <!-- Background Gradient Orbs -->
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
+
+      <div class="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-bold text-white">Transactions</h1>
+              <span class="badge badge-live" id="liveIndicator">LIVE</span>
+            </div>
+            <p class="text-slate-400 text-sm mt-1">Trade history & portfolio activity</p>
+          </div>
+        </div>
+        <button onclick="openModal('txModal')" class="btn-gradient flex items-center gap-2 px-5 py-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Transaction
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Stats Grid - Tufte Style -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Transactions</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeStats.totalTransactions || safeTransactions.length %></span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">This Month</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeStats.thisMonthCount || 0 %></span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Buys</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeFmt.compact(safeStats.buyTotal || 0) %></span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Total Sells</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeFmt.compact(safeStats.sellTotal || 0) %></span>
+        </div>
+      </div>
+      <div class="tufte-stat-card">
+        <div class="stat-label">Dividends</div>
+        <div class="stat-value-row">
+          <span class="stat-value tabular-nums"><%= safeFmt.compact(safeStats.dividendTotal || 0) %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters - Glassmorphism -->
+    <div class="glass-card p-4">
+      <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+          </div>
+          <span class="text-slate-400 text-sm font-medium">Filter:</span>
+        </div>
+        <select id="portfolioFilter" class="form-input bg-slate-800/50 border border-white/10 text-white rounded-lg px-4 py-2 text-sm focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all w-48" onchange="filterTransactions()">
+          <option value="">All Portfolios</option>
+          <% safePortfolios.forEach(p => { %>
+          <option value="<%= p.id %>"><%= p.name %></option>
+          <% }) %>
+        </select>
+        <select id="typeFilter" class="form-input bg-slate-800/50 border border-white/10 text-white rounded-lg px-4 py-2 text-sm focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all w-40" onchange="filterTransactions()">
+          <option value="">All Types</option>
+          <option value="buy">Buy</option>
+          <option value="sell">Sell</option>
+          <option value="dividend">Dividend</option>
+          <option value="split">Split</option>
+        </select>
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="text"
+            id="symbolSearch"
+            class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-lg pl-10 pr-4 py-2 text-sm focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all placeholder-slate-500"
+            placeholder="Search symbol..."
+            onkeyup="filterTransactions()"
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Table - Glassmorphism -->
+    <div class="glass-card overflow-hidden">
+      <div class="flex items-center justify-between p-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+            <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <span class="text-white font-semibold">Transaction History</span>
+        </div>
+        <span class="text-xs text-slate-400 font-mono px-3 py-1 rounded-full bg-white/5 border border-white/10" id="txCount"><%= safeTransactions.length %> transactions</span>
+      </div>
+
+      <% if (safeTransactions.length === 0) { %>
+      <div class="p-12 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 flex items-center justify-center border border-white/10">
+          <svg class="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-white mb-2">No Transactions Yet</h3>
+        <p class="text-slate-400 mb-8 max-w-md mx-auto">Add your first transaction to start tracking your trading activity</p>
+        <button onclick="openModal('txModal')" class="btn-gradient flex items-center gap-2 px-5 py-2.5 mx-auto">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Transaction
+        </button>
+      </div>
+      <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="w-full" id="txTable">
+          <thead>
+            <tr class="text-left text-xs font-medium text-slate-400 uppercase tracking-wider border-b border-white/10">
+              <th class="px-4 py-3">Date</th>
+              <th class="px-4 py-3">Type</th>
+              <th class="px-4 py-3">Symbol</th>
+              <th class="px-4 py-3 text-right">Shares</th>
+              <th class="px-4 py-3 text-right">Price</th>
+              <th class="px-4 py-3 text-right">Total</th>
+              <th class="px-4 py-3">Portfolio</th>
+              <th class="px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            <% safeTransactions.forEach(tx => {
+              const total = (parseFloat(tx.shares) || 0) * (parseFloat(tx.price) || 0) || parseFloat(tx.total) || 0;
+            %>
+            <tr class="tx-row hover:bg-white/5 transition-colors" data-portfolio="<%= tx.portfolioId %>" data-type="<%= tx.type %>" data-symbol="<%= (tx.symbol || '').toLowerCase() %>">
+              <td class="px-4 py-3 font-mono text-slate-300">
+                <%= tx.date ? new Date(tx.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }) : '-' %>
+              </td>
+              <td class="px-4 py-3">
+                <% if (tx.type === 'buy') { %>
+                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                  BUY
+                </span>
+                <% } else if (tx.type === 'sell') { %>
+                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md bg-red-500/10 text-red-400 border border-red-500/20">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                  SELL
+                </span>
+                <% } else if (tx.type === 'dividend') { %>
+                <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  DIV
+                </span>
+                <% } else { %>
+                <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-md bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                  <%= (tx.type || 'N/A').toUpperCase() %>
+                </span>
+                <% } %>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-amber-500/20">
+                    <%= tx.symbol ? tx.symbol.slice(0,2).toUpperCase() : '??' %>
+                  </div>
+                  <span class="text-white font-semibold"><%= (tx.symbol || '-').toUpperCase() %></span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-right font-mono text-slate-300 tabular-nums">
+                <%= tx.shares ? parseFloat(tx.shares).toFixed(3) : '-' %>
+              </td>
+              <td class="px-4 py-3 text-right font-mono text-slate-300 tabular-nums">
+                <%= tx.price ? safeFmt.money(parseFloat(tx.price)) : '-' %>
+              </td>
+              <td class="px-4 py-3 text-right font-mono font-semibold tabular-nums">
+                <span class="<%= tx.type === 'sell' || tx.type === 'dividend' ? 'positive' : 'negative' %>">
+                  <%= tx.type === 'buy' ? '-' : '+' %><%= safeFmt.money(total) %>
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-1 text-xs rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <%= tx.portfolioName || 'Unknown' %>
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <button class="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-all">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="px-4 py-3 border-t border-white/10 flex justify-between items-center bg-gradient-to-r from-slate-800/50 to-slate-900/50">
+        <span class="text-slate-400 text-xs font-mono">
+          Showing <span id="txCountBottom" class="text-amber-400 font-semibold"><%= safeTransactions.length %></span> of <%= safeStats.totalTransactions || safeTransactions.length %> transactions
+        </span>
+      </div>
+      <% } %>
+    </div>
+
+  </div>
+</main>
+
+<!-- Transaction Modal - Glassmorphism -->
+<div id="txModal" class="modal">
+  <div class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div class="glass-card-elevated w-full max-w-md animate-fade-in">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-white">Add Transaction</h3>
+        </div>
+        <button onclick="closeModal('txModal')" class="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <form id="txForm" onsubmit="return handleAddTx(event)" class="p-6 space-y-5">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Type</label>
+            <select name="type" class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-xl px-4 py-3 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all" required>
+              <option value="buy">Buy</option>
+              <option value="sell">Sell</option>
+              <option value="dividend">Dividend</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Date</label>
+            <input type="date" name="date" class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-xl px-4 py-3 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Portfolio</label>
+          <select name="portfolio_id" class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-xl px-4 py-3 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all" required>
+            <% safePortfolios.forEach(p => { %>
+            <option value="<%= p.id %>"><%= p.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Symbol</label>
+          <input type="text" name="symbol" class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-xl px-4 py-3 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all uppercase font-mono text-lg placeholder-slate-500" placeholder="AAPL" required style="text-transform: uppercase;">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Shares</label>
+            <input type="number" name="shares" class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-xl px-4 py-3 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all font-mono placeholder-slate-500" placeholder="100" step="0.001">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">Price</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-mono">$</span>
+              <input type="number" name="price" class="form-input w-full bg-slate-800/50 border border-white/10 text-white rounded-xl pl-8 pr-4 py-3 focus:border-sky-500/50 focus:outline-none focus:ring-2 focus:ring-sky-500/20 backdrop-blur-sm transition-all font-mono placeholder-slate-500" placeholder="150.00" step="0.01">
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn-gradient w-full py-3 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Transaction
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterTransactions() {
+  const portfolio = document.getElementById('portfolioFilter').value;
+  const type = document.getElementById('typeFilter').value;
+  const symbol = document.getElementById('symbolSearch').value.toLowerCase();
+  const rows = document.querySelectorAll('.tx-row');
+  let visible = 0;
+
+  rows.forEach(row => {
+    const matchPortfolio = !portfolio || row.dataset.portfolio === portfolio;
+    const matchType = !type || row.dataset.type === type;
+    const matchSymbol = !symbol || (row.dataset.symbol && row.dataset.symbol.includes(symbol));
+
+    if (matchPortfolio && matchType && matchSymbol) {
+      row.style.display = '';
+      visible++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  const txCount = document.getElementById('txCount');
+  const txCountBottom = document.getElementById('txCountBottom');
+  if (txCount) txCount.textContent = visible + ' transactions';
+  if (txCountBottom) txCountBottom.textContent = visible;
+}
+
+async function handleAddTx(e) {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+
+  const shares = parseFloat(formData.get('shares')) || 0;
+  const price = parseFloat(formData.get('price')) || 0;
+  const amount = shares * price;
+
+  try {
+    const res = await fetch('/api/transactions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        portfolioId: formData.get('portfolio_id'),
+        symbol: formData.get('symbol').toUpperCase(),
+        type: formData.get('type'),
+        shares: shares,
+        price: price,
+        amount: amount,
+        fees: 0,
+        executedAt: formData.get('date') + 'T00:00:00.000Z',
+        notes: ''
+      })
+    });
+
+    if (res.ok) {
+      showToast('Transaction added successfully', 'success');
+      closeModal('txModal');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const error = await res.json();
+      console.error('Transaction error:', error);
+      showToast('Failed to add transaction', 'error');
+    }
+  } catch (err) {
+    console.error('Error adding transaction:', err);
+    showToast('Error adding transaction', 'error');
+  }
+  return false;
+}
+</script>
+
+<%- include('../partials/footer') %>

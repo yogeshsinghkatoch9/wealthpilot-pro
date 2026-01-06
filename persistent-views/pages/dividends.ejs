@@ -1,0 +1,574 @@
+<%
+// Safe defaults for undefined variables
+const safeData = data || {};
+const safeSummary = safeData.summary || {};
+const safeHoldings = safeData.holdings || [];
+const safeUpcoming = safeData.upcoming || [];
+const safeMonthlyIncome = safeData.monthlyIncome || [];
+const safeSectorIncome = safeData.sectorIncome || [];
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeFmt = typeof fmt !== 'undefined' ? fmt : {
+  compact: (n) => n.toLocaleString(),
+  money: (n) => '$' + n.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+};
+
+const annualIncome = safeSummary.annualIncome || 12450;
+const monthlyIncome = safeSummary.monthlyIncome || 1037.50;
+const portfolioYield = safeSummary.portfolioYield || 3.42;
+const yieldOnCost = safeSummary.yieldOnCost || 4.15;
+const dividendPayers = safeSummary.dividendPayers || 0;
+const totalHoldings = safeSummary.totalHoldings || 0;
+const avgGrowthRate = safeSummary.avgGrowthRate || 5;
+const dividendSafetyScore = safeSummary.dividendSafetyScore || 88;
+const growthStreak = safeSummary.growthStreak || 12;
+const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
+%>
+<%- include('../partials/header', { pageTitle: 'Dividends & Income' }) %>
+
+<style>
+  /* Stitch Theme Variables */
+  :root {
+    --stitch-primary: #4850e5;
+    --stitch-bg-dark: #111221;
+    --stitch-surface-dark: #1d1e2e;
+    --stitch-border-dark: #2e2f45;
+    --stitch-text-muted: #9e9fb7;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .material-symbols-outlined.filled {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  /* Stitch Card Style */
+  .stitch-card {
+    background: var(--stitch-surface-dark);
+    border: 1px solid var(--stitch-border-dark);
+    border-radius: 0.75rem;
+  }
+
+  /* Stitch Button Styles */
+  .stitch-btn-primary {
+    background: var(--stitch-primary);
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 10px 25px -5px rgba(72, 80, 229, 0.25);
+    transition: all 0.2s ease;
+  }
+
+  .stitch-btn-primary:hover {
+    background: rgba(72, 80, 229, 0.9);
+  }
+
+  .stitch-btn-secondary {
+    background: var(--stitch-surface-dark);
+    border: 1px solid var(--stitch-border-dark);
+    color: white;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .stitch-btn-secondary:hover {
+    background: var(--stitch-border-dark);
+  }
+
+  /* Filter Chips */
+  .stitch-chip {
+    background: var(--stitch-surface-dark);
+    border: 1px solid var(--stitch-border-dark);
+    color: white;
+    transition: all 0.2s ease;
+  }
+
+  .stitch-chip:hover {
+    background: var(--stitch-border-dark);
+  }
+
+  /* Chart Bar Animation */
+  .chart-bar {
+    transition: all 0.3s ease;
+  }
+
+  .chart-bar:hover .bar-fill {
+    opacity: 0.4;
+  }
+
+  /* Safety badge colors */
+  .safety-very-safe { color: #10b981; }
+  .safety-safe { color: #10b981; }
+  .safety-moderate { color: #f59e0b; }
+  .safety-risky { color: #ef4444; }
+
+  /* Payout ratio colors */
+  .payout-low { color: #10b981; }
+  .payout-medium { color: #f59e0b; }
+  .payout-high { color: #ef4444; }
+</style>
+
+<main class="flex-1 px-4 lg:px-8 py-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+  <!-- Header Section -->
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-col gap-2">
+      <h1 class="text-3xl md:text-4xl font-black tracking-tight text-white">Dividends & Income</h1>
+      <p class="text-[#9e9fb7] text-base font-normal max-w-2xl">
+        Track your passive income streams, analyze dividend safety, and project future earnings.
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button class="stitch-btn-secondary flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm">
+        <span class="material-symbols-outlined text-lg">tune</span>
+        <span>Customize</span>
+      </button>
+      <button class="stitch-btn-primary flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm">
+        <span class="material-symbols-outlined text-lg">download</span>
+        <span>Export Report</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters / Chips -->
+  <div class="flex flex-wrap gap-3 pb-2 border-b border-[#2e2f45]/50">
+    <button class="stitch-chip flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium">
+      Portfolio: <span class="text-[#4850e5] font-bold">Main Strategy</span>
+      <span class="material-symbols-outlined text-sm">expand_more</span>
+    </button>
+    <button class="stitch-chip flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium">
+      Timeframe: <span class="text-[#4850e5] font-bold">This Year</span>
+      <span class="material-symbols-outlined text-sm">expand_more</span>
+    </button>
+    <button class="stitch-chip flex items-center gap-2 h-8 px-3 rounded-full text-xs font-medium">
+      Asset Type: <span class="text-[#4850e5] font-bold">All Assets</span>
+      <span class="material-symbols-outlined text-sm">expand_more</span>
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <!-- Est. Annual Income -->
+    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <span class="material-symbols-outlined text-6xl text-[#4850e5]">account_balance_wallet</span>
+      </div>
+      <div class="flex flex-col gap-1 z-10">
+        <p class="text-[#9e9fb7] text-sm font-medium">Est. Annual Income</p>
+        <h3 class="text-white text-3xl font-bold tracking-tight font-mono"><%= safeFmt.money(annualIncome) %></h3>
+      </div>
+      <div class="flex items-center gap-2 z-10">
+        <span class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-bold">
+          <span class="material-symbols-outlined text-sm mr-1">trending_up</span> +5.2%
+        </span>
+        <span class="text-slate-400 text-xs">vs last year</span>
+      </div>
+    </div>
+
+    <!-- Portfolio Yield -->
+    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <span class="material-symbols-outlined text-6xl text-[#4850e5]">percent</span>
+      </div>
+      <div class="flex flex-col gap-1 z-10">
+        <p class="text-[#9e9fb7] text-sm font-medium">Portfolio Yield</p>
+        <h3 class="text-white text-3xl font-bold tracking-tight font-mono"><%= portfolioYield.toFixed(2) %>%</h3>
+      </div>
+      <div class="flex items-center gap-2 z-10">
+        <span class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-bold">
+          +0.1%
+        </span>
+        <span class="text-slate-400 text-xs">vs benchmark</span>
+      </div>
+    </div>
+
+    <!-- Yield on Cost -->
+    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <span class="material-symbols-outlined text-6xl text-[#4850e5]">trending_up</span>
+      </div>
+      <div class="flex flex-col gap-1 z-10">
+        <p class="text-[#9e9fb7] text-sm font-medium">Yield on Cost</p>
+        <h3 class="text-white text-3xl font-bold tracking-tight font-mono"><%= yieldOnCost.toFixed(2) %>%</h3>
+      </div>
+      <div class="flex items-center gap-2 z-10">
+        <span class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-bold">
+          +1.2%
+        </span>
+        <span class="text-slate-400 text-xs">growth</span>
+      </div>
+    </div>
+
+    <!-- Monthly Average -->
+    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+      <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+        <span class="material-symbols-outlined text-6xl text-[#4850e5]">calendar_today</span>
+      </div>
+      <div class="flex flex-col gap-1 z-10">
+        <p class="text-[#9e9fb7] text-sm font-medium">Monthly Average</p>
+        <h3 class="text-white text-3xl font-bold tracking-tight font-mono"><%= safeFmt.money(monthlyIncome) %></h3>
+      </div>
+      <div class="flex items-center gap-2 z-10">
+        <span class="flex items-center text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs font-bold">
+          +2.4%
+        </span>
+        <span class="text-slate-400 text-xs">increase</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <!-- Left Column: Projections & Table (2 cols wide on large) -->
+    <div class="xl:col-span-2 flex flex-col gap-6">
+      <!-- Income Projection Chart Area -->
+      <div class="stitch-card overflow-hidden flex flex-col">
+        <div class="p-5 border-b border-[#2e2f45] flex items-center justify-between">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#4850e5]">bar_chart</span>
+            Income Projection
+          </h2>
+          <div class="flex bg-[#111217] rounded-lg p-1">
+            <button class="px-3 py-1 rounded-md text-xs font-medium bg-[#1d1e2e] shadow text-white" id="btnMonthly">Monthly</button>
+            <button class="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-white" id="btnQuarterly">Quarterly</button>
+          </div>
+        </div>
+        <div class="p-6 min-h-[300px] flex items-end justify-between gap-2 relative">
+          <!-- Grid Lines -->
+          <div class="w-full h-full absolute top-0 left-0 p-6 flex flex-col justify-between pointer-events-none opacity-20">
+            <div class="w-full border-t border-dashed border-slate-400"></div>
+            <div class="w-full border-t border-dashed border-slate-400"></div>
+            <div class="w-full border-t border-dashed border-slate-400"></div>
+            <div class="w-full border-t border-dashed border-slate-400"></div>
+            <div class="w-full border-t border-slate-400"></div>
+          </div>
+
+          <!-- Chart Bars -->
+          <%
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const defaultHeights = [80, 100, 180, 90, 110, 200, 85, 105, 190, 95, 115, 210];
+          const defaultFills = [60, 70, 80, 65, 75, 85, 60, 72, 82, 68, 78, 88];
+          const quarterMonths = [2, 5, 8, 11]; // Mar, Jun, Sep, Dec (0-indexed)
+          %>
+          <% months.forEach((month, i) => {
+            const height = safeMonthlyIncome[i] ? Math.min(220, Math.max(60, safeMonthlyIncome[i].amount / 10)) : defaultHeights[i];
+            const fill = defaultFills[i];
+            const isQuarter = quarterMonths.includes(i);
+          %>
+          <div class="chart-bar flex flex-col items-center gap-2 flex-1 group cursor-pointer z-10">
+            <div class="w-full max-w-[40px] bg-[#4850e5]/20 bar-fill rounded-t-sm group-hover:bg-[#4850e5]/40 transition-all relative" style="height: <%= height %>px;">
+              <div class="absolute bottom-0 w-full bg-[#4850e5] rounded-t-sm" style="height: <%= fill %>%;"></div>
+            </div>
+            <span class="text-xs <%= isQuarter ? 'font-bold text-[#4850e5]' : 'text-slate-500' %>"><%= month %></span>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Dividend Tracking Table -->
+      <div class="stitch-card overflow-hidden flex flex-col">
+        <div class="p-5 border-b border-[#2e2f45] flex items-center justify-between">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#4850e5]">table_chart</span>
+            Dividend Tracking
+          </h2>
+          <button class="text-sm text-[#4850e5] font-semibold hover:text-[#4850e5]/80">View All</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-[#111217] text-slate-400 font-medium border-b border-[#2e2f45]">
+              <tr>
+                <th class="px-6 py-4">Holding</th>
+                <th class="px-6 py-4 text-right">Yield</th>
+                <th class="px-6 py-4 text-right">Annual Payout</th>
+                <th class="px-6 py-4 text-center">Frequency</th>
+                <th class="px-6 py-4 text-right">Payout Ratio</th>
+                <th class="px-6 py-4">Next Pay Date</th>
+                <th class="px-6 py-4 text-center">Safety</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#2e2f45]">
+              <% if (safeHoldings.length > 0) { %>
+                <% safeHoldings.forEach(holding => {
+                  const payoutRatio = holding.payoutRatio || 50;
+                  const payoutClass = payoutRatio < 40 ? 'payout-low' : (payoutRatio < 70 ? 'payout-medium' : 'payout-high');
+                  const safetyLevel = holding.safetyScore || 'safe';
+                  const safetyIcon = safetyLevel === 'risky' ? 'warning' : 'shield';
+                  const safetyColor = safetyLevel === 'risky' ? 'text-yellow-500' : 'text-emerald-500';
+                %>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs">
+                        <%= holding.symbol ? holding.symbol.slice(0, 2).toUpperCase() : '??' %>
+                      </div>
+                      <div>
+                        <p class="font-bold text-white"><%= holding.symbol || '' %></p>
+                        <p class="text-xs text-slate-500"><%= holding.name || holding.symbol || '' %></p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono"><%= (holding.yield || 0).toFixed(2) %>%</td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono"><%= safeFmt.money(holding.annualPayout || holding.annualIncome || 0) %></td>
+                  <td class="px-6 py-4 text-center">
+                    <span class="px-2 py-1 rounded bg-white/10 text-xs"><%= holding.frequency || 'Quarterly' %></span>
+                  </td>
+                  <td class="px-6 py-4 text-right font-medium font-mono <%= payoutClass %>"><%= payoutRatio.toFixed(1) %>%</td>
+                  <td class="px-6 py-4 text-slate-300"><%= holding.nextPayDate || 'TBD' %></td>
+                  <td class="px-6 py-4 text-center">
+                    <span class="material-symbols-outlined <%= safetyColor %> text-lg"><%= safetyIcon %></span>
+                  </td>
+                </tr>
+                <% }) %>
+              <% } else { %>
+                <!-- Default sample data when no holdings -->
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs">AP</div>
+                      <div>
+                        <p class="font-bold text-white">AAPL</p>
+                        <p class="text-xs text-slate-500">Apple Inc.</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">0.54%</td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">$0.96</td>
+                  <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded bg-white/10 text-xs">Quarterly</span></td>
+                  <td class="px-6 py-4 text-right text-emerald-500 font-medium font-mono">15.2%</td>
+                  <td class="px-6 py-4 text-slate-300">Nov 14, 2024</td>
+                  <td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-emerald-500 text-lg">shield</span></td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center text-white font-bold text-xs">KO</div>
+                      <div>
+                        <p class="font-bold text-white">KO</p>
+                        <p class="text-xs text-slate-500">Coca-Cola Co.</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">3.12%</td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">$1.84</td>
+                  <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded bg-white/10 text-xs">Quarterly</span></td>
+                  <td class="px-6 py-4 text-right text-yellow-500 font-medium font-mono">68.4%</td>
+                  <td class="px-6 py-4 text-slate-300">Dec 15, 2024</td>
+                  <td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-emerald-500 text-lg">shield</span></td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xs">O</div>
+                      <div>
+                        <p class="font-bold text-white">O</p>
+                        <p class="text-xs text-slate-500">Realty Income</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">5.45%</td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">$3.07</td>
+                  <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded bg-white/10 text-xs">Monthly</span></td>
+                  <td class="px-6 py-4 text-right text-emerald-500 font-medium font-mono">74.2%</td>
+                  <td class="px-6 py-4 text-slate-300">Nov 15, 2024</td>
+                  <td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-emerald-500 text-lg">shield</span></td>
+                </tr>
+                <tr class="hover:bg-white/5 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold text-xs">T</div>
+                      <div>
+                        <p class="font-bold text-white">T</p>
+                        <p class="text-xs text-slate-500">AT&T Inc.</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">7.20%</td>
+                  <td class="px-6 py-4 text-right text-slate-300 font-mono">$1.11</td>
+                  <td class="px-6 py-4 text-center"><span class="px-2 py-1 rounded bg-white/10 text-xs">Quarterly</span></td>
+                  <td class="px-6 py-4 text-right text-red-500 font-medium font-mono">45.0%</td>
+                  <td class="px-6 py-4 text-slate-300">Nov 01, 2024</td>
+                  <td class="px-6 py-4 text-center"><span class="material-symbols-outlined text-yellow-500 text-lg">warning</span></td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Analysis Widgets -->
+    <div class="flex flex-col gap-6">
+      <!-- Upcoming Payouts Calendar Widget -->
+      <div class="stitch-card flex flex-col">
+        <div class="p-5 border-b border-[#2e2f45] flex items-center justify-between">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#4850e5]">event_upcoming</span>
+            Upcoming Payouts
+          </h2>
+        </div>
+        <div class="p-4 flex flex-col gap-3">
+          <% if (safeUpcoming.length > 0) { %>
+            <% safeUpcoming.slice(0, 3).forEach(div => {
+              const payDate = new Date(div.payDate || div.exDate);
+              const monthName = payDate.toLocaleString('en-US', { month: 'short' });
+              const dayNum = payDate.getDate();
+            %>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[#111217] border border-transparent hover:border-[#4850e5]/50 transition-colors cursor-pointer group">
+              <div class="bg-[#1d1e2e] w-12 h-12 flex flex-col items-center justify-center rounded border border-[#2e2f45]">
+                <span class="text-[10px] uppercase text-slate-500 font-bold"><%= monthName %></span>
+                <span class="text-lg font-bold text-white"><%= dayNum %></span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-center">
+                  <p class="text-sm font-bold text-white"><%= div.name || div.symbol %></p>
+                  <span class="text-emerald-500 text-sm font-bold font-mono">+<%= safeFmt.money(div.amount || 0) %></span>
+                </div>
+                <p class="text-xs text-slate-500">Pay Date - <%= div.frequency || 'Quarterly' %> Dividend</p>
+              </div>
+            </div>
+            <% }) %>
+          <% } else { %>
+            <!-- Default sample upcoming payouts -->
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[#111217] border border-transparent hover:border-[#4850e5]/50 transition-colors cursor-pointer group">
+              <div class="bg-[#1d1e2e] w-12 h-12 flex flex-col items-center justify-center rounded border border-[#2e2f45]">
+                <span class="text-[10px] uppercase text-slate-500 font-bold">Nov</span>
+                <span class="text-lg font-bold text-white">14</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-center">
+                  <p class="text-sm font-bold text-white">Apple Inc.</p>
+                  <span class="text-emerald-500 text-sm font-bold font-mono">+$142.50</span>
+                </div>
+                <p class="text-xs text-slate-500">Pay Date - Q3 Dividend</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[#111217] border border-transparent hover:border-[#4850e5]/50 transition-colors cursor-pointer group">
+              <div class="bg-[#1d1e2e] w-12 h-12 flex flex-col items-center justify-center rounded border border-[#2e2f45]">
+                <span class="text-[10px] uppercase text-slate-500 font-bold">Nov</span>
+                <span class="text-lg font-bold text-white">15</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-center">
+                  <p class="text-sm font-bold text-white">Realty Income</p>
+                  <span class="text-emerald-500 text-sm font-bold font-mono">+$58.20</span>
+                </div>
+                <p class="text-xs text-slate-500">Pay Date - Monthly</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg bg-[#111217] border border-transparent hover:border-[#4850e5]/50 transition-colors cursor-pointer group">
+              <div class="bg-[#1d1e2e] w-12 h-12 flex flex-col items-center justify-center rounded border border-[#2e2f45]">
+                <span class="text-[10px] uppercase text-slate-500 font-bold">Dec</span>
+                <span class="text-lg font-bold text-white">01</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between items-center">
+                  <p class="text-sm font-bold text-white">Pfizer Inc.</p>
+                  <span class="text-emerald-500 text-sm font-bold font-mono">+$204.00</span>
+                </div>
+                <p class="text-xs text-slate-500">Ex-Div Date - Q4 Dividend</p>
+              </div>
+            </div>
+          <% } %>
+        </div>
+        <div class="px-4 pb-4">
+          <button class="w-full py-2 text-sm text-slate-400 hover:text-[#4850e5] transition-colors font-medium border-t border-[#2e2f45]/50 pt-3">
+            View Full Calendar
+          </button>
+        </div>
+      </div>
+
+      <!-- Growth & Safety Score Section -->
+      <div class="stitch-card p-5 flex flex-col gap-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-[#4850e5]">health_metrics</span>
+          Growth & Safety
+        </h2>
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-sm mb-1">
+            <span class="text-slate-400">Dividend Safety Score</span>
+            <span class="text-white font-bold font-mono"><%= dividendSafetyScore %>/100</span>
+          </div>
+          <div class="w-full bg-[#111217] rounded-full h-2">
+            <div class="bg-gradient-to-r from-emerald-500 to-green-400 h-2 rounded-full transition-all duration-500" style="width: <%= dividendSafetyScore %>%"></div>
+          </div>
+          <p class="text-xs <%= dividendSafetyScore >= 80 ? 'text-emerald-500' : (dividendSafetyScore >= 60 ? 'text-yellow-500' : 'text-red-500') %> mt-1">
+            <%= dividendSafetyScore >= 80 ? 'Very Safe' : (dividendSafetyScore >= 60 ? 'Moderately Safe' : 'At Risk') %>
+          </p>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mt-2">
+          <div class="p-3 bg-[#111217] rounded-lg">
+            <p class="text-xs text-slate-400 mb-1">Growth Streak</p>
+            <p class="text-xl font-bold text-white flex items-center gap-1 font-mono">
+              <%= growthStreak %> Yrs <span class="material-symbols-outlined text-amber-500 text-sm">workspace_premium</span>
+            </p>
+          </div>
+          <div class="p-3 bg-[#111217] rounded-lg">
+            <p class="text-xs text-slate-400 mb-1">Avg Payout Ratio</p>
+            <p class="text-xl font-bold text-white font-mono"><%= avgPayoutRatio.toFixed(1) %>%</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dividend Aristocrats / Screener Teaser -->
+      <div class="bg-gradient-to-br from-[#4850e5] to-indigo-700 rounded-xl p-5 text-white flex flex-col gap-3 relative overflow-hidden">
+        <div class="absolute -right-4 -top-4 opacity-20">
+          <span class="material-symbols-outlined text-[100px]">search</span>
+        </div>
+        <h3 class="font-bold text-lg z-10">Find Dividend Aristocrats</h3>
+        <p class="text-blue-100 text-sm z-10">Discover high-quality companies with 25+ years of consecutive dividend increases.</p>
+        <button class="mt-2 bg-white text-[#4850e5] text-sm font-bold py-2 px-4 rounded-lg shadow-lg w-fit z-10 hover:bg-blue-50 transition-colors">
+          Launch Screener
+        </button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// Refresh dividends function
+function refreshDividends() {
+  if (typeof showToast === 'function') {
+    showToast('Refreshing dividend data...', 'info');
+  }
+  setTimeout(() => location.reload(), 500);
+}
+
+// Toggle between Monthly and Quarterly view
+document.addEventListener('DOMContentLoaded', function() {
+  const btnMonthly = document.getElementById('btnMonthly');
+  const btnQuarterly = document.getElementById('btnQuarterly');
+
+  if (btnMonthly && btnQuarterly) {
+    btnMonthly.addEventListener('click', function() {
+      btnMonthly.classList.add('bg-[#1d1e2e]', 'shadow', 'text-white');
+      btnMonthly.classList.remove('text-slate-400');
+      btnQuarterly.classList.remove('bg-[#1d1e2e]', 'shadow', 'text-white');
+      btnQuarterly.classList.add('text-slate-400');
+      // Could toggle chart data here
+    });
+
+    btnQuarterly.addEventListener('click', function() {
+      btnQuarterly.classList.add('bg-[#1d1e2e]', 'shadow', 'text-white');
+      btnQuarterly.classList.remove('text-slate-400');
+      btnMonthly.classList.remove('bg-[#1d1e2e]', 'shadow', 'text-white');
+      btnMonthly.classList.add('text-slate-400');
+      // Could toggle chart data here
+    });
+  }
+});
+
+// Chart.js for Income Projection (if Chart.js is available)
+<% if (safeData && safeSummary && Object.keys(safeSummary).length > 0) { %>
+document.addEventListener('DOMContentLoaded', function() {
+  // Data from server
+  const monthlyData = <%- JSON.stringify(safeMonthlyIncome) %>;
+  const annualIncome = <%= annualIncome %>;
+  const growthRate = <%= avgGrowthRate / 100 %>;
+
+  // You can create additional Chart.js charts here if needed
+  // The visual bar chart is already rendered with CSS above
+});
+<% } %>
+</script>
+
+<%- include('../partials/footer') %>

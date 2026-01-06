@@ -1,0 +1,677 @@
+<%- include('../partials/header', { pageTitle: 'Add New Holding' }) %>
+<%
+  // Safe defaults for undefined variables
+  const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+  const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
+  const safeSelectedPortfolio = typeof selectedPortfolio !== 'undefined' ? selectedPortfolio : null;
+%>
+
+<style>
+  /* Stitch Dark Theme Overrides for Add Holding Page */
+  .stitch-surface {
+    background: #1c1d2e;
+    border: 1px solid #2d2f45;
+  }
+
+  .stitch-bg {
+    background: #111221;
+  }
+
+  .stitch-input {
+    background: #111221;
+    border: 1px solid #2d2f45;
+    color: #ffffff;
+    transition: all 0.2s ease;
+  }
+
+  .stitch-input:focus {
+    border-color: #4850e5;
+    outline: none;
+    box-shadow: 0 0 0 1px #4850e5;
+  }
+
+  .stitch-input::placeholder {
+    color: #9e9fb7;
+  }
+
+  .stitch-label {
+    color: #9e9fb7;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .stitch-select {
+    background: #111221;
+    border: 1px solid #2d2f45;
+    color: #ffffff;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239e9fb7'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.25rem;
+  }
+
+  .stitch-select:focus {
+    border-color: #4850e5;
+    outline: none;
+    box-shadow: 0 0 0 1px #4850e5;
+  }
+
+  .stitch-btn-primary {
+    background: #4850e5;
+    color: #ffffff;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 15px -3px rgba(72, 80, 229, 0.25);
+  }
+
+  .stitch-btn-primary:hover {
+    background: #3a42d1;
+  }
+
+  .stitch-btn-primary:active {
+    transform: scale(0.95);
+  }
+
+  .stitch-btn-secondary {
+    color: #9e9fb7;
+    transition: all 0.2s ease;
+  }
+
+  .stitch-btn-secondary:hover {
+    color: #ffffff;
+    background: #111221;
+  }
+
+  .stitch-card {
+    background: #1c1d2e;
+    border: 1px solid #2d2f45;
+    border-radius: 1rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  .stitch-info-card {
+    background: #1c1d2e;
+    border: 1px solid #2d2f45;
+    border-radius: 0.75rem;
+  }
+
+  .stitch-calculation-box {
+    background: rgba(72, 80, 229, 0.05);
+    border: 1px solid rgba(72, 80, 229, 0.1);
+    border-radius: 0.5rem;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  }
+
+  .material-symbols-outlined.fill {
+    font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  }
+
+  /* Custom date input styling for dark mode */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.6;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
+  /* Autocomplete dropdown */
+  .autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.5rem;
+    background: #1c1d2e;
+    border: 1px solid #2d2f45;
+    border-radius: 0.75rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    z-index: 50;
+    overflow: hidden;
+    display: none;
+  }
+
+  .autocomplete-dropdown.show {
+    display: block;
+  }
+
+  .autocomplete-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .autocomplete-item:hover {
+    background: rgba(72, 80, 229, 0.1);
+  }
+
+  .asset-type-badge {
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .asset-type-stock {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+  }
+
+  .asset-type-etf {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+  }
+
+  .asset-type-crypto {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+  }
+
+  .asset-type-reit {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c4b5fd;
+  }
+
+  .asset-type-mutual {
+    background: rgba(236, 72, 153, 0.2);
+    color: #f9a8d4;
+  }
+
+  /* Custom scrollbar for autocomplete */
+  .autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .autocomplete-dropdown::-webkit-scrollbar-track {
+    background: #111221;
+  }
+
+  .autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: #2d2f45;
+    border-radius: 3px;
+  }
+</style>
+
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden stitch-bg relative">
+  <!-- Top Navigation / Breadcrumbs -->
+  <header class="flex items-center justify-between border-b border-[#2d2f45] bg-[#111221]/80 backdrop-blur-md px-6 py-4 sticky top-14 z-10">
+    <div class="flex items-center gap-2 text-sm">
+      <a class="text-[#9e9fb7] hover:text-white transition-colors" href="/dashboard">Home</a>
+      <span class="text-[#9e9fb7]">/</span>
+      <a class="text-[#9e9fb7] hover:text-white transition-colors" href="/portfolios">Portfolios</a>
+      <span class="text-[#9e9fb7]">/</span>
+      <span class="font-medium text-white">Add New Holding</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <button class="flex items-center justify-center rounded-full p-2 text-[#9e9fb7] hover:bg-[#1c1d2e] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scrollable Content Area -->
+  <div class="flex-1 overflow-y-auto p-4 md:p-8 lg:px-12">
+    <div class="mx-auto max-w-4xl space-y-8 pb-10">
+      <!-- Page Header -->
+      <div class="flex flex-col gap-2">
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white">Add New Holding</h1>
+        <p class="text-lg text-[#9e9fb7] max-w-2xl">Enter the details below to add a new asset to your portfolio. Real-time market data will be fetched upon saving.</p>
+      </div>
+
+      <!-- Main Form Card -->
+      <div class="stitch-card">
+        <!-- Form Header -->
+        <div class="border-b border-[#2d2f45] px-6 py-5 md:px-8">
+          <h3 class="text-lg font-semibold text-white">Transaction Details</h3>
+        </div>
+
+        <!-- Form Body -->
+        <form id="addHoldingForm" class="p-6 md:p-8 space-y-8">
+          <!-- Row 1: Portfolio & Asset Search -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Portfolio Select -->
+            <div class="space-y-2">
+              <label class="stitch-label block">Select Portfolio</label>
+              <div class="relative">
+                <select id="portfolioSelect" name="portfolio_id" class="stitch-select block w-full rounded-xl px-4 py-3.5 pr-10 sm:text-sm" required>
+                  <% if (safePortfolios.length === 0) { %>
+                    <option value="" disabled selected>No portfolios available</option>
+                  <% } else { %>
+                    <option value="" disabled <%= !safeSelectedPortfolio ? 'selected' : '' %>>Select a portfolio</option>
+                    <% safePortfolios.forEach(p => { %>
+                      <option value="<%= p.id %>" <%= safeSelectedPortfolio && safeSelectedPortfolio.id === p.id ? 'selected' : '' %>><%= p.name %></option>
+                    <% }) %>
+                  <% } %>
+                </select>
+              </div>
+            </div>
+
+            <!-- Asset Search -->
+            <div class="space-y-2 relative" id="assetSearchContainer">
+              <label class="stitch-label block">Asset Symbol/Name</label>
+              <div class="relative rounded-xl shadow-sm">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span class="material-symbols-outlined text-[#9e9fb7] text-[20px]">search</span>
+                </div>
+                <input
+                  type="text"
+                  id="assetSearch"
+                  name="symbol"
+                  class="stitch-input block w-full rounded-xl pl-10 px-4 py-3.5 sm:text-sm"
+                  placeholder="e.g. AAPL, BTC, Vanguard 500"
+                  autocomplete="off"
+                  required
+                />
+                <!-- Autocomplete dropdown -->
+                <div id="autocompleteDropdown" class="autocomplete-dropdown max-h-64 overflow-y-auto">
+                  <div class="px-3 py-2 text-xs font-semibold text-[#9e9fb7] uppercase tracking-wider bg-[#111221]/50">Top Matches</div>
+                  <div id="autocompleteResults"></div>
+                  <div id="autocompleteLoading" class="hidden px-4 py-3 text-sm text-[#9e9fb7] text-center">
+                    <span class="material-symbols-outlined animate-spin text-[18px] mr-2">progress_activity</span>
+                    Searching...
+                  </div>
+                  <div id="autocompleteEmpty" class="hidden px-4 py-3 text-sm text-[#9e9fb7] text-center">
+                    No results found
+                  </div>
+                </div>
+              </div>
+              <input type="hidden" id="assetName" name="name" />
+              <input type="hidden" id="assetType" name="asset_type" />
+            </div>
+          </div>
+
+          <!-- Row 2: Quantity, Price, Date -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Quantity -->
+            <div class="space-y-2">
+              <label class="stitch-label block">Quantity</label>
+              <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                class="stitch-input block w-full rounded-xl px-4 py-3.5 sm:text-sm"
+                placeholder="0.00"
+                step="0.000001"
+                min="0"
+                required
+              />
+            </div>
+
+            <!-- Purchase Price -->
+            <div class="space-y-2">
+              <label class="stitch-label block">Purchase Price</label>
+              <div class="relative rounded-xl shadow-sm">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span class="text-[#9e9fb7] sm:text-sm font-medium">$</span>
+                </div>
+                <input
+                  type="number"
+                  id="purchasePrice"
+                  name="purchase_price"
+                  class="stitch-input block w-full rounded-xl pl-8 px-4 py-3.5 sm:text-sm"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Purchase Date -->
+            <div class="space-y-2">
+              <label class="stitch-label block">Purchase Date</label>
+              <div class="relative rounded-xl shadow-sm">
+                <input
+                  type="date"
+                  id="purchaseDate"
+                  name="purchase_date"
+                  class="stitch-input block w-full rounded-xl px-4 py-3.5 sm:text-sm [color-scheme:dark]"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Calculation Summary -->
+          <div class="stitch-calculation-box flex items-center gap-4 p-4">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#4850e5]/20 text-[#4850e5]">
+              <span class="material-symbols-outlined">calculate</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-medium text-[#9e9fb7] uppercase">Estimated Total Cost</span>
+              <span id="estimatedTotal" class="text-lg font-bold text-white tabular-nums font-mono">$0.00</span>
+            </div>
+          </div>
+
+          <!-- Row 3: Notes -->
+          <div class="space-y-2">
+            <label class="stitch-label block">Notes <span class="text-xs opacity-50 ml-1">(Optional)</span></label>
+            <textarea
+              id="notes"
+              name="notes"
+              class="stitch-input block w-full rounded-xl px-4 py-3 sm:text-sm resize-none"
+              placeholder="Add any relevant notes about this transaction (e.g. strategy reasoning)..."
+              rows="4"
+            ></textarea>
+          </div>
+
+          <!-- Action Footer -->
+          <div class="flex items-center justify-end gap-4 pt-4 border-t border-[#2d2f45]">
+            <button type="button" onclick="history.back()" class="stitch-btn-secondary px-6 py-3 rounded-xl text-sm font-semibold">
+              Cancel
+            </button>
+            <button type="submit" id="submitBtn" class="stitch-btn-primary flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold transition-all transform active:scale-95">
+              <span class="material-symbols-outlined text-[20px]">add</span>
+              Add Holding
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Helper Info / Context -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="stitch-info-card p-5 flex items-start gap-4">
+          <div class="mt-1 text-[#4850e5]">
+            <span class="material-symbols-outlined">info</span>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white mb-1">Tax Lot Information</h4>
+            <p class="text-sm text-[#9e9fb7] leading-relaxed">
+              By default, holdings are added as new tax lots. You can merge lots later in the holding detail view.
+            </p>
+          </div>
+        </div>
+        <div class="stitch-info-card p-5 flex items-start gap-4">
+          <div class="mt-1 text-[#4850e5]">
+            <span class="material-symbols-outlined">cloud_sync</span>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white mb-1">Auto-Sync Enabled</h4>
+            <p class="text-sm text-[#9e9fb7] leading-relaxed">
+              Prices and dividends will automatically update based on the symbol and purchase date provided.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Debounce function for search
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // Format currency
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  }
+
+  // Calculate and update estimated total
+  function updateEstimatedTotal() {
+    const quantity = parseFloat(document.getElementById('quantity').value) || 0;
+    const price = parseFloat(document.getElementById('purchasePrice').value) || 0;
+    const total = quantity * price;
+    document.getElementById('estimatedTotal').textContent = formatCurrency(total);
+  }
+
+  // Asset search autocomplete
+  const assetSearch = document.getElementById('assetSearch');
+  const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+  const autocompleteResults = document.getElementById('autocompleteResults');
+  const autocompleteLoading = document.getElementById('autocompleteLoading');
+  const autocompleteEmpty = document.getElementById('autocompleteEmpty');
+
+  // Sample assets for demo (in production, this would come from an API)
+  const sampleAssets = [
+    { symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK' },
+    { symbol: 'MSFT', name: 'Microsoft Corporation', type: 'STOCK' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.', type: 'STOCK' },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'STOCK' },
+    { symbol: 'NVDA', name: 'NVIDIA Corporation', type: 'STOCK' },
+    { symbol: 'TSLA', name: 'Tesla Inc.', type: 'STOCK' },
+    { symbol: 'META', name: 'Meta Platforms Inc.', type: 'STOCK' },
+    { symbol: 'BTC', name: 'Bitcoin', type: 'CRYPTO' },
+    { symbol: 'ETH', name: 'Ethereum', type: 'CRYPTO' },
+    { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', type: 'ETF' },
+    { symbol: 'QQQ', name: 'Invesco QQQ Trust', type: 'ETF' },
+    { symbol: 'VOO', name: 'Vanguard S&P 500 ETF', type: 'ETF' },
+    { symbol: 'VTI', name: 'Vanguard Total Stock Market ETF', type: 'ETF' },
+    { symbol: 'APLE', name: 'Apple Hospitality REIT Inc.', type: 'REIT' },
+    { symbol: 'O', name: 'Realty Income Corporation', type: 'REIT' },
+    { symbol: 'VFIAX', name: 'Vanguard 500 Index Fund', type: 'MUTUAL' },
+  ];
+
+  // Search assets
+  async function searchAssets(query) {
+    if (!query || query.length < 1) {
+      autocompleteDropdown.classList.remove('show');
+      return;
+    }
+
+    autocompleteDropdown.classList.add('show');
+    autocompleteResults.innerHTML = '';
+    autocompleteLoading.classList.remove('hidden');
+    autocompleteEmpty.classList.add('hidden');
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Filter assets (in production, this would be an API call)
+    const results = sampleAssets.filter(asset =>
+      asset.symbol.toLowerCase().includes(query.toLowerCase()) ||
+      asset.name.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 8);
+
+    autocompleteLoading.classList.add('hidden');
+
+    if (results.length === 0) {
+      autocompleteEmpty.classList.remove('hidden');
+      return;
+    }
+
+    results.forEach(asset => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'autocomplete-item w-full text-left';
+
+      const typeClass = {
+        'STOCK': 'asset-type-stock',
+        'ETF': 'asset-type-etf',
+        'CRYPTO': 'asset-type-crypto',
+        'REIT': 'asset-type-reit',
+        'MUTUAL': 'asset-type-mutual'
+      }[asset.type] || 'asset-type-stock';
+
+      item.innerHTML = `
+        <div>
+          <span class="block text-sm font-bold text-white">${asset.symbol}</span>
+          <span class="block text-xs text-[#9e9fb7]">${asset.name}</span>
+        </div>
+        <span class="asset-type-badge ${typeClass}">${asset.type}</span>
+      `;
+
+      item.addEventListener('click', () => selectAsset(asset));
+      autocompleteResults.appendChild(item);
+    });
+  }
+
+  // Select asset from autocomplete
+  function selectAsset(asset) {
+    assetSearch.value = asset.symbol;
+    document.getElementById('assetName').value = asset.name;
+    document.getElementById('assetType').value = asset.type;
+    autocompleteDropdown.classList.remove('show');
+
+    // Fetch current price (in production, this would be an API call)
+    // For demo, we'll set a placeholder price
+    // document.getElementById('purchasePrice').value = '';
+  }
+
+  // Debounced search
+  const debouncedSearch = debounce(searchAssets, 250);
+
+  // Event listeners
+  assetSearch.addEventListener('input', (e) => {
+    debouncedSearch(e.target.value);
+  });
+
+  assetSearch.addEventListener('focus', () => {
+    if (assetSearch.value.length >= 1) {
+      debouncedSearch(assetSearch.value);
+    }
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('assetSearchContainer').contains(e.target)) {
+      autocompleteDropdown.classList.remove('show');
+    }
+  });
+
+  // Update total on quantity/price change
+  document.getElementById('quantity').addEventListener('input', updateEstimatedTotal);
+  document.getElementById('purchasePrice').addEventListener('input', updateEstimatedTotal);
+
+  // Set default date to today
+  document.getElementById('purchaseDate').valueAsDate = new Date();
+
+  // Form submission
+  document.getElementById('addHoldingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('submitBtn');
+    const originalContent = submitBtn.innerHTML;
+
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `
+      <span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+      Adding...
+    `;
+
+    try {
+      const formData = new FormData(e.target);
+      const data = {
+        portfolio_id: formData.get('portfolio_id'),
+        symbol: formData.get('symbol'),
+        name: formData.get('name') || formData.get('symbol'),
+        asset_type: formData.get('asset_type') || 'stock',
+        quantity: parseFloat(formData.get('quantity')),
+        purchase_price: parseFloat(formData.get('purchase_price')),
+        purchase_date: formData.get('purchase_date'),
+        notes: formData.get('notes')
+      };
+
+      // Get auth token
+      const token = localStorage.getItem('wealthpilot_token');
+
+      const response = await fetch('/api/holdings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Show success toast if available
+        if (typeof showToast === 'function') {
+          showToast('Holding added successfully!', 'success');
+        }
+
+        // Redirect to portfolio or holdings page
+        const portfolioId = formData.get('portfolio_id');
+        if (portfolioId) {
+          window.location.href = `/portfolios?id=${portfolioId}`;
+        } else {
+          window.location.href = '/holdings';
+        }
+      } else {
+        throw new Error(result.error || 'Failed to add holding');
+      }
+    } catch (error) {
+      console.error('Error adding holding:', error);
+
+      // Show error toast if available
+      if (typeof showToast === 'function') {
+        showToast(error.message || 'Failed to add holding', 'error');
+      } else {
+        alert(error.message || 'Failed to add holding. Please try again.');
+      }
+
+      // Re-enable button
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalContent;
+    }
+  });
+
+  // Keyboard navigation for autocomplete
+  assetSearch.addEventListener('keydown', (e) => {
+    const items = autocompleteResults.querySelectorAll('.autocomplete-item');
+    const activeItem = autocompleteResults.querySelector('.autocomplete-item.bg-\\[\\#4850e5\\]\\/10');
+    let currentIndex = -1;
+
+    items.forEach((item, index) => {
+      if (item === activeItem) currentIndex = index;
+    });
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+      items.forEach((item, index) => {
+        item.classList.toggle('bg-[#4850e5]/10', index === nextIndex);
+      });
+      items[nextIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+      items.forEach((item, index) => {
+        item.classList.toggle('bg-[#4850e5]/10', index === prevIndex);
+      });
+      items[prevIndex]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && activeItem) {
+      e.preventDefault();
+      activeItem.click();
+    } else if (e.key === 'Escape') {
+      autocompleteDropdown.classList.remove('show');
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,254 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const si = shortInterest || {};
+
+// Helper functions
+function formatShares(v) {
+  if (!v) return 'N/A';
+  if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toString();
+}
+function formatPct(v) { return (v || 0).toFixed(2) + '%'; }
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function getShortColor(pct) {
+  if (pct > 30) return 'red';
+  if (pct > 15) return 'amber';
+  if (pct > 5) return 'yellow';
+  return 'emerald';
+}
+function getSqueezeScore(si, dtc, ctb) {
+  let score = 0;
+  if (si > 30) score += 40;
+  else if (si > 20) score += 30;
+  else if (si > 10) score += 20;
+
+  if (dtc < 3) score += 30;
+  else if (dtc < 5) score += 20;
+
+  if (ctb > 100) score += 30;
+  else if (ctb > 50) score += 20;
+
+  return Math.min(score, 100);
+}
+
+const shortPct = si.shortPercentOfFloat || 0;
+const dtc = si.daysToCover || 0;
+const ctb = si.costToBorrow || 0;
+const squeezeScore = getSqueezeScore(shortPct, dtc, ctb);
+const shortColor = getShortColor(shortPct);
+%>
+<%- include('../partials/header', { pageTitle: 'Short Interest' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white">Short Interest Analysis</h1>
+    <p class="text-slate-400">Monitor short interest and potential squeezes</p>
+  </div>
+  <form method="GET" action="/short-interest" class="flex gap-2">
+    <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-24 font-mono uppercase">
+    <button type="submit" class="btn-primary">Analyze</button>
+  </form>
+</div>
+
+<% if (!shortInterest) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No short interest data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol.</p>
+</div>
+<% } else { %>
+
+<!-- Stock Header -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-red-900/20 to-orange-900/20 border-l-4 border-<%= shortColor %>-400">
+  <div class="flex items-center gap-4 mb-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-<%= shortColor %>-500 to-<%= shortColor %>-600 flex items-center justify-center text-white font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= symbol %> Short Interest</h2>
+      <p class="text-slate-400">Current Price: <span class="font-mono"><%= formatPrice(si.currentPrice) %></span></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Squeeze Score</p>
+      <p class="text-3xl font-bold font-mono text-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-400"><%= squeezeScore %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Short Interest Stats -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+  <div class="bloomberg-card p-4 text-center">
+    <p class="text-sm text-slate-400">Short Interest</p>
+    <p class="text-2xl font-bold text-<%= shortColor %>-400 font-mono"><%= formatPct(shortPct) %></p>
+    <p class="text-xs text-slate-500">of float</p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <p class="text-sm text-slate-400">Shares Short</p>
+    <p class="text-2xl font-bold text-white font-mono"><%= formatShares(si.sharesShort) %></p>
+    <p class="text-xs text-slate-500">shares</p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <p class="text-sm text-slate-400">Days to Cover</p>
+    <p class="text-2xl font-bold text-<%= dtc < 3 ? 'red' : dtc < 5 ? 'amber' : 'emerald' %>-400 font-mono"><%= dtc.toFixed(1) %></p>
+    <p class="text-xs text-slate-500">days</p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <p class="text-sm text-slate-400">Cost to Borrow</p>
+    <p class="text-2xl font-bold text-<%= ctb > 50 ? 'red' : ctb > 20 ? 'amber' : 'emerald' %>-400 font-mono"><%= formatPct(ctb) %></p>
+    <p class="text-xs text-slate-500">annualized</p>
+  </div>
+  <div class="bloomberg-card p-4 text-center">
+    <p class="text-sm text-slate-400">SI Change</p>
+    <p class="text-2xl font-bold text-<%= (si.shortChange || 0) > 0 ? 'red' : 'emerald' %>-400 font-mono">
+      <%= (si.shortChange || 0) >= 0 ? '+' : '' %><%= formatPct(si.shortChange) %>
+    </p>
+    <p class="text-xs text-slate-500">vs prior</p>
+  </div>
+</div>
+
+<!-- Analysis -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4 font-mono">SHORT INTEREST BREAKDOWN</h3>
+    <div class="space-y-4">
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Short % of Float</span>
+          <span class="text-<%= shortColor %>-400 font-mono font-bold"><%= formatPct(shortPct) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-<%= shortColor %>-400 rounded-full" style="width: <%= Math.min(shortPct, 100) %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-slate-400">Short % of Outstanding</span>
+          <span class="text-sky-400 font-mono font-bold"><%= formatPct(si.shortPercentOfOutstanding) %></span>
+        </div>
+        <div class="h-3 bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-3 bg-sky-400 rounded-full" style="width: <%= Math.min(si.shortPercentOfOutstanding || 0, 100) %>%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 space-y-3">
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Shares Short</span>
+        <span class="font-bold font-mono text-white"><%= formatShares(si.sharesShort) %></span>
+      </div>
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Float Shares</span>
+        <span class="font-bold font-mono text-white"><%= formatShares(si.floatShares) %></span>
+      </div>
+      <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
+        <span class="text-slate-400">Avg Daily Volume</span>
+        <span class="font-bold font-mono text-white"><%= formatShares(si.avgVolume) %></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4 font-mono">SQUEEZE ANALYSIS</h3>
+
+    <div class="p-4 rounded-lg border-2 border-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-400 bg-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-500/10 mb-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-slate-400">Squeeze Potential</p>
+          <p class="text-2xl font-bold text-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-400">
+            <%= squeezeScore > 70 ? 'HIGH RISK' : squeezeScore > 40 ? 'MODERATE' : 'LOW' %>
+          </p>
+        </div>
+        <p class="text-4xl font-bold font-mono text-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-400"><%= squeezeScore %></p>
+      </div>
+    </div>
+
+    <div class="space-y-3 text-sm">
+      <div class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-full bg-<%= shortPct > 20 ? 'red' : shortPct > 10 ? 'amber' : 'emerald' %>-400"></span>
+        <span class="text-slate-400">Short Interest:</span>
+        <span class="font-bold"><%= shortPct > 20 ? 'Very High' : shortPct > 10 ? 'Elevated' : 'Normal' %></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-full bg-<%= dtc < 3 ? 'red' : dtc < 5 ? 'amber' : 'emerald' %>-400"></span>
+        <span class="text-slate-400">Days to Cover:</span>
+        <span class="font-bold"><%= dtc < 3 ? 'Very Short (squeeze risk)' : dtc < 5 ? 'Short' : 'Normal' %></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-4 h-4 rounded-full bg-<%= ctb > 50 ? 'red' : ctb > 20 ? 'amber' : 'emerald' %>-400"></span>
+        <span class="text-slate-400">Cost to Borrow:</span>
+        <span class="font-bold"><%= ctb > 50 ? 'Very High (hard to borrow)' : ctb > 20 ? 'Elevated' : 'Normal' %></span>
+      </div>
+    </div>
+
+    <p class="text-sm text-slate-400 mt-4">
+      <% if (squeezeScore > 70) { %>
+        <strong class="text-red-400">Warning:</strong> This stock shows characteristics of a potential short squeeze. High short interest combined with low days to cover and high borrow costs create conditions for rapid price movements.
+      <% } else if (squeezeScore > 40) { %>
+        <strong class="text-amber-400">Note:</strong> Moderate squeeze potential. Monitor for changes in short interest and borrow costs.
+      <% } else { %>
+        <strong class="text-emerald-400">Normal:</strong> Short interest metrics are within typical ranges. Low squeeze risk.
+      <% } %>
+    </p>
+  </div>
+</div>
+
+<!-- Historical Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-white mb-4">Short Interest vs Price</h3>
+  <div class="h-64"><canvas id="shortChart"></canvas></div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (shortInterest) { %>
+// Generate sample historical data (in real implementation, this would come from API)
+const labels = ['6 months ago', '5 months ago', '4 months ago', '3 months ago', '2 months ago', '1 month ago', 'Current'];
+const shortData = [
+  <%= shortPct * 0.7 %>,
+  <%= shortPct * 0.75 %>,
+  <%= shortPct * 0.85 %>,
+  <%= shortPct * 0.9 %>,
+  <%= shortPct * 0.95 %>,
+  <%= shortPct * 0.98 %>,
+  <%= shortPct %>
+];
+
+new Chart(document.getElementById('shortChart'), {
+  type: 'line',
+  data: {
+    labels: labels,
+    datasets: [{
+      label: 'Short Interest %',
+      data: shortData,
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      fill: true,
+      tension: 0.3,
+      yAxisID: 'y'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+    },
+    scales: {
+      y: {
+        type: 'linear',
+        position: 'left',
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#94a3b8',
+          callback: function(value) { return value.toFixed(1) + '%'; }
+        }
+      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,375 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeData = data || {};
+const overview = safeData.overview || {};
+const indicators = safeData.indicators || {};
+const signals = safeData.signals || [];
+const symbol = safeData.symbol || 'AAPL';
+const companyName = safeData.companyName || 'Apple Inc.';
+const price = safeData.price || 175.43;
+const change = safeData.change || 2.15;
+const changePercent = safeData.changePercent || 1.2;
+const isPositive = change >= 0;
+
+// Momentum screener data
+const screenerItems = safeData.screenerItems || [
+  { symbol: 'NVDA', signal: 'Bullish Div.', change: 3.2 },
+  { symbol: 'TSLA', signal: 'RSI Oversold', change: 1.8 },
+  { symbol: 'AMD', signal: 'Breakout', change: 4.1 },
+  { symbol: 'GOOGL', signal: 'MACD Cross', change: -0.5 }
+];
+
+// Indicator values
+const rsiValue = indicators.rsi || 65.4;
+const macdSignal = indicators.macdSignal || 'Bullish';
+const stochK = indicators.stochK || 82.1;
+const stochD = indicators.stochD || 78.5;
+const adxValue = indicators.adx || 42;
+const adxStrength = adxValue >= 25 ? 'Strong' : 'Weak';
+
+// Market status
+const marketOpen = safeData.marketOpen !== false;
+const selectedTimeframe = safeData.timeframe || '1h';
+const timeframes = ['1m', '5m', '15m', '1h', '4h', '1D', '1W'];
+%>
+<%- include('../partials/header', { pageTitle: 'Technical Analysis' }) %>
+
+<style>
+  /* Custom styles for Technical Analysis page */
+  .chart-grid {
+    background-image: linear-gradient(to right, #292a38 1px, transparent 1px),
+                      linear-gradient(to bottom, #292a38 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+</style>
+
+<main class="flex-1 flex flex-col min-w-0 bg-background-dark overflow-y-auto">
+  <!-- Top Toolbar / Header -->
+  <header class="border-b border-[#292a38] bg-background-dark sticky top-0 z-20">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:px-6 md:py-3">
+      <div class="flex flex-col gap-1">
+        <h2 class="text-white text-xl font-bold leading-tight">Technical Analysis</h2>
+        <p class="text-text-secondary text-sm">Advanced charting for <%= symbol %></p>
+      </div>
+      <!-- Search & Actions -->
+      <div class="flex w-full md:w-auto items-center gap-3 flex-wrap md:flex-nowrap">
+        <!-- Search Bar -->
+        <label class="relative flex items-center h-10 w-full md:w-64 rounded-lg bg-[#292a38] focus-within:ring-1 focus-within:ring-primary">
+          <span class="material-symbols-outlined absolute left-3 text-text-secondary text-[20px]">search</span>
+          <input
+            id="symbolSearch"
+            class="w-full bg-transparent border-none text-white text-sm pl-10 pr-4 placeholder:text-text-secondary focus:ring-0 focus:outline-none"
+            placeholder="Search asset (e.g. AAPL)..."
+            value="<%= symbol %>"
+          />
+        </label>
+        <button class="flex items-center justify-center h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-medium gap-2 transition-colors">
+          <span class="material-symbols-outlined text-[18px]">compare_arrows</span>
+          <span>Compare</span>
+        </button>
+        <button class="flex items-center justify-center size-10 rounded-lg bg-[#292a38] hover:bg-[#343546] text-white transition-colors">
+          <span class="material-symbols-outlined text-[20px]">settings</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 p-4 md:p-6 flex flex-col gap-4 overflow-y-auto">
+    <!-- Chart Controls Row -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-card-dark p-2 rounded-lg border border-[#292a38]">
+      <!-- Timeframes -->
+      <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+        <% timeframes.forEach(tf => { %>
+          <button
+            class="h-8 px-3 rounded text-xs font-medium transition-colors <%= tf === selectedTimeframe ? 'bg-[#292a38] text-white font-bold shadow-sm' : 'text-text-secondary hover:text-white hover:bg-[#292a38]' %>"
+            data-timeframe="<%= tf %>"
+            onclick="setTimeframe('<%= tf %>')"
+          >
+            <%= tf %>
+          </button>
+        <% }); %>
+        <div class="w-[1px] h-5 bg-[#292a38] mx-1"></div>
+        <button class="flex items-center gap-1 h-8 px-2 rounded text-text-secondary text-xs font-medium hover:text-white hover:bg-[#292a38]" title="Candlestick Chart">
+          <span class="material-symbols-outlined text-[16px]">candlestick_chart</span>
+        </button>
+        <button class="flex items-center gap-1 h-8 px-2 rounded text-text-secondary text-xs font-medium hover:text-white hover:bg-[#292a38]" title="Line Chart">
+          <span class="material-symbols-outlined text-[16px]">show_chart</span>
+        </button>
+      </div>
+      <!-- Tools -->
+      <div class="flex items-center gap-2">
+        <div class="flex items-center px-3 py-1.5 rounded bg-[#292a38] gap-2 cursor-pointer border border-transparent hover:border-primary/50 transition-colors">
+          <span class="size-2 rounded-full <%= marketOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500' %>"></span>
+          <span class="text-white text-xs font-medium"><%= marketOpen ? 'Market Open' : 'Market Closed' %></span>
+        </div>
+        <button class="flex items-center gap-1.5 h-8 px-3 rounded bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors" onclick="toggleIndicatorsPanel()">
+          <span class="material-symbols-outlined text-[16px]">add</span>
+          Indicators
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Chart Area -->
+    <section class="flex flex-col lg:flex-row gap-4 h-[500px] lg:h-[600px] shrink-0">
+      <!-- Main Chart -->
+      <div class="flex-1 bg-card-dark rounded-xl border border-[#292a38] relative flex flex-col shadow-lg overflow-hidden">
+        <div class="absolute top-4 left-4 z-10 flex flex-col">
+          <h3 class="text-white text-lg font-bold tracking-tight">
+            <%= symbol %>
+            <span class="text-text-secondary font-normal text-sm"><%= companyName %></span>
+          </h3>
+          <div class="flex items-baseline gap-2 mt-1">
+            <span class="text-3xl font-bold text-white font-mono"><%= price.toFixed(2) %></span>
+            <span class="<%= isPositive ? 'text-green-500' : 'text-red-500' %> font-medium text-sm flex items-center">
+              <span class="material-symbols-outlined text-[16px]"><%= isPositive ? 'arrow_drop_up' : 'arrow_drop_down' %></span>
+              <%= isPositive ? '+' : '' %><%= change.toFixed(2) %> (<%= changePercent.toFixed(1) %>%)
+            </span>
+          </div>
+        </div>
+
+        <!-- Chart Visualization (Abstracted with CSS) -->
+        <div class="flex-1 relative w-full h-full chart-grid">
+          <!-- Simulated Chart Content: Candles -->
+          <div class="absolute bottom-[20%] left-[10%] w-[10px] h-[60px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[28%] left-[15%] w-[10px] h-[40px] bg-red-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[25%] left-[20%] w-[10px] h-[90px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[38%] left-[25%] w-[10px] h-[30px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[40%] left-[30%] w-[10px] h-[50px] bg-red-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[35%] left-[35%] w-[10px] h-[80px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[48%] left-[40%] w-[10px] h-[40px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[52%] left-[45%] w-[10px] h-[20px] bg-red-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[50%] left-[50%] w-[10px] h-[100px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[65%] left-[55%] w-[10px] h-[50px] bg-green-500 rounded-sm opacity-80"></div>
+          <div class="absolute bottom-[70%] left-[60%] w-[10px] h-[30px] bg-red-500 rounded-sm opacity-80"></div>
+
+          <!-- Trend Line -->
+          <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+            <path d="M 50 350 Q 200 300 350 200 T 600 150" fill="none" stroke="#4850e5" stroke-width="2"/>
+            <!-- Moving Average -->
+            <path d="M 50 380 Q 200 340 400 250 T 650 200" fill="none" stroke="#eab308" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.7"/>
+          </svg>
+
+          <!-- Volume Bars at bottom -->
+          <div class="absolute bottom-0 left-0 right-0 h-[60px] flex items-end justify-around px-8 opacity-30 pointer-events-none">
+            <div class="w-[8px] h-[40%] bg-green-500"></div>
+            <div class="w-[8px] h-[30%] bg-red-500"></div>
+            <div class="w-[8px] h-[60%] bg-green-500"></div>
+            <div class="w-[8px] h-[20%] bg-green-500"></div>
+            <div class="w-[8px] h-[45%] bg-red-500"></div>
+            <div class="w-[8px] h-[70%] bg-green-500"></div>
+            <div class="w-[8px] h-[35%] bg-green-500"></div>
+            <div class="w-[8px] h-[25%] bg-red-500"></div>
+            <div class="w-[8px] h-[80%] bg-green-500"></div>
+            <div class="w-[8px] h-[40%] bg-green-500"></div>
+            <div class="w-[8px] h-[30%] bg-red-500"></div>
+          </div>
+        </div>
+
+        <!-- Price Axis -->
+        <div class="absolute right-0 top-0 bottom-0 w-12 border-l border-[#292a38] bg-card-dark flex flex-col justify-between py-4 text-[10px] text-text-secondary items-center font-mono select-none">
+          <span><%= (price + 5).toFixed(2) %></span>
+          <span><%= (price + 3).toFixed(2) %></span>
+          <span class="bg-primary text-white px-1 rounded"><%= price.toFixed(2) %></span>
+          <span><%= (price - 1).toFixed(2) %></span>
+          <span><%= (price - 3).toFixed(2) %></span>
+          <span><%= (price - 5).toFixed(2) %></span>
+        </div>
+      </div>
+
+      <!-- Right Side Panel: Screeners & Volume -->
+      <aside class="w-full lg:w-72 flex flex-col gap-4">
+        <!-- Momentum Screener -->
+        <div class="bg-card-dark rounded-xl border border-[#292a38] p-4 flex-1 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-white text-sm font-bold">Momentum Screener</h4>
+            <span class="material-symbols-outlined text-text-secondary text-sm cursor-pointer hover:text-white transition-colors">filter_list</span>
+          </div>
+          <div class="flex flex-col gap-2 overflow-y-auto max-h-[200px] lg:max-h-none pr-1">
+            <% screenerItems.forEach(item => { %>
+              <div class="flex items-center justify-between p-2 rounded bg-[#292a38]/50 hover:bg-[#292a38] cursor-pointer group transition-colors">
+                <div class="flex flex-col">
+                  <span class="text-white text-xs font-bold"><%= item.symbol %></span>
+                  <span class="text-text-secondary text-[10px]"><%= item.signal %></span>
+                </div>
+                <span class="<%= item.change >= 0 ? 'text-green-500' : 'text-red-400' %> text-xs font-bold">
+                  <%= item.change >= 0 ? '+' : '' %><%= item.change.toFixed(1) %>%
+                </span>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+
+        <!-- Volume Profile Summary -->
+        <div class="bg-card-dark rounded-xl border border-[#292a38] p-4 h-48 flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-white text-sm font-bold">Volume Profile</h4>
+          </div>
+          <div class="flex-1 flex items-end gap-1 relative">
+            <!-- Bars -->
+            <div class="flex-1 bg-primary/20 rounded-t-sm h-[40%] relative group">
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block text-[10px] bg-black text-white p-1 rounded">POC</div>
+            </div>
+            <div class="flex-1 bg-primary/40 rounded-t-sm h-[60%]"></div>
+            <div class="flex-1 bg-primary rounded-t-sm h-[90%] shadow-[0_0_10px_rgba(72,80,229,0.3)]"></div>
+            <div class="flex-1 bg-primary/40 rounded-t-sm h-[55%]"></div>
+            <div class="flex-1 bg-primary/20 rounded-t-sm h-[30%]"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-text-secondary mt-2">
+            <span>Low Vol</span>
+            <span>POC: <%= (price - 3).toFixed(1) %></span>
+            <span>High Vol</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Indicators Panel -->
+    <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 pb-6">
+      <!-- RSI Card -->
+      <div class="bg-card-dark rounded-xl border border-[#292a38] p-4 flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">RSI (14)</h4>
+          <span class="text-white text-sm font-bold font-mono"><%= rsiValue.toFixed(1) %></span>
+        </div>
+        <div class="h-16 relative bg-[#111217] rounded-lg overflow-hidden border border-[#292a38]/50">
+          <!-- Zones -->
+          <div class="absolute top-0 bottom-0 left-0 right-0 bg-gradient-to-t from-red-500/10 via-transparent to-green-500/10"></div>
+          <div class="absolute top-[30%] left-0 right-0 border-t border-dashed border-red-500/30"></div>
+          <div class="absolute bottom-[30%] left-0 right-0 border-t border-dashed border-green-500/30"></div>
+          <!-- Line -->
+          <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+            <polyline points="0,50 20,45 40,40 60,30 80,35 100,20 120,25 140,15 160,20 180,35 200,30 220,20 240,15 260,18" fill="none" stroke="#a855f7" stroke-width="2" vector-effect="non-scaling-stroke"/>
+          </svg>
+        </div>
+        <div class="flex justify-between text-[10px] text-text-secondary">
+          <span>Oversold</span>
+          <span>Neutral</span>
+          <span>Overbought</span>
+        </div>
+      </div>
+
+      <!-- MACD Card -->
+      <div class="bg-card-dark rounded-xl border border-[#292a38] p-4 flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">MACD (12, 26, 9)</h4>
+          <span class="<%= macdSignal === 'Bullish' ? 'text-green-400' : 'text-red-400' %> text-sm font-bold"><%= macdSignal %></span>
+        </div>
+        <div class="h-16 relative bg-[#111217] rounded-lg overflow-hidden border border-[#292a38]/50 flex items-center px-1">
+          <!-- Histogram -->
+          <div class="flex-1 h-full flex items-center justify-center gap-[2px]">
+            <div class="w-1 h-2 bg-green-500/30 rounded-full"></div>
+            <div class="w-1 h-4 bg-green-500/40 rounded-full"></div>
+            <div class="w-1 h-6 bg-green-500/60 rounded-full"></div>
+            <div class="w-1 h-3 bg-green-500/40 rounded-full"></div>
+            <div class="w-1 h-1 bg-red-500/30 rounded-full"></div>
+            <div class="w-1 h-5 bg-red-500/50 rounded-full"></div>
+            <div class="w-1 h-8 bg-red-500/70 rounded-full"></div>
+            <div class="w-1 h-10 bg-red-500 rounded-full"></div>
+            <div class="w-1 h-6 bg-green-500/60 rounded-full"></div>
+            <div class="w-1 h-8 bg-green-500/80 rounded-full"></div>
+            <div class="w-1 h-12 bg-green-500 rounded-full"></div>
+          </div>
+          <!-- Lines Overlay -->
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
+            <path d="M0 40 Q 50 50 100 30 T 260 20" fill="none" stroke="#3b82f6" stroke-width="1.5"/>
+            <path d="M0 45 Q 50 55 100 40 T 260 25" fill="none" stroke="#f97316" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="flex justify-between text-[10px] text-text-secondary">
+          <div class="flex items-center gap-1"><span class="size-2 bg-blue-500 rounded-full"></span> MACD</div>
+          <div class="flex items-center gap-1"><span class="size-2 bg-orange-500 rounded-full"></span> Signal</div>
+        </div>
+      </div>
+
+      <!-- Stochastic Card -->
+      <div class="bg-card-dark rounded-xl border border-[#292a38] p-4 flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">Stochastic</h4>
+          <span class="text-white text-sm font-bold font-mono"><%= stochK.toFixed(1) %> / <%= stochD.toFixed(1) %></span>
+        </div>
+        <div class="h-16 relative bg-[#111217] rounded-lg overflow-hidden border border-[#292a38]/50">
+          <div class="absolute top-[20%] left-0 right-0 border-t border-dotted border-[#292a38]"></div>
+          <div class="absolute bottom-[20%] left-0 right-0 border-t border-dotted border-[#292a38]"></div>
+          <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+            <path d="M0 60 L 50 50 L 100 20 L 150 10 L 200 15 L 260 5" fill="none" stroke="#06b6d4" stroke-width="1.5"/>
+            <path d="M0 65 L 50 55 L 100 25 L 150 15 L 200 20 L 260 10" fill="none" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="2,2"/>
+          </svg>
+        </div>
+        <div class="flex justify-between text-[10px] text-text-secondary">
+          <div class="flex items-center gap-1"><span class="size-2 bg-cyan-500 rounded-full"></span> %K</div>
+          <div class="flex items-center gap-1"><span class="size-2 bg-pink-500 rounded-full"></span> %D</div>
+        </div>
+      </div>
+
+      <!-- ADX Card -->
+      <div class="bg-card-dark rounded-xl border border-[#292a38] p-4 flex flex-col gap-2">
+        <div class="flex justify-between items-center">
+          <h4 class="text-text-secondary text-xs font-bold uppercase tracking-wider">ADX Trend Strength</h4>
+          <span class="text-white text-sm font-bold"><%= adxStrength %> (<%= adxValue %>)</span>
+        </div>
+        <div class="h-16 relative flex items-center justify-center bg-[#111217] rounded-lg border border-[#292a38]/50 p-2">
+          <!-- Gauge visualization -->
+          <div class="w-full h-2 bg-[#292a38] rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-gray-500 via-primary to-green-400 rounded-full transition-all duration-500" style="width: <%= Math.min(adxValue * 1.5, 100) %>%"></div>
+          </div>
+          <span class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-white drop-shadow-md">
+            <%= adxValue >= 25 ? 'Trending' : 'Ranging' %>
+          </span>
+        </div>
+        <div class="flex justify-between text-[10px] text-text-secondary mt-1">
+          <span>Weak &lt; 25</span>
+          <span>Strong &gt; 25</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+// Technical Analysis page functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Symbol search functionality
+  const searchInput = document.getElementById('symbolSearch');
+  if (searchInput) {
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const symbol = this.value.trim().toUpperCase();
+        if (symbol) {
+          window.location.href = `/technical-analysis?symbol=${encodeURIComponent(symbol)}`;
+        }
+      }
+    });
+  }
+});
+
+// Set timeframe
+function setTimeframe(tf) {
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('timeframe', tf);
+  window.location.href = currentUrl.toString();
+}
+
+// Toggle indicators panel (placeholder for future functionality)
+function toggleIndicatorsPanel() {
+  if (typeof showToast === 'function') {
+    showToast('Indicators panel coming soon', 'info');
+  } else {
+    console.log('Indicators panel toggle');
+  }
+}
+
+// Refresh data
+function refreshData() {
+  window.location.reload();
+}
+</script>
+
+<%- include('../partials/footer') %>

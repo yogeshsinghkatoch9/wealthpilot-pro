@@ -1,0 +1,241 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+%>
+<%- include('../partials/header', { pageTitle: 'Analyst Estimates' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Analyst Estimates</h1><p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">EPS & revenue estimates and revisions</p></div>
+<div class="flex gap-2">
+<input type="text" value="AAPL" class="form-input w-24 font-mono">
+<button class="btn-primary">Analyze</button>
+</div>
+</div>
+
+<!-- Company Header -->
+<div class="tufte-stat-card p-5">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl <%= safeTheme === 'light' ? 'bg-gray-100' : 'bg-slate-800' %> flex items-center justify-center text-white font-bold text-xl">AAPL</div>
+<div class="flex-1">
+<h2 class="text-xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Apple Inc.</h2>
+<p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Next Earnings: Jan 30, 2025 | Beat Rate: 87.5%</p>
+</div>
+<div class="text-center px-4">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Estimate Trend</p>
+<p class="text-xl font-bold text-emerald-400">↑ Rising</p>
+</div>
+</div>
+</div>
+
+<!-- EPS Estimates -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">EPS Estimates</h3>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-left">
+<th class="py-2">Period</th>
+<th class="py-2 text-center">Consensus</th>
+<th class="py-2 text-center">High</th>
+<th class="py-2 text-center">Low</th>
+<th class="py-2 text-center"># Est</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">Q1 2025</td>
+<td class="py-2 text-center font-bold text-emerald-400">$2.35</td>
+<td class="py-2 text-center">$2.52</td>
+<td class="py-2 text-center">$2.18</td>
+<td class="py-2 text-center">38</td>
+</tr>
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">Q2 2025</td>
+<td class="py-2 text-center font-bold">$1.58</td>
+<td class="py-2 text-center">$1.72</td>
+<td class="py-2 text-center">$1.44</td>
+<td class="py-2 text-center">35</td>
+</tr>
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">FY 2025</td>
+<td class="py-2 text-center font-bold text-emerald-400">$7.42</td>
+<td class="py-2 text-center">$7.86</td>
+<td class="py-2 text-center">$7.02</td>
+<td class="py-2 text-center">42</td>
+</tr>
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">FY 2026</td>
+<td class="py-2 text-center font-bold">$8.24</td>
+<td class="py-2 text-center">$8.95</td>
+<td class="py-2 text-center">$7.48</td>
+<td class="py-2 text-center">38</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue Estimates ($B)</h3>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-left">
+<th class="py-2">Period</th>
+<th class="py-2 text-center">Consensus</th>
+<th class="py-2 text-center">High</th>
+<th class="py-2 text-center">Low</th>
+<th class="py-2 text-center">YoY</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">Q1 2025</td>
+<td class="py-2 text-center font-bold text-emerald-400">$124.8</td>
+<td class="py-2 text-center">$128.4</td>
+<td class="py-2 text-center">$121.2</td>
+<td class="py-2 text-center positive">+4.2%</td>
+</tr>
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">Q2 2025</td>
+<td class="py-2 text-center font-bold">$94.2</td>
+<td class="py-2 text-center">$98.6</td>
+<td class="py-2 text-center">$90.8</td>
+<td class="py-2 text-center positive">+3.8%</td>
+</tr>
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">FY 2025</td>
+<td class="py-2 text-center font-bold text-emerald-400">$402.4</td>
+<td class="py-2 text-center">$418.2</td>
+<td class="py-2 text-center">$388.6</td>
+<td class="py-2 text-center positive">+5.0%</td>
+</tr>
+<tr class="border-t <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-2 font-medium">FY 2026</td>
+<td class="py-2 text-center font-bold">$428.8</td>
+<td class="py-2 text-center">$452.4</td>
+<td class="py-2 text-center">$408.2</td>
+<td class="py-2 text-center positive">+6.6%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<!-- Revisions -->
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Recent Estimate Revisions (FY 2025 EPS)</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+<div class="p-3 rounded-lg text-center <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">7 Days</p>
+<p class="text-xl font-bold text-emerald-400">↑ 8 | ↓ 2</p>
+</div>
+<div class="p-3 rounded-lg text-center <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">30 Days</p>
+<p class="text-xl font-bold text-emerald-400">↑ 18 | ↓ 6</p>
+</div>
+<div class="p-3 rounded-lg text-center <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">60 Days</p>
+<p class="text-xl font-bold text-emerald-400">↑ 24 | ↓ 8</p>
+</div>
+<div class="p-3 rounded-lg text-center <%= safeTheme === 'light' ? '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>' : '<%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800/50' %>0/10' %>">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">90 Days</p>
+<p class="text-xl font-bold text-emerald-400">↑ 28 | ↓ 10</p>
+</div>
+</div>
+<div class="h-48"><canvas id="revisionChart"></canvas></div>
+</div>
+
+<!-- Beat/Miss History -->
+<div class="tufte-stat-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Earnings Surprise History</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Quarter</th>
+<th class="px-4 py-3 text-center">EPS Est</th>
+<th class="px-4 py-3 text-center">EPS Actual</th>
+<th class="px-4 py-3 text-center">Surprise</th>
+<th class="px-4 py-3 text-center">Revenue Est</th>
+<th class="px-4 py-3 text-center">Revenue Actual</th>
+<th class="px-4 py-3 text-center">Result</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Q4 2024</td>
+<td class="px-4 py-3 text-center">$1.56</td>
+<td class="px-4 py-3 text-center font-bold">$1.64</td>
+<td class="px-4 py-3 text-center positive font-bold">+5.1%</td>
+<td class="px-4 py-3 text-center">$89.4B</td>
+<td class="px-4 py-3 text-center font-bold">$94.9B</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs">BEAT</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Q3 2024</td>
+<td class="px-4 py-3 text-center">$1.32</td>
+<td class="px-4 py-3 text-center font-bold">$1.40</td>
+<td class="px-4 py-3 text-center positive font-bold">+6.1%</td>
+<td class="px-4 py-3 text-center">$84.2B</td>
+<td class="px-4 py-3 text-center font-bold">$85.8B</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs">BEAT</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Q2 2024</td>
+<td class="px-4 py-3 text-center">$1.48</td>
+<td class="px-4 py-3 text-center font-bold">$1.52</td>
+<td class="px-4 py-3 text-center positive font-bold">+2.7%</td>
+<td class="px-4 py-3 text-center">$90.2B</td>
+<td class="px-4 py-3 text-center font-bold">$90.8B</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs">BEAT</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">Q1 2024</td>
+<td class="px-4 py-3 text-center">$2.08</td>
+<td class="px-4 py-3 text-center font-bold">$2.18</td>
+<td class="px-4 py-3 text-center positive font-bold">+4.8%</td>
+<td class="px-4 py-3 text-center">$117.8B</td>
+<td class="px-4 py-3 text-center font-bold">$119.6B</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded <%= safeTheme === 'light' ? 'bg-gray-100 text-gray-900' : 'bg-slate-800 text-white' %> text-xs">BEAT</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">EPS Trend</h3>
+<div class="h-48"><canvas id="epsChart"></canvas></div>
+</div>
+<div class="tufte-stat-card p-5">
+<h3 class="font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Revenue Trend</h3>
+<div class="h-48"><canvas id="revChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('revisionChart'), {
+  type: 'bar',
+  data: { labels: ['90 Days','60 Days','30 Days','7 Days'], datasets: [
+    { label: 'Up', data: [28,24,18,8], backgroundColor: '#10b981' },
+    { label: 'Down', data: [-10,-8,-6,-2], backgroundColor: '#ef4444' }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+});
+new Chart(document.getElementById('epsChart'), {
+  type: 'line',
+  data: { labels: ['Q1 24','Q2 24','Q3 24','Q4 24','Q1 25E','Q2 25E'], datasets: [
+    { label: 'Actual/Est', data: [2.18,1.52,1.40,1.64,2.35,1.58], borderColor: '#0ea5e9', fill: false },
+    { label: 'YoY', data: [2.10,1.42,1.28,1.56,null,null], borderColor: '#94a3b8', borderDash: [5,5], fill: false }
+  ]},
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('revChart'), {
+  type: 'bar',
+  data: { labels: ['Q1 24','Q2 24','Q3 24','Q4 24','Q1 25E','Q2 25E'], datasets: [{ data: [119.6,90.8,85.8,94.9,124.8,94.2], backgroundColor: '#8b5cf6' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

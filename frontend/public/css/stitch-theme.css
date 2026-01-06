@@ -1,0 +1,404 @@
+/**
+ * WealthPilot Pro - Stitch Theme
+ * Modern, clean design based on Google Stitch UI guidelines
+ */
+
+:root {
+  /* Primary Colors */
+  --stitch-primary: #4850e5;
+  --stitch-primary-hover: #3a42d1;
+  --stitch-primary-light: rgba(72, 80, 229, 0.1);
+  --stitch-primary-glow: rgba(72, 80, 229, 0.3);
+
+  /* Background Colors */
+  --stitch-bg-dark: #0f1115;
+  --stitch-bg-card: #181b21;
+  --stitch-bg-elevated: #1c1f26;
+  --stitch-bg-input: #111217;
+
+  /* Border Colors */
+  --stitch-border: #292a38;
+  --stitch-border-hover: #3d3e52;
+
+  /* Text Colors */
+  --stitch-text-primary: #ffffff;
+  --stitch-text-secondary: #9e9fb7;
+  --stitch-text-muted: #6b6d7b;
+
+  /* Accent Colors */
+  --stitch-green: #0bda65;
+  --stitch-green-bg: rgba(11, 218, 101, 0.1);
+  --stitch-red: #fa6538;
+  --stitch-red-bg: rgba(250, 101, 56, 0.1);
+  --stitch-orange: #f59e0b;
+  --stitch-purple: #8b5cf6;
+
+  /* Spacing */
+  --stitch-radius-sm: 0.5rem;
+  --stitch-radius-md: 0.75rem;
+  --stitch-radius-lg: 1rem;
+  --stitch-radius-xl: 1.5rem;
+}
+
+/* ==================== Global Overrides ==================== */
+
+body {
+  background: var(--stitch-bg-dark) !important;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+/* ==================== Cards ==================== */
+
+.bloomberg-card,
+.card,
+.tufte-stat-card {
+  background: var(--stitch-bg-card) !important;
+  border: 1px solid var(--stitch-border) !important;
+  border-radius: var(--stitch-radius-md) !important;
+  transition: border-color 0.2s ease;
+}
+
+.bloomberg-card:hover,
+.card:hover {
+  border-color: var(--stitch-border-hover) !important;
+}
+
+/* Card Headers */
+.bloomberg-card-header,
+.card-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--stitch-border) !important;
+  padding: 1rem 1.25rem !important;
+}
+
+.bloomberg-card-title,
+.card-title {
+  color: var(--stitch-text-primary) !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+}
+
+.bloomberg-card-body,
+.card-body {
+  padding: 1.25rem !important;
+}
+
+/* ==================== KPI Stat Cards ==================== */
+
+.tufte-stat-card {
+  padding: 1.25rem !important;
+}
+
+.tufte-stat-card .stat-label {
+  color: var(--stitch-text-secondary) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.tufte-stat-card .stat-value {
+  color: var(--stitch-text-primary) !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.tufte-stat-card .stat-value.positive {
+  color: var(--stitch-green) !important;
+}
+
+.tufte-stat-card .stat-value.negative {
+  color: var(--stitch-red) !important;
+}
+
+/* ==================== Buttons ==================== */
+
+.bloomberg-btn,
+button[type="submit"],
+.btn-primary {
+  background: var(--stitch-primary) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: var(--stitch-radius-sm) !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 0 15px var(--stitch-primary-glow) !important;
+}
+
+.bloomberg-btn:hover,
+button[type="submit"]:hover,
+.btn-primary:hover {
+  background: var(--stitch-primary-hover) !important;
+  transform: translateY(-1px) !important;
+}
+
+.bloomberg-btn-ghost,
+.btn-ghost {
+  background: transparent !important;
+  border: 1px solid var(--stitch-border) !important;
+  color: var(--stitch-text-secondary) !important;
+  box-shadow: none !important;
+}
+
+.bloomberg-btn-ghost:hover,
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--stitch-border-hover) !important;
+  color: var(--stitch-text-primary) !important;
+}
+
+/* ==================== Tables ==================== */
+
+.bloomberg-table,
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bloomberg-table thead,
+table thead {
+  background: var(--stitch-bg-dark) !important;
+}
+
+.bloomberg-table th,
+table th {
+  color: var(--stitch-text-secondary) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 1rem 1.5rem !important;
+  border-bottom: 1px solid var(--stitch-border) !important;
+}
+
+.bloomberg-table td,
+table td {
+  padding: 1rem 1.5rem !important;
+  border-bottom: 1px solid var(--stitch-border) !important;
+  color: var(--stitch-text-primary) !important;
+}
+
+.bloomberg-table tbody tr:hover,
+table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* ==================== Inputs ==================== */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  background: var(--stitch-bg-input) !important;
+  border: 1px solid var(--stitch-border) !important;
+  border-radius: var(--stitch-radius-sm) !important;
+  color: var(--stitch-text-primary) !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: var(--stitch-primary) !important;
+  box-shadow: 0 0 0 3px var(--stitch-primary-light) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--stitch-text-muted) !important;
+}
+
+/* ==================== Top Navigation ==================== */
+
+.topnav {
+  background: var(--stitch-bg-card) !important;
+  border-bottom: 1px solid var(--stitch-border) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.topnav-logo-text {
+  color: var(--stitch-text-primary) !important;
+  font-weight: 700 !important;
+}
+
+.topnav-logo-text span {
+  color: var(--stitch-primary) !important;
+}
+
+.topnav-item {
+  color: var(--stitch-text-secondary) !important;
+  transition: color 0.2s ease !important;
+}
+
+.topnav-item:hover {
+  color: var(--stitch-text-primary) !important;
+}
+
+.topnav-search {
+  background: var(--stitch-bg-dark) !important;
+  border: 1px solid var(--stitch-border) !important;
+  border-radius: var(--stitch-radius-sm) !important;
+  color: var(--stitch-text-secondary) !important;
+}
+
+.topnav-search:hover {
+  border-color: var(--stitch-primary) !important;
+}
+
+/* ==================== Charts ==================== */
+
+.chart-container,
+.chart-wrapper {
+  background: var(--stitch-bg-card) !important;
+  border: 1px solid var(--stitch-border) !important;
+  border-radius: var(--stitch-radius-md) !important;
+  padding: 1.5rem !important;
+}
+
+.chart-header,
+.chart-title {
+  color: var(--stitch-text-primary) !important;
+  font-weight: 700 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Timeframe Buttons */
+.timeframe-btn {
+  background: transparent !important;
+  border: 1px solid var(--stitch-border) !important;
+  color: var(--stitch-text-secondary) !important;
+  border-radius: var(--stitch-radius-sm) !important;
+  padding: 0.375rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.timeframe-btn:hover {
+  background: var(--stitch-primary-light) !important;
+  border-color: var(--stitch-primary) !important;
+  color: var(--stitch-primary) !important;
+}
+
+.timeframe-btn.active {
+  background: var(--stitch-primary) !important;
+  border-color: var(--stitch-primary) !important;
+  color: white !important;
+}
+
+/* ==================== Sidebar ==================== */
+
+#sidebar {
+  background: var(--stitch-bg-card) !important;
+  border-right: 1px solid var(--stitch-border) !important;
+}
+
+/* ==================== Alerts & Badges ==================== */
+
+.badge,
+.tag {
+  border-radius: var(--stitch-radius-sm) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+.badge-success {
+  background: var(--stitch-green-bg) !important;
+  color: var(--stitch-green) !important;
+}
+
+.badge-danger {
+  background: var(--stitch-red-bg) !important;
+  color: var(--stitch-red) !important;
+}
+
+/* ==================== Progress Bars ==================== */
+
+.progress-bar,
+.h-1,
+.h-2 {
+  background: var(--stitch-border) !important;
+  border-radius: 9999px !important;
+  overflow: hidden;
+}
+
+/* ==================== Scrollbar ==================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--stitch-bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--stitch-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--stitch-border-hover);
+}
+
+/* ==================== Utility Classes ==================== */
+
+.text-stitch-primary {
+  color: var(--stitch-primary) !important;
+}
+
+.text-stitch-green {
+  color: var(--stitch-green) !important;
+}
+
+.text-stitch-red {
+  color: var(--stitch-red) !important;
+}
+
+.bg-stitch-primary {
+  background: var(--stitch-primary) !important;
+}
+
+.bg-stitch-card {
+  background: var(--stitch-bg-card) !important;
+}
+
+.border-stitch {
+  border-color: var(--stitch-border) !important;
+}
+
+/* ==================== Animations ==================== */
+
+@keyframes stitch-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px var(--stitch-primary-glow);
+  }
+  50% {
+    box-shadow: 0 0 25px var(--stitch-primary-glow);
+  }
+}
+
+.stitch-glow {
+  animation: stitch-glow 2s ease-in-out infinite;
+}
+
+/* ==================== Responsive ==================== */
+
+@media (max-width: 1024px) {
+  #sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  #sidebar.open {
+    transform: translateX(0);
+  }
+}

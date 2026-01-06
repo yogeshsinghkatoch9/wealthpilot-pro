@@ -1,0 +1,447 @@
+// Prisma Schema for WealthPilot Pro
+// SQLite version for local development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============== USER & AUTH ==============
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String?
+  lastName      String?
+  phone         String?
+  avatarUrl     String?
+  timezone      String    @default("America/New_York")
+  currency      String    @default("USD")
+  theme         String    @default("dark")
+  isActive      Boolean   @default(true)
+  isVerified    Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  plan          String    @default("free")
+  planExpiresAt DateTime?
+
+  portfolios    Portfolio[]
+  watchlists    Watchlist[]
+  alerts        Alert[]
+  transactions  Transaction[]
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  settings      UserSettings?
+
+  @@index([email])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  keyHash     String    @unique
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+}
+
+model UserSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(false)
+  alertsEnabled         Boolean  @default(true)
+  dividendAlerts        Boolean  @default(true)
+  earningsAlerts        Boolean  @default(true)
+  priceAlerts           Boolean  @default(true)
+  weeklyReport          Boolean  @default(true)
+  monthlyReport         Boolean  @default(true)
+  defaultPortfolioId    String?
+  dashboardLayout       String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============== PORTFOLIO ==============
+
+model Portfolio {
+  id            String    @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  currency      String    @default("USD")
+  benchmark     String    @default("SPY")
+  isDefault     Boolean   @default(false)
+  isPublic      Boolean   @default(false)
+  cashBalance   Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings      Holding[]
+  transactions  Transaction[]
+  snapshots     PortfolioSnapshot[]
+  
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model Holding {
+  id            String    @id @default(uuid())
+  portfolioId   String
+  symbol        String
+  shares        Float
+  avgCostBasis  Float
+  sector        String?
+  assetType     String    @default("stock")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  taxLots       TaxLot[]
+
+  @@unique([portfolioId, symbol])
+  @@index([portfolioId])
+  @@index([symbol])
+}
+
+model TaxLot {
+  id            String    @id @default(uuid())
+  holdingId     String
+  shares        Float
+  costBasis     Float
+  purchaseDate  DateTime
+  createdAt     DateTime  @default(now())
+  holding       Holding   @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@index([holdingId])
+}
+
+model Transaction {
+  id            String    @id @default(uuid())
+  userId        String
+  portfolioId   String
+  symbol        String
+  type          String
+  shares        Float?
+  price         Float?
+  amount        Float
+  fees          Float     @default(0)
+  notes         String?
+  executedAt    DateTime
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@index([userId])
+  @@index([symbol])
+  @@index([executedAt])
+}
+
+model PortfolioSnapshot {
+  id            String    @id @default(uuid())
+  portfolioId   String
+  totalValue    Float
+  cashBalance   Float
+  dayGain       Float
+  dayGainPct    Float
+  totalGain     Float
+  totalGainPct  Float
+  holdings      String
+  snapshotDate  DateTime
+  createdAt     DateTime  @default(now())
+
+  portfolio     Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, snapshotDate])
+  @@index([portfolioId])
+  @@index([snapshotDate])
+}
+
+// ============== WATCHLIST ==============
+
+model Watchlist {
+  id            String    @id @default(uuid())
+  userId        String
+  name          String
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         WatchlistItem[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model WatchlistItem {
+  id            String    @id @default(uuid())
+  watchlistId   String
+  symbol        String
+  targetPrice   Float?
+  notes         String?
+  addedAt       DateTime  @default(now())
+  watchlist     Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, symbol])
+  @@index([watchlistId])
+}
+
+// ============== ALERTS ==============
+
+model Alert {
+  id            String    @id @default(uuid())
+  userId        String
+  symbol        String?
+  type          String
+  condition     String
+  message       String?
+  isActive      Boolean   @default(true)
+  isTriggered   Boolean   @default(false)
+  triggeredAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive])
+}
+
+// ============== MARKET DATA CACHE ==============
+
+model StockQuote {
+  id                String    @id @default(uuid())
+  symbol            String    @unique
+  name              String?
+  exchange          String?
+  sector            String?
+  industry          String?
+  price             Float
+  previousClose     Float?
+  open              Float?
+  high              Float?
+  low               Float?
+  volume            Int?
+  avgVolume         Int?
+  marketCap         Int?
+  peRatio           Float?
+  eps               Float?
+  dividend          Float?
+  dividendYield     Float?
+  beta              Float?
+  week52High        Float?
+  week52Low         Float?
+  change            Float?
+  changePercent     Float?
+  updatedAt         DateTime  @updatedAt
+
+  @@index([symbol])
+}
+
+model StockHistory {
+  id            String    @id @default(uuid())
+  symbol        String
+  date          DateTime
+  open          Float
+  high          Float
+  low           Float
+  close         Float
+  adjClose      Float
+  volume        Int
+
+  @@unique([symbol, date])
+  @@index([symbol])
+  @@index([date])
+}
+
+model DividendHistory {
+  id            String    @id @default(uuid())
+  symbol        String
+  exDate        DateTime
+  payDate       DateTime?
+  recordDate    DateTime?
+  amount        Float
+  frequency     String?
+  type          String?
+
+  @@unique([symbol, exDate])
+  @@index([symbol])
+  @@index([exDate])
+}
+
+model EarningsCalendar {
+  id              String    @id @default(uuid())
+  symbol          String
+  reportDate      DateTime
+  fiscalQuarter   String?
+  fiscalYear      Int?
+  epsEstimate     Float?
+  epsActual       Float?
+  revenueEstimate Float?
+  revenueActual   Float?
+  surprise        Float?
+  timing          String?
+
+  @@unique([symbol, reportDate])
+  @@index([symbol])
+  @@index([reportDate])
+}
+
+// ============== FUNDAMENTALS ==============
+
+model CompanyProfile {
+  id                String    @id @default(uuid())
+  symbol            String    @unique
+  name              String
+  description       String?
+  exchange          String?
+  sector            String?
+  industry          String?
+  employees         Int?
+  ceo               String?
+  headquarters      String?
+  website           String?
+  ipoDate           DateTime?
+  updatedAt         DateTime  @updatedAt
+
+  @@index([symbol])
+  @@index([sector])
+}
+
+model FinancialStatement {
+  id                String    @id @default(uuid())
+  symbol            String
+  period            String
+  fiscalDate        DateTime
+  reportedDate      DateTime?
+  revenue           Float?
+  costOfRevenue     Float?
+  grossProfit       Float?
+  operatingExpenses Float?
+  operatingIncome   Float?
+  netIncome         Float?
+  eps               Float?
+  epsDiluted        Float?
+  totalAssets       Float?
+  totalLiabilities  Float?
+  totalEquity       Float?
+  cash              Float?
+  totalDebt         Float?
+  operatingCashFlow Float?
+  capitalExpenditure Float?
+  freeCashFlow      Float?
+  dividendsPaid     Float?
+  grossMargin       Float?
+  operatingMargin   Float?
+  netMargin         Float?
+  roe               Float?
+  roa               Float?
+  currentRatio      Float?
+  debtToEquity      Float?
+  createdAt         DateTime  @default(now())
+
+  @@unique([symbol, period, fiscalDate])
+  @@index([symbol])
+  @@index([fiscalDate])
+}
+
+// ============== ANALYTICS ==============
+
+model InsiderTransaction {
+  id                String    @id @default(uuid())
+  symbol            String
+  filingDate        DateTime
+  transactionDate   DateTime?
+  ownerName         String
+  ownerTitle        String?
+  transactionType   String
+  shares            Float
+  pricePerShare     Float?
+  totalValue        Float?
+  sharesOwned       Float?
+
+  @@index([symbol])
+  @@index([filingDate])
+}
+
+model InstitutionalHolding {
+  id                String    @id @default(uuid())
+  symbol            String
+  holderName        String
+  shares            Float
+  value             Float
+  percentOwned      Float?
+  changeShares      Float?
+  changePercent     Float?
+  reportDate        DateTime
+
+  @@unique([symbol, holderName, reportDate])
+  @@index([symbol])
+  @@index([reportDate])
+}
+
+model AnalystRating {
+  id                String    @id @default(uuid())
+  symbol            String
+  firm              String
+  analyst           String?
+  rating            String
+  priceTarget       Float?
+  previousRating    String?
+  previousTarget    Float?
+  date              DateTime
+
+  @@index([symbol])
+  @@index([date])
+}
+
+// ============== NEWS ==============
+
+model NewsArticle {
+  id                String    @id @default(uuid())
+  symbol            String?
+  title             String
+  summary           String?
+  source            String
+  url               String
+  imageUrl          String?
+  sentiment         String?
+  sentimentScore    Float?
+  publishedAt       DateTime
+  createdAt         DateTime  @default(now())
+
+  @@index([symbol])
+  @@index([publishedAt])
+}

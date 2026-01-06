@@ -1,0 +1,1243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AnalystRating {
+  id             String   @id
+  symbol         String
+  firm           String
+  analyst        String?
+  rating         String
+  priceTarget    Float?
+  previousRating String?
+  previousTarget Float?
+  date           DateTime
+
+  @@index([date])
+  @@index([symbol])
+}
+
+model ApiKey {
+  id         String    @id
+  userId     String
+  name       String
+  keyHash    String    @unique
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  users      users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([keyHash])
+}
+
+model BenchmarkHistory {
+  id            String   @id
+  symbol        String
+  date          DateTime
+  close         Float
+  adjustedClose Float
+
+  @@unique([symbol, date])
+  @@index([date])
+  @@index([symbol])
+}
+
+model CompanyProfile {
+  id           String    @id
+  symbol       String    @unique
+  name         String
+  description  String?
+  exchange     String?
+  sector       String?
+  industry     String?
+  employees    Int?
+  ceo          String?
+  headquarters String?
+  website      String?
+  ipoDate      DateTime?
+  updatedAt    DateTime
+
+  @@index([sector])
+  @@index([symbol])
+}
+
+model DividendHistory {
+  id         String    @id
+  symbol     String
+  exDate     DateTime
+  payDate    DateTime?
+  recordDate DateTime?
+  amount     Float
+  frequency  String?
+  type       String?
+
+  @@unique([symbol, exDate])
+  @@index([exDate])
+  @@index([symbol])
+}
+
+model ESGScores {
+  id               String   @id
+  symbol           String
+  date             DateTime
+  esgScore         Float
+  environmentScore Float
+  socialScore      Float
+  governanceScore  Float
+  carbonFootprint  Float?
+
+  @@unique([symbol, date])
+  @@index([date])
+  @@index([symbol])
+}
+
+model EarningsCalendar {
+  id              String   @id
+  symbol          String
+  reportDate      DateTime
+  fiscalQuarter   String?
+  fiscalYear      Int?
+  epsEstimate     Float?
+  epsActual       Float?
+  revenueEstimate Float?
+  revenueActual   Float?
+  surprise        Float?
+  timing          String?
+
+  @@unique([symbol, reportDate])
+  @@index([reportDate])
+  @@index([symbol])
+}
+
+model FactorReturns {
+  id    String   @id
+  date  DateTime @unique
+  mktRf Float
+  smb   Float
+  hml   Float
+  rmw   Float
+  cma   Float
+  mom   Float
+  rf    Float
+
+  @@index([date])
+}
+
+model FinancialStatement {
+  id                 String    @id
+  symbol             String
+  period             String
+  fiscalDate         DateTime
+  reportedDate       DateTime?
+  revenue            Float?
+  costOfRevenue      Float?
+  grossProfit        Float?
+  operatingExpenses  Float?
+  operatingIncome    Float?
+  netIncome          Float?
+  eps                Float?
+  epsDiluted         Float?
+  totalAssets        Float?
+  totalLiabilities   Float?
+  totalEquity        Float?
+  cash               Float?
+  totalDebt          Float?
+  operatingCashFlow  Float?
+  capitalExpenditure Float?
+  freeCashFlow       Float?
+  dividendsPaid      Float?
+  grossMargin        Float?
+  operatingMargin    Float?
+  netMargin          Float?
+  roe                Float?
+  roa                Float?
+  currentRatio       Float?
+  debtToEquity       Float?
+  createdAt          DateTime  @default(now())
+
+  @@unique([symbol, period, fiscalDate])
+  @@index([fiscalDate])
+  @@index([symbol])
+}
+
+model InsiderTransaction {
+  id              String    @id
+  symbol          String
+  filingDate      DateTime
+  transactionDate DateTime?
+  ownerName       String
+  ownerTitle      String?
+  transactionType String
+  shares          Float
+  pricePerShare   Float?
+  totalValue      Float?
+  sharesOwned     Float?
+
+  @@index([filingDate])
+  @@index([symbol])
+}
+
+model InstitutionalHolding {
+  id            String   @id
+  symbol        String
+  holderName    String
+  shares        Float
+  value         Float
+  percentOwned  Float?
+  changeShares  Float?
+  changePercent Float?
+  reportDate    DateTime
+
+  @@unique([symbol, holderName, reportDate])
+  @@index([reportDate])
+  @@index([symbol])
+}
+
+model LiquidityMetrics {
+  id              String   @id
+  symbol          String
+  date            DateTime
+  bidAskSpread    Float
+  bidAskSpreadPct Float
+  avgDailyVolume  Int
+  avgDollarVolume Float
+
+  @@unique([symbol, date])
+  @@index([date])
+  @@index([symbol])
+}
+
+model NewsArticle {
+  id             String   @id
+  symbol         String?
+  title          String
+  summary        String?
+  source         String
+  url            String
+  imageUrl       String?
+  sentiment      String?
+  sentimentScore Float?
+  publishedAt    DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([publishedAt])
+  @@index([symbol])
+}
+
+model PortfolioSectorAllocation {
+  id            String     @id
+  portfolioId   String
+  sectorName    String
+  sectorCode    String?
+  totalValue    Float
+  percentAlloc  Float
+  numHoldings   Int
+  avgCostBasis  Float?
+  currentReturn Float?
+  returnPct     Float?
+  weight        Float?
+  date          DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime
+  portfolios    portfolios @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, sectorName, date])
+  @@index([date])
+  @@index([portfolioId])
+  @@index([sectorName])
+}
+
+model PortfolioSnapshot {
+  id           String     @id
+  portfolioId  String
+  totalValue   Float
+  cashBalance  Float
+  dayGain      Float
+  dayGainPct   Float
+  totalGain    Float
+  totalGainPct Float
+  holdings     String
+  snapshotDate DateTime
+  createdAt    DateTime   @default(now())
+  portfolios   portfolios @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@unique([portfolioId, snapshotDate])
+  @@index([portfolioId])
+  @@index([snapshotDate])
+}
+
+model SectorData {
+  id               String   @id
+  sectorName       String   @unique
+  sectorCode       String   @unique
+  description      String?
+  currentPrice     Float?
+  change           Float?
+  changePercent    Float?
+  volume           Int?
+  marketCap        Float?
+  peRatio          Float?
+  dividendYield    Float?
+  week52High       Float?
+  week52Low        Float?
+  ytdReturn        Float?
+  oneMonthReturn   Float?
+  threeMonthReturn Float?
+  oneYearReturn    Float?
+  volatility       Float?
+  beta             Float?
+  sharpeRatio      Float?
+  updatedAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([sectorCode])
+  @@index([sectorName])
+}
+
+model SectorPerformance {
+  id               String   @id
+  sectorName       String
+  sectorCode       String
+  date             DateTime
+  open             Float
+  high             Float
+  low              Float
+  close            Float
+  volume           Int?
+  returnPct        Float?
+  relativeStrength Float?
+  momentumScore    Float?
+  createdAt        DateTime @default(now())
+
+  @@unique([sectorCode, date])
+  @@index([date])
+  @@index([sectorCode])
+  @@index([sectorName])
+}
+
+model SectorRotation {
+  id          String   @id
+  fromSector  String
+  toSector    String
+  date        DateTime
+  flowAmount  Float
+  flowPercent Float
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  @@index([date])
+  @@index([fromSector])
+  @@index([toSector])
+}
+
+model SentimentData {
+  id               String   @id
+  symbol           String
+  date             DateTime
+  overallScore     Float
+  overallSentiment String
+  socialMediaScore Float
+  newsScore        Float
+  analystScore     Float
+  mentionVolume    Int
+  correlationScore Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+
+  @@unique([symbol, date])
+  @@index([date])
+  @@index([overallScore])
+  @@index([symbol])
+}
+
+model SentimentHistory {
+  id        String   @id
+  symbol    String
+  timestamp DateTime
+  score     Float
+  volume    Int
+  source    String
+
+  @@index([source])
+  @@index([symbol])
+  @@index([timestamp])
+}
+
+model SocialMediaMention {
+  id             String   @id
+  symbol         String
+  platform       String
+  content        String?
+  sentiment      String
+  sentimentScore Float
+  author         String?
+  mentions       Int      @default(1)
+  likes          Int?
+  retweets       Int?
+  publishedAt    DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([platform])
+  @@index([publishedAt])
+  @@index([sentiment])
+  @@index([symbol])
+}
+
+model TrendingTopic {
+  id            String   @id
+  symbol        String
+  topic         String
+  mentionCount  Int
+  sentiment     String
+  trendingScore Float
+  date          DateTime
+  createdAt     DateTime @default(now())
+
+  @@unique([symbol, topic, date])
+  @@index([date])
+  @@index([symbol])
+  @@index([trendingScore])
+}
+
+model UserSettings {
+  id                 String   @id
+  userId             String   @unique
+  emailNotifications Boolean  @default(true)
+  pushNotifications  Boolean  @default(false)
+  alertsEnabled      Boolean  @default(true)
+  dividendAlerts     Boolean  @default(true)
+  earningsAlerts     Boolean  @default(true)
+  priceAlerts        Boolean  @default(true)
+  weeklyReport       Boolean  @default(true)
+  monthlyReport      Boolean  @default(true)
+  defaultPortfolioId String?
+  dashboardLayout    String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  users              users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Watchlist {
+  id              String            @id
+  userId          String
+  name            String
+  description     String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  users           users             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchlist_items watchlist_items[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model ai_chat_sessions {
+  id         String   @id
+  user_id    String
+  title      String?
+  messages   String   @default("[]")
+  created_at DateTime @default(now())
+  updated_at DateTime
+
+  @@index([created_at])
+  @@index([user_id])
+}
+
+model ai_reports {
+  id           String   @id
+  user_id      String
+  portfolio_id String
+  report_type  String
+  status       String   @default("pending")
+  file_path    String?
+  metadata     String?
+  created_at   DateTime @default(now())
+
+  @@index([created_at])
+  @@index([portfolio_id])
+  @@index([status])
+  @@index([user_id])
+}
+
+model ai_usage {
+  id            String   @id
+  user_id       String
+  provider      String
+  model         String
+  input_tokens  Int
+  output_tokens Int
+  cost          Float?
+  endpoint      String
+  created_at    DateTime @default(now())
+
+  @@index([created_at])
+  @@index([provider])
+  @@index([user_id])
+}
+
+model alerts {
+  id           String    @id
+  user_id      String
+  symbol       String?
+  type         String
+  condition    String
+  message      String?
+  is_active    Boolean   @default(true)
+  is_triggered Boolean   @default(false)
+  triggered_at DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([is_active])
+  @@index([symbol])
+  @@index([user_id])
+  @@index([symbol], map: "idx_alerts_symbol")
+  @@index([user_id], map: "idx_alerts_user")
+}
+
+model assistant_attachments {
+  id                 String             @id
+  session_id         String
+  message_id         String?
+  filename           String
+  mime_type          String
+  size               Int
+  content            String?
+  analysis           String?
+  created_at         DateTime           @default(now())
+  assistant_sessions assistant_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([session_id])
+}
+
+model assistant_messages {
+  id                 String             @id
+  session_id         String
+  role               String
+  content            String
+  tool_calls         String?
+  tool_results       String?
+  tokens             Int?
+  provider           String?
+  created_at         DateTime           @default(now())
+  assistant_sessions assistant_sessions @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@index([created_at])
+  @@index([session_id])
+}
+
+model assistant_sessions {
+  id                    String                  @id
+  user_id               String
+  title                 String                  @default("New Conversation")
+  portfolio_id          String?
+  created_at            DateTime                @default(now())
+  updated_at            DateTime
+  assistant_attachments assistant_attachments[]
+  assistant_messages    assistant_messages[]
+
+  @@index([created_at])
+  @@index([portfolio_id])
+  @@index([user_id])
+}
+
+model backtest_results {
+  id                String   @id
+  user_id           String
+  strategy_name     String
+  strategy_type     String
+  symbol            String
+  start_date        DateTime
+  end_date          DateTime
+  initial_capital   Float
+  final_value       Float
+  total_return      Float
+  total_return_pct  Float
+  annualized_return Float?
+  sharpe_ratio      Float?
+  max_drawdown      Float?
+  max_drawdown_pct  Float?
+  win_rate          Float?
+  total_trades      Int
+  winning_trades    Int?
+  losing_trades     Int?
+  avg_win           Float?
+  avg_loss          Float?
+  profit_factor     Float?
+  parameters        String?
+  trades            String?
+  equityCurve       String?
+  created_at        DateTime @default(now())
+
+  @@index([created_at])
+  @@index([strategy_type])
+  @@index([symbol])
+  @@index([user_id])
+}
+
+model broker_connections {
+  id                 String              @id
+  user_id            String
+  broker_type        String
+  account_id         String?
+  name               String
+  is_paper           Boolean             @default(true)
+  is_active          Boolean             @default(true)
+  is_default         Boolean             @default(false)
+  last_sync_at       DateTime?
+  last_error         String?
+  settings           String?
+  created_at         DateTime            @default(now())
+  updated_at         DateTime
+  broker_credentials broker_credentials?
+  broker_orders      broker_orders[]
+
+  @@unique([user_id, broker_type, account_id])
+  @@index([broker_type])
+  @@index([is_active])
+  @@index([user_id])
+}
+
+model broker_credentials {
+  id                 String             @id
+  connection_id      String             @unique
+  encrypted_api_key  String
+  encrypted_secret   String
+  encrypted_token    String?
+  token_expires_at   DateTime?
+  scopes             String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime
+  broker_connections broker_connections @relation(fields: [connection_id], references: [id], onDelete: Cascade)
+}
+
+model broker_orders {
+  id                 String             @id
+  connection_id      String
+  portfolio_id       String?
+  broker_order_id    String
+  symbol             String
+  side               String
+  quantity           Float
+  order_type         String
+  limit_price        Float?
+  stop_price         Float?
+  time_in_force      String             @default("day")
+  status             String             @default("pending")
+  filled_price       Float?
+  filled_quantity    Float?
+  filled_at          DateTime?
+  commission         Float              @default(0)
+  notes              String?
+  created_at         DateTime           @default(now())
+  updated_at         DateTime
+  broker_connections broker_connections @relation(fields: [connection_id], references: [id], onDelete: Cascade)
+
+  @@index([connection_id])
+  @@index([created_at])
+  @@index([status])
+  @@index([symbol])
+}
+
+model crypto_holdings {
+  id                  String                @id
+  user_id             String
+  symbol              String
+  name                String?
+  quantity            Float
+  avg_cost            Float
+  wallet_address      String?
+  exchange            String?
+  notes               String?
+  created_at          DateTime              @default(now())
+  updated_at          DateTime
+  crypto_transactions crypto_transactions[]
+
+  @@unique([user_id, symbol])
+  @@index([symbol])
+  @@index([user_id])
+}
+
+model crypto_transactions {
+  id              String          @id
+  holding_id      String
+  type            String
+  quantity        Float
+  price           Float
+  fees            Float           @default(0)
+  exchange        String?
+  tx_hash         String?
+  notes           String?
+  executed_at     DateTime
+  created_at      DateTime        @default(now())
+  crypto_holdings crypto_holdings @relation(fields: [holding_id], references: [id], onDelete: Cascade)
+
+  @@index([executed_at])
+  @@index([holding_id])
+}
+
+model holdings {
+  id             String     @id
+  portfolio_id   String
+  symbol         String
+  shares         Float
+  avg_cost_basis Float
+  sector         String?
+  asset_type     String     @default("stock")
+  notes          String?
+  created_at     DateTime   @default(now())
+  updated_at     DateTime
+  portfolios     portfolios @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
+  tax_lots       tax_lots[]
+
+  @@unique([portfolio_id, symbol])
+  @@index([portfolio_id])
+  @@index([symbol])
+  @@index([portfolio_id], map: "idx_holdings_portfolio")
+  @@index([symbol], map: "idx_holdings_symbol")
+}
+
+model notifications {
+  id         String   @id
+  user_id    String
+  type       String
+  title      String
+  message    String
+  data       String?
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([created_at])
+  @@index([is_read])
+  @@index([user_id])
+}
+
+model oauth_tokens {
+  id            String   @id
+  user_id       String
+  provider_id   String
+  access_token  String
+  refresh_token String?
+  expires_in    Int      @default(3600)
+  token_type    String   @default("Bearer")
+  scope         String?
+  obtained_at   DateTime @default(now())
+  created_at    DateTime @default(now())
+  updated_at    DateTime
+
+  @@unique([user_id, provider_id])
+  @@index([provider_id])
+  @@index([user_id])
+}
+
+model options_positions {
+  id              String    @id
+  user_id         String
+  symbol          String
+  option_type     String
+  strike_price    Float
+  expiration_date DateTime
+  contracts       Int
+  premium         Float
+  status          String    @default("open")
+  entry_date      DateTime  @default(now())
+  exit_date       DateTime?
+  exit_price      Float?
+  notes           String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime
+
+  @@index([expiration_date])
+  @@index([status])
+  @@index([symbol])
+  @@index([user_id])
+}
+
+model paper_orders {
+  id                     String                 @id
+  account_id             String
+  symbol                 String
+  side                   String
+  quantity               Float
+  order_type             String                 @default("market")
+  limit_price            Float?
+  stop_price             Float?
+  time_in_force          String                 @default("day")
+  status                 String                 @default("pending")
+  submitted_price        Float?
+  filled_price           Float?
+  filled_quantity        Float?
+  filled_at              DateTime?
+  commission             Float                  @default(0)
+  created_at             DateTime               @default(now())
+  updated_at             DateTime
+  paper_trading_accounts paper_trading_accounts @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@index([account_id])
+  @@index([created_at])
+  @@index([status])
+  @@index([symbol])
+}
+
+model paper_portfolio {
+  id                String    @id
+  user_id           String?
+  cash_balance      Decimal?  @default(100000) @db.Decimal(15, 2)
+  total_value       Decimal?  @default(100000) @db.Decimal(15, 2)
+  total_profit_loss Decimal?  @default(0) @db.Decimal(15, 2)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
+  users             users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_paper_portfolio_user")
+}
+
+model paper_positions {
+  id                     String                 @id
+  account_id             String
+  symbol                 String
+  quantity               Float
+  avg_cost               Float
+  created_at             DateTime               @default(now())
+  updated_at             DateTime
+  paper_trading_accounts paper_trading_accounts @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@unique([account_id, symbol])
+  @@index([account_id])
+  @@index([symbol])
+}
+
+model paper_trades {
+  id          String    @id
+  user_id     String?
+  symbol      String    @db.VarChar(20)
+  trade_type  String    @db.VarChar(20)
+  quantity    Decimal   @db.Decimal(15, 6)
+  entry_price Decimal   @db.Decimal(15, 4)
+  exit_price  Decimal?  @db.Decimal(15, 4)
+  profit_loss Decimal?  @db.Decimal(15, 2)
+  notes       String?
+  status      String?   @default("open") @db.VarChar(20)
+  entry_date  DateTime? @default(now()) @db.Timestamp(6)
+  exit_date   DateTime? @db.Timestamp(6)
+  users       users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([status], map: "idx_paper_trades_status")
+  @@index([user_id], map: "idx_paper_trades_user")
+}
+
+model paper_trading_accounts {
+  id              String            @id
+  user_id         String            @unique
+  cash_balance    Float             @default(100000)
+  initial_balance Float             @default(100000)
+  total_trades    Int               @default(0)
+  winning_trades  Int               @default(0)
+  losing_trades   Int               @default(0)
+  total_pnl       Float             @default(0)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime
+  paper_orders    paper_orders[]
+  paper_positions paper_positions[]
+
+  @@index([user_id])
+}
+
+model portfolio_shares {
+  id              String    @id
+  portfolio_id    String    @unique
+  share_token     String    @unique
+  is_public       Boolean   @default(false)
+  expires_at      DateTime?
+  allowed_fields  String    @default("[\"holdings\",\"performance\",\"allocation\"]")
+  show_values     Boolean   @default(true)
+  show_quantities Boolean   @default(true)
+  view_count      Int       @default(0)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime
+
+  @@index([portfolio_id])
+  @@index([share_token])
+}
+
+model portfolios {
+  id                        String                      @id
+  user_id                   String
+  name                      String
+  description               String?
+  currency                  String                      @default("USD")
+  benchmark                 String                      @default("SPY")
+  is_default                Boolean                     @default(false)
+  is_public                 Boolean                     @default(false)
+  cash_balance              Float                       @default(0)
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime
+  PortfolioSectorAllocation PortfolioSectorAllocation[]
+  PortfolioSnapshot         PortfolioSnapshot[]
+  holdings                  holdings[]
+  users                     users                       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transactions              transactions[]
+
+  @@unique([user_id, name])
+  @@index([user_id], map: "idx_portfolios_user")
+  @@index([user_id])
+}
+
+model sessions {
+  id         String   @id
+  user_id    String
+  token      String   @unique
+  user_agent String?
+  ip_address String?
+  expires_at DateTime
+  created_at DateTime @default(now())
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([token], map: "idx_sessions_token")
+  @@index([user_id], map: "idx_sessions_user")
+  @@index([token])
+  @@index([user_id])
+}
+
+model share_events {
+  id           String   @id
+  portfolio_id String
+  event_type   String
+  event_data   String?
+  created_at   DateTime @default(now())
+
+  @@index([created_at])
+  @@index([event_type])
+  @@index([portfolio_id])
+}
+
+model stock_data_tracker {
+  symbol                  String    @id
+  is_active               Boolean   @default(true)
+  history_start_date      DateTime?
+  history_end_date        DateTime?
+  history_record_count    Int       @default(0)
+  last_quote_update       DateTime?
+  last_history_update     DateTime?
+  last_dividend_update    DateTime?
+  last_earnings_update    DateTime?
+  last_profile_update     DateTime?
+  last_financials_update  DateTime?
+  initial_fetch_started   DateTime?
+  initial_fetch_completed DateTime?
+  error_count             Int       @default(0)
+  last_error              String?
+  last_error_at           DateTime?
+  primary_data_source     String?
+  created_at              DateTime  @default(now())
+  updated_at              DateTime
+
+  @@index([initial_fetch_completed])
+  @@index([is_active])
+  @@index([last_history_update])
+}
+
+model stock_history {
+  id             String   @id
+  symbol         String
+  date           DateTime @db.Date
+  open           Float
+  high           Float
+  low            Float
+  close          Float
+  adj_close      Float
+  volume         BigInt
+  vwap           Float?
+  change_percent Float?
+  created_at     DateTime @default(now())
+
+  @@unique([symbol, date])
+  @@index([date])
+  @@index([symbol, date(sort: Desc)])
+  @@index([symbol])
+}
+
+model stock_quotes {
+  symbol         String   @id
+  name           String?
+  exchange       String?
+  sector         String?
+  industry       String?
+  price          Float
+  previous_close Float?
+  open_price     Float?
+  high           Float?
+  low            Float?
+  volume         BigInt?
+  market_cap     BigInt?
+  pe_ratio       Float?
+  dividend       Float?
+  dividend_yield Float?
+  beta           Float?
+  week_52_high   Float?
+  week_52_low    Float?
+  change_amount  Float?
+  change_percent Float?
+  updated_at     DateTime
+}
+
+model tax_harvest_history {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String    @db.Uuid
+  portfolio_id       String    @db.Uuid
+  symbol             String    @db.VarChar(20)
+  shares_sold        Decimal   @db.Decimal
+  sale_price         Decimal   @db.Decimal
+  cost_basis         Decimal   @db.Decimal
+  realized_loss      Decimal   @db.Decimal
+  tax_savings        Decimal   @db.Decimal
+  holding_period     String    @db.VarChar(20)
+  lot_method         String?   @db.VarChar(50)
+  replacement_symbol String?   @db.VarChar(20)
+  replacement_shares Decimal?  @db.Decimal
+  replacement_price  Decimal?  @db.Decimal
+  wash_sale_safe     Boolean?  @default(true)
+  executed_at        DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model tax_harvesting_opportunities {
+  id                  String    @id
+  user_id             String
+  portfolio_id        String?
+  symbol              String
+  shares              Float
+  current_price       Float
+  cost_basis          Float
+  unrealized_loss     Float
+  potential_savings   Float
+  holding_period      String
+  wash_sale_risk      Boolean   @default(false)
+  wash_sale_end_date  DateTime?
+  suggested_action    String
+  alternative_symbols String?
+  status              String    @default("pending")
+  harvested_at        DateTime?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime
+
+  @@index([status])
+  @@index([symbol])
+  @@index([unrealized_loss])
+  @@index([user_id])
+}
+
+model tax_harvesting_reports {
+  id                    String   @id
+  user_id               String
+  year                  Int
+  total_harvested       Float
+  short_term_losses     Float
+  long_term_losses      Float
+  estimated_tax_savings Float
+  transactions_count    Int
+  reportData            String?
+  created_at            DateTime @default(now())
+
+  @@unique([user_id, year])
+  @@index([user_id])
+  @@index([year])
+}
+
+model tax_loss_carryforward {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String    @db.Uuid
+  tax_year            Int
+  short_term_loss     Decimal?  @default(0) @db.Decimal
+  long_term_loss      Decimal?  @default(0) @db.Decimal
+  used_against_gains  Decimal?  @default(0) @db.Decimal
+  used_against_income Decimal?  @default(0) @db.Decimal
+  remaining_balance   Decimal?  @default(0) @db.Decimal
+  notes               String?
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+
+  @@unique([user_id, tax_year])
+}
+
+model tax_lots {
+  id            String   @id
+  holding_id    String
+  shares        Float
+  cost_basis    Float
+  purchase_date DateTime
+  created_at    DateTime @default(now())
+  holdings      holdings @relation(fields: [holding_id], references: [id], onDelete: Cascade)
+
+  @@index([holding_id])
+}
+
+model transactions {
+  id           String     @id
+  user_id      String
+  portfolio_id String
+  symbol       String
+  type         String
+  shares       Float?
+  price        Float?
+  amount       Float
+  fees         Float      @default(0)
+  notes        String?
+  executed_at  DateTime
+  created_at   DateTime   @default(now())
+  portfolios   portfolios @relation(fields: [portfolio_id], references: [id], onDelete: Cascade)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([portfolio_id], map: "idx_transactions_portfolio")
+  @@index([executed_at])
+  @@index([portfolio_id])
+  @@index([symbol])
+  @@index([user_id])
+}
+
+model user_tax_preferences {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String    @unique @db.Uuid
+  federal_tax_bracket   Decimal?  @default(32) @db.Decimal
+  state                 String?   @db.VarChar(50)
+  state_tax_rate        Decimal?  @default(0) @db.Decimal
+  default_lot_method    String?   @default("tax_efficient") @db.VarChar(50)
+  min_harvest_threshold Decimal?  @default(100) @db.Decimal
+  auto_harvest_enabled  Boolean?  @default(false)
+  short_term_rate       Decimal?  @default(37) @db.Decimal
+  long_term_rate        Decimal?  @default(20) @db.Decimal
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model users {
+  id                 String            @id
+  email              String            @unique
+  password_hash      String
+  first_name         String?
+  last_name          String?
+  phone              String?
+  avatar_url         String?
+  timezone           String            @default("America/New_York")
+  currency           String            @default("USD")
+  theme              String            @default("dark")
+  is_active          Boolean           @default(true)
+  is_verified        Boolean           @default(false)
+  last_login_at      DateTime?
+  created_at         DateTime          @default(now())
+  updated_at         DateTime
+  plan               String            @default("free")
+  plan_expires_at    DateTime?
+  two_factor_enabled Boolean           @default(false)
+  two_factor_secret  String?
+  two_factor_pending Boolean           @default(false)
+  backup_codes       String?
+  ApiKey             ApiKey[]
+  UserSettings       UserSettings?
+  Watchlist          Watchlist[]
+  alerts             alerts[]
+  notifications      notifications[]
+  paper_portfolio    paper_portfolio[]
+  paper_trades       paper_trades[]
+  portfolios         portfolios[]
+  sessions           sessions[]
+  transactions       transactions[]
+  watchlists         watchlists[]
+
+  @@index([email])
+}
+
+model verification_tokens {
+  id         String   @id
+  email      String
+  token      String   @unique
+  type       String   @default("email_verification")
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+}
+
+model wash_sale_tracking {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                String    @db.Uuid
+  portfolio_id           String    @db.Uuid
+  symbol                 String    @db.VarChar(20)
+  sale_date              DateTime  @db.Timestamp(6)
+  shares_sold            Decimal   @db.Decimal
+  sale_price             Decimal   @db.Decimal
+  cost_basis             Decimal   @db.Decimal
+  realized_loss          Decimal   @db.Decimal
+  wash_sale_window_start DateTime  @db.Timestamp(6)
+  wash_sale_window_end   DateTime  @db.Timestamp(6)
+  status                 String?   @default("active") @db.VarChar(20)
+  disallowed_loss        Decimal?  @default(0) @db.Decimal
+  replacement_symbol     String?   @db.VarChar(20)
+  notes                  String?
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model watchlist_items {
+  id           String    @id
+  watchlist_id String
+  symbol       String
+  target_price Float?
+  notes        String?
+  added_at     DateTime  @default(now())
+  Watchlist    Watchlist @relation(fields: [watchlist_id], references: [id], onDelete: Cascade)
+
+  @@unique([watchlist_id, symbol])
+  @@index([watchlist_id])
+}
+
+model watchlists {
+  id          String    @id
+  user_id     String?
+  name        String    @db.VarChar(255)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  users       users?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model webhook_deliveries {
+  id          String   @id
+  webhook_id  String
+  delivery_id String
+  event_type  String
+  status      String
+  status_code Int?
+  attempt     Int      @default(0)
+  error       String?
+  created_at  DateTime @default(now())
+  webhooks    webhooks @relation(fields: [webhook_id], references: [id], onDelete: Cascade)
+
+  @@index([delivery_id])
+  @@index([webhook_id])
+}
+
+model webhooks {
+  id                 String               @id
+  user_id            String
+  url                String
+  secret             String
+  events             String
+  description        String?
+  headers            String?
+  is_active          Boolean              @default(true)
+  disabled_reason    String?
+  disabled_at        DateTime?
+  created_at         DateTime             @default(now())
+  updated_at         DateTime
+  webhook_deliveries webhook_deliveries[]
+
+  @@index([is_active])
+  @@index([user_id])
+}

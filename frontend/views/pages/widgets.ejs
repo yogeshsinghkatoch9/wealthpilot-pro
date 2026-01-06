@@ -1,0 +1,328 @@
+<%- include('../partials/header', { pageTitle: 'Widget Builder' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Custom Dashboard</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Drag and drop widgets to build your view</p></div>
+<div class="flex gap-2">
+<button onclick="addWidget()" class="btn-ghost"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Add Widget</button>
+<button onclick="saveLayout()" class="btn-primary"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>Save Layout</button>
+</div>
+</div>
+
+<!-- Widget Palette -->
+<div class="card p-4">
+<h3 class="text-sm font-semibold <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-3">Available Widgets (drag to add)</h3>
+<div class="flex flex-wrap gap-2" id="widgetPalette">
+<div class="widget-palette-item" draggable="true" data-widget="portfolio-value">📊 Portfolio Value</div>
+<div class="widget-palette-item" draggable="true" data-widget="daily-change">📈 Daily Change</div>
+<div class="widget-palette-item" draggable="true" data-widget="top-movers">🚀 Top Movers</div>
+<div class="widget-palette-item" draggable="true" data-widget="watchlist-mini">👁️ Watchlist</div>
+<div class="widget-palette-item" draggable="true" data-widget="news-feed">📰 News Feed</div>
+<div class="widget-palette-item" draggable="true" data-widget="sector-chart">🥧 Sector Chart</div>
+<div class="widget-palette-item" draggable="true" data-widget="dividends">💰 Dividends</div>
+<div class="widget-palette-item" draggable="true" data-widget="crypto-mini">🪙 Crypto Prices</div>
+<div class="widget-palette-item" draggable="true" data-widget="calendar-mini">📅 Calendar</div>
+<div class="widget-palette-item" draggable="true" data-widget="ai-insight">🤖 AI Insight</div>
+<div class="widget-palette-item" draggable="true" data-widget="fear-greed">😰 Fear & Greed</div>
+<div class="widget-palette-item" draggable="true" data-widget="goals-mini">🎯 Goals</div>
+</div>
+</div>
+
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="dashboardGrid">
+
+<!-- Portfolio Value Widget -->
+<div class="widget card p-4" data-widget-id="1" draggable="true">
+<div class="widget-header flex items-center justify-between mb-3">
+  <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Portfolio Value</span>
+  <div class="flex gap-1">
+    <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+    <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+  </div>
+</div>
+<div class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$247,532</div>
+<div class="flex items-center gap-2 mt-2">
+  <span class="text-emerald-400 font-medium">+$3,245</span>
+  <span class="text-emerald-400 text-sm">(+1.33%)</span>
+</div>
+<div class="h-16 mt-3"><canvas id="miniValueChart"></canvas></div>
+</div>
+
+<!-- Daily Change Widget -->
+<div class="widget card p-4" data-widget-id="2" draggable="true">
+<div class="widget-header flex items-center justify-between mb-3">
+  <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Today's Change</span>
+  <div class="flex gap-1">
+    <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+    <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+  </div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+  <div>
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Gainers</p>
+    <p class="text-xl font-bold text-emerald-400">+$4,120</p>
+    <p class="text-xs text-emerald-400">12 positions</p>
+  </div>
+  <div>
+    <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Losers</p>
+    <p class="text-xl font-bold text-red-400">-$875</p>
+    <p class="text-xs text-red-400">5 positions</p>
+  </div>
+</div>
+</div>
+
+<!-- Top Movers Widget -->
+<div class="widget card p-4" data-widget-id="3" draggable="true">
+<div class="widget-header flex items-center justify-between mb-3">
+  <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Top Movers</span>
+  <div class="flex gap-1">
+    <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+    <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+  </div>
+</div>
+<div class="space-y-2">
+  <div class="flex justify-between items-center">
+    <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">NVDA</span>
+    <span class="text-emerald-400">+3.5%</span>
+  </div>
+  <div class="flex justify-between items-center">
+    <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">AMD</span>
+    <span class="text-emerald-400">+2.8%</span>
+  </div>
+  <div class="flex justify-between items-center">
+    <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">TSLA</span>
+    <span class="text-red-400">-2.1%</span>
+  </div>
+</div>
+</div>
+
+<!-- Sector Chart Widget -->
+<div class="widget card p-4" data-widget-id="4" draggable="true">
+<div class="widget-header flex items-center justify-between mb-3">
+  <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Sector Allocation</span>
+  <div class="flex gap-1">
+    <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+    <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+  </div>
+</div>
+<div class="h-32"><canvas id="sectorPieChart"></canvas></div>
+</div>
+
+<!-- Watchlist Mini Widget -->
+<div class="widget card p-4" data-widget-id="5" draggable="true">
+<div class="widget-header flex items-center justify-between mb-3">
+  <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Watchlist</span>
+  <div class="flex gap-1">
+    <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+    <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+  </div>
+</div>
+<div class="space-y-2 text-sm">
+  <div class="flex justify-between"><span>META</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$505.30</span><span class="text-emerald-400">+1.7%</span></div>
+  <div class="flex justify-between"><span>COST</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$742.80</span><span class="text-emerald-400">+0.5%</span></div>
+  <div class="flex justify-between"><span>CRM</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$265.40</span><span class="text-red-400">-0.3%</span></div>
+</div>
+</div>
+
+<!-- AI Insight Widget -->
+<div class="widget card p-4" data-widget-id="6" draggable="true">
+<div class="widget-header flex items-center justify-between mb-3">
+  <span class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">🤖 AI Insight</span>
+  <div class="flex gap-1">
+    <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+    <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+  </div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> text-sm">Your tech allocation is 13% above target. Consider rebalancing to reduce sector concentration risk.</p>
+<a href="/rebalance" class="text-sky-400 text-sm hover:underline mt-2 inline-block">View recommendations →</a>
+</div>
+
+</div>
+
+<!-- Drop Zone Indicator -->
+<div id="dropZone" class="hidden border-2 border-dashed border-sky-500 rounded-xl p-8 text-center <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<p class="<%= theme === 'light' ? 'text-sky-700' : 'text-sky-400' %>">Drop widget here</p>
+</div>
+</div></div></main>
+
+<style>
+.widget-palette-item {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: grab;
+  font-size: 0.875rem;
+  transition: all 0.15s;
+}
+[data-theme="dark"] .widget-palette-item { background: rgba(51, 65, 85, 0.5); color: #e2e8f0; }
+[data-theme="light"] .widget-palette-item { background: #f3f4f6; color: #374151; }
+.widget-palette-item:hover { transform: scale(1.05); }
+.widget-palette-item:active { cursor: grabbing; }
+
+.widget {
+  cursor: grab;
+  transition: all 0.2s;
+}
+.widget:active { cursor: grabbing; }
+.widget.dragging { opacity: 0.5; transform: scale(0.95); }
+.widget.drag-over { border: 2px solid #0ea5e9; }
+
+.widget-btn {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  transition: all 0.15s;
+}
+.widget-btn:hover { opacity: 1; }
+[data-theme="dark"] .widget-btn:hover { background: rgba(255,255,255,0.1); }
+[data-theme="light"] .widget-btn:hover { background: rgba(0,0,0,0.1); }
+
+.widget.expanded { grid-column: span 2; }
+</style>
+
+<script>
+// Mini charts
+new Chart(document.getElementById('miniValueChart'), {
+  type: 'line',
+  data: {
+    labels: ['', '', '', '', '', '', ''],
+    datasets: [{ data: [240, 242, 241, 245, 244, 246, 247], borderColor: '#10b981', borderWidth: 2, fill: false, pointRadius: 0, tension: 0.4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: false } } }
+});
+
+new Chart(document.getElementById('sectorPieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Tech', 'Healthcare', 'Finance', 'Consumer'],
+    datasets: [{ data: [48, 18, 20, 14], backgroundColor: ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b'] }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '65%' }
+});
+
+// Drag and drop
+const grid = document.getElementById('dashboardGrid');
+const palette = document.getElementById('widgetPalette');
+let draggedWidget = null;
+
+document.querySelectorAll('.widget').forEach(widget => {
+  widget.addEventListener('dragstart', handleDragStart);
+  widget.addEventListener('dragend', handleDragEnd);
+  widget.addEventListener('dragover', handleDragOver);
+  widget.addEventListener('drop', handleDrop);
+});
+
+palette.querySelectorAll('.widget-palette-item').forEach(item => {
+  item.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('widget-type', item.dataset.widget);
+  });
+});
+
+grid.addEventListener('dragover', (e) => { e.preventDefault(); });
+grid.addEventListener('drop', (e) => {
+  e.preventDefault();
+  const widgetType = e.dataTransfer.getData('widget-type');
+  if (widgetType) {
+    createWidget(widgetType);
+  }
+});
+
+function handleDragStart(e) {
+  draggedWidget = this;
+  this.classList.add('dragging');
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  document.querySelectorAll('.widget').forEach(w => w.classList.remove('drag-over'));
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  if (draggedWidget !== this) {
+    this.classList.add('drag-over');
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  if (draggedWidget && draggedWidget !== this) {
+    const allWidgets = [...grid.querySelectorAll('.widget')];
+    const draggedIdx = allWidgets.indexOf(draggedWidget);
+    const targetIdx = allWidgets.indexOf(this);
+    if (draggedIdx < targetIdx) {
+      this.after(draggedWidget);
+    } else {
+      this.before(draggedWidget);
+    }
+  }
+  this.classList.remove('drag-over');
+}
+
+function createWidget(type) {
+  const widget = document.createElement('div');
+  widget.className = 'widget card p-4';
+  widget.draggable = true;
+  widget.dataset.widgetId = Date.now();
+  
+  const names = {
+    'portfolio-value': '📊 Portfolio Value',
+    'daily-change': '📈 Daily Change',
+    'top-movers': '🚀 Top Movers',
+    'watchlist-mini': '👁️ Watchlist',
+    'news-feed': '📰 News',
+    'sector-chart': '🥧 Sectors',
+    'dividends': '💰 Dividends',
+    'crypto-mini': '🪙 Crypto',
+    'calendar-mini': '📅 Calendar',
+    'ai-insight': '🤖 AI Insight',
+    'fear-greed': '😰 Fear & Greed',
+    'goals-mini': '🎯 Goals'
+  };
+  
+  widget.innerHTML = `
+    <div class="widget-header flex items-center justify-between mb-3">
+      <span class="font-semibold">${names[type] || type}</span>
+      <div class="flex gap-1">
+        <button onclick="resizeWidget(this)" class="widget-btn">⤢</button>
+        <button onclick="removeWidget(this)" class="widget-btn">✕</button>
+      </div>
+    </div>
+    <p class="text-slate-400 text-sm">Widget content loading...</p>
+  `;
+  
+  widget.addEventListener('dragstart', handleDragStart);
+  widget.addEventListener('dragend', handleDragEnd);
+  widget.addEventListener('dragover', handleDragOver);
+  widget.addEventListener('drop', handleDrop);
+  
+  grid.appendChild(widget);
+  showToast('Widget added!', 'success');
+}
+
+function removeWidget(btn) {
+  btn.closest('.widget').remove();
+  showToast('Widget removed', 'info');
+}
+
+function resizeWidget(btn) {
+  btn.closest('.widget').classList.toggle('expanded');
+}
+
+function addWidget() {
+  showToast('Drag a widget from the palette above', 'info');
+}
+
+function saveLayout() {
+  const layout = [...document.querySelectorAll('.widget')].map(w => ({
+    id: w.dataset.widgetId,
+    expanded: w.classList.contains('expanded')
+  }));
+  localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+  showToast('Layout saved!', 'success');
+}
+</script>
+<%- include('../partials/footer') %>

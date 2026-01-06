@@ -1,0 +1,157 @@
+<%- include('../partials/header', { pageTitle: 'SPAC Tracker' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">SPAC Tracker</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Special Purpose Acquisition Companies & deals</p></div>
+<div class="flex gap-2">
+<select class="form-input w-36"><option selected>All SPACs</option><option>Pre-Deal</option><option>Announced</option><option>Completed</option></select>
+</div>
+</div>
+
+<!-- SPAC Market Summary -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-purple-50 to-sky-50' : 'from-purple-900/20 to-sky-900/20' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">SPAC Market Overview</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Active SPACs</p>
+<p class="text-3xl font-bold text-purple-400">284</p>
+<p class="text-xs">searching for deals</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Cash in Trust</p>
+<p class="text-3xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">$42.8B</p>
+<p class="text-xs">available for deals</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Deals Announced</p>
+<p class="text-3xl font-bold text-sky-400">48</p>
+<p class="text-xs">pending completion</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">YTD Completed</p>
+<p class="text-3xl font-bold text-emerald-400">82</p>
+<p class="text-xs text-emerald-400">de-SPAC mergers</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg Pop (Day 1)</p>
+<p class="text-3xl font-bold text-emerald-400">+8.4%</p>
+<p class="text-xs">2024 completed</p>
+</div>
+</div>
+</div>
+
+<!-- Announced Deals -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Recently Announced Deals</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">SPAC</th>
+<th class="px-4 py-3">Target</th>
+<th class="px-4 py-3 text-center">Deal Value</th>
+<th class="px-4 py-3 text-center">Trust Value</th>
+<th class="px-4 py-3 text-center">Price</th>
+<th class="px-4 py-3 text-center">Premium</th>
+<th class="px-4 py-3 text-center">Est. Close</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-bold text-purple-400">PSNY</span></td>
+<td class="px-4 py-3"><span class="font-medium">Polestar</span><span class="text-xs ml-2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">EV Manufacturer</span></td>
+<td class="px-4 py-3 text-center font-bold">$20B</td>
+<td class="px-4 py-3 text-center">$10.28</td>
+<td class="px-4 py-3 text-center">$11.42</td>
+<td class="px-4 py-3 text-center text-emerald-400">+11.1%</td>
+<td class="px-4 py-3 text-center">Q1 2025</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-bold text-purple-400">DWAC</span></td>
+<td class="px-4 py-3"><span class="font-medium">Trump Media</span><span class="text-xs ml-2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Social Media</span></td>
+<td class="px-4 py-3 text-center font-bold">$875M</td>
+<td class="px-4 py-3 text-center">$10.24</td>
+<td class="px-4 py-3 text-center">$32.84</td>
+<td class="px-4 py-3 text-center text-emerald-400">+220.7%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">Complete</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-bold text-purple-400">ACHR</span></td>
+<td class="px-4 py-3"><span class="font-medium">Archer Aviation</span><span class="text-xs ml-2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">eVTOL/Air Taxi</span></td>
+<td class="px-4 py-3 text-center font-bold">$2.7B</td>
+<td class="px-4 py-3 text-center">$10.18</td>
+<td class="px-4 py-3 text-center">$4.86</td>
+<td class="px-4 py-3 text-center text-red-400">-52.3%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">Complete</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3"><span class="font-bold text-purple-400">IONQ</span></td>
+<td class="px-4 py-3"><span class="font-medium">IonQ</span><span class="text-xs ml-2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Quantum Computing</span></td>
+<td class="px-4 py-3 text-center font-bold">$2.0B</td>
+<td class="px-4 py-3 text-center">$10.22</td>
+<td class="px-4 py-3 text-center">$28.42</td>
+<td class="px-4 py-3 text-center text-emerald-400">+178.1%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400">Complete</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Pre-Deal SPACs -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">🔍 Notable Pre-Deal SPACs</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-purple-50' : 'bg-purple-500/10' %>">
+<div class="flex justify-between items-start mb-2">
+<span class="font-bold text-purple-400">PSTH</span>
+<span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Pershing Sq</span>
+</div>
+<p class="text-2xl font-bold">$4.0B</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Bill Ackman • Deadline: Jun 2025</p>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<div class="flex justify-between items-start mb-2">
+<span class="font-bold text-sky-400">CCIV</span>
+<span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Churchill Cap</span>
+</div>
+<p class="text-2xl font-bold">$2.1B</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Michael Klein • Deadline: Mar 2025</p>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<div class="flex justify-between items-start mb-2">
+<span class="font-bold text-emerald-400">IPOF</span>
+<span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Social Capital</span>
+</div>
+<p class="text-2xl font-bold">$1.2B</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Chamath • Deadline: Apr 2025</p>
+</div>
+</div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">SPAC Deals by Sector</h3>
+<div class="h-48"><canvas id="sectorChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">De-SPAC Performance (YTD)</h3>
+<div class="h-48"><canvas id="perfChart"></canvas></div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('sectorChart'), {
+  type: 'doughnut',
+  data: { labels: ['Technology','EV/Clean Energy','Healthcare','Fintech','Space/Defense','Other'], datasets: [{ data: [28,22,18,14,10,8], backgroundColor: ['#8b5cf6','#10b981','#ef4444','#0ea5e9','#f59e0b','#94a3b8'] }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('perfChart'), {
+  type: 'bar',
+  data: { labels: ['>50%','20-50%','0-20%','-20-0%','-50--20%','<-50%'], datasets: [{ label: 'De-SPACs', data: [12,18,24,22,14,10], backgroundColor: ['#10b981','#34d399','#0ea5e9','#f59e0b','#ef4444','#dc2626'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,432 @@
+<%- include('../partials/header', { pageTitle: 'Concentration Risk' }) %>
+<%
+  // Safe defaults
+  const safePositions = typeof positions !== 'undefined' && positions ? positions : [];
+  const safeSectors = typeof sectors !== 'undefined' && sectors ? sectors : [];
+  const safeRecommendations = typeof recommendations !== 'undefined' && recommendations ? recommendations : [];
+  const safeTopPosition = typeof topPosition !== 'undefined' && topPosition ? topPosition : { symbol: '-', weight: 0 };
+  const safeTopSector = typeof topSector !== 'undefined' && topSector ? topSector : { name: '-', weight: 0 };
+  const safeTop5Weight = typeof top5Weight !== 'undefined' ? top5Weight : 0;
+  const safeHHI = typeof hhi !== 'undefined' ? hhi : 0;
+  const safeSectorHHI = typeof sectorHHI !== 'undefined' ? sectorHHI : 0;
+  const safeEffectivePositions = typeof effectivePositions !== 'undefined' ? effectivePositions : 0;
+  const safeOverallRisk = typeof overallRisk !== 'undefined' ? overallRisk : 'LOW';
+  const safeRiskScore = typeof riskScore !== 'undefined' ? riskScore : 100;
+  const safeTotalValue = typeof totalValue !== 'undefined' ? totalValue : 0;
+
+  // Risk colors
+  const riskColors = {
+    'HIGH': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500' },
+    'MODERATE': { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500' },
+    'LOW': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500' }
+  };
+  const currentRiskColor = riskColors[safeOverallRisk] || riskColors['LOW'];
+%>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Bloomberg-Style Header Bar -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-amber-400">Concentration Risk</h1>
+        <span class="status-live">LIVE</span>
+        <span class="text-xs text-slate-400 font-mono">Position, sector & geographic analysis</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="location.reload()" class="bloomberg-btn bloomberg-btn-ghost">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Refresh
+        </button>
+        <button onclick="runAnalysis()" class="bloomberg-btn bloomberg-btn-primary">
+          Run Analysis
+        </button>
+      </div>
+    </div>
+
+    <% if (safePositions.length === 0) { %>
+    <!-- Empty State -->
+    <div class="bloomberg-card">
+      <div class="p-12 text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+        </svg>
+        <h3 class="text-lg font-semibold text-white mb-2">No Holdings to Analyze</h3>
+        <p class="text-slate-400 mb-4">Add holdings to your portfolio to see concentration risk analysis</p>
+        <a href="/holdings" class="bloomberg-btn bloomberg-btn-primary">Go to Holdings</a>
+      </div>
+    </div>
+    <% } else { %>
+
+    <!-- Risk Overview KPI Bar -->
+    <div class="kpi-bar rounded-md overflow-hidden">
+      <div class="kpi-item">
+        <div class="kpi-label">Overall Risk</div>
+        <div class="kpi-value <%= currentRiskColor.text %>"><%= safeOverallRisk %></div>
+        <div class="text-xs text-slate-400">Score: <%= safeRiskScore %>/100</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Top Position</div>
+        <div class="kpi-value <%= safeTopPosition.weight > 15 ? 'text-red-400' : safeTopPosition.weight > 10 ? 'text-amber-400' : 'text-emerald-400' %>">
+          <%= fmt.pct(safeTopPosition.weight) %>
+        </div>
+        <div class="text-xs text-slate-400"><%= safeTopPosition.symbol %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Top 5 Holdings</div>
+        <div class="kpi-value <%= safeTop5Weight > 60 ? 'text-red-400' : safeTop5Weight > 50 ? 'text-amber-400' : 'text-emerald-400' %>">
+          <%= fmt.pct(safeTop5Weight) %>
+        </div>
+        <div class="text-xs text-slate-400"><%= safeTop5Weight > 50 ? 'Above target 50%' : 'Within target' %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Top Sector</div>
+        <div class="kpi-value <%= safeTopSector.weight > 40 ? 'text-red-400' : safeTopSector.weight > 30 ? 'text-amber-400' : 'text-emerald-400' %>">
+          <%= fmt.pct(safeTopSector.weight) %>
+        </div>
+        <div class="text-xs text-slate-400"><%= safeTopSector.name %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">HHI Index</div>
+        <div class="kpi-value <%= safeHHI > 2500 ? 'text-red-400' : safeHHI > 1000 ? 'text-amber-400' : 'text-emerald-400' %>">
+          <%= safeHHI.toLocaleString() %>
+        </div>
+        <div class="text-xs text-slate-400"><%= safeHHI > 2500 ? 'Concentrated' : safeHHI > 1000 ? 'Moderate' : 'Diversified' %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Positions</div>
+        <div class="kpi-value"><%= safePositions.length %></div>
+        <div class="text-xs text-slate-400">Eff: <%= safeEffectivePositions %></div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Position Concentration Chart -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Position Concentration</span>
+        </div>
+        <div class="p-4">
+          <div class="h-64"><canvas id="positionChart"></canvas></div>
+          <% if (safeTopPosition.weight > 10) { %>
+          <div class="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <p class="text-sm">
+              <span class="text-amber-400 font-bold">Warning:</span>
+              <%= safeTopPosition.symbol %> at <span class="font-mono"><%= fmt.pct(safeTopPosition.weight) %></span> exceeds 10% single-position guideline
+            </p>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Sector Concentration Chart -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Sector Concentration</span>
+        </div>
+        <div class="p-4">
+          <div class="h-64"><canvas id="sectorChart"></canvas></div>
+          <% if (safeTopSector.weight > 30) { %>
+          <div class="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30">
+            <p class="text-sm">
+              <span class="text-red-400 font-bold">High Risk:</span>
+              <%= safeTopSector.name %> at <span class="font-mono"><%= fmt.pct(safeTopSector.weight) %></span> exceeds 30% sector guideline
+            </p>
+          </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holdings Concentration Table -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Holdings Concentration Analysis</span>
+        <span class="text-xs text-slate-500 font-mono"><%= safePositions.length %> positions</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="bloomberg-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Stock</th>
+              <th class="text-right">Market Value</th>
+              <th class="text-right">Weight</th>
+              <th>Weight Bar</th>
+              <th class="text-right">Cumulative</th>
+              <th class="text-center">Sector</th>
+              <th class="text-center">Risk Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% safePositions.slice(0, 15).forEach((p, i) => {
+               const riskColor = p.riskLevel === 'HIGH' ? 'red' : p.riskLevel === 'MODERATE' ? 'amber' : 'emerald';
+               const barWidth = Math.min(100, (p.weight / (safeTopPosition.weight || 1)) * 100);
+            %>
+            <tr>
+              <td class="font-bold font-mono text-slate-400"><%= i + 1 %></td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    <%= p.symbol ? p.symbol.slice(0,2) : '??' %>
+                  </div>
+                  <a href="/stock/<%= p.symbol %>" class="text-white font-medium hover:text-sky-400"><%= p.symbol %></a>
+                </div>
+              </td>
+              <td class="text-right text-slate-300 font-mono"><%= fmt.compact(p.marketValue) %></td>
+              <td class="text-right font-bold font-mono text-<%= riskColor %>-400"><%= fmt.pct(p.weight) %></td>
+              <td>
+                <div class="h-4 rounded-full bg-slate-700">
+                  <div class="h-4 rounded-full bg-<%= riskColor %>-500" style="width: <%= barWidth %>%"></div>
+                </div>
+              </td>
+              <td class="text-right font-mono text-slate-400"><%= fmt.pct(p.cumulative) %></td>
+              <td class="text-center text-slate-400"><%= p.sector %></td>
+              <td class="text-center">
+                <span class="px-2 py-1 rounded text-xs font-mono bg-<%= riskColor %>-500/20 text-<%= riskColor %>-400">
+                  <%= p.riskLevel %>
+                </span>
+              </td>
+            </tr>
+            <% }); %>
+            <% if (safePositions.length > 15) { %>
+            <tr>
+              <td colspan="8" class="text-center text-slate-500 py-4">
+                + <%= safePositions.length - 15 %> more positions
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Metrics and Recommendations -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Concentration Metrics -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Concentration Metrics</span>
+        </div>
+        <div class="p-4 space-y-4">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-300">Herfindahl-Hirschman Index (HHI)</span>
+              <span class="font-bold font-mono <%= safeHHI > 2500 ? 'text-red-400' : safeHHI > 1000 ? 'text-amber-400' : 'text-emerald-400' %>">
+                <%= safeHHI.toLocaleString() %>
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">
+              <span class="font-mono">0-1,000</span>: Diversified |
+              <span class="font-mono">1,000-2,500</span>: Moderate |
+              <span class="font-mono">2,500+</span>: Concentrated
+            </p>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-300">Effective # of Positions</span>
+              <span class="font-bold font-mono"><%= safeEffectivePositions %></span>
+            </div>
+            <p class="text-xs text-slate-400">Actual: <span class="font-mono"><%= safePositions.length %></span> positions (weighted equivalent)</p>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-300">Sector HHI</span>
+              <span class="font-bold font-mono <%= safeSectorHHI > 2500 ? 'text-red-400' : safeSectorHHI > 1500 ? 'text-amber-400' : 'text-emerald-400' %>">
+                <%= safeSectorHHI.toLocaleString() %>
+              </span>
+            </div>
+            <p class="text-xs <%= safeSectorHHI > 2500 ? 'text-red-400' : 'text-slate-400' %>">
+              <%= safeSectorHHI > 2500 ? 'Highly concentrated in sectors' : safeSectorHHI > 1500 ? 'Moderately concentrated' : 'Well diversified' %>
+            </p>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-300">Portfolio Value</span>
+              <span class="font-bold font-mono text-white"><%= fmt.compact(safeTotalValue) %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="bloomberg-card-title">Recommendations</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <% safeRecommendations.forEach(rec => {
+             const recColor = rec.type === 'danger' ? 'red' : rec.type === 'warning' ? 'amber' : 'emerald';
+          %>
+          <div class="p-3 rounded-lg border-l-4 border-<%= recColor %>-500 bg-<%= recColor %>-500/10">
+            <p class="font-medium text-<%= recColor %>-400"><%= rec.title %></p>
+            <p class="text-sm text-slate-400"><%= rec.description %></p>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sector Breakdown Table -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Sector Breakdown</span>
+        <span class="text-xs text-slate-500 font-mono"><%= safeSectors.length %> sectors</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="bloomberg-table">
+          <thead>
+            <tr>
+              <th>Sector</th>
+              <th class="text-right">Market Value</th>
+              <th class="text-right">Weight</th>
+              <th>Weight Bar</th>
+              <th class="text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% safeSectors.forEach(s => {
+               const sColor = s.weight > 40 ? 'red' : s.weight > 30 ? 'amber' : 'emerald';
+               const barWidth = Math.min(100, (s.weight / (safeTopSector.weight || 1)) * 100);
+            %>
+            <tr>
+              <td class="font-medium text-white"><%= s.name %></td>
+              <td class="text-right text-slate-300 font-mono"><%= fmt.compact(s.value) %></td>
+              <td class="text-right font-bold font-mono text-<%= sColor %>-400"><%= fmt.pct(s.weight) %></td>
+              <td>
+                <div class="h-3 rounded-full bg-slate-700 w-full max-w-xs">
+                  <div class="h-3 rounded-full bg-<%= sColor %>-500" style="width: <%= barWidth %>%"></div>
+                </div>
+              </td>
+              <td class="text-center">
+                <% if (s.weight > 30) { %>
+                <span class="px-2 py-1 rounded text-xs font-mono bg-amber-500/20 text-amber-400">HIGH</span>
+                <% } else { %>
+                <span class="px-2 py-1 rounded text-xs font-mono bg-emerald-500/20 text-emerald-400">OK</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const positions = <%- JSON.stringify(safePositions.slice(0, 10)) %>;
+const sectors = <%- JSON.stringify(safeSectors) %>;
+
+// Position Chart
+if (document.getElementById('positionChart') && positions.length > 0) {
+  const topPositions = positions.slice(0, 7);
+  const othersWeight = positions.slice(7).reduce((sum, p) => sum + p.weight, 0);
+  if (othersWeight > 0) {
+    topPositions.push({ symbol: 'Others', weight: othersWeight });
+  }
+
+  new Chart(document.getElementById('positionChart'), {
+    type: 'bar',
+    data: {
+      labels: topPositions.map(p => p.symbol),
+      datasets: [{
+        data: topPositions.map(p => p.weight),
+        backgroundColor: topPositions.map(p =>
+          p.weight > 15 ? '#ef4444' : p.weight > 10 ? '#f59e0b' : '#10b981'
+        ),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.raw.toFixed(1) + '%'
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#334155' },
+          ticks: {
+            color: '#94a3b8',
+            callback: v => v + '%'
+          }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#94a3b8' }
+        }
+      }
+    }
+  });
+}
+
+// Sector Chart
+if (document.getElementById('sectorChart') && sectors.length > 0) {
+  const sectorColors = ['#ef4444', '#f59e0b', '#10b981', '#0ea5e9', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#94a3b8'];
+
+  new Chart(document.getElementById('sectorChart'), {
+    type: 'doughnut',
+    data: {
+      labels: sectors.map(s => s.name),
+      datasets: [{
+        data: sectors.map(s => s.weight),
+        backgroundColor: sectors.map((s, i) => sectorColors[i % sectorColors.length]),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            color: '#94a3b8',
+            font: { size: 11 },
+            boxWidth: 12,
+            generateLabels: (chart) => {
+              const data = chart.data;
+              return data.labels.map((label, i) => ({
+                text: `${label}: ${data.datasets[0].data[i].toFixed(1)}%`,
+                fillStyle: data.datasets[0].backgroundColor[i],
+                strokeStyle: data.datasets[0].backgroundColor[i],
+                index: i
+              }));
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.label + ': ' + ctx.raw.toFixed(1) + '%'
+          }
+        }
+      }
+    }
+  });
+}
+
+function runAnalysis() {
+  showToast('Running concentration analysis...', 'info');
+  setTimeout(() => {
+    location.reload();
+  }, 500);
+}
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,172 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeLeaderboard = typeof leaderboard !== 'undefined' ? leaderboard : [];
+%>
+<%- include('../partials/header', { pageTitle: 'Leaderboard' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bg-black border-l-4 border-amber-400 px-6 py-4 mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400 mb-1">LEADERBOARD</h1>
+      <p class="text-slate-400 text-sm uppercase tracking-wide">Top Performing Traders</p>
+    </div>
+    <button onclick="openJoinModal()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Join Leaderboard
+    </button>
+  </div>
+</div>
+
+<% if (safeLeaderboard.length === 0) { %>
+<div class="bloomberg-card p-12 text-center">
+<svg class="w-20 h-20 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+</svg>
+<h3 class="text-xl font-semibold text-amber-400 mb-2 uppercase">No Traders Yet</h3>
+<p class="text-slate-400 mb-4">Be the first to join the leaderboard!</p>
+<button onclick="openJoinModal()" class="bloomberg-btn bloomberg-btn-primary">Join Now</button>
+</div>
+<% } else { %>
+
+<!-- Top 3 Podium -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<% const top3 = safeLeaderboard.slice(0, 3); %>
+<% [1, 0, 2].forEach((i, pos) => { %>
+<% if (top3[i]) { const t = top3[i]; %>
+<div class="bloomberg-card p-6 text-center <%= pos === 1 ? 'md:-mt-4 ring-2 ring-amber-400' : '' %>">
+<div class="relative inline-block mb-4">
+<div class="w-20 h-20 rounded-full bg-gradient-to-br <%= i === 0 ? 'from-amber-400 to-yellow-500' : i === 1 ? 'from-slate-300 to-gray-400' : 'from-amber-600 to-orange-700' %> flex items-center justify-center text-white text-2xl font-bold">
+<%= t.display_name ? t.display_name.charAt(0).toUpperCase() : '#' %>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm font-mono <%= i === 0 ? 'bg-amber-400 text-amber-900' : i === 1 ? 'bg-slate-300 text-slate-700' : 'bg-amber-600 text-amber-100' %>">
+<%= i + 1 %>
+</div>
+</div>
+<h3 class="text-lg font-semibold text-white uppercase tracking-wide"><%= t.display_name || 'Anonymous' %></h3>
+<p class="text-2xl font-bold font-mono <%= (t.total_return || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %> my-2">
+<%= (t.total_return || 0) >= 0 ? '+' : '' %><%= (t.total_return || 0).toFixed(2) %>%
+</p>
+<div class="flex justify-center gap-4 text-sm text-slate-400 font-mono">
+<span><%= t.total_trades || 0 %> trades</span>
+<span><%= (t.win_rate || 0).toFixed(0) %>% win</span>
+</div>
+</div>
+<% } %>
+<% }) %>
+</div>
+
+<!-- Full Leaderboard Table -->
+<div class="bloomberg-card overflow-hidden">
+<table class="bloomberg-table w-full">
+<thead class="bg-black border-b-2 border-amber-400">
+<tr>
+<th class="px-6 py-4 text-left text-xs font-bold text-amber-400 uppercase tracking-wider">RANK</th>
+<th class="px-6 py-4 text-left text-xs font-bold text-amber-400 uppercase tracking-wider">TRADER</th>
+<th class="px-6 py-4 text-right text-xs font-bold text-amber-400 uppercase tracking-wider">TOTAL RETURN</th>
+<th class="px-6 py-4 text-right text-xs font-bold text-amber-400 uppercase tracking-wider">MONTHLY</th>
+<th class="px-6 py-4 text-right text-xs font-bold text-amber-400 uppercase tracking-wider">WIN RATE</th>
+<th class="px-6 py-4 text-right text-xs font-bold text-amber-400 uppercase tracking-wider">TRADES</th>
+</tr>
+</thead>
+<tbody>
+<% safeLeaderboard.forEach((trader, index) => { %>
+<tr class="border-t border-slate-700 hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<% if (index < 3) { %>
+<span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm font-mono <%= index === 0 ? 'bg-amber-400/20 text-amber-400' : index === 1 ? 'bg-slate-400/20 text-slate-400' : 'bg-amber-600/20 text-amber-600' %>">
+<%= index + 1 %>
+</span>
+<% } else { %>
+<span class="w-8 h-8 flex items-center justify-center font-medium font-mono text-slate-400"><%= index + 1 %></span>
+<% } %>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white font-bold">
+<%= trader.display_name ? trader.display_name.charAt(0).toUpperCase() : '#' %>
+</div>
+<div>
+<p class="font-medium text-white"><%= trader.display_name || 'Anonymous' %></p>
+<% if (trader.badge) { %>
+<span class="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400"><%= trader.badge %></span>
+<% } %>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-right font-semibold font-mono <%= (trader.total_return || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+<%= (trader.total_return || 0) >= 0 ? '+' : '' %><%= (trader.total_return || 0).toFixed(2) %>%
+</td>
+<td class="px-6 py-4 text-right font-mono <%= (trader.monthly_return || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+<%= (trader.monthly_return || 0) >= 0 ? '+' : '' %><%= (trader.monthly_return || 0).toFixed(2) %>%
+</td>
+<td class="px-6 py-4 text-right font-mono text-slate-300">
+<%= (trader.win_rate || 0).toFixed(0) %>%
+</td>
+<td class="px-6 py-4 text-right font-mono text-slate-400">
+<%= trader.total_trades || 0 %>
+</td>
+</tr>
+<% }) %>
+</tbody>
+</table>
+</div>
+<% } %>
+</div></div></main>
+
+<!-- Join Modal -->
+<div id="joinModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="bloomberg-card p-6 w-full max-w-md mx-4 border-l-4 border-amber-400">
+<h3 class="text-xl font-bold text-amber-400 mb-4 uppercase tracking-wide">Join Leaderboard</h3>
+<p class="text-slate-400 mb-4">Your trading journal stats will be used to calculate your ranking.</p>
+<form id="joinForm">
+<div class="mb-4">
+<label class="block text-sm font-medium text-slate-300 mb-1 uppercase tracking-wide">Display Name</label>
+<input type="text" name="displayName" class="form-input bg-slate-800 border-slate-600 text-white focus:border-amber-400 focus:ring-amber-400" placeholder="Your trader name" required>
+</div>
+</form>
+<div class="flex gap-3">
+<button onclick="closeJoinModal()" class="bloomberg-btn bloomberg-btn-ghost flex-1">Cancel</button>
+<button onclick="joinLeaderboard()" class="bloomberg-btn bloomberg-btn-primary flex-1">Join</button>
+</div>
+</div>
+</div>
+
+<script>
+function openJoinModal() {
+  document.getElementById('joinModal').classList.remove('hidden');
+  document.getElementById('joinModal').classList.add('flex');
+}
+
+function closeJoinModal() {
+  document.getElementById('joinModal').classList.add('hidden');
+  document.getElementById('joinModal').classList.remove('flex');
+}
+
+async function joinLeaderboard() {
+  const form = document.getElementById('joinForm');
+  const displayName = form.displayName.value;
+
+  try {
+    const res = await fetch('/api/leaderboard/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName })
+    });
+    if (res.ok) {
+      showToast('Joined leaderboard!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to join', 'error');
+    }
+  } catch (e) {
+    showToast('Error joining leaderboard', 'error');
+  }
+  closeJoinModal();
+}
+</script>
+<%- include('../partials/footer') %>

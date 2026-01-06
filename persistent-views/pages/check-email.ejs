@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= typeof theme !== 'undefined' ? theme : 'dark' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Your Email - WealthPilot Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+  <div class="w-full max-w-md text-center">
+    <!-- Logo -->
+    <div class="mb-8">
+      <div class="inline-flex items-center gap-2 text-3xl font-bold text-white mb-2">
+        <svg class="w-10 h-10 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        WealthPilot
+      </div>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-8">
+      <!-- Email Icon -->
+      <div class="mb-6 animate-float">
+        <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-semibold text-white mb-4">Check Your Email</h2>
+
+      <p class="text-slate-300 mb-6">
+        We've sent a verification link to
+        <% if (email) { %>
+          <br><strong class="text-blue-400"><%= email %></strong>
+        <% } else { %>
+          your email address.
+        <% } %>
+      </p>
+
+      <div class="bg-slate-900/50 rounded-lg p-4 mb-6 text-left">
+        <p class="text-sm text-slate-400 mb-2">Please:</p>
+        <ul class="text-sm text-slate-300 space-y-2">
+          <li class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Check your inbox for the verification email
+          </li>
+          <li class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Click the verification link in the email
+          </li>
+          <li class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Check your spam folder if you don't see it
+          </li>
+        </ul>
+      </div>
+
+      <!-- Resend button -->
+      <div id="resendSection">
+        <p class="text-sm text-slate-400 mb-3">Didn't receive the email?</p>
+        <button
+          id="resendBtn"
+          onclick="resendVerification()"
+          class="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition text-sm"
+        >
+          Resend Verification Email
+        </button>
+        <p id="resendMessage" class="mt-3 text-sm hidden"></p>
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-slate-700">
+        <a href="/login" class="text-blue-400 hover:text-blue-300 text-sm">
+          Back to Login
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function resendVerification() {
+      const btn = document.getElementById('resendBtn');
+      const msg = document.getElementById('resendMessage');
+      const email = '<%= email %>';
+
+      if (!email) {
+        msg.textContent = 'Email address not found. Please try registering again.';
+        msg.className = 'mt-3 text-sm text-red-400';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      try {
+        const response = await fetch('/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        msg.textContent = data.message || 'Verification email sent!';
+        msg.className = 'mt-3 text-sm ' + (data.error ? 'text-red-400' : 'text-emerald-400');
+        msg.classList.remove('hidden');
+
+        btn.textContent = 'Resend Verification Email';
+        btn.disabled = false;
+      } catch (err) {
+        msg.textContent = 'Failed to resend. Please try again.';
+        msg.className = 'mt-3 text-sm text-red-400';
+        msg.classList.remove('hidden');
+        btn.textContent = 'Resend Verification Email';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

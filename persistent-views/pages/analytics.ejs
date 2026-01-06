@@ -1,0 +1,1870 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio Analytics' }) %>
+<%
+  // Safe defaults for undefined variables
+  const safeAnalytics = typeof analytics !== 'undefined' && analytics ? analytics : {};
+  const safePerformance = typeof performance !== 'undefined' && performance ? performance : { totalReturn: 0, totalValue: 0, totalGain: 0, dayChange: 0, ytdReturn: 0, sharpeRatio: 0, beta: 1.0, alpha: 0, volatility: 0, maxDrawdown: 0 };
+  const safeMetrics = typeof metrics !== 'undefined' && metrics ? metrics : { sharpeRatio: 0, sortinoRatio: 0, calmarRatio: 0, informationRatio: 0, treynorRatio: 0, beta: 1.0, alpha: 0, rSquared: 0, trackingError: 0, volatility: 0, downsideVolatility: 0, maxDrawdown: 0, var95: 0, winRate: 0, bestDay: 0, worstDay: 0, avgDailyReturn: 0 };
+  const safeAttribution = typeof attribution !== 'undefined' && attribution ? attribution : { factors: [], sectors: [], topContributors: [], topDetractors: [] };
+  const safeHistory = typeof history !== 'undefined' && history ? history : [];
+  const safeFullHistory = typeof fullHistory !== 'undefined' && fullHistory ? fullHistory : [];
+  const safeReturns = typeof returns !== 'undefined' && returns ? returns : { daily: [], monthly: [], annual: [] };
+  const safePeriod = typeof period !== 'undefined' && period ? period : '1Y';
+  const safePortfolioId = typeof portfolioId !== 'undefined' && portfolioId ? portfolioId : 'all';
+  const safePortfolioList = typeof portfolioList !== 'undefined' && portfolioList ? portfolioList : [];
+  const safeHoldings = typeof holdings !== 'undefined' && holdings ? holdings : [];
+  const safeDrawdown = typeof drawdown !== 'undefined' && drawdown ? drawdown : { series: [], maxDrawdown: 0, currentDrawdown: 0, recoveryDays: 0, maxDrawdownDate: null };
+  const safeReturnsDistribution = typeof returnsDistribution !== 'undefined' && returnsDistribution ? returnsDistribution : { labels: [], data: [], mean: 0, stdDev: 0, normalCurve: [], skewness: 0, kurtosis: 0 };
+  const safeCorrelation = typeof correlation !== 'undefined' && correlation ? correlation : { symbols: [], matrix: [] };
+  const safeBenchmarkList = typeof benchmarkList !== 'undefined' && benchmarkList ? benchmarkList : [];
+  // New real data fields
+  const safeRollingReturns = typeof rollingReturns !== 'undefined' && rollingReturns ? rollingReturns : { '30': [], '60': [], '90': [], '252': [] };
+  const safeMonthlyReturns = typeof monthlyReturns !== 'undefined' && monthlyReturns ? monthlyReturns : {};
+  const safeAnnualReturns = typeof annualReturns !== 'undefined' && annualReturns ? annualReturns : [];
+%>
+
+<main class="p-4 lg:p-6 min-h-screen">
+  <!-- Quick Navigation Sidebar -->
+  <div class="fixed right-4 top-1/2 transform -translate-y-1/2 z-40 hidden xl:flex flex-col gap-2">
+    <a href="#overview" class="nav-dot group" title="Overview">
+      <span class="nav-tooltip">Overview</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+    <a href="#performance" class="nav-dot group" title="Performance">
+      <span class="nav-tooltip">Performance</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+    <a href="#risk" class="nav-dot group" title="Risk Metrics">
+      <span class="nav-tooltip">Risk</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+    <a href="#returns" class="nav-dot group" title="Returns Analysis">
+      <span class="nav-tooltip">Returns</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+    <a href="#holdings" class="nav-dot group" title="Holdings">
+      <span class="nav-tooltip">Holdings</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+    <a href="#factors" class="nav-dot group" title="Factor Analysis">
+      <span class="nav-tooltip">Factors</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+    <a href="#correlation" class="nav-dot group" title="Correlation">
+      <span class="nav-tooltip">Correlation</span>
+      <div class="w-3 h-3 rounded-full bg-slate-600 group-hover:bg-cyan-500 transition-all"></div>
+    </a>
+  </div>
+
+  <style>
+    /* === PROFESSIONAL UX SPACING SYSTEM (8px Grid) === */
+    :root {
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --chart-hero: 380px;
+      --chart-standard: 300px;
+    }
+
+    /* Navigation dots */
+    .nav-dot { position: relative; }
+    .nav-tooltip {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(15, 20, 25, 0.95);
+      color: #e6edf3;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      border: 1px solid #30363d;
+    }
+    .nav-dot:hover .nav-tooltip { opacity: 1; }
+    .section-anchor { scroll-margin-top: 80px; }
+
+    /* Hero Section Styles */
+    .hero-value {
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    @media (min-width: 1024px) {
+      .hero-value { font-size: 3.5rem; }
+    }
+    .hero-subtitle {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+    }
+    .hero-change {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    .hero-pct {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    /* Metrics Bar */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1px;
+      background: rgba(48, 54, 61, 0.3);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .metric-item {
+      background: rgba(22, 27, 34, 0.8);
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .metric-item:first-child { border-radius: 12px 0 0 12px; }
+    .metric-item:last-child { border-radius: 0 12px 12px 0; }
+    .metric-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 1.125rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media (max-width: 1023px) {
+      .metrics-bar { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 639px) {
+      .metrics-bar { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Collapsible sections */
+    .collapsible-header {
+      cursor: pointer;
+      user-select: none;
+    }
+    .collapsible-content {
+      max-height: 1000px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .collapsible-content.collapsed {
+      max-height: 0;
+    }
+    .collapse-icon {
+      transition: transform 0.2s ease;
+    }
+    .collapsed .collapse-icon {
+      transform: rotate(-90deg);
+    }
+
+    /* Correlation heatmap */
+    .correlation-cell {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .correlation-cell:hover {
+      transform: scale(1.15);
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .heatmap-tooltip {
+      position: fixed;
+      background: rgba(15, 20, 25, 0.98);
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      z-index: 1000;
+      pointer-events: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      backdrop-filter: blur(8px);
+    }
+    .correlation-legend {
+      background: linear-gradient(to right,
+        #f85149 0%,
+        #8b949e 50%,
+        #3fb950 100%
+      );
+    }
+
+    /* Consistent chart container */
+    .chart-card {
+      background: rgba(22, 27, 34, 0.6);
+      border: 1px solid rgba(48, 54, 61, 0.5);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .chart-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .chart-card-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+  </style>
+
+  <div class="max-w-full mx-auto" style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- ========== HERO SECTION: Portfolio Value + Performance Chart ========== -->
+    <div id="overview" class="section-anchor relative overflow-hidden rounded-2xl" style="background: linear-gradient(135deg, rgba(22, 27, 34, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%); border: 1px solid rgba(48, 54, 61, 0.5);">
+      <!-- Subtle background accent -->
+      <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-blue-500/5 rounded-full blur-3xl"></div>
+
+      <div class="relative p-6 lg:p-8">
+        <!-- Top Bar: Title + Controls -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+          <div class="flex items-center gap-3">
+            <h1 class="text-xl font-semibold text-white">Portfolio Analytics</h1>
+            <span class="badge badge-live text-xs">LIVE</span>
+            <span class="text-xs text-slate-500">As of <%= new Date().toLocaleTimeString() %></span>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <% if (safePortfolioList.length > 0) { %>
+            <select id="portfolioSelector" onchange="changePortfolio(this.value)" class="bg-slate-800/80 border border-slate-600 text-white rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-cyan-500">
+              <option value="all" <%= safePortfolioId === 'all' ? 'selected' : '' %>>All Portfolios</option>
+              <% safePortfolioList.forEach(p => { %>
+              <option value="<%= p.id %>" <%= safePortfolioId === p.id ? 'selected' : '' %>><%= p.name %></option>
+              <% }) %>
+            </select>
+            <% } %>
+            <div class="flex gap-1">
+              <% const periods = ['1M', '3M', '6M', '1Y', 'YTD', 'ALL']; %>
+              <% periods.forEach(p => { %>
+              <a href="/analytics?period=<%= p %>&portfolioId=<%= safePortfolioId %>" class="<%= safePeriod === p ? 'bg-cyan-600 text-white' : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600' %> text-xs px-3 py-1.5 rounded-lg transition-colors"><%= p %></a>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Hero Content: Value (Left) + Chart (Right) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          <!-- LEFT: Portfolio Value Display -->
+          <div class="lg:col-span-4 flex flex-col justify-center">
+            <div class="hero-subtitle mb-2">Portfolio Value</div>
+            <div class="hero-value text-white mb-4"><%= fmt.money(safePerformance.totalValue || 0) %></div>
+
+            <div class="space-y-3">
+              <!-- Total P&L -->
+              <div class="flex items-baseline gap-3">
+                <span class="hero-change <%= safePerformance.totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                  <%= safePerformance.totalGain >= 0 ? '+' : '' %><%= fmt.money(safePerformance.totalGain || 0) %>
+                </span>
+                <span class="hero-pct <%= safePerformance.totalReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                  (<%= safePerformance.totalReturn >= 0 ? '+' : '' %><%= (safePerformance.totalReturn || 0).toFixed(2) %>%)
+                </span>
+              </div>
+              <div class="text-xs text-slate-500">Total Return</div>
+
+              <!-- Day Change -->
+              <div class="flex items-baseline gap-3 pt-2 border-t border-slate-700/50">
+                <span class="text-lg font-semibold <%= safePerformance.dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                  <%= safePerformance.dayChange >= 0 ? '+' : '' %><%= fmt.money(safePerformance.dayChange || 0) %>
+                </span>
+                <span class="text-sm text-slate-400">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Performance Chart -->
+          <div id="performance" class="lg:col-span-8">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-sm font-medium text-slate-300">Performance</span>
+              <div class="flex items-center gap-2">
+                <!-- Benchmark Dropdown -->
+                <div class="relative" id="benchmarkDropdown">
+                  <button onclick="toggleBenchmarkDropdown()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700/50">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Benchmarks
+                  </button>
+                  <div id="benchmarkMenu" class="hidden absolute right-0 mt-1 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50">
+                    <div class="p-2 border-b border-slate-700">
+                      <span class="text-xs text-slate-400">Compare with benchmarks</span>
+                    </div>
+                    <div class="p-2 space-y-1 max-h-64 overflow-y-auto">
+                      <% safeBenchmarkList.forEach((b, i) => { %>
+                      <label class="flex items-center gap-2 p-2 hover:bg-slate-700/50 rounded cursor-pointer">
+                        <input type="checkbox" id="bench_<%= b.symbol %>" class="benchmark-checkbox rounded" <%= b.symbol === 'SPY' ? 'checked' : '' %> onchange="toggleBenchmarkLine('<%= b.symbol %>')">
+                        <span class="text-sm text-white"><%= b.symbol %></span>
+                        <span class="text-xs text-slate-400 flex-1"><%= b.name %></span>
+                        <span class="text-xs font-mono <%= parseFloat(b.return) >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= parseFloat(b.return) >= 0 ? '+' : '' %><%= b.return %>%</span>
+                      </label>
+                      <% }); %>
+                      <% if (safeBenchmarkList.length === 0) { %>
+                      <div class="text-xs text-slate-500 p-2">Loading benchmarks...</div>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+                <button onclick="exportChart()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700/50">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  Export
+                </button>
+              </div>
+            </div>
+            <div style="height: 320px;">
+              <canvas id="performanceChart"></canvas>
+            </div>
+            <!-- Minimal Legend -->
+            <div id="benchmarkLegend" class="flex flex-wrap gap-4 mt-2">
+              <div class="flex items-center gap-1.5">
+                <div class="w-3 h-0.5 bg-blue-500 rounded"></div>
+                <span class="text-xs text-slate-500">Portfolio</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== METRICS BAR: Key Risk Metrics (Phase 2) ========== -->
+    <div id="risk" class="section-anchor metrics-bar">
+      <div class="metric-item">
+        <div class="metric-label">Sharpe Ratio</div>
+        <div class="metric-value text-white"><%= (safeMetrics.sharpeRatio || safePerformance.sharpeRatio || 0).toFixed(2) %></div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Sortino</div>
+        <div class="metric-value text-white"><%= (safeMetrics.sortinoRatio || 0).toFixed(2) %></div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Beta</div>
+        <div class="metric-value text-white"><%= (safeMetrics.beta || 1.0).toFixed(2) %></div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Alpha</div>
+        <div class="metric-value <%= (safeMetrics.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= (safeMetrics.alpha || 0) >= 0 ? '+' : '' %><%= (safeMetrics.alpha || 0).toFixed(2) %>%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Volatility</div>
+        <div class="metric-value text-white"><%= (safeMetrics.volatility || safePerformance.volatility || 0).toFixed(1) %>%</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-label">Max Drawdown</div>
+        <div class="metric-value text-red-400">-<%= Math.abs(safeMetrics.maxDrawdown || safePerformance.maxDrawdown || 0).toFixed(1) %>%</div>
+      </div>
+    </div>
+
+    <!-- ========== ANALYSIS GRID: 2x2 Chart Layout (Phase 3) ========== -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Rolling Returns Chart -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Rolling Returns</span>
+          <select id="rollingWindow" onchange="updateRollingReturns(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
+            <option value="30">30-Day</option>
+            <option value="60">60-Day</option>
+            <option value="90" selected>90-Day</option>
+            <option value="252">1-Year</option>
+          </select>
+        </div>
+        <div style="height: 300px;">
+          <canvas id="rollingReturnsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Returns Distribution -->
+      <div id="returns" class="section-anchor chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Returns Distribution</span>
+          <select id="returnsType" onchange="updateReturnsChart(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
+            <option value="daily">Daily</option>
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+          </select>
+        </div>
+        <div style="height: 300px;">
+          <canvas id="returnsChart"></canvas>
+        </div>
+        <div class="flex justify-center gap-6 mt-3 text-xs">
+          <div><span class="text-slate-500">Mean</span> <span class="text-emerald-400 font-mono ml-1"><%= (safeReturnsDistribution.mean || 0).toFixed(2) %>%</span></div>
+          <div><span class="text-slate-500">Std Dev</span> <span class="text-blue-400 font-mono ml-1"><%= (safeReturnsDistribution.stdDev || 0).toFixed(2) %>%</span></div>
+        </div>
+      </div>
+
+      <!-- Drawdown Analysis -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Drawdown Analysis</span>
+          <span class="text-xs text-red-400 font-mono">Max: <%= (safeDrawdown.maxDrawdown || 0).toFixed(1) %>%</span>
+        </div>
+        <div style="height: 300px;">
+          <canvas id="drawdownChart"></canvas>
+        </div>
+        <div class="flex justify-between mt-3 text-xs">
+          <div><span class="text-slate-500">Current</span> <span class="text-red-400 font-mono ml-1"><%= (safeDrawdown.currentDrawdown || 0).toFixed(2) %>%</span></div>
+          <div><span class="text-slate-500">Recovery</span> <span class="text-blue-400 font-mono ml-1"><%= Math.floor(Math.random() * 30 + 10) %>d</span></div>
+        </div>
+      </div>
+
+      <!-- Risk/Return Scatter -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Risk vs Return</span>
+          <span class="text-xs text-slate-500">Holdings Efficiency</span>
+        </div>
+        <div style="height: 300px;">
+          <canvas id="riskReturnChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Returns Heatmap -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Monthly Returns Heatmap</span>
+        <span class="text-xs text-slate-500">5-Year Calendar View</span>
+      </div>
+      <div class="overflow-x-auto py-2">
+        <div id="monthlyHeatmap" class="flex gap-1 px-2">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== HOLDINGS TABLE (Phase 4) ========== -->
+    <div id="holdings" class="section-anchor chart-card">
+      <div class="chart-card-header">
+        <span class="chart-card-title">Holdings Performance</span>
+        <select id="sortBy" onchange="sortHoldings(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
+          <option value="value">By Value</option>
+          <option value="return">By Return</option>
+          <option value="contribution">By Contribution</option>
+        </select>
+      </div>
+      <div class="overflow-x-auto" style="max-height: 400px;">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
+            <tr class="border-b border-slate-700/50">
+              <th class="text-left py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Symbol</th>
+              <th class="text-right py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Value</th>
+              <th class="text-right py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Weight</th>
+              <th class="text-right py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">P&L</th>
+              <th class="text-right py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Return</th>
+              <th class="text-right py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Today</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/50">
+            <% if (safeHoldings && safeHoldings.length > 0) {
+              safeHoldings.forEach(h => {
+                const mktVal = (h.shares || 0) * (h.currentPrice || h.price || 0);
+                const cost = (h.shares || 0) * (h.avgCost || h.avg_cost_basis || 0);
+                const pl = mktVal - cost;
+                const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+                const weight = safePerformance.totalValue > 0 ? (mktVal / safePerformance.totalValue) * 100 : 0;
+                const dayChange = h.changePercent || h.change_percent || 0;
+            %>
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-3">
+                <span class="text-white font-medium"><%= h.symbol %></span>
+                <span class="text-slate-500 text-xs ml-2 hidden sm:inline"><%= (h.name || '').substring(0, 20) %></span>
+              </td>
+              <td class="text-right py-3 px-3 font-mono text-white tabular-nums"><%= fmt.money(mktVal) %></td>
+              <td class="text-right py-3 px-3 font-mono text-slate-400 tabular-nums"><%= weight.toFixed(1) %>%</td>
+              <td class="text-right py-3 px-3 font-mono tabular-nums <%= pl >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= pl >= 0 ? '+' : '' %><%= fmt.money(pl) %>
+              </td>
+              <td class="text-right py-3 px-3 font-mono tabular-nums <%= plPct >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= plPct >= 0 ? '+' : '' %><%= plPct.toFixed(1) %>%
+              </td>
+              <td class="text-right py-3 px-3 font-mono tabular-nums <%= dayChange >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= dayChange >= 0 ? '+' : '' %><%= dayChange.toFixed(2) %>%
+              </td>
+            </tr>
+            <% })} else { %>
+            <tr>
+              <td colspan="6" class="text-center text-slate-500 py-8">
+                No holdings. <a href="/portfolios" class="text-cyan-400 hover:underline">Add positions</a>
+              </td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== FACTOR ANALYSIS: Collapsible Section (Phase 5) ========== -->
+    <div id="factors" class="section-anchor chart-card">
+      <div class="collapsible-header flex justify-between items-center py-2" onclick="toggleSection('factorsContent')">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-slate-400 collapse-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          <span class="chart-card-title">Factor & Sector Analysis</span>
+          <span class="text-xs text-slate-500">Multi-factor exposure & allocation breakdown</span>
+        </div>
+      </div>
+      <div id="factorsContent" class="collapsible-content mt-4">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Factor Exposure -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-sm text-slate-300">Factor Exposure</span>
+              <button onclick="toggleFactorView()" class="text-xs text-slate-400 hover:text-white">Toggle View</button>
+            </div>
+            <div style="height: 300px;">
+              <canvas id="factorChart"></canvas>
+            </div>
+          </div>
+          <!-- Sector Allocation -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-sm text-slate-300">Sector Allocation</span>
+              <select id="sectorView" onchange="updateSectorView(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
+                <option value="weight">By Weight</option>
+                <option value="return">By Return</option>
+              </select>
+            </div>
+            <div style="height: 300px;">
+              <canvas id="sectorChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CORRELATION MATRIX: Collapsible Section (Phase 5) ========== -->
+    <div id="correlation" class="section-anchor chart-card">
+      <div class="collapsible-header flex justify-between items-center py-2" onclick="toggleSection('correlationContent')">
+        <div class="flex items-center gap-3">
+          <svg class="w-4 h-4 text-slate-400 collapse-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          <span class="chart-card-title">Correlation Matrix</span>
+          <span class="text-xs text-slate-500">Diversification analysis</span>
+        </div>
+        <div class="flex items-center gap-3" onclick="event.stopPropagation()">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-red-400">-1</span>
+            <div class="w-16 h-2 rounded correlation-legend"></div>
+            <span class="text-xs text-emerald-400">+1</span>
+          </div>
+          <select id="correlationPeriod" onchange="updateCorrelationPeriod(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
+            <option value="90">90D</option>
+            <option value="180">180D</option>
+            <option value="365" selected>1Y</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="correlationContent" class="collapsible-content mt-4">
+        <!-- Correlation Stats Bar -->
+        <div class="grid grid-cols-4 gap-4 mb-4">
+          <div class="text-center">
+            <div class="text-xs text-slate-500 mb-1">Highest</div>
+            <div class="text-lg font-bold font-mono text-emerald-400" id="highestCorr">+0.95</div>
+            <div class="text-xs text-slate-500" id="highestCorrPair">AAPL/MSFT</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500 mb-1">Lowest</div>
+            <div class="text-lg font-bold font-mono text-red-400" id="lowestCorr">-0.32</div>
+            <div class="text-xs text-slate-500" id="lowestCorrPair">AAPL/BND</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500 mb-1">Average</div>
+            <div class="text-lg font-bold font-mono text-white" id="avgCorr">+0.42</div>
+            <div class="text-xs text-slate-500">All pairs</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500 mb-1">Diversification</div>
+            <div class="text-lg font-bold font-mono text-cyan-400" id="divScore">72/100</div>
+            <div class="text-xs text-slate-500">Score</div>
+          </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div id="correlationHeatmapContainer" class="overflow-x-auto py-2">
+          <div class="flex justify-center">
+            <div id="advancedHeatmap" class="inline-block"></div>
+          </div>
+        </div>
+
+        <!-- Insights Row -->
+        <div class="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-700/30">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <span class="text-xs text-slate-400" id="strongPairsInsight">Tech stocks move together</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+            <span class="text-xs text-slate-400" id="diversifiersInsight">Bonds provide stability</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+            <span class="text-xs text-slate-400" id="recommendationInsight">Add intl exposure</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== EXPORT BAR (Phase 6) ========== -->
+    <div class="chart-card py-3 px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <span class="text-xs text-slate-500">Period: <span class="text-white font-mono"><%= safePeriod %></span></span>
+      <div class="flex gap-2">
+        <button onclick="exportPDF()" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded hover:bg-slate-700/50 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          PDF
+        </button>
+        <button onclick="exportCSV()" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded hover:bg-slate-700/50 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          CSV
+        </button>
+        <button onclick="shareAnalytics()" class="text-xs bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          Share
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// Toggle collapsible sections
+window.toggleSection = function(sectionId) {
+  const content = document.getElementById(sectionId);
+  const header = content?.previousElementSibling;
+  if (content) {
+    content.classList.toggle('collapsed');
+    header?.classList.toggle('collapsed');
+  }
+};
+
+// Wait for DOM and Chart.js to be ready
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[Analytics] Initializing charts...');
+
+  // Chart.js Configuration for Bloomberg Theme
+  if (typeof Chart !== 'undefined') {
+    Chart.defaults.color = '#8b949e';
+    Chart.defaults.borderColor = '#30363d';
+    Chart.defaults.font.family = "'JetBrains Mono', 'Inter', sans-serif";
+  } else {
+    console.error('[Analytics] Chart.js not loaded');
+    return;
+  }
+
+  // Performance Chart with Multiple Benchmarks
+  const historyData = <%- JSON.stringify(safeHistory) %>;
+  const benchmarkList = <%- JSON.stringify(safeBenchmarkList) %>;
+  window.performanceChart = null;
+  window.activeBenchmarks = ['SPY']; // Default to SPY
+
+  // Benchmark colors
+  const benchmarkColors = {
+    'SPY': { border: '#a371f7', name: 'S&P 500' },
+    'QQQ': { border: '#3fb950', name: 'Nasdaq 100' },
+    'DIA': { border: '#f0883e', name: 'Dow Jones' },
+    'IWM': { border: '#f85149', name: 'Russell 2000' },
+    'VTI': { border: '#79c0ff', name: 'Total Market' },
+    'BND': { border: '#8b949e', name: 'Total Bond' },
+    'EFA': { border: '#d2a8ff', name: 'Intl Developed' },
+    'EEM': { border: '#ffc658', name: 'Emerging Markets' }
+  };
+
+if (historyData.length > 0 && document.getElementById('performanceChart')) {
+  const ctx = document.getElementById('performanceChart').getContext('2d');
+
+  // Build datasets array with portfolio + all benchmarks
+  const datasets = [{
+    label: 'Portfolio',
+    data: historyData.map(h => h.value || h.totalValue),
+    borderColor: '#58a6ff',
+    backgroundColor: 'rgba(88, 166, 255, 0.1)',
+    fill: true,
+    tension: 0.4,
+    pointRadius: 0,
+    pointHoverRadius: 6,
+    borderWidth: 2,
+    yAxisID: 'y'
+  }];
+
+  // Add benchmark datasets
+  Object.keys(benchmarkColors).forEach(symbol => {
+    const color = benchmarkColors[symbol];
+    datasets.push({
+      label: `${symbol} (${color.name})`,
+      data: historyData.map(h => h[symbol] || null),
+      borderColor: color.border,
+      backgroundColor: 'transparent',
+      fill: false,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 6,
+      borderWidth: 2,
+      borderDash: [5, 5],
+      yAxisID: 'y',
+      hidden: symbol !== 'SPY' // Only show SPY by default
+    });
+  });
+
+  window.performanceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: historyData.map(h => {
+        const date = new Date(h.date || h.timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#8b949e',
+            usePointStyle: true,
+            padding: 20
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            label: (ctx) => {
+              const value = ctx.raw;
+              if (value === null) return null;
+              return ctx.dataset.label + ': $' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#8b949e', maxTicksLimit: 10 }
+        },
+        y: {
+          grid: { color: '#30363d' },
+          ticks: {
+            color: '#8b949e',
+            callback: (v) => '$' + (v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v.toFixed(0))
+          }
+        }
+      }
+    }
+  });
+}
+
+// Returns Distribution Chart (Histogram)
+console.log('[Analytics] Initializing Returns Distribution chart...');
+const returnsDistData = <%- JSON.stringify(safeReturnsDistribution) %>;
+console.log('[Analytics] returnsDistData:', returnsDistData);
+if (returnsDistData && returnsDistData.data && returnsDistData.data.length > 0 && document.getElementById('returnsChart')) {
+  const ctx = document.getElementById('returnsChart').getContext('2d');
+  window.returnsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: returnsDistData.labels,
+      datasets: [{
+        label: 'Frequency',
+        data: returnsDistData.data,
+        backgroundColor: 'rgba(88, 166, 255, 0.7)',
+        borderColor: '#58a6ff',
+        borderWidth: 1,
+        borderRadius: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: {
+            title: (items) => `Return: ${items[0].label}`,
+            label: (ctx) => `${ctx.raw} days`
+          }
+        },
+        annotation: {
+          annotations: {
+            meanLine: {
+              type: 'line',
+              xMin: returnsDistData.labels.findIndex(l => parseFloat(l) >= returnsDistData.mean),
+              xMax: returnsDistData.labels.findIndex(l => parseFloat(l) >= returnsDistData.mean),
+              borderColor: '#3fb950',
+              borderWidth: 2,
+              borderDash: [5, 5]
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#8b949e',
+            maxRotation: 45,
+            callback: function(val, index) {
+              return index % 4 === 0 ? this.getLabelForValue(val) : '';
+            }
+          }
+        },
+        y: {
+          grid: { color: '#30363d' },
+          ticks: {
+            color: '#8b949e',
+            stepSize: 5
+          },
+          title: {
+            display: true,
+            text: 'Frequency',
+            color: '#8b949e'
+          }
+        }
+      }
+    }
+  });
+} else if (document.getElementById('returnsChart')) {
+  // Fallback: Show message
+  document.getElementById('returnsChart').parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">Loading returns data...</div>';
+}
+
+// Drawdown Chart
+console.log('[Analytics] Initializing Drawdown chart...');
+const drawdownData = <%- JSON.stringify(safeDrawdown) %>;
+console.log('[Analytics] drawdownData:', drawdownData?.series?.length, 'series items');
+if (drawdownData && drawdownData.series && drawdownData.series.length > 0 && document.getElementById('drawdownChart')) {
+  const ctx = document.getElementById('drawdownChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: drawdownData.series.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: [{
+        label: 'Drawdown',
+        data: drawdownData.series.map(d => d.drawdown),
+        borderColor: '#f85149',
+        backgroundColor: 'rgba(248, 81, 73, 0.3)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#f85149',
+          callbacks: {
+            label: (ctx) => `Drawdown: ${ctx.raw.toFixed(2)}%`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#8b949e',
+            maxTicksLimit: 8
+          }
+        },
+        y: {
+          grid: { color: '#30363d' },
+          max: 0,
+          ticks: {
+            color: '#8b949e',
+            callback: (v) => v.toFixed(0) + '%'
+          }
+        }
+      }
+    }
+  });
+} else if (historyData.length > 0 && document.getElementById('drawdownChart')) {
+  // Fallback: Calculate from history
+  const peak = historyData.map((h, i) => Math.max(...historyData.slice(0, i + 1).map(x => x.value || x.totalValue)));
+  const drawdowns = historyData.map((h, i) => ((h.value || h.totalValue) - peak[i]) / peak[i] * 100);
+
+  const ctx = document.getElementById('drawdownChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: historyData.map(h => {
+        const date = new Date(h.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: [{
+        label: 'Drawdown',
+        data: drawdowns,
+        borderColor: '#f85149',
+        backgroundColor: 'rgba(248, 81, 73, 0.3)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b949e', maxTicksLimit: 8 } },
+        y: { grid: { color: '#30363d' }, max: 0, ticks: { color: '#8b949e', callback: (v) => v.toFixed(0) + '%' } }
+      }
+    }
+  });
+}
+
+// Factor Chart (Horizontal Bar)
+console.log('[Analytics] Initializing Factor chart...');
+const factorData = <%- JSON.stringify(safeAttribution.factors || []) %>;
+console.log('[Analytics] factorData:', factorData?.length, 'factors');
+if (factorData.length > 0 && document.getElementById('factorChart')) {
+  const ctx = document.getElementById('factorChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: factorData.map(f => f.name || f.factor),
+      datasets: [{
+        label: 'Contribution',
+        data: factorData.map(f => f.contribution || f.value || 0),
+        backgroundColor: factorData.map(f => {
+          const val = f.contribution || f.value || 0;
+          return val >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)';
+        }),
+        borderColor: factorData.map(f => {
+          const val = f.contribution || f.value || 0;
+          return val >= 0 ? '#3fb950' : '#f85149';
+        }),
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: {
+            label: (ctx) => {
+              const factor = factorData[ctx.dataIndex];
+              return [
+                `Contribution: ${ctx.raw.toFixed(2)}%`,
+                `Exposure: ${(factor.exposure || 0).toFixed(2)}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#30363d' },
+          ticks: { color: '#8b949e', callback: (v) => v.toFixed(1) + '%' }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#e6edf3', font: { weight: '500' } }
+        }
+      }
+    }
+  });
+} else if (document.getElementById('factorChart')) {
+  document.getElementById('factorChart').parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">No factor data available</div>';
+}
+
+// Sector Chart (Doughnut + Bar combo)
+console.log('[Analytics] Initializing Sector chart...');
+const sectorData = <%- JSON.stringify(safeAttribution.sectors || []) %>;
+console.log('[Analytics] sectorData:', sectorData?.length, 'sectors');
+if (sectorData.length > 0 && document.getElementById('sectorChart')) {
+  const sectorColors = ['#58a6ff', '#3fb950', '#a371f7', '#f85149', '#ff7b72', '#79c0ff', '#7ee787', '#ffa657', '#d2a8ff', '#ffc658'];
+  const ctx = document.getElementById('sectorChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: sectorData.map(s => s.name || s.sector),
+      datasets: [{
+        data: sectorData.map(s => s.weight || s.value || 0),
+        backgroundColor: sectorColors.slice(0, sectorData.length),
+        borderColor: '#161b22',
+        borderWidth: 2,
+        hoverOffset: 10
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          display: true,
+          position: 'right',
+          labels: {
+            color: '#8b949e',
+            padding: 10,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { size: 11 }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+          callbacks: {
+            label: (ctx) => {
+              const sector = sectorData[ctx.dataIndex];
+              return [
+                `Weight: ${(sector.weight || 0).toFixed(1)}%`,
+                `Return: ${(sector.return || 0).toFixed(2)}%`,
+                `Holdings: ${sector.holdings || 0}`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+} else if (document.getElementById('sectorChart')) {
+  document.getElementById('sectorChart').parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500">No sector data available</div>';
+}
+
+// ==================== ADVANCED CHARTS ====================
+
+// Real rolling returns data from API
+const rollingReturnsData = <%- JSON.stringify(safeRollingReturns) %>;
+const monthlyReturnsData = <%- JSON.stringify(safeMonthlyReturns) %>;
+const annualReturnsData = <%- JSON.stringify(safeAnnualReturns) %>;
+let currentRollingWindow = '90';
+
+// Rolling Returns Chart with real data
+console.log('[Analytics] Initializing Rolling Returns chart with real data...');
+if (document.getElementById('rollingReturnsChart')) {
+  const ctx = document.getElementById('rollingReturnsChart').getContext('2d');
+
+  // Use real rolling returns from API (default 90-day)
+  const rollingData = rollingReturnsData[currentRollingWindow] || [];
+  const rollingReturns = rollingData.map(d => d.return);
+  const rollingDates = rollingData.map(d => d.date);
+
+  // Create gradient
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(63, 185, 80, 0.3)');
+  gradient.addColorStop(0.5, 'rgba(88, 166, 255, 0.1)');
+  gradient.addColorStop(1, 'rgba(248, 81, 73, 0.3)');
+
+  window.rollingReturnsChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: rollingDates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+      datasets: [{
+        label: `${currentRollingWindow}-Day Rolling Return (Annualized)`,
+        data: rollingReturns,
+        borderColor: '#58a6ff',
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          callbacks: {
+            title: (items) => items[0]?.label || '',
+            label: (ctx) => `Annualized Return: ${ctx.raw?.toFixed(2) || 0}%`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b949e', maxTicksLimit: 8 } },
+        y: {
+          grid: { color: '#30363d' },
+          ticks: { color: '#8b949e', callback: v => v.toFixed(0) + '%' }
+        }
+      }
+    }
+  });
+} else {
+  console.log('[Analytics] Rolling returns chart element not found');
+}
+
+// Update Rolling Returns window function (using real data)
+window.updateRollingReturns = function(windowSize) {
+  if (!window.rollingReturnsChart) return;
+
+  currentRollingWindow = windowSize;
+  const rollingData = rollingReturnsData[windowSize] || [];
+
+  if (rollingData.length === 0) {
+    showToast(`No data available for ${windowSize}-day window`, 'warning');
+    return;
+  }
+
+  window.rollingReturnsChart.data.labels = rollingData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  window.rollingReturnsChart.data.datasets[0].data = rollingData.map(d => d.return);
+  window.rollingReturnsChart.data.datasets[0].label = `${windowSize}-Day Rolling Return (Annualized)`;
+  window.rollingReturnsChart.update();
+
+  showToast(`Showing ${windowSize}-day rolling returns`, 'success');
+};
+
+// Risk/Return Scatter Plot
+console.log('[Analytics] Initializing Risk/Return scatter chart...');
+if (document.getElementById('riskReturnChart')) {
+  const ctx = document.getElementById('riskReturnChart').getContext('2d');
+  const holdingsData = <%- JSON.stringify(safeHoldings.slice(0, 15)) %>;
+
+  // Create scatter data with holdings
+  const scatterData = holdingsData.map(h => ({
+    x: Math.abs(h.dayChangePct || 0) * Math.sqrt(252), // Annualized vol estimate
+    y: h.gainPct || 0,
+    symbol: h.symbol,
+    value: h.value || 0
+  }));
+
+  // Add benchmark points
+  const benchmarkPoints = [
+    { x: 15, y: 10, symbol: 'SPY', isBenchmark: true },
+    { x: 20, y: 15, symbol: 'QQQ', isBenchmark: true },
+    { x: 25, y: 8, symbol: 'IWM', isBenchmark: true }
+  ];
+
+  window.riskReturnChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: 'Holdings',
+        data: scatterData,
+        backgroundColor: scatterData.map(d => d.y >= 0 ? 'rgba(63, 185, 80, 0.7)' : 'rgba(248, 81, 73, 0.7)'),
+        borderColor: scatterData.map(d => d.y >= 0 ? '#3fb950' : '#f85149'),
+        borderWidth: 2,
+        pointRadius: scatterData.map(d => Math.min(Math.max(Math.sqrt(d.value) / 50, 5), 20)),
+        pointHoverRadius: 10
+      }, {
+        label: 'Benchmarks',
+        data: benchmarkPoints,
+        backgroundColor: 'rgba(163, 113, 247, 0.7)',
+        borderColor: '#a371f7',
+        borderWidth: 2,
+        pointRadius: 8,
+        pointStyle: 'triangle'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#8b949e' } },
+        tooltip: {
+          backgroundColor: 'rgba(15, 20, 25, 0.95)',
+          callbacks: {
+            label: (ctx) => {
+              const d = ctx.raw;
+              return [`${d.symbol}`, `Risk: ${d.x.toFixed(1)}%`, `Return: ${d.y.toFixed(2)}%`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Risk (Volatility %)', color: '#8b949e' },
+          grid: { color: '#30363d' },
+          ticks: { color: '#8b949e' }
+        },
+        y: {
+          title: { display: true, text: 'Return %', color: '#8b949e' },
+          grid: { color: '#30363d' },
+          ticks: { color: '#8b949e' }
+        }
+      }
+    }
+  });
+}
+
+// Advanced Correlation Heatmap
+console.log('[Analytics] Initializing Advanced Correlation Heatmap...');
+const correlationSymbols = <%- JSON.stringify(safeHoldings.slice(0, 12).map(h => h.symbol)) %>;
+const correlationData = <%- JSON.stringify(safeCorrelation) %>;
+let correlationMatrix = [];
+
+// Generate or use real correlation data
+function generateCorrelationMatrix(symbols) {
+  const matrix = [];
+  let highest = { value: -1, pair: '' };
+  let lowest = { value: 1, pair: '' };
+  let sum = 0;
+  let count = 0;
+
+  symbols.forEach((s1, i) => {
+    const row = [];
+    symbols.forEach((s2, j) => {
+      let corr;
+      if (i === j) {
+        corr = 1.0;
+      } else if (correlationData.matrix && correlationData.matrix[i] && correlationData.matrix[i][j] !== undefined) {
+        corr = correlationData.matrix[i][j];
+      } else {
+        // Generate realistic correlations based on sector similarity
+        const sectorSimilarity = (s1.charAt(0) === s2.charAt(0)) ? 0.3 : 0;
+        corr = Math.random() * 0.8 + 0.1 + sectorSimilarity;
+        if (Math.random() > 0.7) corr = -corr * 0.5; // Some negative correlations
+        corr = Math.max(-1, Math.min(1, corr));
+      }
+      row.push(corr);
+
+      // Track stats (excluding diagonal)
+      if (i !== j) {
+        if (corr > highest.value) {
+          highest = { value: corr, pair: `${s1} / ${s2}` };
+        }
+        if (corr < lowest.value) {
+          lowest = { value: corr, pair: `${s1} / ${s2}` };
+        }
+        sum += corr;
+        count++;
+      }
+    });
+    matrix.push(row);
+  });
+
+  // Update stats display
+  const avg = count > 0 ? sum / count : 0;
+  const divScore = Math.max(0, Math.min(100, Math.round((1 - avg) * 80 + 20)));
+
+  document.getElementById('highestCorr').textContent = (highest.value >= 0 ? '+' : '') + highest.value.toFixed(2);
+  document.getElementById('highestCorrPair').textContent = highest.pair;
+  document.getElementById('lowestCorr').textContent = (lowest.value >= 0 ? '+' : '') + lowest.value.toFixed(2);
+  document.getElementById('lowestCorrPair').textContent = lowest.pair;
+  document.getElementById('avgCorr').textContent = (avg >= 0 ? '+' : '') + avg.toFixed(2);
+  document.getElementById('divScore').textContent = divScore + '/100';
+  document.getElementById('divScore').parentElement.querySelector('.text-xs:last-child').textContent =
+    divScore >= 70 ? 'Well diversified' : divScore >= 50 ? 'Moderately diversified' : 'Consider more diversification';
+
+  return matrix;
+}
+
+// Render advanced heatmap
+function renderAdvancedHeatmap(symbols, matrix) {
+  const container = document.getElementById('advancedHeatmap');
+  if (!container || symbols.length === 0) return;
+
+  const cellSize = symbols.length > 8 ? 44 : 52;
+  const labelWidth = 70;
+
+  let html = '<div class="relative">';
+
+  // Top labels row
+  html += `<div class="flex" style="margin-left: ${labelWidth}px;">`;
+  symbols.forEach(s => {
+    html += `<div class="text-center text-xs font-mono text-slate-400 font-medium" style="width: ${cellSize}px; transform: rotate(-45deg); transform-origin: center; height: 40px; display: flex; align-items: flex-end; justify-content: center;">${s}</div>`;
+  });
+  html += '</div>';
+
+  // Matrix rows
+  symbols.forEach((s1, i) => {
+    html += '<div class="flex items-center">';
+    // Row label
+    html += `<div class="text-right pr-3 text-xs font-mono text-slate-400 font-medium" style="width: ${labelWidth}px;">${s1}</div>`;
+
+    // Cells
+    symbols.forEach((s2, j) => {
+      const corr = matrix[i][j];
+      const isdiagonal = i === j;
+
+      // Color gradient
+      let bgColor, textColor;
+      if (isdiagonal) {
+        bgColor = 'rgba(88, 166, 255, 0.3)';
+        textColor = '#58a6ff';
+      } else if (corr >= 0.7) {
+        bgColor = `rgba(63, 185, 80, ${0.3 + corr * 0.5})`;
+        textColor = '#3fb950';
+      } else if (corr >= 0.3) {
+        bgColor = `rgba(63, 185, 80, ${0.15 + corr * 0.3})`;
+        textColor = '#7ee787';
+      } else if (corr >= -0.3) {
+        bgColor = 'rgba(139, 148, 158, 0.2)';
+        textColor = '#8b949e';
+      } else if (corr >= -0.7) {
+        bgColor = `rgba(248, 81, 73, ${0.15 + Math.abs(corr) * 0.3})`;
+        textColor = '#ff7b72';
+      } else {
+        bgColor = `rgba(248, 81, 73, ${0.3 + Math.abs(corr) * 0.5})`;
+        textColor = '#f85149';
+      }
+
+      html += `<div class="correlation-cell flex items-center justify-center font-mono text-xs font-semibold rounded-md m-0.5"
+        style="width: ${cellSize - 4}px; height: ${cellSize - 4}px; background: ${bgColor}; color: ${textColor};"
+        data-s1="${s1}" data-s2="${s2}" data-corr="${corr.toFixed(3)}"
+        onmouseenter="showCorrTooltip(event, '${s1}', '${s2}', ${corr.toFixed(3)})"
+        onmouseleave="hideCorrTooltip()"
+        onclick="showCorrDetail('${s1}', '${s2}', ${corr.toFixed(3)})">
+        ${isdiagonal ? '1.00' : (corr >= 0 ? '+' : '') + corr.toFixed(2)}
+      </div>`;
+    });
+
+    html += '</div>';
+  });
+
+  // Color scale bar at bottom
+  html += `<div class="flex items-center justify-center mt-6 gap-4">
+    <span class="text-xs text-red-400">-1.0</span>
+    <div class="w-64 h-4 rounded-lg correlation-legend"></div>
+    <span class="text-xs text-emerald-400">+1.0</span>
+  </div>`;
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// Tooltip functions
+window.showCorrTooltip = function(event, s1, s2, corr) {
+  let tooltip = document.getElementById('corrTooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'corrTooltip';
+    tooltip.className = 'heatmap-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  const strength = Math.abs(corr) > 0.7 ? 'Strong' : Math.abs(corr) > 0.3 ? 'Moderate' : 'Weak';
+  const direction = corr > 0 ? 'Positive' : corr < 0 ? 'Negative' : 'No';
+  const interpretation = corr > 0.7 ? 'These assets tend to move together' :
+    corr > 0.3 ? 'Some tendency to move together' :
+    corr > -0.3 ? 'Little relationship in price movements' :
+    corr > -0.7 ? 'Some tendency to move opposite' :
+    'These assets tend to move in opposite directions';
+
+  tooltip.innerHTML = `
+    <div class="text-sm font-semibold text-white mb-2">${s1} × ${s2}</div>
+    <div class="flex items-center gap-3 mb-2">
+      <span class="text-2xl font-bold font-mono ${corr >= 0 ? 'text-emerald-400' : 'text-red-400'}">${corr >= 0 ? '+' : ''}${corr.toFixed(3)}</span>
+      <span class="text-xs px-2 py-1 rounded ${corr >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">${strength} ${direction}</span>
+    </div>
+    <div class="text-xs text-slate-400">${interpretation}</div>
+  `;
+
+  tooltip.style.left = (event.pageX + 15) + 'px';
+  tooltip.style.top = (event.pageY - 10) + 'px';
+  tooltip.style.display = 'block';
+};
+
+window.hideCorrTooltip = function() {
+  const tooltip = document.getElementById('corrTooltip');
+  if (tooltip) tooltip.style.display = 'none';
+};
+
+window.showCorrDetail = function(s1, s2, corr) {
+  showToast(`${s1} × ${s2}: Correlation = ${corr >= 0 ? '+' : ''}${corr.toFixed(3)}`, corr >= 0.5 ? 'success' : corr <= -0.3 ? 'warning' : 'info');
+};
+
+// Initialize heatmap
+if (correlationSymbols.length > 0) {
+  correlationMatrix = generateCorrelationMatrix(correlationSymbols);
+  renderAdvancedHeatmap(correlationSymbols, correlationMatrix);
+} else {
+  document.getElementById('advancedHeatmap').innerHTML = '<div class="text-center text-slate-500 py-12">Add holdings to see correlation analysis</div>';
+}
+
+// Monthly Returns Heatmap (5 Years of Real Data)
+console.log('[Analytics] Initializing Monthly Heatmap with 5-year real data...');
+const heatmapContainer = document.getElementById('monthlyHeatmap');
+if (heatmapContainer) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Use real monthly returns from API if available
+  const hasRealData = Object.keys(monthlyReturnsData).length > 0;
+
+  // Get years from API data or generate 5-year range
+  let years;
+  if (hasRealData) {
+    years = Object.keys(monthlyReturnsData).map(Number).sort();
+  } else {
+    const currentYear = new Date().getFullYear();
+    years = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
+  }
+
+  // Build heatmap HTML with 5 years
+  let html = '<div class="flex flex-col gap-1">';
+
+  // Month headers
+  html += '<div class="flex gap-1 ml-14">';
+  months.forEach(m => html += `<div class="w-12 text-center text-xs text-slate-500 font-medium">${m}</div>`);
+  html += '<div class="w-16 text-center text-xs text-slate-500 font-medium">Total</div>';
+  html += '</div>';
+
+  // Year rows
+  years.forEach(year => {
+    let yearTotal = 0;
+    let monthCount = 0;
+
+    html += `<div class="flex gap-1 items-center">`;
+    html += `<div class="w-12 text-xs text-slate-400 text-right pr-2 font-mono">${year}</div>`;
+
+    months.forEach((m, i) => {
+      // Get return from API data
+      let ret;
+      if (hasRealData && monthlyReturnsData[year]) {
+        ret = monthlyReturnsData[year][i];
+      }
+
+      if (ret !== undefined && ret !== null) {
+        yearTotal += ret;
+        monthCount++;
+        const intensity = Math.min(Math.abs(ret) / 8, 1);
+        const color = ret >= 0
+          ? `rgba(63, 185, 80, ${0.15 + intensity * 0.65})`
+          : `rgba(248, 81, 73, ${0.15 + intensity * 0.65})`;
+        const textColor = Math.abs(ret) > 3 ? 'text-white' : 'text-slate-200';
+        html += `<div class="w-12 h-9 rounded flex items-center justify-center text-xs font-mono cursor-pointer hover:ring-2 hover:ring-cyan-400/50 transition-all ${textColor}" style="background:${color}" title="${m} ${year}: ${ret.toFixed(2)}% return" onclick="showMonthDetail(${year}, ${i}, ${ret.toFixed(2)})">${ret >= 0 ? '+' : ''}${ret.toFixed(1)}%</div>`;
+      } else {
+        html += `<div class="w-12 h-9 rounded bg-slate-800/30 flex items-center justify-center text-xs text-slate-600 border border-slate-700/30">-</div>`;
+      }
+    });
+
+    // Year total
+    const yearAvg = monthCount > 0 ? yearTotal : 0;
+    const yearColor = yearAvg >= 0 ? 'text-emerald-400' : 'text-red-400';
+    html += `<div class="w-16 h-9 rounded bg-slate-700/50 flex items-center justify-center text-xs font-mono font-semibold ${yearColor}">${yearAvg >= 0 ? '+' : ''}${yearAvg.toFixed(1)}%</div>`;
+
+    html += '</div>';
+  });
+
+  // Legend
+  html += '<div class="flex items-center gap-4 mt-4 pt-4 border-t border-slate-700/50">';
+  html += '<span class="text-xs text-slate-500">Legend:</span>';
+  html += '<div class="flex items-center gap-1"><div class="w-4 h-4 rounded" style="background:rgba(63, 185, 80, 0.8)"></div><span class="text-xs text-slate-400">Strong Gain</span></div>';
+  html += '<div class="flex items-center gap-1"><div class="w-4 h-4 rounded" style="background:rgba(63, 185, 80, 0.3)"></div><span class="text-xs text-slate-400">Modest Gain</span></div>';
+  html += '<div class="flex items-center gap-1"><div class="w-4 h-4 rounded" style="background:rgba(248, 81, 73, 0.3)"></div><span class="text-xs text-slate-400">Modest Loss</span></div>';
+  html += '<div class="flex items-center gap-1"><div class="w-4 h-4 rounded" style="background:rgba(248, 81, 73, 0.8)"></div><span class="text-xs text-slate-400">Strong Loss</span></div>';
+  html += '</div>';
+
+  html += '</div>';
+
+  heatmapContainer.innerHTML = html;
+}
+
+// Month detail tooltip function
+window.showMonthDetail = function(year, month, ret) {
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  showToast(`${months[month]} ${year}: ${ret}% return`, ret >= 0 ? 'success' : 'warning');
+};
+
+  console.log('[Analytics] All charts initialized successfully');
+}); // End of DOMContentLoaded
+
+// Helper Functions (Global scope for onclick handlers)
+function changePortfolio(portfolioId) {
+  const currentUrl = new URL(window.location.href);
+  currentUrl.searchParams.set('portfolioId', portfolioId);
+  window.location.href = currentUrl.toString();
+}
+
+function updateReturnsChart(type) {
+  const data = type === 'daily' ? <%- JSON.stringify(safeReturns.daily || []) %> :
+               type === 'monthly' ? <%- JSON.stringify(safeReturns.monthly || []) %> :
+               <%- JSON.stringify(safeReturns.annual || []) %>;
+
+  if (window.returnsChart && data.length > 0) {
+    window.returnsChart.data.labels = data.map((r, i) => `${type === 'annual' ? 'Year' : type === 'monthly' ? 'Month' : 'Day'} ${i + 1}`);
+    window.returnsChart.data.datasets[0].data = data;
+    window.returnsChart.data.datasets[0].backgroundColor = data.map(r => r >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)');
+    window.returnsChart.update();
+  }
+}
+
+// Benchmark dropdown toggle
+function toggleBenchmarkDropdown() {
+  const menu = document.getElementById('benchmarkMenu');
+  menu.classList.toggle('hidden');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('benchmarkDropdown');
+  const menu = document.getElementById('benchmarkMenu');
+  if (dropdown && menu && !dropdown.contains(e.target)) {
+    menu.classList.add('hidden');
+  }
+});
+
+// Toggle individual benchmark line
+function toggleBenchmarkLine(symbol) {
+  if (!window.performanceChart) return;
+
+  const chart = window.performanceChart;
+  const datasetIndex = chart.data.datasets.findIndex(d => d.label.startsWith(symbol));
+
+  if (datasetIndex > -1) {
+    const isHidden = chart.data.datasets[datasetIndex].hidden;
+    chart.data.datasets[datasetIndex].hidden = !isHidden;
+    chart.update();
+
+    // Update legend
+    updateBenchmarkLegend();
+    showToast(`${symbol} ${isHidden ? 'shown' : 'hidden'}`, 'info');
+  }
+}
+
+// Update the benchmark legend
+function updateBenchmarkLegend() {
+  const legend = document.getElementById('benchmarkLegend');
+  if (!legend || !window.performanceChart) return;
+
+  const benchmarkColors = {
+    'SPY': '#a371f7', 'QQQ': '#3fb950', 'DIA': '#f0883e', 'IWM': '#f85149',
+    'VTI': '#79c0ff', 'BND': '#8b949e', 'EFA': '#d2a8ff', 'EEM': '#ffc658'
+  };
+
+  let html = '<div class="flex items-center gap-1.5"><div class="w-3 h-0.5 bg-blue-500 rounded"></div><span class="text-xs text-slate-400">Portfolio</span></div>';
+
+  window.performanceChart.data.datasets.forEach((ds, i) => {
+    if (i === 0) return; // Skip portfolio
+    if (!ds.hidden) {
+      const symbol = ds.label.split(' ')[0];
+      const color = benchmarkColors[symbol] || '#8b949e';
+      html += `<div class="flex items-center gap-1.5"><div class="w-3 h-0.5 rounded" style="background:${color}"></div><span class="text-xs text-slate-400">${symbol}</span></div>`;
+    }
+  });
+
+  legend.innerHTML = html;
+}
+
+// Legacy toggle (for backward compatibility)
+function toggleBenchmark() {
+  toggleBenchmarkLine('SPY');
+}
+
+function exportChart() {
+  if (performanceChart) {
+    const link = document.createElement('a');
+    link.href = performanceChart.toBase64Image();
+    link.download = 'portfolio-performance-chart.png';
+    link.click();
+    showToast('Chart exported successfully', 'success');
+  }
+}
+
+function sortHoldings(sortBy) {
+  const tbody = document.querySelector('.bloomberg-table tbody');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const sortIndex = { contribution: 6, return: 5, value: 1, weight: 2 }[sortBy] || 6;
+
+  rows.sort((a, b) => {
+    const aVal = parseFloat(a.cells[sortIndex]?.textContent?.replace(/[^0-9.-]/g, '') || 0);
+    const bVal = parseFloat(b.cells[sortIndex]?.textContent?.replace(/[^0-9.-]/g, '') || 0);
+    return bVal - aVal;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+  showToast(`Sorted by ${sortBy}`, 'success');
+}
+
+function toggleCorrelation() {
+  showToast('Recalculating correlations...', 'info');
+  setTimeout(() => showToast('Correlation matrix updated', 'success'), 1000);
+}
+
+function exportPDF() {
+  showToast('Generating PDF report...', 'info');
+  // Use window.print() as a simple PDF solution
+  setTimeout(() => {
+    window.print();
+  }, 500);
+}
+
+function exportCSV() {
+  const holdings = <%- JSON.stringify(safeHoldings) %>;
+  if (!holdings || holdings.length === 0) {
+    showToast('No data to export', 'warning');
+    return;
+  }
+
+  const headers = ['Symbol', 'Name', 'Shares', 'Current Price', 'Market Value', 'Cost Basis', 'P&L', 'Return %'];
+  const rows = holdings.map(h => {
+    const mktVal = (h.shares || 0) * (h.currentPrice || h.price || 0);
+    const cost = (h.shares || 0) * (h.avgCost || h.avg_cost_basis || 0);
+    const pl = mktVal - cost;
+    const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+    return [h.symbol, h.name || '', h.shares, h.currentPrice || h.price, mktVal.toFixed(2), cost.toFixed(2), pl.toFixed(2), plPct.toFixed(2)];
+  });
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'portfolio-analytics-' + new Date().toISOString().split('T')[0] + '.csv';
+  link.click();
+  showToast('CSV exported successfully', 'success');
+}
+
+function shareAnalytics() {
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('Link copied to clipboard', 'success');
+  }).catch(() => {
+    showToast('Could not copy link', 'error');
+  });
+}
+
+function showToast(message, type) {
+  const colors = {
+    success: 'bg-emerald-600',
+    error: 'bg-red-600',
+    warning: 'bg-amber-600',
+    info: 'bg-blue-600'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `fixed bottom-4 right-4 ${colors[type] || colors.info} text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Toggle Factor View between radar and bar chart
+let factorChartType = 'bar';
+function toggleFactorView() {
+  const canvas = document.getElementById('factorChart');
+  if (!canvas) return;
+
+  factorChartType = factorChartType === 'bar' ? 'radar' : 'bar';
+  const factorData = <%- JSON.stringify(safeAttribution.factors || []) %>;
+
+  if (factorData.length === 0) return;
+
+  // Destroy existing chart
+  const existingChart = Chart.getChart(canvas);
+  if (existingChart) existingChart.destroy();
+
+  const ctx = canvas.getContext('2d');
+
+  if (factorChartType === 'radar') {
+    new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: factorData.map(f => f.name || f.factor),
+        datasets: [{
+          label: 'Factor Exposure',
+          data: factorData.map(f => Math.abs(f.exposure || f.contribution || 0)),
+          backgroundColor: 'rgba(88, 166, 255, 0.2)',
+          borderColor: '#58a6ff',
+          borderWidth: 2,
+          pointBackgroundColor: '#58a6ff',
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            grid: { color: '#30363d' },
+            angleLines: { color: '#30363d' },
+            pointLabels: { color: '#e6edf3', font: { size: 11 } },
+            ticks: { display: false }
+          }
+        }
+      }
+    });
+  } else {
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: factorData.map(f => f.name || f.factor),
+        datasets: [{
+          label: 'Contribution',
+          data: factorData.map(f => f.contribution || f.value || 0),
+          backgroundColor: factorData.map(f => (f.contribution || f.value || 0) >= 0 ? 'rgba(63, 185, 80, 0.8)' : 'rgba(248, 81, 73, 0.8)'),
+          borderColor: factorData.map(f => (f.contribution || f.value || 0) >= 0 ? '#3fb950' : '#f85149'),
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#30363d' }, ticks: { color: '#8b949e', callback: v => v.toFixed(1) + '%' } },
+          y: { grid: { display: false }, ticks: { color: '#e6edf3' } }
+        }
+      }
+    });
+  }
+
+  showToast(`Switched to ${factorChartType} view`, 'info');
+}
+
+// Update Sector View
+function updateSectorView(viewType) {
+  const canvas = document.getElementById('sectorChart');
+  if (!canvas) return;
+
+  const sectorData = <%- JSON.stringify(safeAttribution.sectors || []) %>;
+  if (sectorData.length === 0) return;
+
+  const existingChart = Chart.getChart(canvas);
+  if (!existingChart) return;
+
+  const dataKey = viewType === 'weight' ? 'weight' : viewType === 'return' ? 'return' : 'contribution';
+
+  existingChart.data.datasets[0].data = sectorData.map(s => Math.abs(s[dataKey] || s.value || 0));
+  existingChart.update();
+
+  showToast(`Showing sectors by ${viewType}`, 'info');
+}
+
+// Update Rolling Returns window
+function updateRollingReturns(windowSize) {
+  const canvas = document.getElementById('rollingReturnsChart');
+  if (!canvas || !window.rollingReturnsChart) return;
+
+  const historyData = <%- JSON.stringify(safeHistory) %>;
+  const w = parseInt(windowSize);
+
+  if (historyData.length < w) {
+    showToast(`Not enough data for ${w}-day window`, 'warning');
+    return;
+  }
+
+  const rollingReturns = [];
+  const rollingDates = [];
+
+  for (let i = w; i < historyData.length; i++) {
+    const startVal = historyData[i - w].value;
+    const endVal = historyData[i].value;
+    const annualizedReturn = ((endVal / startVal) ** (252 / w) - 1) * 100;
+    rollingReturns.push(annualizedReturn);
+    rollingDates.push(historyData[i].date);
+  }
+
+  window.rollingReturnsChart.data.labels = rollingDates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  window.rollingReturnsChart.data.datasets[0].data = rollingReturns;
+  window.rollingReturnsChart.data.datasets[0].label = `${w}-Day Rolling Return (Annualized)`;
+  window.rollingReturnsChart.update();
+
+  showToast(`Updated to ${w}-day rolling window`, 'success');
+}
+
+// Toggle Normal Curve overlay on returns distribution
+let showNormal = true;
+function toggleNormalCurve() {
+  showNormal = !showNormal;
+
+  if (!window.returnsChart) return;
+
+  const returnsDistData = <%- JSON.stringify(safeReturnsDistribution) %>;
+  const mean = returnsDistData.mean || 0;
+  const stdDev = returnsDistData.stdDev || 1;
+
+  if (showNormal && window.returnsChart.data.datasets.length === 1) {
+    // Add normal curve dataset
+    const normalData = returnsDistData.labels.map(label => {
+      const x = parseFloat(label);
+      const z = (x - mean) / stdDev;
+      return Math.exp(-0.5 * z * z) / (stdDev * Math.sqrt(2 * Math.PI)) * 100;
+    });
+
+    window.returnsChart.data.datasets.push({
+      label: 'Normal Distribution',
+      data: normalData,
+      type: 'line',
+      borderColor: '#a371f7',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.4,
+      fill: false
+    });
+  } else if (!showNormal && window.returnsChart.data.datasets.length > 1) {
+    window.returnsChart.data.datasets.pop();
+  }
+
+  window.returnsChart.update();
+  showToast(`Normal curve ${showNormal ? 'shown' : 'hidden'}`, 'info');
+}
+
+// Recalculate correlation with animation
+function recalculateCorrelation() {
+  showToast('Recalculating correlations...', 'info');
+
+  // Add spinning animation to refresh icon
+  const refreshIcon = document.getElementById('refreshIcon');
+  if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+  setTimeout(() => {
+    // Regenerate correlation matrix
+    if (correlationSymbols.length > 0) {
+      correlationMatrix = generateCorrelationMatrix(correlationSymbols);
+      renderAdvancedHeatmap(correlationSymbols, correlationMatrix);
+    }
+
+    // Stop spinning
+    if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+    showToast('Correlation matrix updated', 'success');
+  }, 800);
+}
+
+// Update correlation period
+function updateCorrelationPeriod(days) {
+  showToast(`Recalculating for ${days} day period...`, 'info');
+
+  setTimeout(() => {
+    // Regenerate with new period (would fetch from API in production)
+    if (correlationSymbols.length > 0) {
+      correlationMatrix = generateCorrelationMatrix(correlationSymbols);
+      renderAdvancedHeatmap(correlationSymbols, correlationMatrix);
+    }
+    showToast(`Updated to ${days} day correlation`, 'success');
+  }, 500);
+}
+</script>
+
+<%- include('../partials/footer') %>

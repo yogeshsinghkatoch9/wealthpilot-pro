@@ -1,0 +1,345 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const p = peers || {};
+const company = p.company || {};
+const peerList = p.peers || [];
+const metrics = p.metrics || [];
+const rankings = p.rankings || {};
+
+// Company info
+const companyName = company.name || p.companyName || symbol;
+const sector = company.sector || p.sector || 'N/A';
+const industry = company.industry || p.industry || 'N/A';
+const price = company.price || p.currentPrice || 0;
+const changePct = company.changePct || p.changePercent || 0;
+
+// Peer symbols
+const peerSymbols = peerList.map(peer => peer.symbol || peer);
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%'; }
+function formatNum(v, decimals = 1) { return (v || 0).toFixed(decimals); }
+function formatMktCap(v) {
+  if (!v) return 'N/A';
+  if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(0) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(0) + 'M';
+  return '$' + v.toFixed(0);
+}
+
+// Build comparison data
+const comparisonMetrics = [
+  { name: 'Market Cap', key: 'marketCap', format: 'mktcap' },
+  { name: 'P/E Ratio', key: 'pe', format: 'num' },
+  { name: 'Revenue Growth', key: 'revenueGrowth', format: 'pct' },
+  { name: 'Gross Margin', key: 'grossMargin', format: 'pct' },
+  { name: 'Net Margin', key: 'netMargin', format: 'pct' },
+  { name: 'ROE', key: 'roe', format: 'pct' },
+  { name: 'YTD Return', key: 'ytdReturn', format: 'pct' },
+  { name: 'Dividend Yield', key: 'dividendYield', format: 'pct' }
+];
+%>
+<%- include('../partials/header', { pageTitle: 'Peer Comparison' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">PEER COMPARISON</h1>
+      <p class="text-slate-400">Compare stocks against industry peers</p>
+    </div>
+    <form method="GET" action="/peer-comparison" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn bloomberg-btn-primary">COMPARE</button>
+    </form>
+  </div>
+</div>
+
+<% if (!peers) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No peer comparison data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if peer data is available.</p>
+</div>
+<% } else { %>
+
+<!-- Stock Header -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-purple-900/20 border-amber-400/20">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-white"><%= companyName %></h2>
+      <p class="text-slate-400 text-sm"><%= sector %> • <%= industry %></p>
+    </div>
+    <div class="text-right">
+      <p class="text-2xl font-bold font-mono text-white"><%= formatPrice(price) %></p>
+      <p class="<%= changePct >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono"><%= formatPct(changePct) %> today</p>
+    </div>
+  </div>
+</div>
+
+<!-- Peer Group -->
+<div class="bloomberg-card p-4">
+  <h3 class="font-semibold text-amber-400 mb-3 uppercase tracking-wide text-sm">Peer Group</h3>
+  <div class="flex flex-wrap gap-2">
+    <span class="px-3 py-1 rounded-full bg-amber-500 text-black text-sm font-bold font-mono"><%= symbol %> ★</span>
+    <% peerSymbols.forEach(peer => { %>
+    <a href="/peer-comparison?symbol=<%= peer %>" class="px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-sm font-mono border border-slate-600 hover:border-amber-400/50 transition-colors"><%= peer %></a>
+    <% }); %>
+    <% if (peerSymbols.length === 0) { %>
+    <span class="text-slate-500 text-sm">No peers identified</span>
+    <% } %>
+  </div>
+</div>
+
+<!-- Comparison Table -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-amber-400/30 bg-black">
+    <h3 class="font-semibold text-amber-400 uppercase tracking-wide text-sm">Valuation & Performance Comparison</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-900 text-amber-400 text-left">
+          <th class="px-4 py-3 uppercase tracking-wide text-xs">Metric</th>
+          <th class="px-4 py-3 text-center bg-amber-500/10 uppercase tracking-wide text-xs"><%= symbol %></th>
+          <% peerList.slice(0, 5).forEach(peer => { %>
+          <th class="px-4 py-3 text-center uppercase tracking-wide text-xs"><%= peer.symbol || peer %></th>
+          <% }); %>
+          <th class="px-4 py-3 text-center uppercase tracking-wide text-xs">Peer Avg</th>
+        </tr>
+      </thead>
+      <tbody class="text-white">
+        <% comparisonMetrics.forEach(metric => {
+          const companyVal = company[metric.key] || p[metric.key] || 0;
+          const peerVals = peerList.slice(0, 5).map(peer => peer[metric.key] || 0);
+          const peerAvg = peerVals.length > 0 ? peerVals.reduce((a, b) => a + b, 0) / peerVals.length : 0;
+
+          function formatValue(val, format) {
+            if (format === 'mktcap') return formatMktCap(val);
+            if (format === 'pct') return formatNum(val) + '%';
+            return formatNum(val);
+          }
+
+          // Determine if higher or lower is better for color coding
+          const higherBetter = ['revenueGrowth', 'grossMargin', 'netMargin', 'roe', 'ytdReturn', 'dividendYield'].includes(metric.key);
+          const lowerBetter = ['pe'].includes(metric.key);
+        %>
+        <tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
+          <td class="px-4 py-3 font-medium text-slate-300"><%= metric.name %></td>
+          <td class="px-4 py-3 text-center font-bold bg-amber-500/5 font-mono"><%= formatValue(companyVal, metric.format) %></td>
+          <% peerList.slice(0, 5).forEach(peer => {
+            const peerVal = peer[metric.key] || 0;
+            let colorClass = '';
+            if (higherBetter) {
+              colorClass = peerVal > companyVal * 1.1 ? 'text-emerald-400' : peerVal < companyVal * 0.9 ? 'text-red-400' : '';
+            } else if (lowerBetter) {
+              colorClass = peerVal < companyVal * 0.9 ? 'text-emerald-400' : peerVal > companyVal * 1.1 ? 'text-red-400' : '';
+            }
+          %>
+          <td class="px-4 py-3 text-center font-mono <%= colorClass %>"><%= formatValue(peerVal, metric.format) %></td>
+          <% }); %>
+          <td class="px-4 py-3 text-center text-slate-400 font-mono"><%= formatValue(peerAvg, metric.format) %></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">Performance vs Peers (YTD)</h3>
+    <div class="h-64"><canvas id="perfChart"></canvas></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">Valuation Radar</h3>
+    <div class="h-64"><canvas id="radarChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Ranking -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">Peer Ranking (<%= symbol %> Position)</h3>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <%
+      const totalPeers = peerList.length + 1;
+      const rankMetrics = [
+        { name: 'Market Cap', key: 'marketCapRank', description: '' },
+        { name: 'P/E (Lowest Best)', key: 'peRank', good: true },
+        { name: 'ROE', key: 'roeRank', good: true },
+        { name: 'Revenue Growth', key: 'revenueGrowthRank', good: true }
+      ];
+    %>
+    <% rankMetrics.forEach(rm => {
+      const rank = rankings[rm.key] || Math.ceil(totalPeers / 2);
+      const isGood = rank <= Math.ceil(totalPeers / 3);
+      const isBad = rank >= Math.ceil(totalPeers * 2 / 3);
+    %>
+    <div class="text-center p-4 rounded-lg <%= isGood ? 'bg-emerald-500/10 border border-emerald-400/30' : isBad ? 'bg-red-500/10 border border-red-400/30' : 'bg-slate-800 border border-slate-700' %>">
+      <p class="text-sm text-slate-400 uppercase tracking-wide text-xs"><%= rm.name %></p>
+      <p class="text-3xl font-bold font-mono <%= isGood ? 'text-emerald-400' : isBad ? 'text-red-400' : 'text-amber-400' %>">#<%= rank %></p>
+      <p class="text-xs <%= isGood ? 'text-emerald-400' : isBad ? 'text-red-400' : 'text-slate-500' %>">
+        <%= isGood ? (rm.good ? 'Best in class' : 'Attractive') : isBad ? 'Below peers' : 'of ' + totalPeers + ' peers' %>
+      </p>
+    </div>
+    <% }); %>
+  </div>
+</div>
+
+<!-- Competitive Analysis -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">COMPETITIVE ANALYSIS</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <%
+      const companyRoe = company.roe || p.roe || 0;
+      const avgRoe = peerList.length > 0 ? peerList.reduce((s, peer) => s + (peer.roe || 0), 0) / peerList.length : 0;
+      const companyGrowth = company.revenueGrowth || p.revenueGrowth || 0;
+      const avgGrowth = peerList.length > 0 ? peerList.reduce((s, peer) => s + (peer.revenueGrowth || 0), 0) / peerList.length : 0;
+
+      const strengths = [];
+      const weaknesses = [];
+      if (companyRoe > avgRoe * 1.2) strengths.push('Superior ROE vs peers');
+      if (companyRoe < avgRoe * 0.8) weaknesses.push('Below-average ROE');
+      if (companyGrowth > avgGrowth * 1.2) strengths.push('Higher revenue growth');
+      if (companyGrowth < avgGrowth * 0.8) weaknesses.push('Slower revenue growth');
+      if ((company.grossMargin || 0) > 50) strengths.push('Strong gross margins');
+      if ((company.pe || 0) < 20) strengths.push('Attractive valuation');
+      if ((company.pe || 0) > 40) weaknesses.push('Premium valuation');
+    %>
+    <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+      <h4 class="font-bold text-emerald-400 mb-3">Strengths</h4>
+      <ul class="space-y-2">
+        <% if (strengths.length > 0) { %>
+        <% strengths.forEach(s => { %>
+        <li class="flex items-center gap-2 text-sm text-slate-300">
+          <span class="text-emerald-400">+</span> <%= s %>
+        </li>
+        <% }); %>
+        <% } else { %>
+        <li class="text-sm text-slate-400">Analysis pending with more data</li>
+        <% } %>
+      </ul>
+    </div>
+    <div class="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+      <h4 class="font-bold text-red-400 mb-3">Weaknesses</h4>
+      <ul class="space-y-2">
+        <% if (weaknesses.length > 0) { %>
+        <% weaknesses.forEach(w => { %>
+        <li class="flex items-center gap-2 text-sm text-slate-300">
+          <span class="text-red-400">-</span> <%= w %>
+        </li>
+        <% }); %>
+        <% } else { %>
+        <li class="text-sm text-slate-400">No significant weaknesses identified</li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (peers) { %>
+// Performance Chart Data
+const perfLabels = <%- JSON.stringify([symbol].concat(peerSymbols.slice(0, 5)).concat(['Peer Avg'])) %>;
+const perfData = <%- JSON.stringify([company.ytdReturn || p.ytdReturn || 0].concat(peerList.slice(0, 5).map(peer => peer.ytdReturn || 0)).concat([peerList.length > 0 ? peerList.reduce((s, p) => s + (p.ytdReturn || 0), 0) / peerList.length : 0])) %>;
+
+new Chart(document.getElementById('perfChart'), {
+  type: 'bar',
+  data: {
+    labels: perfLabels,
+    datasets: [{
+      data: perfData,
+      backgroundColor: ctx => ctx.dataIndex === 0 ? '#fbbf24' : '#64748b'
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => (ctx.parsed.x >= 0 ? '+' : '') + ctx.parsed.x.toFixed(1) + '%'
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#94a3b8',
+          callback: v => v + '%'
+        }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    }
+  }
+});
+
+// Radar Chart
+const radarMetrics = ['Value', 'Growth', 'Profitability', 'Momentum', 'Quality', 'Dividend'];
+const companyScores = [
+  Math.min(100, Math.max(0, 100 - (<%= company.pe || p.pe || 25 %> - 15) * 3)),
+  Math.min(100, Math.max(0, <%= company.revenueGrowth || p.revenueGrowth || 10 %> * 3)),
+  Math.min(100, Math.max(0, <%= company.netMargin || p.netMargin || 10 %> * 2.5)),
+  Math.min(100, Math.max(0, 50 + <%= company.ytdReturn || p.ytdReturn || 0 %>)),
+  Math.min(100, Math.max(0, <%= company.roe || p.roe || 15 %> * 2)),
+  Math.min(100, Math.max(0, <%= company.dividendYield || p.dividendYield || 0 %> * 20))
+];
+const peerAvgScores = [55, 65, 60, 55, 50, 30]; // Placeholder averages
+
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: radarMetrics,
+    datasets: [
+      {
+        label: '<%= symbol %>',
+        data: companyScores,
+        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(251,191,36,0.2)',
+        borderWidth: 2
+      },
+      {
+        label: 'Peer Avg',
+        data: peerAvgScores,
+        borderColor: '#64748b',
+        backgroundColor: 'rgba(100,116,139,0.1)',
+        borderWidth: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8' }
+      }
+    },
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 100,
+        grid: { color: '#1e293b' },
+        angleLines: { color: '#1e293b' },
+        pointLabels: { color: '#94a3b8' },
+        ticks: { display: false }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

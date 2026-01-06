@@ -1,0 +1,324 @@
+<%- include('../partials/header', { pageTitle: 'Portfolio Templates' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Portfolio Templates</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Start investing with proven strategies</p></div>
+<div class="flex gap-2">
+<select id="categoryFilter" class="form-input w-40" onchange="filterTemplates()">
+<option value="all">All Categories</option>
+<option value="passive">Passive Index</option>
+<option value="dividend">Dividend</option>
+<option value="growth">Growth</option>
+<option value="balanced">Balanced</option>
+<option value="sector">Sector</option>
+</select>
+</div>
+</div>
+
+<!-- Featured Templates -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+<!-- 3-Fund Portfolio -->
+<div class="card p-5 border-2 border-sky-500/30 relative overflow-hidden template-card" data-category="passive">
+<div class="absolute top-0 right-0 px-3 py-1 bg-sky-500 text-white text-xs font-bold">POPULAR</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xl">📊</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">3-Fund Portfolio</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Bogleheads Classic</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Simple, diversified portfolio using just 3 low-cost index funds. Recommended by John Bogle.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">VTI (Total Stock)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">60%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">VXUS (Intl Stock)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">BND (Total Bond)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">10Y Return</span><p class="text-emerald-400 font-bold">+187%</p></div>
+<button onclick="useTemplate('3fund')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- Dividend Aristocrats -->
+<div class="card p-5 template-card" data-category="dividend">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xl">💰</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Dividend Aristocrats</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">25+ Years of Growth</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Companies with 25+ consecutive years of dividend increases. Stable income stream.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">JNJ (Healthcare)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">15%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">PG (Consumer)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">15%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">KO (Beverages)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">12%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">+ 7 more</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">58%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Yield</span><p class="text-emerald-400 font-bold">2.8%</p></div>
+<button onclick="useTemplate('dividend')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- Tech Growth -->
+<div class="card p-5 template-card" data-category="growth">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xl">🚀</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Tech Growth</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Magnificent 7 + More</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">High-growth technology leaders driving innovation. Higher risk, higher reward.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">AAPL (Apple)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">18%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">MSFT (Microsoft)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">18%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">NVDA (Nvidia)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">15%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">+ 7 more</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">49%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">5Y Return</span><p class="text-emerald-400 font-bold">+312%</p></div>
+<button onclick="useTemplate('tech')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- 60/40 Balanced -->
+<div class="card p-5 template-card" data-category="balanced">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xl">⚖️</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">60/40 Balanced</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Classic Allocation</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Traditional balanced approach with 60% stocks, 40% bonds. Lower volatility.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">SPY (S&P 500)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">60%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">AGG (Bonds)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">40%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">10Y Return</span><p class="text-emerald-400 font-bold">+142%</p></div>
+<button onclick="useTemplate('balanced')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- All Weather -->
+<div class="card p-5 template-card" data-category="balanced">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center text-white text-xl">🌤️</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">All Weather</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Ray Dalio Strategy</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Designed to perform in any economic environment. Inflation & deflation protection.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Stocks (VTI)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">30%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Long-term Bonds</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">40%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Gold (GLD)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">15%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Commodities</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">15%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">10Y Return</span><p class="text-emerald-400 font-bold">+98%</p></div>
+<button onclick="useTemplate('allweather')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- High Yield Income -->
+<div class="card p-5 template-card" data-category="dividend">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white text-xl">💵</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">High Yield Income</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">REITs & MLPs</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Maximum income focus with REITs, MLPs, and high-dividend stocks. 6%+ yield.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">O (Realty Income)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">SCHD (Dividend ETF)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">25%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">VNQ (REIT Index)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">25%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">+ 3 more</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">30%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Yield</span><p class="text-emerald-400 font-bold">6.2%</p></div>
+<button onclick="useTemplate('highyield')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- ESG Sustainable -->
+<div class="card p-5 template-card" data-category="growth">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xl">🌱</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">ESG Sustainable</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Environmental Focus</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Invest in companies with strong environmental, social, and governance practices.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">ESGU (ESG US)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">40%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">ICLN (Clean Energy)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">TSLA (Tesla)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">15%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">+ 3 more</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">25%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">5Y Return</span><p class="text-emerald-400 font-bold">+156%</p></div>
+<button onclick="useTemplate('esg')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- Healthcare Sector -->
+<div class="card p-5 template-card" data-category="sector">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xl">🏥</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Healthcare Sector</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Defensive Growth</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Pharmaceuticals, biotech, and healthcare services. Aging population tailwind.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">XLV (Healthcare ETF)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">30%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">UNH (UnitedHealth)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">LLY (Eli Lilly)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">+ 3 more</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">30%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">5Y Return</span><p class="text-emerald-400 font-bold">+89%</p></div>
+<button onclick="useTemplate('healthcare')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+
+<!-- AI & Robotics -->
+<div class="card p-5 template-card" data-category="sector">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xl">🤖</div>
+<div>
+<h3 class="font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">AI & Robotics</h3>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Future Tech</p>
+</div>
+</div>
+<p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mb-4">Companies leading artificial intelligence, machine learning, and automation.</p>
+<div class="space-y-2 mb-4">
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">NVDA (Nvidia)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">25%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">MSFT (Microsoft)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">20%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">GOOGL (Alphabet)</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">18%</span></div>
+<div class="flex justify-between text-sm"><span class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">+ 5 more</span><span class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">37%</span></div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<div><span class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">1Y Return</span><p class="text-emerald-400 font-bold">+147%</p></div>
+<button onclick="useTemplate('ai')" class="btn-primary btn-sm">Use Template</button>
+</div>
+</div>
+</div>
+
+<!-- Template Comparison -->
+<div class="card p-5">
+<h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Template Comparison</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+<thead>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-200 text-gray-500' : 'border-slate-700 text-slate-400' %> text-left">
+<th class="pb-3">Template</th>
+<th class="pb-3">Risk</th>
+<th class="pb-3">5Y Return</th>
+<th class="pb-3">Volatility</th>
+<th class="pb-3">Yield</th>
+<th class="pb-3">Holdings</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">3-Fund Portfolio</td>
+<td class="py-3"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Low</span></td>
+<td class="py-3 text-emerald-400">+87%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">12.3%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">1.8%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">3</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Tech Growth</td>
+<td class="py-3"><span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">High</span></td>
+<td class="py-3 text-emerald-400">+312%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">24.8%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">0.4%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">10</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">Dividend Aristocrats</td>
+<td class="py-3"><span class="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Med</span></td>
+<td class="py-3 text-emerald-400">+68%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">14.2%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2.8%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">10</td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="py-3 <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> font-medium">All Weather</td>
+<td class="py-3"><span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">Low</span></td>
+<td class="py-3 text-emerald-400">+52%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">8.1%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">2.1%</td>
+<td class="py-3 <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">4</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div></div></main>
+
+<!-- Use Template Modal -->
+<div id="templateModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="card p-6 w-full max-w-md mx-4">
+<h3 class="text-xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Create Portfolio from Template</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Portfolio Name</label>
+<input type="text" id="newPortfolioName" class="form-input" placeholder="My 3-Fund Portfolio">
+</div>
+<div>
+<label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Initial Investment</label>
+<div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">$</span><input type="number" id="initialInvestment" value="10000" class="form-input pl-7"></div>
+</div>
+</div>
+<div class="flex gap-3 mt-6">
+<button onclick="closeTemplateModal()" class="btn-ghost flex-1">Cancel</button>
+<button onclick="createFromTemplate()" class="btn-primary flex-1">Create Portfolio</button>
+</div>
+</div>
+</div>
+
+<script>
+let selectedTemplate = null;
+
+function filterTemplates() {
+  const category = document.getElementById('categoryFilter').value;
+  document.querySelectorAll('.template-card').forEach(card => {
+    if (category === 'all' || card.dataset.category === category) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+function useTemplate(template) {
+  selectedTemplate = template;
+  document.getElementById('templateModal').classList.remove('hidden');
+  document.getElementById('templateModal').classList.add('flex');
+}
+
+function closeTemplateModal() {
+  document.getElementById('templateModal').classList.add('hidden');
+  document.getElementById('templateModal').classList.remove('flex');
+}
+
+function createFromTemplate() {
+  const name = document.getElementById('newPortfolioName').value || 'New Portfolio';
+  const amount = document.getElementById('initialInvestment').value;
+  closeTemplateModal();
+  showToast(`Created "${name}" with $${parseInt(amount).toLocaleString()}`, 'success');
+}
+</script>
+<%- include('../partials/footer') %>

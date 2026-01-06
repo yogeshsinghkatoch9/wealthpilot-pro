@@ -1,0 +1,188 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = 'Relative Strength';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="mb-6 pb-4 border-b-2 border-amber-400">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400 font-mono">RELATIVE STRENGTH</h1>
+<p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> text-sm mt-1">RS rating, momentum & sector performance</p>
+</div>
+<div class="flex gap-2">
+<select class="bloomberg-btn w-40">
+<option selected>My Holdings</option>
+<option>Watchlist</option>
+<option>Top RS</option>
+</select>
+</div>
+</div>
+</div>
+
+<!-- RS Overview -->
+<div class="bloomberg-card">
+<h3 class="font-semibold text-amber-400 mb-4">PORTFOLIO RELATIVE STRENGTH</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Avg RS Rating</p>
+<p class="text-3xl font-bold font-mono text-amber-400">78</p>
+<p class="text-xs text-emerald-400 font-mono">Strong</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">RS > 80</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">8</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">RS 50-80</p>
+<p class="text-3xl font-bold font-mono text-amber-400">5</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">RS < 50</p>
+<p class="text-3xl font-bold font-mono text-red-400">3</p>
+<p class="text-xs <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">holdings</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">New 52W High</p>
+<p class="text-3xl font-bold font-mono text-emerald-400">4</p>
+<p class="text-xs text-emerald-400">holdings</p>
+</div>
+</div>
+</div>
+
+<!-- Holdings RS Table -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold text-amber-400">HOLDINGS RELATIVE STRENGTH RANKINGS</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= safeTheme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left font-mono">
+<th class="px-4 py-3">Rank</th>
+<th class="px-4 py-3">Stock</th>
+<th class="px-4 py-3 text-center">RS Rating</th>
+<th class="px-4 py-3">RS Bar</th>
+<th class="px-4 py-3 text-center">1M %</th>
+<th class="px-4 py-3 text-center">3M %</th>
+<th class="px-4 py-3 text-center">6M %</th>
+<th class="px-4 py-3 text-center">52W High</th>
+</tr>
+</thead>
+<tbody class="<%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-bold font-mono text-emerald-400">1</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold font-mono">98</span></td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:98%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+18.4%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+42.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+124.2%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400 font-mono">NEW</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-bold font-mono text-emerald-400">2</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">META</div><span class="font-medium">Meta</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold font-mono">94</span></td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:94%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+12.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+28.4%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+68.2%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400 font-mono">NEW</span></td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-bold font-mono">3</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div><span class="font-medium">Microsoft</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold font-mono">86</span></td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:86%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+8.4%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+18.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+32.4%</td>
+<td class="px-4 py-3 text-center font-mono">-4.2%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-bold font-mono">4</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-bold font-mono">82</span></td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:82%"></div></div></td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+6.2%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+14.8%</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">+24.2%</td>
+<td class="px-4 py-3 text-center font-mono">-6.8%</td>
+</tr>
+<tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-bold font-mono text-red-400">12</td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">TSLA</div><span class="font-medium">Tesla</span></div></td>
+<td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-red-500/20 text-red-400 font-bold font-mono">42</span></td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-red-500" style="width:42%"></div></div></td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-8.4%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-12.2%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-18.4%</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">-38.2%</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">RS Distribution</h3>
+<div class="h-48"><canvas id="distChart"></canvas></div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Sector Relative Strength</h3>
+<div class="h-48"><canvas id="sectorChart"></canvas></div>
+</div>
+</div>
+
+<!-- Momentum Signals -->
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">🚀 Momentum Signals</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<h4 class="font-bold text-emerald-400 mb-2">New 52W Highs</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-sm">NVDA</span>
+<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-sm">META</span>
+<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-sm">AVGO</span>
+<span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-sm">AMD</span>
+</div>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-sky-50' : 'bg-sky-500/10' %>">
+<h4 class="font-bold text-sky-400 mb-2">RS Line New High</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 text-sm">NVDA</span>
+<span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 text-sm">META</span>
+<span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 text-sm">LLY</span>
+</div>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<h4 class="font-bold text-red-400 mb-2">RS Breaking Down</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-sm">TSLA</span>
+<span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-sm">PFE</span>
+</div>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('distChart'), {
+  type: 'bar',
+  data: { labels: ['90-99','80-89','70-79','60-69','50-59','40-49','<40'], datasets: [{ data: [3,5,3,2,1,1,1], backgroundColor: ['#10b981','#10b981','#0ea5e9','#f59e0b','#f59e0b','#ef4444','#ef4444'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+new Chart(document.getElementById('sectorChart'), {
+  type: 'bar',
+  data: { labels: ['Technology','Comm Svcs','Healthcare','Financials','Consumer','Energy'], datasets: [{ data: [88,82,74,68,62,48], backgroundColor: ctx => ctx.raw >= 80 ? '#10b981' : ctx.raw >= 60 ? '#f59e0b' : '#ef4444' }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, indexAxis: 'y' }
+});
+</script>
+<%- include('../partials/footer') %>

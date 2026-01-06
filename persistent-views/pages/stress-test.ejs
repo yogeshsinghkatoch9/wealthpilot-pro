@@ -1,0 +1,348 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const st = stressTest || {};
+const portfolio = st.portfolio || {};
+const scenarios = st.scenarios || [];
+const summary = st.summary || {};
+const safeFmt = fmt || {
+  money: (v) => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  pct: (v) => (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%',
+  compact: (v) => '$' + (v >= 1000000 ? (v / 1000000).toFixed(2) + 'M' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : (v || 0).toFixed(2))
+};
+
+// Portfolio values
+const currentValue = portfolio.currentValue || portfolio.totalValue || 0;
+const portfolioBeta = portfolio.beta || 1.0;
+
+// Summary values
+const worstCaseLoss = summary.worstCaseLoss || 0;
+const worstCaseScenario = summary.worstCaseScenario || 'N/A';
+const averageLoss = summary.averageLoss || 0;
+const avgRecoveryTime = summary.avgRecoveryTime || 'N/A';
+
+// Default scenarios if none provided
+const defaultScenarios = [
+  { id: '2008', name: '2008 Financial Crisis', period: 'Sep 2008 - Mar 2009', indexName: 'S&P 500', marketDecline: -56.8, colorClass: 'from-red-600 to-red-500', riskLevel: 'high' },
+  { id: 'covid', name: '2020 COVID Crash', period: 'Feb 2020 - Mar 2020', indexName: 'S&P 500', marketDecline: -33.9, colorClass: 'from-purple-600 to-purple-500', riskLevel: 'medium' },
+  { id: '2022', name: '2022 Bear Market', period: 'Jan 2022 - Oct 2022', indexName: 'S&P 500', marketDecline: -25.4, colorClass: 'from-amber-600 to-amber-500', riskLevel: 'low' }
+];
+
+// Use API scenarios or defaults
+const displayScenarios = scenarios.length > 0 ? scenarios : defaultScenarios.map(s => {
+  const estimatedLoss = currentValue * (Math.abs(s.marketDecline) / 100) * portfolioBeta;
+  return {
+    ...s,
+    estimatedLoss: -estimatedLoss,
+    portfolioAfter: currentValue - estimatedLoss,
+    insight: getInsight(s.id)
+  };
+});
+
+function getInsight(scenarioId) {
+  const insights = {
+    '2008': 'Financial contagion amplifies losses',
+    'covid': 'Quick recovery typically follows',
+    '2022': 'Rate-sensitive assets hit harder'
+  };
+  return insights[scenarioId] || 'Monitor closely during volatility';
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Stress Test' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">STRESS TEST</h1>
+      <p class="text-slate-400">Test your portfolio against historical market crashes</p>
+    </div>
+    <button onclick="runStressTest()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+      RUN ALL TESTS
+    </button>
+  </div>
+</div>
+
+<% if (currentValue === 0) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No portfolio data available</p>
+  <p class="text-slate-400 mt-2">Add holdings to your portfolio to run stress tests.</p>
+  <a href="/portfolios" class="bloomberg-btn bloomberg-btn-primary mt-4">ADD HOLDINGS</a>
+</div>
+<% } else { %>
+
+<!-- Current Portfolio Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-slate-800">
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-sm text-slate-400 mb-1">Current Portfolio Value</p>
+      <p class="text-3xl font-bold text-sky-400 font-mono"><%= safeFmt.money(currentValue) %></p>
+    </div>
+    <div class="text-right">
+      <p class="text-sm text-slate-400 mb-1">Portfolio Beta</p>
+      <p class="text-2xl font-bold font-mono <%= portfolioBeta > 1.2 ? 'text-red-400' : portfolioBeta > 1 ? 'text-amber-400' : 'text-emerald-400' %>"><%= portfolioBeta.toFixed(2) %></p>
+      <p class="text-xs text-slate-500"><%= portfolioBeta > 1.2 ? 'Aggressive' : portfolioBeta > 1 ? 'Moderate' : 'Conservative' %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <% displayScenarios.forEach((scenario, idx) => {
+    const estimatedLoss = scenario.estimatedLoss || (currentValue * (Math.abs(scenario.marketDecline) / 100) * portfolioBeta * -1);
+    const portfolioAfter = scenario.portfolioAfter || (currentValue + estimatedLoss);
+  %>
+  <div class="bloomberg-card overflow-hidden">
+    <div class="p-4 bg-gradient-to-r <%= scenario.colorClass || 'from-red-600 to-red-500' %>">
+      <h3 class="text-white font-bold text-lg"><%= scenario.name %></h3>
+      <p class="text-white/80 text-sm"><%= scenario.period %></p>
+    </div>
+    <div class="p-5 space-y-4">
+      <div class="text-center">
+        <p class="text-sm text-slate-400"><%= scenario.indexName || 'S&P 500' %> Decline</p>
+        <p class="text-3xl font-bold text-red-500 font-mono"><%= safeFmt.pct(scenario.marketDecline) %></p>
+      </div>
+      <div class="grid grid-cols-2 gap-4 text-center">
+        <div>
+          <p class="text-xs text-slate-400">Your Est. Loss</p>
+          <p class="text-xl font-bold text-red-400 font-mono"><%= safeFmt.money(estimatedLoss) %></p>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400">Portfolio After</p>
+          <p class="text-xl font-bold text-white font-mono"><%= safeFmt.money(portfolioAfter) %></p>
+        </div>
+      </div>
+      <%
+        const riskLevel = scenario.riskLevel || (Math.abs(scenario.marketDecline) > 40 ? 'high' : Math.abs(scenario.marketDecline) > 25 ? 'medium' : 'low');
+        const riskBg = riskLevel === 'high' ? 'bg-red-500/10' : riskLevel === 'medium' ? 'bg-amber-500/10' : 'bg-emerald-500/10';
+        const riskText = riskLevel === 'high' ? 'text-red-400' : riskLevel === 'medium' ? 'text-amber-400' : 'text-emerald-400';
+      %>
+      <div class="p-3 rounded-lg <%= riskBg %>">
+        <p class="text-sm <%= riskText %> font-medium"><%= scenario.insight || 'Review portfolio allocation' %></p>
+      </div>
+      <button onclick="viewScenario('<%= scenario.id %>')" class="w-full px-4 py-2 text-sm font-medium text-slate-400 hover:text-white border border-slate-700 rounded hover:border-slate-600 transition-colors">
+        View Details
+      </button>
+    </div>
+  </div>
+  <% }); %>
+
+  <!-- Custom Scenario Card -->
+  <div class="bloomberg-card overflow-hidden border-2 border-dashed border-slate-700">
+    <div class="p-4 bg-slate-800">
+      <h3 class="text-white font-bold text-lg">Custom Scenario</h3>
+      <p class="text-slate-400 text-sm">Create your own stress test</p>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="text-sm text-slate-400">Market Decline %</label>
+        <input type="text" id="customDecline" placeholder="-30" class="form-input w-full mt-1">
+      </div>
+      <div>
+        <label class="text-sm text-slate-400">Duration (days)</label>
+        <input type="text" id="customDuration" placeholder="90" class="form-input w-full mt-1">
+      </div>
+      <div id="customResult" class="hidden p-4 rounded-lg bg-slate-800">
+        <div class="grid grid-cols-2 gap-4 text-center">
+          <div>
+            <p class="text-xs text-slate-400">Est. Loss</p>
+            <p id="customLoss" class="text-xl font-bold text-red-400 font-mono">$0</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">After</p>
+            <p id="customAfter" class="text-xl font-bold text-white font-mono">$0</p>
+          </div>
+        </div>
+      </div>
+      <button onclick="runCustom()" class="bloomberg-btn bloomberg-btn-primary w-full">RUN CUSTOM TEST</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stress Test Summary -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">STRESS TEST SUMMARY</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+      <p class="font-bold text-red-400 mb-2">Worst Case Loss</p>
+      <%
+        const calcWorstLoss = displayScenarios.reduce((worst, s) => {
+          const loss = s.estimatedLoss || (currentValue * (Math.abs(s.marketDecline) / 100) * portfolioBeta * -1);
+          return loss < worst.loss ? { loss, name: s.name } : worst;
+        }, { loss: 0, name: '' });
+      %>
+      <p class="text-2xl font-bold text-white font-mono"><%= safeFmt.money(worstCaseLoss || calcWorstLoss.loss) %></p>
+      <p class="text-sm text-slate-400"><%= worstCaseScenario || calcWorstLoss.name || 'Based on scenarios' %></p>
+    </div>
+    <div class="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+      <p class="font-bold text-amber-400 mb-2">Average Loss</p>
+      <%
+        const calcAvgLoss = displayScenarios.reduce((sum, s) => {
+          const loss = s.estimatedLoss || (currentValue * (Math.abs(s.marketDecline) / 100) * portfolioBeta * -1);
+          return sum + loss;
+        }, 0) / displayScenarios.length;
+      %>
+      <p class="text-2xl font-bold text-white font-mono"><%= safeFmt.money(averageLoss || calcAvgLoss) %></p>
+      <p class="text-sm text-slate-400">Across all scenarios</p>
+    </div>
+    <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+      <p class="font-bold text-emerald-400 mb-2">Recovery Time</p>
+      <p class="text-2xl font-bold text-white"><%= avgRecoveryTime || '12-24 months' %></p>
+      <p class="text-sm text-slate-400">Historical average</p>
+    </div>
+  </div>
+</div>
+
+<!-- Risk Assessment -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">RISK ASSESSMENT</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <h4 class="text-white font-medium mb-3">Portfolio Vulnerabilities</h4>
+      <div class="space-y-3">
+        <%
+          const vulnerabilities = [];
+          if (portfolioBeta > 1.2) vulnerabilities.push({ text: 'High beta amplifies market losses', severity: 'high' });
+          if (portfolioBeta > 1) vulnerabilities.push({ text: 'Above-market volatility expected', severity: 'medium' });
+          if (currentValue > 100000) vulnerabilities.push({ text: 'Large portfolio at greater absolute risk', severity: 'low' });
+          if (vulnerabilities.length === 0) vulnerabilities.push({ text: 'Portfolio within normal risk parameters', severity: 'success' });
+        %>
+        <% vulnerabilities.forEach(v => { %>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-<%= v.severity === 'high' ? 'red' : v.severity === 'medium' ? 'amber' : v.severity === 'success' ? 'emerald' : 'sky' %>-500/10">
+          <span class="text-<%= v.severity === 'high' ? 'red' : v.severity === 'medium' ? 'amber' : v.severity === 'success' ? 'emerald' : 'sky' %>-400">
+            <%= v.severity === 'success' ? '+' : '!' %>
+          </span>
+          <span class="text-sm text-slate-300"><%= v.text %></span>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+    <div>
+      <h4 class="text-white font-medium mb-3">Mitigation Strategies</h4>
+      <div class="space-y-3">
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-sky-500/10">
+          <span class="text-sky-400">1</span>
+          <span class="text-sm text-slate-300">Diversify across uncorrelated assets</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-sky-500/10">
+          <span class="text-sky-400">2</span>
+          <span class="text-sm text-slate-300">Consider hedging with put options</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-sky-500/10">
+          <span class="text-sky-400">3</span>
+          <span class="text-sm text-slate-300">Maintain cash reserves for opportunities</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario Comparison Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">SCENARIO IMPACT COMPARISON</h3>
+  <div class="h-64"><canvas id="scenarioChart"></canvas></div>
+</div>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const currentValue = <%= currentValue %>;
+const portfolioBeta = <%= portfolioBeta %>;
+
+function runStressTest() {
+  showToast('Running all stress tests...', 'info');
+  fetch('/api/analytics/stress-test', { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      showToast('Stress tests completed!', 'success');
+      location.reload();
+    })
+    .catch(err => showToast('Error running stress tests', 'error'));
+}
+
+function viewScenario(scenarioId) {
+  showToast(`Loading ${scenarioId} scenario details...`, 'info');
+}
+
+function runCustom() {
+  const decline = parseFloat(document.getElementById('customDecline').value) || -30;
+  const absDecline = Math.abs(decline);
+  const estimatedLoss = currentValue * (absDecline / 100) * portfolioBeta;
+  const portfolioAfter = currentValue - estimatedLoss;
+
+  document.getElementById('customResult').classList.remove('hidden');
+  document.getElementById('customLoss').textContent = '-$' + estimatedLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('customAfter').textContent = '$' + portfolioAfter.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  showToast(`Custom scenario: ${decline}% decline = $${estimatedLoss.toFixed(0)} loss`, 'info');
+}
+
+<% if (currentValue > 0) { %>
+// Scenario Comparison Chart
+const scenarios = <%- JSON.stringify(displayScenarios.map(s => ({
+  name: s.name,
+  marketDecline: s.marketDecline,
+  portfolioDecline: Math.abs(s.marketDecline) * portfolioBeta
+}))) %>;
+
+new Chart(document.getElementById('scenarioChart'), {
+  type: 'bar',
+  data: {
+    labels: scenarios.map(s => s.name),
+    datasets: [
+      {
+        label: 'Market Decline',
+        data: scenarios.map(s => Math.abs(s.marketDecline)),
+        backgroundColor: 'rgba(239, 68, 68, 0.6)',
+        borderRadius: 4
+      },
+      {
+        label: 'Your Portfolio',
+        data: scenarios.map(s => s.portfolioDecline),
+        backgroundColor: 'rgba(245, 158, 11, 0.6)',
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: '#94a3b8', font: { family: 'monospace' } }
+      },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        titleColor: '#fff',
+        bodyColor: '#94a3b8',
+        borderColor: '#334155',
+        borderWidth: 1,
+        callbacks: {
+          label: (context) => context.dataset.label + ': -' + context.parsed.y.toFixed(1) + '%'
+        }
+      }
+    },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: {
+          color: '#94a3b8',
+          font: { family: 'monospace' },
+          callback: v => '-' + v + '%'
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8', font: { family: 'monospace', size: 10 } }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

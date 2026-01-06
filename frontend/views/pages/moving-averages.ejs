@@ -1,0 +1,361 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const ma = typeof movingAverages !== 'undefined' && movingAverages ? movingAverages : {};
+const price = ma.currentPrice || 0;
+
+// API returns movingAverages as array, convert to object format
+const maArray = ma.movingAverages || [];
+const sma = {};
+const ema = {};
+maArray.forEach(item => {
+  if (item.period) {
+    sma[item.period.toString()] = item.sma;
+    ema[item.period.toString()] = item.ema;
+  }
+});
+
+const signals = ma.signals || {};
+const crossovers = ma.crossovers || [];
+const fiftyTwoWeekHigh = ma.fiftyTwoWeekHigh || ma.resistance || price;
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(2) + '%'; }
+
+// Calculate price vs MA
+function priceDiff(maPrice) {
+  if (!maPrice || !price) return 0;
+  return ((price - maPrice) / maPrice) * 100;
+}
+
+// Determine signal for a MA level
+function getSignal(maPrice) {
+  if (!maPrice || !price) return { text: 'N/A', color: 'slate' };
+  if (price > maPrice) return { text: 'BUY', color: 'emerald' };
+  return { text: 'SELL', color: 'red' };
+}
+
+// Overall MA signal
+const aboveSma50 = price > (sma['50'] || 0);
+const aboveSma200 = price > (sma['200'] || 0);
+const goldenCross = (sma['50'] || 0) > (sma['200'] || 0);
+
+let overallSignal = 'NEUTRAL';
+let signalColor = 'amber';
+if (aboveSma50 && aboveSma200 && goldenCross) {
+  overallSignal = 'STRONG BUY';
+  signalColor = 'emerald';
+} else if (aboveSma50 && aboveSma200) {
+  overallSignal = 'BUY';
+  signalColor = 'emerald';
+} else if (!aboveSma50 && !aboveSma200) {
+  overallSignal = 'STRONG SELL';
+  signalColor = 'red';
+} else if (!aboveSma50 || !aboveSma200) {
+  overallSignal = 'NEUTRAL';
+  signalColor = 'amber';
+}
+
+// MA periods to display
+const maPeriods = [5, 10, 20, 50, 100, 200];
+%>
+<%- include('../partials/header', { pageTitle: 'Moving Averages' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">MOVING AVERAGES</h1>
+      <p class="text-slate-400 mt-1">SMA/EMA analysis & crossover signals</p>
+    </div>
+    <form method="GET" action="/moving-averages" class="flex gap-2">
+      <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="form-input w-28 font-mono uppercase">
+      <button type="submit" class="bloomberg-btn">ANALYZE</button>
+    </form>
+  </div>
+</div>
+
+<% if (!movingAverages) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No moving average data available for <%= symbol %></p>
+  <p class="text-slate-400 mt-2">Try a different symbol or check if market data is available.</p>
+</div>
+<% } else { %>
+
+<!-- MA Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-emerald-900/20 to-sky-900/20">
+  <div class="flex items-center gap-4">
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold text-amber-400"><%= symbol %></h2>
+      <p class="text-slate-400">Current Price: <span class="font-mono text-white"><%= formatPrice(price) %></span></p>
+    </div>
+    <div class="text-center px-4">
+      <p class="text-sm text-slate-400">MA Signal</p>
+      <p class="text-xl font-bold text-<%= signalColor %>-400"><%= overallSignal %></p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Above 50 SMA</p>
+      <p class="text-2xl font-bold text-<%= aboveSma50 ? 'emerald' : 'red' %>-400"><%= aboveSma50 ? '✓ Yes' : '✗ No' %></p>
+      <p class="text-xs font-mono text-slate-300"><%= formatPrice(sma['50']) %> (<%= formatPct(priceDiff(sma['50'])) %>)</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Above 200 SMA</p>
+      <p class="text-2xl font-bold text-<%= aboveSma200 ? 'emerald' : 'red' %>-400"><%= aboveSma200 ? '✓ Yes' : '✗ No' %></p>
+      <p class="text-xs font-mono text-slate-300"><%= formatPrice(sma['200']) %> (<%= formatPct(priceDiff(sma['200'])) %>)</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400"><%= goldenCross ? 'Golden Cross' : 'Death Cross' %></p>
+      <p class="text-2xl font-bold text-<%= goldenCross ? 'emerald' : 'red' %>-400"><%= goldenCross ? 'Active' : 'Active' %></p>
+      <p class="text-xs text-slate-300">50 SMA <%= goldenCross ? '>' : '<' %> 200 SMA</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">From 52W High</p>
+      <% const pctFromHigh = fiftyTwoWeekHigh ? ((price - fiftyTwoWeekHigh) / fiftyTwoWeekHigh * 100) : 0; %>
+      <p class="text-2xl font-bold font-mono text-<%= pctFromHigh < -10 ? 'red' : pctFromHigh < -5 ? 'amber' : 'emerald' %>-400"><%= formatPct(pctFromHigh) %></p>
+      <p class="text-xs font-mono text-slate-300">From <%= formatPrice(fiftyTwoWeekHigh) %></p>
+    </div>
+  </div>
+</div>
+
+<!-- MA Table -->
+<div class="bloomberg-card overflow-hidden">
+  <div class="p-4 border-b border-amber-500/30">
+    <h3 class="font-semibold text-amber-400">Moving Average Levels</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800 text-slate-400 text-left">
+          <th class="px-4 py-3">Period</th>
+          <th class="px-4 py-3 text-center">SMA</th>
+          <th class="px-4 py-3 text-center">EMA</th>
+          <th class="px-4 py-3 text-center">Price vs SMA</th>
+          <th class="px-4 py-3 text-center">Price vs EMA</th>
+          <th class="px-4 py-3 text-center">Signal</th>
+        </tr>
+      </thead>
+      <tbody class="text-white">
+        <% maPeriods.forEach(period => {
+          const smaVal = sma[period.toString()] || sma[period] || 0;
+          const emaVal = ema[period.toString()] || ema[period] || 0;
+          const smaSignal = getSignal(smaVal);
+          const isKeyPeriod = period === 50 || period === 200;
+          const rowClass = isKeyPeriod ? 'bg-amber-500/5' : '';
+        %>
+        <tr class="border-b border-slate-700/50 <%= rowClass %>">
+          <td class="px-4 py-3 font-medium <%= isKeyPeriod ? 'font-bold text-amber-400' : 'text-slate-300' %>"><%= period %>-Day</td>
+          <td class="px-4 py-3 text-center font-mono <%= isKeyPeriod ? 'font-bold' : '' %>"><%= smaVal ? formatPrice(smaVal) : '-' %></td>
+          <td class="px-4 py-3 text-center font-mono <%= isKeyPeriod ? 'font-bold' : '' %>"><%= emaVal ? formatPrice(emaVal) : '-' %></td>
+          <td class="px-4 py-3 text-center font-mono <%= priceDiff(smaVal) >= 0 ? 'text-emerald-400' : 'text-red-400' %> <%= isKeyPeriod ? 'font-bold' : '' %>">
+            <%= smaVal ? formatPct(priceDiff(smaVal)) : '-' %>
+          </td>
+          <td class="px-4 py-3 text-center font-mono <%= priceDiff(emaVal) >= 0 ? 'text-emerald-400' : 'text-red-400' %> <%= isKeyPeriod ? 'font-bold' : '' %>">
+            <%= emaVal ? formatPct(priceDiff(emaVal)) : '-' %>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2 py-1 rounded bg-<%= smaSignal.color %>-500/20 text-<%= smaSignal.color %>-400 text-xs <%= isKeyPeriod ? 'font-bold' : '' %>">
+              <%= smaSignal.text %>
+            </span>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Crossover Signals & Summary -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4">Crossover Signals</h3>
+    <div class="space-y-3">
+      <% if (goldenCross) { %>
+      <div class="p-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-500/10">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-bold text-emerald-400">Golden Cross (50/200)</p>
+            <p class="text-xs text-slate-400">50 SMA is above 200 SMA - Bullish</p>
+          </div>
+          <span class="text-sm font-mono text-emerald-400">ACTIVE</span>
+        </div>
+      </div>
+      <% } else { %>
+      <div class="p-3 rounded-lg border-l-4 border-red-500 bg-red-500/10">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-bold text-red-400">Death Cross (50/200)</p>
+            <p class="text-xs text-slate-400">50 SMA is below 200 SMA - Bearish</p>
+          </div>
+          <span class="text-sm font-mono text-red-400">ACTIVE</span>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (sma['20'] && sma['50']) {
+        const bullish2050 = sma['20'] > sma['50'];
+      %>
+      <div class="p-3 rounded-lg border-l-4 border-<%= bullish2050 ? 'sky' : 'amber' %>-500 bg-<%= bullish2050 ? 'sky' : 'amber' %>-500/10">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-bold text-<%= bullish2050 ? 'sky' : 'amber' %>-400"><%= bullish2050 ? 'Bullish' : 'Bearish' %> Cross (20/50)</p>
+            <p class="text-xs text-slate-400">20 SMA is <%= bullish2050 ? 'above' : 'below' %> 50 SMA</p>
+          </div>
+          <span class="text-sm font-mono text-<%= bullish2050 ? 'sky' : 'amber' %>-400">ACTIVE</span>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (ema['9'] && ema['21']) {
+        const bullishEma = ema['9'] > ema['21'];
+      %>
+      <div class="p-3 rounded-lg border-l-4 border-purple-500 bg-purple-500/10">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="font-bold text-purple-400">EMA 9/21 <%= bullishEma ? 'Bullish' : 'Bearish' %></p>
+            <p class="text-xs text-slate-400">Short-term <%= bullishEma ? 'bullish' : 'bearish' %> momentum</p>
+          </div>
+          <span class="text-sm font-mono text-purple-400">ACTIVE</span>
+        </div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4">MA Summary</h3>
+    <div class="space-y-4">
+      <%
+        // Short-term check (5-20)
+        const shortTermBullish = (price > (sma['5'] || price)) && (price > (sma['20'] || price));
+        // Medium-term check (50)
+        const mediumTermBullish = price > (sma['50'] || price);
+        // Long-term check (200)
+        const longTermBullish = price > (sma['200'] || price);
+      %>
+      <div>
+        <div class="flex justify-between mb-1 text-slate-300">
+          <span>Short-term (5-20)</span>
+          <span class="text-<%= shortTermBullish ? 'emerald' : 'red' %>-400 font-bold"><%= shortTermBullish ? 'BULLISH' : 'BEARISH' %></span>
+        </div>
+        <div class="h-2 rounded-full bg-slate-700">
+          <div class="h-2 rounded-full bg-<%= shortTermBullish ? 'emerald' : 'red' %>-500" style="width:<%= shortTermBullish ? 100 : 30 %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1 text-slate-300">
+          <span>Medium-term (50)</span>
+          <span class="text-<%= mediumTermBullish ? 'emerald' : 'red' %>-400 font-bold"><%= mediumTermBullish ? 'BULLISH' : 'BEARISH' %></span>
+        </div>
+        <div class="h-2 rounded-full bg-slate-700">
+          <div class="h-2 rounded-full bg-<%= mediumTermBullish ? 'emerald' : 'red' %>-500" style="width:<%= mediumTermBullish ? 100 : 30 %>%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between mb-1 text-slate-300">
+          <span>Long-term (200)</span>
+          <span class="text-<%= longTermBullish ? 'emerald' : 'red' %>-400 font-bold"><%= longTermBullish ? 'BULLISH' : 'BEARISH' %></span>
+        </div>
+        <div class="h-2 rounded-full bg-slate-700">
+          <div class="h-2 rounded-full bg-<%= longTermBullish ? 'emerald' : 'red' %>-500" style="width:<%= longTermBullish ? 100 : 30 %>%"></div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-amber-500/30">
+        <div class="flex justify-between">
+          <span class="font-bold text-amber-400">Overall MA Signal</span>
+          <span class="text-<%= signalColor %>-400 font-bold"><%= overallSignal %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">Price with Moving Averages</h3>
+  <div id="tvMAChart" class="h-80"></div>
+</div>
+<% } %>
+</div></div></main>
+
+<!-- TradingView Lightweight Charts -->
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/tradingview-charts.js"></script>
+<script>
+// Fetch and render Moving Averages chart
+const symbol = '<%= symbol || "AAPL" %>';
+const container = document.getElementById('tvMAChart');
+
+async function loadMAChart() {
+  if (!container) return;
+
+  container.innerHTML = '<p class="text-slate-400 text-center py-8">Loading chart...</p>';
+
+  try {
+    // Fetch historical data from API
+    const token = localStorage.getItem('wealthpilot_token');
+    const response = await fetch(`/api/market/history/${symbol}?range=1y`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch data');
+
+    const result = await response.json();
+    const data = result.data || result;
+    if (!data || data.length === 0) throw new Error('No data');
+
+    // Format for TradingView
+    const ohlcData = data.slice(-250).map(d => ({
+      time: d.date.split('T')[0],
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+      volume: d.volume
+    }));
+
+    // Clear loading message
+    container.innerHTML = '';
+
+    // Initialize TradingView chart
+    if (typeof TradingViewChart !== 'undefined') {
+      const chart = new TradingViewChart(container, {
+        theme: 'dark',
+        height: 320
+      });
+
+      // Add candlestick series
+      chart.addCandlestick(ohlcData);
+
+      // Add moving averages
+      chart.addSMA(ohlcData, 20, '#3b82f6');  // Blue - 20 SMA
+      chart.addSMA(ohlcData, 50, '#f59e0b');  // Amber - 50 SMA
+      if (ohlcData.length >= 200) {
+        chart.addSMA(ohlcData, 200, '#8b5cf6'); // Purple - 200 SMA
+      }
+
+      // Add volume
+      chart.addVolume(ohlcData);
+
+      // Fit content
+      chart.fitContent();
+    } else {
+      throw new Error('TradingView not available');
+    }
+  } catch (error) {
+    console.error('Chart error:', error);
+    container.innerHTML = '<p class="text-slate-400 text-center py-8">Chart unavailable</p>';
+  }
+}
+
+// Load chart on page ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMAChart);
+} else {
+  loadMAChart();
+}
+</script>
+<%- include('../partials/footer') %>

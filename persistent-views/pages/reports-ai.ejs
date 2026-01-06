@@ -1,0 +1,425 @@
+<%
+// Safe defaults for all variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'AI Reports';
+const safePortfolios = typeof portfolios !== 'undefined' && Array.isArray(portfolios) ? portfolios : [];
+const safeToken = typeof token !== 'undefined' ? token : '';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">AI-Generated Reports</h1>
+<p class="text-slate-400">Comprehensive portfolio analysis powered by Claude AI</p>
+</div>
+<div class="flex gap-2 items-center">
+<select id="portfolioSelect" class="bloomberg-input bg-slate-800 text-white border-slate-600 rounded px-3 py-2">
+<option value="">Select Portfolio</option>
+<% safePortfolios.forEach(p => { %>
+<option value="<%= p.id %>"><%= p.name %></option>
+<% }); %>
+</select>
+<button onclick="generateReport()" class="bloomberg-btn bloomberg-btn-primary" id="genBtn">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+Generate Report
+</button>
+</div>
+</div>
+</div>
+
+<!-- Report Type Selector -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<button onclick="selectReportType('comprehensive')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-amber-400" data-type="comprehensive">
+<div class="text-2xl mb-2">📊</div>
+<p class="font-medium text-white">Comprehensive</p>
+<p class="text-xs text-slate-400">Full analysis</p>
+</button>
+<button onclick="selectReportType('performance')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="performance">
+<div class="text-2xl mb-2">📈</div>
+<p class="font-medium text-white">Performance</p>
+<p class="text-xs text-slate-400">Returns & gains</p>
+</button>
+<button onclick="selectReportType('risk')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="risk">
+<div class="text-2xl mb-2">⚠️</div>
+<p class="font-medium text-white">Risk Analysis</p>
+<p class="text-xs text-slate-400">Portfolio risks</p>
+</button>
+<button onclick="selectReportType('recommendations')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="recommendations">
+<div class="text-2xl mb-2">💡</div>
+<p class="font-medium text-white">Recommendations</p>
+<p class="text-xs text-slate-400">AI suggestions</p>
+</button>
+</div>
+
+<!-- AI Status -->
+<div class="bloomberg-card p-4 mb-6" id="aiStatus">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+<span class="text-slate-300">AI Status: <span id="aiStatusText">Checking...</span></span>
+</div>
+</div>
+
+<!-- Loading State -->
+<div id="loadingState" class="hidden">
+<div class="bloomberg-card p-8 text-center">
+<svg class="w-12 h-12 animate-spin mx-auto text-amber-400 mb-4" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+</svg>
+<h3 class="text-xl font-bold text-white mb-2">Generating AI Report...</h3>
+<p class="text-slate-400">Claude AI is analyzing your portfolio. This may take 30-60 seconds.</p>
+<div class="mt-4 text-sm text-slate-500" id="loadingProgress">Analyzing holdings...</div>
+</div>
+</div>
+
+<!-- Generated Report -->
+<div class="bloomberg-card p-6" id="reportContainer">
+<div class="text-center py-12">
+<div class="text-6xl mb-4">📊</div>
+<h3 class="text-xl font-bold text-white mb-2">No Report Generated Yet</h3>
+<p class="text-slate-400 mb-6">Select a portfolio and click "Generate Report" to create an AI-powered analysis</p>
+<p class="text-sm text-slate-500">Reports include: Executive Summary, Performance Analysis, Risk Assessment, Sector Breakdown, and AI Recommendations</p>
+</div>
+</div>
+
+<!-- Download Section (hidden until report is ready) -->
+<div id="downloadSection" class="hidden mt-6">
+<div class="bloomberg-card p-4">
+<div class="flex items-center justify-between">
+<div>
+<h4 class="font-medium text-white">Download Report</h4>
+<p class="text-sm text-slate-400">Save the full report as PDF</p>
+</div>
+<button onclick="downloadPDF()" class="bloomberg-btn bloomberg-btn-secondary" id="downloadBtn">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+Download PDF
+</button>
+</div>
+</div>
+</div>
+
+<!-- Previous Reports -->
+<div class="bloomberg-card p-5 mt-6">
+<h3 class="text-lg font-semibold text-white mb-4">Report History</h3>
+<div id="reportHistory" class="space-y-3">
+<p class="text-slate-400 text-sm">Loading report history...</p>
+</div>
+</div>
+</div></div></main>
+
+<script>
+let selectedType = 'comprehensive';
+let currentReportId = null;
+let currentDownloadUrl = null;
+
+// Server token for API authentication
+const serverToken = '<%= safeToken %>';
+
+function getToken() {
+  if (serverToken && serverToken.length > 0) {
+    return serverToken;
+  }
+  // Fallback to localStorage
+  const storedToken = localStorage.getItem('token');
+  if (storedToken) {
+    return storedToken;
+  }
+  console.error('[Auth] NO TOKEN AVAILABLE - user needs to log in again');
+  return '';
+}
+
+async function authFetch(url, options = {}) {
+  const token = getToken();
+
+  if (!token) {
+    console.error('[Auth] Cannot make authenticated request - no token!');
+    return {
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'No authentication token. Please log out and log back in.' })
+    };
+  }
+
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
+    ...options.headers,
+    'Authorization': `Bearer ${token}`
+  };
+
+  return fetch(url, { ...options, headers });
+}
+
+// Load AI status and report history on page load
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[Reports] Page loaded, token present:', !!serverToken);
+  await checkAIStatus();
+  await loadReportHistory();
+});
+
+async function checkAIStatus() {
+  try {
+    const response = await authFetch('/api/ai-reports/status');
+    const data = await response.json();
+
+    const statusText = document.getElementById('aiStatusText');
+    const statusDot = document.querySelector('#aiStatus .rounded-full');
+
+    if (data.success && data.status.ready) {
+      const provider = data.status.claude ? 'Claude' : (data.status.openai ? 'OpenAI' : 'Unknown');
+      statusText.textContent = `Connected (${provider})`;
+      statusDot.classList.remove('bg-red-500', 'bg-yellow-500');
+      statusDot.classList.add('bg-emerald-500');
+    } else {
+      statusText.textContent = 'AI service unavailable';
+      statusDot.classList.remove('bg-emerald-500', 'bg-yellow-500');
+      statusDot.classList.add('bg-red-500');
+    }
+  } catch (error) {
+    document.getElementById('aiStatusText').textContent = 'Error checking status';
+  }
+}
+
+async function loadReportHistory() {
+  try {
+    const response = await authFetch('/api/ai-reports/history');
+    const data = await response.json();
+
+    const container = document.getElementById('reportHistory');
+
+    if (data.success && data.reports && data.reports.length > 0) {
+      container.innerHTML = data.reports.map(r => `
+        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800 hover:bg-slate-700 cursor-pointer" onclick="viewReport('${r.id}')">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">📊</span>
+            <div>
+              <p class="font-medium text-white">${r.reportType.charAt(0).toUpperCase() + r.reportType.slice(1)} Report</p>
+              <p class="text-xs text-slate-400">${new Date(r.createdAt).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <a href="${r.downloadUrl}" class="text-amber-400 hover:text-amber-300 text-sm" onclick="event.stopPropagation()">Download</a>
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML = '<p class="text-slate-400 text-sm">No previous reports found</p>';
+    }
+  } catch (error) {
+    document.getElementById('reportHistory').innerHTML = '<p class="text-slate-400 text-sm">Failed to load history</p>';
+  }
+}
+
+function selectReportType(type) {
+  selectedType = type;
+  document.querySelectorAll('[data-type]').forEach(btn => {
+    btn.classList.remove('border-amber-400');
+    btn.classList.add('border-transparent');
+  });
+  document.querySelector(`[data-type="${type}"]`).classList.remove('border-transparent');
+  document.querySelector(`[data-type="${type}"]`).classList.add('border-amber-400');
+}
+
+async function generateReport() {
+  const portfolioId = document.getElementById('portfolioSelect').value;
+
+  if (!portfolioId) {
+    showToast('Please select a portfolio first', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('genBtn');
+  const loadingState = document.getElementById('loadingState');
+  const reportContainer = document.getElementById('reportContainer');
+  const downloadSection = document.getElementById('downloadSection');
+
+  // Show loading state
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Generating...';
+  loadingState.classList.remove('hidden');
+  reportContainer.classList.add('hidden');
+  downloadSection.classList.add('hidden');
+
+  // Update loading progress
+  const progressSteps = [
+    'Fetching portfolio data...',
+    'Analyzing holdings...',
+    'Calculating risk metrics...',
+    'Generating AI insights...',
+    'Creating visualizations...',
+    'Compiling report...'
+  ];
+  let stepIndex = 0;
+  const progressInterval = setInterval(() => {
+    if (stepIndex < progressSteps.length) {
+      document.getElementById('loadingProgress').textContent = progressSteps[stepIndex];
+      stepIndex++;
+    }
+  }, 5000);
+
+  try {
+    const response = await authFetch('/api/ai-reports/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        portfolioId,
+        reportType: selectedType
+      })
+    });
+
+    const data = await response.json();
+
+    clearInterval(progressInterval);
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error || data.message || 'Failed to generate report');
+    }
+
+    // Store report info for download
+    currentReportId = data.reportId;
+    currentDownloadUrl = data.downloadUrl;
+
+    // Show success and fetch quick analysis for display
+    await displayQuickAnalysis(portfolioId);
+
+    // Show download section
+    downloadSection.classList.remove('hidden');
+
+    showToast('Report generated successfully! PDF ready for download.', 'success');
+
+    // Reload report history
+    await loadReportHistory();
+
+  } catch (error) {
+    console.error('Report generation error:', error);
+    clearInterval(progressInterval);
+    showToast(error.message || 'Failed to generate report', 'error');
+
+    // Show error in report container
+    reportContainer.innerHTML = `
+      <div class="text-center py-12">
+        <div class="text-6xl mb-4">❌</div>
+        <h3 class="text-xl font-bold text-red-400 mb-2">Report Generation Failed</h3>
+        <p class="text-slate-400 mb-4">${error.message}</p>
+        <button onclick="generateReport()" class="bloomberg-btn bloomberg-btn-primary">Try Again</button>
+      </div>
+    `;
+    reportContainer.classList.remove('hidden');
+  } finally {
+    loadingState.classList.add('hidden');
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>Generate Report';
+  }
+}
+
+async function displayQuickAnalysis(portfolioId) {
+  const reportContainer = document.getElementById('reportContainer');
+
+  try {
+    const response = await authFetch(`/api/ai-reports/quick-analysis/${portfolioId}`);
+    const data = await response.json();
+
+    if (data.success && data.analysis) {
+      // Convert markdown to HTML (basic conversion)
+      const htmlContent = convertMarkdownToHTML(data.analysis);
+
+      reportContainer.innerHTML = `
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-xl font-bold text-white">AI Portfolio Analysis</h2>
+            <p class="text-slate-400 text-sm">Generated ${new Date().toLocaleString()} by ${data.provider || 'Claude'}</p>
+          </div>
+          <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs">AI Generated</span>
+        </div>
+        <div class="prose prose-invert max-w-none">
+          ${htmlContent}
+        </div>
+      `;
+    } else {
+      reportContainer.innerHTML = `
+        <div class="text-center py-12">
+          <div class="text-6xl mb-4">✅</div>
+          <h3 class="text-xl font-bold text-emerald-400 mb-2">Report Generated Successfully!</h3>
+          <p class="text-slate-400 mb-4">Your PDF report is ready for download.</p>
+        </div>
+      `;
+    }
+
+    reportContainer.classList.remove('hidden');
+  } catch (error) {
+    reportContainer.innerHTML = `
+      <div class="text-center py-12">
+        <div class="text-6xl mb-4">✅</div>
+        <h3 class="text-xl font-bold text-emerald-400 mb-2">Report Generated!</h3>
+        <p class="text-slate-400">Click "Download PDF" to get your full report.</p>
+      </div>
+    `;
+    reportContainer.classList.remove('hidden');
+  }
+}
+
+function convertMarkdownToHTML(markdown) {
+  return markdown
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3 class="text-white mt-6 mb-2">$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-amber-400 text-xl font-bold mt-8 mb-3">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-amber-400 text-2xl font-bold mt-8 mb-4">$1</h1>')
+    // Bold
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+    // Lists
+    .replace(/^- (.*$)/gim, '<li class="text-slate-300 ml-4">$1</li>')
+    .replace(/^(\d+)\. (.*$)/gim, '<li class="text-slate-300 ml-4">$2</li>')
+    // Code blocks
+    .replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-800 p-4 rounded-lg overflow-x-auto my-4"><code>$1</code></pre>')
+    // Paragraphs
+    .replace(/\n\n/g, '</p><p class="text-slate-300 mb-4">')
+    // Wrap in paragraph
+    .replace(/^(.+)$/gm, (match, p1) => {
+      if (p1.startsWith('<')) return p1;
+      return `<p class="text-slate-300 mb-4">${p1}</p>`;
+    });
+}
+
+async function downloadPDF() {
+  if (!currentDownloadUrl) {
+    showToast('No report available for download', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('downloadBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>Downloading...';
+
+  try {
+    const response = await authFetch(currentDownloadUrl);
+
+    if (!response.ok) {
+      throw new Error('Failed to download PDF');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `portfolio-report-${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+
+    showToast('PDF downloaded successfully!', 'success');
+  } catch (error) {
+    showToast('Failed to download PDF: ' + error.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Download PDF';
+  }
+}
+
+function viewReport(reportId) {
+  // Could implement a modal or navigate to report detail page
+  showToast('Report viewer coming soon', 'info');
+}
+</script>
+<%- include('../partials/footer') %>

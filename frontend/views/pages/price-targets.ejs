@@ -1,0 +1,232 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = 'Price Targets';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-amber-400">ANALYST PRICE TARGETS</h1>
+<p class="text-slate-400">Wall Street consensus & ratings</p>
+</div>
+<div class="flex gap-2">
+<input type="text" value="AAPL" class="form-input w-24 font-mono bg-black/30 border-amber-400/30 text-white">
+<button class="bloomberg-btn">LOOKUP</button>
+</div>
+</div>
+</div>
+
+<!-- Stock Header -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-emerald-900/20">
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white font-bold text-2xl">AAPL</div>
+<div class="flex-1">
+<h2 class="text-xl font-bold text-amber-400">APPLE INC.</h2>
+<p class="text-slate-400">Current: <span class="font-bold text-lg font-mono text-white">$189.65</span></p>
+</div>
+<div class="text-center px-6 border-l border-amber-400/30">
+<p class="text-sm text-slate-400 uppercase">Consensus Rating</p>
+<p class="text-2xl font-bold text-emerald-400">BUY</p>
+</div>
+<div class="text-center px-6 border-l border-amber-400/30">
+<p class="text-sm text-slate-400 uppercase">Avg Target</p>
+<p class="text-2xl font-bold font-mono text-emerald-400">$215.40</p>
+<p class="text-xs text-emerald-400">+13.6% upside</p>
+</div>
+</div>
+</div>
+
+<!-- Target Range -->
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold text-amber-400 mb-4 uppercase">Price Target Range</h3>
+<div class="relative pt-8 pb-4">
+<!-- Range bar -->
+<div class="h-4 rounded-full bg-slate-700 relative">
+<!-- Low to High gradient -->
+<div class="absolute inset-y-0 rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500" style="left:0%;right:0%"></div>
+<!-- Current price marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-1 h-8 bg-sky-500 rounded" style="left:35%">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+<p class="text-xs font-bold font-mono text-sky-400">Current $189.65</p>
+</div>
+</div>
+<!-- Average target marker -->
+<div class="absolute top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-500 rounded" style="left:62%">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+<p class="text-xs font-bold font-mono text-emerald-400">Avg $215.40</p>
+</div>
+</div>
+</div>
+<!-- Labels -->
+<div class="flex justify-between mt-4 text-sm">
+<div class="text-center"><p class="font-bold font-mono text-red-400">$160</p><p class="text-xs text-slate-400 uppercase">Low Target</p></div>
+<div class="text-center"><p class="font-bold font-mono text-emerald-400">$250</p><p class="text-xs text-slate-400 uppercase">High Target</p></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4 mt-4 text-center">
+<div class="p-3 rounded-lg bg-red-500/10 border border-amber-400/20">
+<p class="text-sm text-slate-400 uppercase">Low Target</p>
+<p class="text-xl font-bold font-mono text-red-400">$160.00</p>
+<p class="text-xs text-red-400">-15.6% downside</p>
+</div>
+<div class="p-3 rounded-lg bg-emerald-500/10 border-2 border-emerald-500">
+<p class="text-sm text-slate-400 uppercase">Average Target</p>
+<p class="text-xl font-bold font-mono text-emerald-400">$215.40</p>
+<p class="text-xs text-emerald-400">+13.6% upside</p>
+</div>
+<div class="p-3 rounded-lg bg-emerald-500/10 border border-amber-400/20">
+<p class="text-sm text-slate-400 uppercase">High Target</p>
+<p class="text-xl font-bold font-mono text-emerald-400">$250.00</p>
+<p class="text-xs text-emerald-400">+31.8% upside</p>
+</div>
+</div>
+</div>
+
+<!-- Analyst Ratings Breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold text-amber-400 mb-4 uppercase">Rating Distribution</h3>
+<div class="space-y-3">
+<div>
+<div class="flex justify-between mb-1"><span class="text-emerald-400 font-medium uppercase">Strong Buy</span><span class="font-bold text-white">18</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-emerald-500" style="width:45%"></div></div>
+</div>
+<div>
+<div class="flex justify-between mb-1"><span class="text-emerald-400 font-medium uppercase">Buy</span><span class="font-bold text-white">14</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-emerald-400" style="width:35%"></div></div>
+</div>
+<div>
+<div class="flex justify-between mb-1"><span class="text-amber-400 font-medium uppercase">Hold</span><span class="font-bold text-white">6</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-amber-500" style="width:15%"></div></div>
+</div>
+<div>
+<div class="flex justify-between mb-1"><span class="text-red-400 font-medium uppercase">Sell</span><span class="font-bold text-white">2</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-red-500" style="width:5%"></div></div>
+</div>
+<div>
+<div class="flex justify-between mb-1"><span class="text-red-400 font-medium uppercase">Strong Sell</span><span class="font-bold text-white">0</span></div>
+<div class="h-4 rounded-full bg-slate-700"><div class="h-4 rounded-full bg-red-600" style="width:0%"></div></div>
+</div>
+</div>
+<p class="text-center mt-4 text-sm text-slate-400">40 analysts covering AAPL</p>
+</div>
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold text-amber-400 mb-4 uppercase">Target History (12 Mo)</h3>
+<div class="h-48"><canvas id="targetChart"></canvas></div>
+</div>
+</div>
+
+<!-- Recent Analyst Actions -->
+<div class="bloomberg-card overflow-hidden">
+<div class="p-4 border-b border-amber-400/30">
+<h3 class="font-semibold text-amber-400 uppercase">Recent Analyst Actions</h3>
+</div>
+<table class="bloomberg-table w-full text-sm">
+<thead>
+<tr class="bg-slate-800 text-slate-400 text-left">
+<th class="px-4 py-3 uppercase">Date</th>
+<th class="px-4 py-3 uppercase">Firm</th>
+<th class="px-4 py-3 uppercase">Analyst</th>
+<th class="px-4 py-3 text-center uppercase">Action</th>
+<th class="px-4 py-3 text-center uppercase">Rating</th>
+<th class="px-4 py-3 text-center uppercase">Target</th>
+<th class="px-4 py-3 text-center uppercase">Change</th>
+</tr>
+</thead>
+<tbody class="text-white">
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3">Dec 9</td>
+<td class="px-4 py-3 font-medium">Morgan Stanley</td>
+<td class="px-4 py-3">Erik Woodring</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs uppercase">Raised</span></td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 uppercase">Overweight</td>
+<td class="px-4 py-3 text-center font-mono">$230</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">↑ $10</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3">Dec 5</td>
+<td class="px-4 py-3 font-medium">Goldman Sachs</td>
+<td class="px-4 py-3">Michael Ng</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-sky-500/20 text-sky-400 text-xs uppercase">Maintained</span></td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 uppercase">Buy</td>
+<td class="px-4 py-3 text-center font-mono">$225</td>
+<td class="px-4 py-3 text-center text-slate-400">—</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3">Dec 2</td>
+<td class="px-4 py-3 font-medium">JP Morgan</td>
+<td class="px-4 py-3">Samik Chatterjee</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs uppercase">Raised</span></td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 uppercase">Overweight</td>
+<td class="px-4 py-3 text-center font-mono">$240</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">↑ $15</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3">Nov 28</td>
+<td class="px-4 py-3 font-medium">Barclays</td>
+<td class="px-4 py-3">Tim Long</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-red-500/20 text-red-400 text-xs uppercase">Lowered</span></td>
+<td class="px-4 py-3 text-center font-bold text-amber-400 uppercase">Hold</td>
+<td class="px-4 py-3 text-center font-mono">$180</td>
+<td class="px-4 py-3 text-center text-red-400 font-mono">↓ $5</td>
+</tr>
+<tr class="border-b border-slate-700/50">
+<td class="px-4 py-3">Nov 20</td>
+<td class="px-4 py-3 font-medium">Wedbush</td>
+<td class="px-4 py-3">Dan Ives</td>
+<td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs uppercase">Raised</span></td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400 uppercase">Outperform</td>
+<td class="px-4 py-3 text-center font-mono">$250</td>
+<td class="px-4 py-3 text-center text-emerald-400 font-mono">↑ $25</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Portfolio Holdings Targets -->
+<div class="bloomberg-card p-5">
+<h3 class="font-semibold text-amber-400 mb-4 uppercase">Your Holdings - Analyst Targets</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="p-4 rounded-lg bg-emerald-500/10 border border-amber-400/20">
+<div class="flex items-center gap-2 mb-2"><span class="font-bold text-white">NVDA</span><span class="px-2 py-0.5 rounded bg-emerald-500 text-white text-xs uppercase">Buy</span></div>
+<p class="text-sm text-slate-400">Current: <span class="font-mono text-white">$485</span> → Target: <span class="font-mono text-white">$600</span></p>
+<p class="text-emerald-400 font-bold">+23.7% upside</p>
+</div>
+<div class="p-4 rounded-lg bg-emerald-500/10 border border-amber-400/20">
+<div class="flex items-center gap-2 mb-2"><span class="font-bold text-white">MSFT</span><span class="px-2 py-0.5 rounded bg-emerald-500 text-white text-xs uppercase">Buy</span></div>
+<p class="text-sm text-slate-400">Current: <span class="font-mono text-white">$415</span> → Target: <span class="font-mono text-white">$480</span></p>
+<p class="text-emerald-400 font-bold">+15.7% upside</p>
+</div>
+<div class="p-4 rounded-lg bg-amber-500/10 border border-amber-400/20">
+<div class="flex items-center gap-2 mb-2"><span class="font-bold text-white">TSLA</span><span class="px-2 py-0.5 rounded bg-amber-500 text-white text-xs uppercase">Hold</span></div>
+<p class="text-sm text-slate-400">Current: <span class="font-mono text-white">$356</span> → Target: <span class="font-mono text-white">$340</span></p>
+<p class="text-red-400 font-bold">-4.5% downside</p>
+</div>
+<div class="p-4 rounded-lg bg-emerald-500/10 border border-amber-400/20">
+<div class="flex items-center gap-2 mb-2"><span class="font-bold text-white">GOOGL</span><span class="px-2 py-0.5 rounded bg-emerald-500 text-white text-xs uppercase">Buy</span></div>
+<p class="text-sm text-slate-400">Current: <span class="font-mono text-white">$168</span> → Target: <span class="font-mono text-white">$195</span></p>
+<p class="text-emerald-400 font-bold">+16.1% upside</p>
+</div>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('targetChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [
+      { label: 'Avg Target', data: [195,198,202,205,200,205,208,210,212,214,215,215], borderColor: '#10b981', fill: false },
+      { label: 'Stock Price', data: [165,172,168,175,180,185,178,182,188,185,187,189], borderColor: '#0ea5e9', fill: false }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+});
+</script>
+<%- include('../partials/footer') %>

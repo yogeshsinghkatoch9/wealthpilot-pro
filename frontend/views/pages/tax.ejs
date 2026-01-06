@@ -1,0 +1,586 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const td = taxData || {};
+const summary = td.summary || {};
+const opportunities = td.opportunities || [];
+const washSaleWarning = td.wash_sale_warning || 'Avoid repurchasing sold securities within 30 days before or after the sale to prevent wash sale violations.';
+
+// Calculate totals
+const totalHarvestable = summary.total_harvestable_losses || 0;
+const potentialSavings = summary.potential_tax_savings || 0;
+const taxBracket = summary.tax_bracket || 32;
+const opportunityCount = opportunities.length || 0;
+
+// Helper function
+function formatMoney(val) {
+  return '$' + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+%>
+<%- include('../partials/header', { pageTitle: 'Tax Loss Harvesting' }) %>
+
+<style>
+  .tax-container {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 14, 23, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .tax-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  }
+
+  .savings-highlight {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .savings-highlight::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .opportunity-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+  }
+
+  .opportunity-card:hover {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  .opportunity-card.high-priority {
+    border-left: 3px solid #10b981;
+  }
+
+  .opportunity-card.medium-priority {
+    border-left: 3px solid #f59e0b;
+  }
+
+  .opportunity-card.low-priority {
+    border-left: 3px solid #3b82f6;
+  }
+
+  .symbol-badge {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: #ef4444;
+  }
+
+  .harvest-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .harvest-btn:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+
+  .timeline-bar {
+    height: 8px;
+    background: rgba(148, 163, 184, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .timeline-progress {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .wash-sale-zone {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(239, 68, 68, 0.3);
+    border-left: 2px solid #ef4444;
+    border-right: 2px solid #ef4444;
+  }
+
+  .replacement-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+
+  .replacement-suggestion:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .stat-card {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    color: #64748b;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 24px;
+    font-weight: 700;
+  }
+
+  .holding-period-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+  }
+
+  .holding-period-badge.long-term {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+
+  .holding-period-badge.short-term {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    .stat-value {
+      font-size: 20px;
+    }
+  }
+</style>
+
+<div class="p-4 lg:p-6 space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Tax Loss Harvesting</h1>
+      <p class="text-slate-400 text-sm mt-1">Optimize your tax liability by harvesting losses</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <form method="GET" class="flex items-center gap-2">
+        <select name="portfolio" onchange="this.form.submit()"
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+          <% if (typeof portfolios !== 'undefined' && portfolios) { %>
+          <% portfolios.forEach(p => { %>
+          <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
+          <% }); %>
+          <% } else { %>
+          <option>My Portfolio</option>
+          <% } %>
+        </select>
+        <select class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+          <option value="2024">Tax Year 2024</option>
+          <option value="2023">Tax Year 2023</option>
+        </select>
+      </form>
+      <button onclick="runAnalysis()" class="px-4 py-2 bg-amber-500 text-black font-bold text-sm rounded-lg hover:bg-amber-400 transition-colors flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Analyze
+      </button>
+    </div>
+  </div>
+
+  <% if (taxData) { %>
+
+  <!-- Savings Highlight -->
+  <div class="savings-highlight">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-slate-400 text-sm">Estimated Tax Savings</p>
+            <p class="text-4xl font-bold text-emerald-400 font-mono"><%= formatMoney(potentialSavings) %></p>
+          </div>
+        </div>
+        <p class="text-slate-400 text-sm">
+          Based on <%= opportunityCount %> harvesting opportunities with <%= formatMoney(totalHarvestable) %> in unrealized losses at your <%= taxBracket %>% tax bracket.
+        </p>
+      </div>
+      <div class="flex items-center justify-center lg:justify-end">
+        <button class="harvest-btn text-lg px-6 py-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Harvest All Losses
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="stat-card">
+      <div class="stat-label">Harvestable Losses</div>
+      <div class="stat-value text-red-400"><%= formatMoney(totalHarvestable) %></div>
+      <p class="text-xs text-slate-500 mt-2">Available to offset gains</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tax Savings</div>
+      <div class="stat-value text-emerald-400"><%= formatMoney(potentialSavings) %></div>
+      <p class="text-xs text-slate-500 mt-2">At <%= taxBracket %>% bracket</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Opportunities</div>
+      <div class="stat-value text-white"><%= opportunityCount %></div>
+      <p class="text-xs text-slate-500 mt-2">Positions with losses</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Carryover</div>
+      <div class="stat-value text-sky-400">$3,000</div>
+      <p class="text-xs text-slate-500 mt-2">Annual limit vs income</p>
+    </div>
+  </div>
+
+  <!-- Wash Sale Warning -->
+  <div class="tax-container">
+    <div class="p-4 flex items-start gap-4 bg-amber-500/10">
+      <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h4 class="font-bold text-amber-400">Wash Sale Rule</h4>
+        <p class="text-slate-300 text-sm mt-1"><%= washSaleWarning %></p>
+        <div class="mt-4">
+          <div class="flex items-center gap-4 text-sm text-slate-400">
+            <span>Wash Sale Window:</span>
+            <div class="flex-1 max-w-md">
+              <div class="timeline-bar">
+                <div class="wash-sale-zone" style="left: 35%; width: 30%;"></div>
+              </div>
+              <div class="flex justify-between mt-1 text-xs">
+                <span>-30 days</span>
+                <span class="text-amber-400 font-bold">Sale Date</span>
+                <span>+30 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Opportunities List -->
+  <div class="tax-container">
+    <div class="tax-header">
+      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Harvesting Opportunities</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-500">Sort by:</span>
+        <select class="px-3 py-1.5 bg-black/40 border border-slate-700 rounded text-sm text-white focus:outline-none">
+          <option>Highest Savings</option>
+          <option>Largest Loss</option>
+          <option>Holding Period</option>
+        </select>
+      </div>
+    </div>
+    <div class="p-4">
+      <% if (opportunities.length > 0) { %>
+      <div class="space-y-4">
+        <% opportunities.forEach((opp, idx) => { %>
+        <div class="opportunity-card <%= opp.unrealized_loss > 5000 ? 'high-priority' : opp.unrealized_loss > 1000 ? 'medium-priority' : 'low-priority' %>">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="symbol-badge"><%= opp.symbol ? opp.symbol.slice(0, 3) : '???' %></div>
+              <div>
+                <div class="flex items-center gap-3">
+                  <span class="text-white font-bold text-lg font-mono"><%= opp.symbol %></span>
+                  <span class="holding-period-badge <%= opp.holding_period === 'long-term' ? 'long-term' : 'short-term' %>">
+                    <%= opp.holding_period %>
+                  </span>
+                </div>
+                <p class="text-slate-400 text-sm"><%= opp.name || 'Company Name' %></p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-red-400 font-bold text-xl font-mono">-<%= formatMoney(opp.unrealized_loss) %></p>
+              <p class="text-emerald-400 text-sm">Save <span class="font-bold font-mono"><%= formatMoney(opp.tax_savings) %></span></p>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-700/50">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span class="text-slate-500">Cost Basis</span>
+                <p class="text-white font-mono"><%= formatMoney(opp.cost_basis || opp.unrealized_loss * 1.2) %></p>
+              </div>
+              <div>
+                <span class="text-slate-500">Current Value</span>
+                <p class="text-white font-mono"><%= formatMoney((opp.cost_basis || opp.unrealized_loss * 1.2) - opp.unrealized_loss) %></p>
+              </div>
+              <div>
+                <span class="text-slate-500">Shares</span>
+                <p class="text-white font-mono"><%= opp.shares || 100 %></p>
+              </div>
+              <div>
+                <span class="text-slate-500">Wash Sale Ends</span>
+                <p class="text-amber-400 font-mono"><%= opp.wash_sale_end || 'Jan 15, 2025' %></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">Replacement:</span>
+              <div class="replacement-suggestion cursor-pointer">
+                <span class="text-sky-400 font-mono font-bold"><%= opp.replacement || 'VOO' %></span>
+                <span class="text-slate-400 text-xs">Similar ETF</span>
+              </div>
+            </div>
+            <button class="harvest-btn" onclick="harvestLoss('<%= opp.symbol %>')">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Harvest This Loss
+            </button>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      <% } else { %>
+      <!-- Demo Opportunities -->
+      <div class="space-y-4">
+        <%
+        const demoOpps = [
+          { symbol: 'NVDA', name: 'NVIDIA Corporation', unrealized_loss: 3500, tax_savings: 1120, holding_period: 'long-term', wash_sale_end: 'Jan 20, 2025', replacement: 'SMH' },
+          { symbol: 'AMZN', name: 'Amazon.com Inc', unrealized_loss: 2100, tax_savings: 672, holding_period: 'short-term', wash_sale_end: 'Jan 15, 2025', replacement: 'VCR' },
+          { symbol: 'TSLA', name: 'Tesla Inc', unrealized_loss: 4200, tax_savings: 1344, holding_period: 'long-term', wash_sale_end: 'Feb 1, 2025', replacement: 'CARZ' },
+          { symbol: 'META', name: 'Meta Platforms Inc', unrealized_loss: 1500, tax_savings: 480, holding_period: 'short-term', wash_sale_end: 'Jan 25, 2025', replacement: 'XLC' }
+        ];
+        demoOpps.forEach((opp, idx) => { %>
+        <div class="opportunity-card <%= opp.unrealized_loss > 3000 ? 'high-priority' : opp.unrealized_loss > 1500 ? 'medium-priority' : 'low-priority' %>">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="symbol-badge"><%= opp.symbol.slice(0, 3) %></div>
+              <div>
+                <div class="flex items-center gap-3">
+                  <span class="text-white font-bold text-lg font-mono"><%= opp.symbol %></span>
+                  <span class="holding-period-badge <%= opp.holding_period === 'long-term' ? 'long-term' : 'short-term' %>">
+                    <%= opp.holding_period %>
+                  </span>
+                </div>
+                <p class="text-slate-400 text-sm"><%= opp.name %></p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-red-400 font-bold text-xl font-mono">-$<%= opp.unrealized_loss.toLocaleString() %></p>
+              <p class="text-emerald-400 text-sm">Save <span class="font-bold font-mono">$<%= opp.tax_savings.toLocaleString() %></span></p>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-slate-700/50">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span class="text-slate-500">Cost Basis</span>
+                <p class="text-white font-mono">$<%= (opp.unrealized_loss * 1.3).toLocaleString() %></p>
+              </div>
+              <div>
+                <span class="text-slate-500">Current Value</span>
+                <p class="text-white font-mono">$<%= (opp.unrealized_loss * 0.3).toLocaleString() %></p>
+              </div>
+              <div>
+                <span class="text-slate-500">Shares</span>
+                <p class="text-white font-mono"><%= Math.floor(50 + Math.random() * 100) %></p>
+              </div>
+              <div>
+                <span class="text-slate-500">Wash Sale Ends</span>
+                <p class="text-amber-400 font-mono"><%= opp.wash_sale_end %></p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">Replacement:</span>
+              <div class="replacement-suggestion cursor-pointer">
+                <span class="text-sky-400 font-mono font-bold"><%= opp.replacement %></span>
+                <span class="text-slate-400 text-xs">Similar ETF</span>
+              </div>
+            </div>
+            <button class="harvest-btn" onclick="harvestLoss('<%= opp.symbol %>')">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Harvest This Loss
+            </button>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Tax Lot Selection -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Strategy Guide -->
+    <div class="tax-container">
+      <div class="tax-header">
+        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Harvesting Strategy</h3>
+      </div>
+      <div class="p-4 space-y-4">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">1</div>
+          <div>
+            <h4 class="font-bold text-white">Identify Losses</h4>
+            <p class="text-slate-400 text-sm">Review positions with unrealized losses above your threshold.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">2</div>
+          <div>
+            <h4 class="font-bold text-white">Sell at a Loss</h4>
+            <p class="text-slate-400 text-sm">Execute the sale to realize the capital loss for tax purposes.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-sm">3</div>
+          <div>
+            <h4 class="font-bold text-white">Buy Replacement</h4>
+            <p class="text-slate-400 text-sm">Purchase a similar (not identical) security to maintain exposure.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm">!</div>
+          <div>
+            <h4 class="font-bold text-amber-400">Avoid Wash Sales</h4>
+            <p class="text-slate-400 text-sm">Wait 31+ days before repurchasing the original security.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- YTD Summary -->
+    <div class="tax-container">
+      <div class="tax-header">
+        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Year-to-Date Summary</h3>
+      </div>
+      <div class="p-4">
+        <div class="space-y-4">
+          <div class="flex justify-between items-center p-3 bg-black/20 rounded-lg">
+            <span class="text-slate-400">Realized Gains (Short-term)</span>
+            <span class="text-emerald-400 font-mono font-bold">$4,250</span>
+          </div>
+          <div class="flex justify-between items-center p-3 bg-black/20 rounded-lg">
+            <span class="text-slate-400">Realized Gains (Long-term)</span>
+            <span class="text-emerald-400 font-mono font-bold">$8,320</span>
+          </div>
+          <div class="flex justify-between items-center p-3 bg-black/20 rounded-lg">
+            <span class="text-slate-400">Realized Losses</span>
+            <span class="text-red-400 font-mono font-bold">-$2,150</span>
+          </div>
+          <div class="border-t border-slate-700 my-2"></div>
+          <div class="flex justify-between items-center p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <span class="text-white font-bold">Net Taxable Gain</span>
+            <span class="text-white font-mono font-bold">$10,420</span>
+          </div>
+          <div class="flex justify-between items-center p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <span class="text-amber-400 font-bold">Est. Tax Liability</span>
+            <span class="text-amber-400 font-mono font-bold">$3,334</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% } else { %>
+  <!-- Empty State -->
+  <div class="tax-container p-12 text-center">
+    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+      <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <h3 class="text-2xl font-bold text-white mb-3">Start Tax Loss Harvesting</h3>
+    <p class="text-slate-400 max-w-md mx-auto mb-6">Select a portfolio above to analyze your holdings for tax-saving opportunities.</p>
+    <button onclick="runAnalysis()" class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      Run Analysis
+    </button>
+  </div>
+  <% } %>
+</div>
+
+<script>
+function runAnalysis() {
+  if (typeof showToast === 'function') showToast('Analyzing portfolio for tax opportunities...', 'info');
+  setTimeout(() => location.reload(), 1000);
+}
+
+function harvestLoss(symbol) {
+  if (typeof showToast === 'function') {
+    showToast(`Initiating harvest for ${symbol}...`, 'success');
+  }
+  // In real implementation, this would open a trade confirmation modal
+  console.log('Harvesting loss for:', symbol);
+}
+</script>
+
+<%- include('../partials/footer') %>

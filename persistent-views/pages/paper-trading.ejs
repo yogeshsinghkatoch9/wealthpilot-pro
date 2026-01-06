@@ -1,0 +1,606 @@
+<%
+// Safe defaults for undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePortfolio = typeof portfolio !== 'undefined' ? portfolio : { cash_balance: 100000, total_value: 100000 };
+const safeStats = typeof stats !== 'undefined' ? stats : { totalProfitLoss: 0, winRate: '0.0', wins: 0, totalTrades: 0 };
+const safeOpenTrades = typeof openTrades !== 'undefined' ? openTrades : [];
+const safeTradeHistory = typeof tradeHistory !== 'undefined' ? tradeHistory : [];
+const safeFmt = typeof fmt !== 'undefined' ? fmt : { number: (n) => Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) };
+
+// Calculate derived values
+const totalPL = safeStats.totalProfitLoss || 0;
+const totalValue = safePortfolio.total_value || 100000;
+const startingValue = 100000;
+const plPercent = ((totalPL / startingValue) * 100).toFixed(2);
+const winRate = parseFloat(safeStats.winRate) || 0;
+%>
+<%- include('../partials/header', { pageTitle: 'Paper Trading Simulator' }) %>
+
+<!-- Stitch Paper Trading Simulator -->
+<div class="min-h-screen bg-[#111217] pb-24">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+      <div class="flex flex-col gap-1">
+        <div class="flex items-center gap-3">
+          <h2 class="text-white text-2xl md:text-3xl font-bold leading-tight tracking-[-0.033em]">Paper Trading Simulator</h2>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-primary/20 text-primary uppercase border border-primary/30">Simulation Mode</span>
+        </div>
+        <p class="text-[#9e9fb7] text-sm md:text-base">Practice your trading strategies with virtual currency in a risk-free environment.</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="resetAccount()" class="px-4 py-2 bg-[#292a38] hover:bg-[#343546] text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+          Reset Account
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+      <!-- Cash Balance -->
+      <div class="flex flex-col gap-1 rounded-xl p-4 md:p-5 bg-[#292a38] border border-white/5 shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-[#9e9fb7] text-xs md:text-sm font-medium uppercase tracking-wide">Cash Balance</p>
+          <span class="material-symbols-outlined text-primary bg-primary/10 p-1 md:p-1.5 rounded-lg text-[16px] md:text-[20px]">account_balance_wallet</span>
+        </div>
+        <p class="text-white text-lg md:text-2xl font-bold mt-1 md:mt-2 font-mono">$<%= safeFmt.number(safePortfolio.cash_balance || 100000) %></p>
+        <p class="text-[#9e9fb7] text-[10px] md:text-xs">Available for trading</p>
+      </div>
+
+      <!-- Portfolio Value -->
+      <div class="flex flex-col gap-1 rounded-xl p-4 md:p-5 bg-[#292a38] border border-white/5 shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-[#9e9fb7] text-xs md:text-sm font-medium uppercase tracking-wide">Portfolio Value</p>
+          <span class="material-symbols-outlined text-blue-400 bg-blue-400/10 p-1 md:p-1.5 rounded-lg text-[16px] md:text-[20px]">pie_chart</span>
+        </div>
+        <p class="text-white text-lg md:text-2xl font-bold mt-1 md:mt-2 font-mono">$<%= safeFmt.number(totalValue) %></p>
+        <p class="<%= totalPL >= 0 ? 'text-[#0bda65]' : 'text-[#ef4444]' %> text-[10px] md:text-xs font-medium flex items-center gap-1">
+          <span class="material-symbols-outlined text-[12px] md:text-[14px]"><%= totalPL >= 0 ? 'trending_up' : 'trending_down' %></span>
+          <%= totalPL >= 0 ? '+' : '' %><%= plPercent %>% All Time
+        </p>
+      </div>
+
+      <!-- Total P&L -->
+      <div class="flex flex-col gap-1 rounded-xl p-4 md:p-5 bg-[#292a38] border border-white/5 shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-[#9e9fb7] text-xs md:text-sm font-medium uppercase tracking-wide">Total P&L</p>
+          <span class="material-symbols-outlined <%= totalPL >= 0 ? 'text-[#0bda65] bg-[#0bda65]/10' : 'text-[#ef4444] bg-[#ef4444]/10' %> p-1 md:p-1.5 rounded-lg text-[16px] md:text-[20px]">monitoring</span>
+        </div>
+        <p class="text-white text-lg md:text-2xl font-bold mt-1 md:mt-2 flex items-center gap-2 font-mono">
+          <span class="<%= totalPL >= 0 ? 'text-[#0bda65]' : 'text-[#ef4444]' %>"><%= totalPL >= 0 ? '+' : '' %>$<%= safeFmt.number(Math.abs(totalPL)) %></span>
+        </p>
+        <p class="text-[#9e9fb7] text-[10px] md:text-xs">Realized + Unrealized</p>
+      </div>
+
+      <!-- Win Rate -->
+      <div class="flex flex-col gap-1 rounded-xl p-4 md:p-5 bg-[#292a38] border border-white/5 shadow-sm">
+        <div class="flex justify-between items-start">
+          <p class="text-[#9e9fb7] text-xs md:text-sm font-medium uppercase tracking-wide">Win Rate</p>
+          <span class="material-symbols-outlined <%= winRate >= 50 ? 'text-[#0bda65] bg-[#0bda65]/10' : 'text-amber-400 bg-amber-400/10' %> p-1 md:p-1.5 rounded-lg text-[16px] md:text-[20px]">trophy</span>
+        </div>
+        <p class="text-white text-lg md:text-2xl font-bold mt-1 md:mt-2 font-mono"><%= safeStats.winRate %>%</p>
+        <p class="text-[#9e9fb7] text-[10px] md:text-xs"><%= safeStats.wins %>/<%= safeStats.totalTrades %> winning trades</p>
+      </div>
+    </div>
+
+    <!-- Main Grid: Trading Ticket & Holdings -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+
+      <!-- Left Column: Place Order Module (4/12) -->
+      <div class="lg:col-span-4 flex flex-col gap-4">
+        <div class="bg-[#292a38] rounded-xl border border-white/5 overflow-hidden">
+          <div class="p-4 border-b border-white/5 flex justify-between items-center">
+            <h3 class="text-white text-lg font-bold">Place Order</h3>
+            <span class="material-symbols-outlined text-[#9e9fb7] cursor-help text-[18px]" title="Enter trade details below">info</span>
+          </div>
+
+          <form id="tradeForm" class="p-4 md:p-5 flex flex-col gap-4 md:gap-5">
+            <!-- Asset Search -->
+            <div class="flex flex-col gap-2">
+              <label class="text-[#9e9fb7] text-xs font-bold uppercase">Symbol</label>
+              <div class="relative">
+                <input
+                  type="text"
+                  name="symbol"
+                  class="w-full bg-[#111217] text-white border border-white/10 rounded-lg px-3 py-2.5 pl-10 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium placeholder:text-gray-600 uppercase"
+                  placeholder="e.g. AAPL, TSLA"
+                  required
+                />
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-[#9e9fb7] text-[20px]">search</span>
+              </div>
+            </div>
+
+            <!-- Order Side Toggle -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-[#111217] rounded-lg">
+              <button type="button" id="buyBtn" onclick="setOrderSide('buy')" class="py-2 rounded-md bg-[#0bda65]/20 text-[#0bda65] text-sm font-bold shadow-sm transition-all hover:bg-[#0bda65]/30 border border-[#0bda65]/20">
+                Buy
+              </button>
+              <button type="button" id="sellBtn" onclick="setOrderSide('sell')" class="py-2 rounded-md text-[#9e9fb7] hover:text-white hover:bg-white/5 text-sm font-medium transition-all">
+                Sell
+              </button>
+              <input type="hidden" name="tradeType" id="tradeType" value="buy" />
+            </div>
+
+            <!-- Order Details Grid -->
+            <div class="grid grid-cols-2 gap-3 md:gap-4">
+              <div class="flex flex-col gap-2">
+                <label class="text-[#9e9fb7] text-xs font-bold uppercase">Quantity</label>
+                <input
+                  type="number"
+                  name="quantity"
+                  id="orderQuantity"
+                  class="w-full bg-[#111217] text-white border border-white/10 rounded-lg px-3 py-2.5 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium"
+                  placeholder="0"
+                  min="1"
+                  required
+                />
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-[#9e9fb7] text-xs font-bold uppercase">Order Type</label>
+                <select
+                  name="orderType"
+                  id="orderType"
+                  onchange="toggleLimitPrice()"
+                  class="w-full bg-[#111217] text-white border border-white/10 rounded-lg px-3 py-2.5 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium appearance-none cursor-pointer"
+                >
+                  <option value="market">Market</option>
+                  <option value="limit">Limit</option>
+                  <option value="stop">Stop</option>
+                  <option value="stop_limit">Stop Limit</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Price Input (for Limit/Stop orders) -->
+            <div id="limitPriceContainer" class="flex flex-col gap-2 hidden">
+              <label class="text-[#9e9fb7] text-xs font-bold uppercase flex justify-between">
+                <span id="priceLabel">Limit Price</span>
+                <span class="text-[10px] font-normal text-primary cursor-pointer hover:underline" id="lastPrice">Last: --</span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-2.5 text-[#9e9fb7] text-sm">$</span>
+                <input
+                  type="number"
+                  name="entryPrice"
+                  id="entryPrice"
+                  step="0.01"
+                  class="w-full bg-[#111217] text-white border border-white/10 rounded-lg px-3 py-2.5 pl-7 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <!-- Market Order Price Input (always visible for market orders since we need entry price) -->
+            <div id="marketPriceContainer" class="flex flex-col gap-2">
+              <label class="text-[#9e9fb7] text-xs font-bold uppercase">Entry Price</label>
+              <div class="relative">
+                <span class="absolute left-3 top-2.5 text-[#9e9fb7] text-sm">$</span>
+                <input
+                  type="number"
+                  name="marketEntryPrice"
+                  id="marketEntryPrice"
+                  step="0.01"
+                  class="w-full bg-[#111217] text-white border border-white/10 rounded-lg px-3 py-2.5 pl-7 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium"
+                  placeholder="Current market price"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Summary / Calculations -->
+            <div class="bg-[#111217]/50 rounded-lg p-3 border border-dashed border-white/10 flex flex-col gap-2">
+              <div class="flex justify-between text-xs text-[#9e9fb7]">
+                <span>Est. Price</span>
+                <span class="text-white font-medium font-mono" id="estPrice">$0.00</span>
+              </div>
+              <div class="flex justify-between text-xs text-[#9e9fb7]">
+                <span>Fees</span>
+                <span class="text-white font-medium font-mono">$0.00</span>
+              </div>
+              <div class="h-px bg-white/10 my-1"></div>
+              <div class="flex justify-between text-sm">
+                <span class="text-[#9e9fb7] font-medium">Est. Total</span>
+                <span class="text-white font-bold text-base md:text-lg font-mono" id="estTotal">$0.00</span>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitOrderBtn" class="w-full py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]">
+              Place Buy Order
+            </button>
+          </form>
+        </div>
+
+        <!-- Mini Market Tip -->
+        <div class="bg-gradient-to-br from-[#292a38] to-[#1e1f2b] p-4 rounded-xl border border-white/5 flex gap-3 items-start">
+          <span class="material-symbols-outlined text-primary mt-0.5">tips_and_updates</span>
+          <div>
+            <h4 class="text-white text-sm font-bold">Pro Tip</h4>
+            <p class="text-[#9e9fb7] text-xs leading-relaxed mt-1">
+              Use Limit orders to control the maximum price you pay. Market orders execute immediately but price may fluctuate.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Holdings & History (8/12) -->
+      <div class="lg:col-span-8 flex flex-col gap-4 md:gap-6">
+
+        <!-- Holdings Section -->
+        <div class="bg-[#292a38] rounded-xl border border-white/5 overflow-hidden flex flex-col">
+          <div class="px-4 md:px-5 py-3 md:py-4 border-b border-white/5 flex items-center justify-between">
+            <h3 class="text-white text-base md:text-lg font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary text-[20px]">trending_up</span>
+              Open Positions
+              <span class="text-[#9e9fb7] text-sm font-normal">(<%= safeOpenTrades.length %>)</span>
+            </h3>
+          </div>
+
+          <% if (safeOpenTrades.length === 0) { %>
+            <!-- Empty State -->
+            <div class="p-8 md:p-12 text-center">
+              <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-[#1e1f2b] rounded-full flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-[#9e9fb7] text-[32px] md:text-[40px]">show_chart</span>
+              </div>
+              <h4 class="text-base md:text-lg font-bold text-white mb-2">No Open Positions</h4>
+              <p class="text-[#9e9fb7] text-sm">Place a trade order to get started with paper trading</p>
+            </div>
+          <% } else { %>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                  <tr class="border-b border-white/5 bg-[#1e1f2b]">
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider">Symbol</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider">Side</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-right">Qty</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-right">Entry Price</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-right">Entry Date</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <% safeOpenTrades.forEach(trade => { %>
+                    <tr class="hover:bg-[#343546] transition-colors group">
+                      <td class="px-4 md:px-5 py-3 md:py-4">
+                        <div class="flex items-center gap-3">
+                          <div class="size-7 md:size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">
+                            <%= trade.symbol.substring(0, 2) %>
+                          </div>
+                          <div>
+                            <p class="text-white font-bold text-sm"><%= trade.symbol %></p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-4 md:px-5 py-3 md:py-4">
+                        <span class="px-2 py-1 rounded text-[10px] md:text-xs font-bold uppercase <%= trade.trade_type === 'buy' ? 'bg-[#0bda65]/20 text-[#0bda65] border border-[#0bda65]/20' : 'bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/20' %>">
+                          <%= trade.trade_type %>
+                        </span>
+                      </td>
+                      <td class="px-4 md:px-5 py-3 md:py-4 text-right text-sm text-white font-medium font-mono"><%= trade.quantity %></td>
+                      <td class="px-4 md:px-5 py-3 md:py-4 text-right text-sm text-white font-mono">$<%= safeFmt.number(trade.entry_price) %></td>
+                      <td class="px-4 md:px-5 py-3 md:py-4 text-right text-xs text-[#9e9fb7] font-mono"><%= new Date(trade.entry_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></td>
+                      <td class="px-4 md:px-5 py-3 md:py-4 text-center">
+                        <button onclick="closeTrade('<%= trade.id %>')" class="px-3 py-1.5 bg-[#ef4444]/20 hover:bg-[#ef4444]/30 text-[#ef4444] text-xs font-bold rounded-lg transition-colors border border-[#ef4444]/20">
+                          Close
+                        </button>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Trade History Section -->
+        <div class="bg-[#292a38] rounded-xl border border-white/5 overflow-hidden flex flex-col">
+          <div class="px-4 md:px-5 py-3 md:py-4 border-b border-white/5 flex items-center justify-between">
+            <h3 class="text-white text-base md:text-lg font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-400 text-[20px]">history</span>
+              Trade History
+            </h3>
+            <div class="flex gap-2">
+              <button id="filterPending" onclick="filterHistory('pending')" class="text-[#9e9fb7] hover:text-white text-xs font-bold uppercase px-2 md:px-3 py-1 rounded bg-white/5 transition-colors">Pending</button>
+              <button id="filterFilled" onclick="filterHistory('filled')" class="text-white text-xs font-bold uppercase px-2 md:px-3 py-1 rounded bg-primary transition-colors">Filled</button>
+            </div>
+          </div>
+
+          <% if (safeTradeHistory.length === 0 && safeStats.totalTrades === 0) { %>
+            <!-- Empty State -->
+            <div class="p-8 md:p-12 text-center">
+              <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-[#1e1f2b] rounded-full flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-[#9e9fb7] text-[32px] md:text-[40px]">receipt_long</span>
+              </div>
+              <h4 class="text-base md:text-lg font-bold text-white mb-2">No Trade History</h4>
+              <p class="text-[#9e9fb7] text-sm">Your completed trades will appear here</p>
+            </div>
+          <% } else { %>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr class="border-b border-white/5 bg-[#1e1f2b]">
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider">Date</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider">Symbol</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider">Side</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider">Type</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-right">Qty</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-right">Fill Price</th>
+                    <th class="px-4 md:px-5 py-3 text-xs font-bold text-[#9e9fb7] uppercase tracking-wider text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5" id="historyTableBody">
+                  <% if (safeTradeHistory && safeTradeHistory.length > 0) { %>
+                    <% safeTradeHistory.forEach(trade => { %>
+                      <tr class="hover:bg-[#343546] transition-colors">
+                        <td class="px-4 md:px-5 py-3 text-xs text-[#9e9fb7] font-mono"><%= new Date(trade.exit_date || trade.entry_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></td>
+                        <td class="px-4 md:px-5 py-3 text-sm text-white font-bold"><%= trade.symbol %></td>
+                        <td class="px-4 md:px-5 py-3 text-xs font-bold uppercase <%= trade.trade_type === 'buy' ? 'text-[#0bda65]' : 'text-[#ef4444]' %>"><%= trade.trade_type %></td>
+                        <td class="px-4 md:px-5 py-3 text-xs text-[#9e9fb7]">Market</td>
+                        <td class="px-4 md:px-5 py-3 text-right text-sm text-white font-mono"><%= trade.quantity %></td>
+                        <td class="px-4 md:px-5 py-3 text-right text-sm text-white font-mono">$<%= safeFmt.number(trade.exit_price || trade.entry_price) %></td>
+                        <td class="px-4 md:px-5 py-3 text-right text-xs">
+                          <% if (trade.status === 'closed') { %>
+                            <span class="bg-[#0bda65]/10 text-[#0bda65] px-2 py-1 rounded border border-[#0bda65]/20">Executed</span>
+                          <% } else { %>
+                            <span class="bg-white/10 text-[#9e9fb7] px-2 py-1 rounded border border-white/10">Open</span>
+                          <% } %>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <!-- Sample data for demo purposes -->
+                    <tr class="hover:bg-[#343546] transition-colors">
+                      <td class="px-4 md:px-5 py-3 text-xs text-[#9e9fb7] font-mono">Jan 5</td>
+                      <td class="px-4 md:px-5 py-3 text-sm text-white font-bold">AAPL</td>
+                      <td class="px-4 md:px-5 py-3 text-xs font-bold uppercase text-[#0bda65]">Buy</td>
+                      <td class="px-4 md:px-5 py-3 text-xs text-[#9e9fb7]">Market</td>
+                      <td class="px-4 md:px-5 py-3 text-right text-sm text-white font-mono">10</td>
+                      <td class="px-4 md:px-5 py-3 text-right text-sm text-white font-mono">$182.50</td>
+                      <td class="px-4 md:px-5 py-3 text-right text-xs">
+                        <span class="bg-[#0bda65]/10 text-[#0bda65] px-2 py-1 rounded border border-[#0bda65]/20">Executed</span>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Close Trade Modal -->
+<div id="closeModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm">
+  <div class="bg-[#292a38] rounded-xl border border-white/5 w-full max-w-md mx-4 shadow-2xl">
+    <div class="p-4 md:p-5 border-b border-white/5 flex items-center justify-between">
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">sell</span>
+        Close Position
+      </h3>
+      <button onclick="closeCloseModal()" class="text-[#9e9fb7] hover:text-white transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="p-4 md:p-6">
+      <form id="closeForm">
+        <input type="hidden" name="tradeId" id="closeTradeId">
+        <div class="mb-6">
+          <label class="block text-xs font-bold text-[#9e9fb7] uppercase tracking-wide mb-2">Exit Price</label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-[#9e9fb7] text-sm">$</span>
+            <input
+              type="number"
+              step="0.01"
+              name="exitPrice"
+              class="w-full bg-[#111217] text-white border border-white/10 rounded-lg px-3 py-2.5 pl-7 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium font-mono"
+              placeholder="Current market price"
+              required
+            >
+          </div>
+          <p class="text-[#9e9fb7] text-xs mt-2">Enter the current market price to calculate your P&L</p>
+        </div>
+      </form>
+      <div class="flex gap-3">
+        <button onclick="closeCloseModal()" class="flex-1 px-4 py-2.5 bg-[#1e1f2b] hover:bg-[#343546] text-white text-sm font-bold rounded-lg transition-colors border border-white/10">
+          Cancel
+        </button>
+        <button onclick="submitCloseTrade()" class="flex-1 px-4 py-2.5 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white text-sm font-bold rounded-lg transition-colors shadow-lg shadow-[#ef4444]/20">
+          Close Trade
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Order side state
+let currentOrderSide = 'buy';
+
+function setOrderSide(side) {
+  currentOrderSide = side;
+  document.getElementById('tradeType').value = side;
+
+  const buyBtn = document.getElementById('buyBtn');
+  const sellBtn = document.getElementById('sellBtn');
+  const submitBtn = document.getElementById('submitOrderBtn');
+
+  if (side === 'buy') {
+    buyBtn.className = 'py-2 rounded-md bg-[#0bda65]/20 text-[#0bda65] text-sm font-bold shadow-sm transition-all hover:bg-[#0bda65]/30 border border-[#0bda65]/20';
+    sellBtn.className = 'py-2 rounded-md text-[#9e9fb7] hover:text-white hover:bg-white/5 text-sm font-medium transition-all';
+    submitBtn.textContent = 'Place Buy Order';
+    submitBtn.className = 'w-full py-3 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98]';
+  } else {
+    sellBtn.className = 'py-2 rounded-md bg-[#ef4444]/20 text-[#ef4444] text-sm font-bold shadow-sm transition-all hover:bg-[#ef4444]/30 border border-[#ef4444]/20';
+    buyBtn.className = 'py-2 rounded-md text-[#9e9fb7] hover:text-white hover:bg-white/5 text-sm font-medium transition-all';
+    submitBtn.textContent = 'Place Sell Order';
+    submitBtn.className = 'w-full py-3 bg-[#ef4444] hover:bg-[#ef4444]/90 text-white font-bold rounded-lg shadow-lg shadow-[#ef4444]/20 transition-all active:scale-[0.98]';
+  }
+}
+
+function toggleLimitPrice() {
+  const orderType = document.getElementById('orderType').value;
+  const limitContainer = document.getElementById('limitPriceContainer');
+  const marketContainer = document.getElementById('marketPriceContainer');
+  const priceLabel = document.getElementById('priceLabel');
+
+  if (orderType === 'limit' || orderType === 'stop' || orderType === 'stop_limit') {
+    limitContainer.classList.remove('hidden');
+    marketContainer.classList.add('hidden');
+    if (orderType === 'stop' || orderType === 'stop_limit') {
+      priceLabel.textContent = 'Stop Price';
+    } else {
+      priceLabel.textContent = 'Limit Price';
+    }
+  } else {
+    limitContainer.classList.add('hidden');
+    marketContainer.classList.remove('hidden');
+  }
+}
+
+// Calculate estimated total
+function updateEstimate() {
+  const qty = parseFloat(document.getElementById('orderQuantity').value) || 0;
+  const orderType = document.getElementById('orderType').value;
+  let price = 0;
+
+  if (orderType === 'market') {
+    price = parseFloat(document.getElementById('marketEntryPrice').value) || 0;
+  } else {
+    price = parseFloat(document.getElementById('entryPrice').value) || 0;
+  }
+
+  const total = qty * price;
+  document.getElementById('estPrice').textContent = '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('estTotal').textContent = '$' + total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Add event listeners for estimate calculation
+document.getElementById('orderQuantity').addEventListener('input', updateEstimate);
+document.getElementById('marketEntryPrice').addEventListener('input', updateEstimate);
+document.getElementById('entryPrice').addEventListener('input', updateEstimate);
+
+// Form submission
+document.getElementById('tradeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const orderType = formData.get('orderType');
+
+  // Get the appropriate price based on order type
+  let entryPrice;
+  if (orderType === 'market') {
+    entryPrice = formData.get('marketEntryPrice');
+  } else {
+    entryPrice = formData.get('entryPrice');
+  }
+
+  const data = {
+    symbol: formData.get('symbol').toUpperCase(),
+    tradeType: formData.get('tradeType'),
+    quantity: formData.get('quantity'),
+    entryPrice: entryPrice
+  };
+
+  try {
+    const res = await fetch('/api/paper-trading/trade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (res.ok) {
+      showToast('Trade placed successfully!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to place trade', 'error');
+    }
+  } catch (e) {
+    showToast('Error placing trade', 'error');
+  }
+});
+
+function closeTrade(id) {
+  document.getElementById('closeTradeId').value = id;
+  document.getElementById('closeModal').classList.remove('hidden');
+  document.getElementById('closeModal').classList.add('flex');
+}
+
+function closeCloseModal() {
+  document.getElementById('closeModal').classList.add('hidden');
+  document.getElementById('closeModal').classList.remove('flex');
+}
+
+async function submitCloseTrade() {
+  const id = document.getElementById('closeTradeId').value;
+  const exitPrice = document.querySelector('#closeForm input[name="exitPrice"]').value;
+
+  try {
+    const res = await fetch(`/api/paper-trading/close/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exitPrice: parseFloat(exitPrice) })
+    });
+    if (res.ok) {
+      showToast('Trade closed successfully!', 'success');
+      setTimeout(() => location.reload(), 500);
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Failed to close trade', 'error');
+    }
+  } catch (e) {
+    showToast('Error closing trade', 'error');
+  }
+  closeCloseModal();
+}
+
+async function resetAccount() {
+  if (!confirm('Reset your paper trading account to $100,000? All trades will be deleted.')) return;
+
+  try {
+    const res = await fetch('/api/paper-trading/reset', { method: 'POST' });
+    if (res.ok) {
+      showToast('Account reset to $100,000!', 'success');
+      setTimeout(() => location.reload(), 500);
+    }
+  } catch (e) {
+    showToast('Error resetting account', 'error');
+  }
+}
+
+function filterHistory(filter) {
+  const pendingBtn = document.getElementById('filterPending');
+  const filledBtn = document.getElementById('filterFilled');
+
+  if (filter === 'pending') {
+    pendingBtn.className = 'text-white text-xs font-bold uppercase px-2 md:px-3 py-1 rounded bg-primary transition-colors';
+    filledBtn.className = 'text-[#9e9fb7] hover:text-white text-xs font-bold uppercase px-2 md:px-3 py-1 rounded bg-white/5 transition-colors';
+  } else {
+    filledBtn.className = 'text-white text-xs font-bold uppercase px-2 md:px-3 py-1 rounded bg-primary transition-colors';
+    pendingBtn.className = 'text-[#9e9fb7] hover:text-white text-xs font-bold uppercase px-2 md:px-3 py-1 rounded bg-white/5 transition-colors';
+  }
+  // In a real implementation, this would filter the table data
+}
+
+// Toast notification fallback
+if (typeof showToast === 'undefined') {
+  function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-50 transition-all transform ${
+      type === 'success' ? 'bg-[#0bda65]' : 'bg-[#ef4444]'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

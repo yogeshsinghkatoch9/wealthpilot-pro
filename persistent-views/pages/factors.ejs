@@ -1,0 +1,384 @@
+<%
+// Safe defaults for potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const f = factors || {};
+const factorAttribution = f.factorAttribution || [];
+const sectorAttribution = f.sectorAttribution || [];
+const summary = f.summary || {};
+const totalReturn = summary.totalReturn || f.totalReturn || 0;
+const alpha = summary.alpha || f.alpha || 0;
+
+// Helper functions
+function formatNum(v, decimals = 2) { return (v || 0).toFixed(decimals); }
+function formatPct(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%'; }
+
+// Extract factor exposures with defaults
+function getFactorData(name, defaultValue = 0) {
+  const factor = factorAttribution.find(f => f.factor && f.factor.toLowerCase().includes(name.toLowerCase()));
+  return factor ? { exposure: factor.exposure || 0, contribution: factor.contribution || 0 } : { exposure: defaultValue, contribution: 0 };
+}
+
+const marketBeta = getFactorData('market', 1.0);
+const size = getFactorData('size', 0);
+const value = getFactorData('value', 0);
+const momentum = getFactorData('momentum', 0);
+const quality = getFactorData('quality', 0);
+const lowVol = getFactorData('volatility', 0);
+if (!lowVol.exposure && !lowVol.contribution) {
+  const sel = getFactorData('selection', 0);
+  lowVol.exposure = sel.exposure || 0.3;
+  lowVol.contribution = sel.contribution || 0;
+}
+
+// Get factor label/description
+function getFactorLabel(exposure, type) {
+  if (type === 'market') {
+    if (exposure > 1.1) return { text: 'Above avg', color: 'sky' };
+    if (exposure < 0.9) return { text: 'Below avg', color: 'amber' };
+    return { text: 'Market-like', color: 'slate' };
+  }
+  if (type === 'size') {
+    if (exposure < -0.1) return { text: 'Large cap', color: 'purple' };
+    if (exposure > 0.1) return { text: 'Small cap', color: 'emerald' };
+    return { text: 'Balanced', color: 'slate' };
+  }
+  if (type === 'value') {
+    if (exposure < -0.1) return { text: 'Growth tilt', color: 'red' };
+    if (exposure > 0.1) return { text: 'Value tilt', color: 'emerald' };
+    return { text: 'Balanced', color: 'slate' };
+  }
+  if (type === 'momentum') {
+    if (exposure > 0.5) return { text: 'Strong', color: 'emerald' };
+    if (exposure > 0) return { text: 'Moderate', color: 'amber' };
+    return { text: 'Weak', color: 'red' };
+  }
+  if (type === 'quality') {
+    if (exposure > 0.6) return { text: 'High quality', color: 'emerald' };
+    if (exposure > 0.3) return { text: 'Good quality', color: 'sky' };
+    return { text: 'Mixed', color: 'amber' };
+  }
+  if (type === 'vol') {
+    if (exposure > 0.5) return { text: 'High vol', color: 'red' };
+    if (exposure > 0) return { text: 'Moderate', color: 'amber' };
+    return { text: 'Low vol', color: 'emerald' };
+  }
+  return { text: 'N/A', color: 'slate' };
+}
+
+const marketLabel = getFactorLabel(marketBeta.exposure, 'market');
+const sizeLabel = getFactorLabel(size.exposure, 'size');
+const valueLabel = getFactorLabel(value.exposure, 'value');
+const momLabel = getFactorLabel(momentum.exposure, 'momentum');
+const qualLabel = getFactorLabel(quality.exposure, 'quality');
+const volLabel = getFactorLabel(lowVol.exposure, 'vol');
+
+// Calculate progress bar widths (0-100 scale)
+function getBarWidth(exposure) {
+  return Math.min(100, Math.max(0, (exposure + 1) / 2 * 100));
+}
+
+// Factor ETF recommendations
+const factorETFs = [
+  { factor: 'Value', etf: 'VTV', name: 'Vanguard Value', expense: 0.04, ytd: totalReturn * 0.8 + 5,
+    suggestion: value.exposure < 0 ? 'Add exposure' : 'Already covered',
+    color: value.exposure < 0 ? 'emerald' : 'amber' },
+  { factor: 'Small Cap', etf: 'VB', name: 'Vanguard Small-Cap', expense: 0.05, ytd: totalReturn * 0.6 + 3,
+    suggestion: size.exposure < 0 ? 'Consider adding' : 'Already covered',
+    color: size.exposure < 0 ? 'sky' : 'amber' },
+  { factor: 'Momentum', etf: 'MTUM', name: 'iShares Momentum', expense: 0.15, ytd: totalReturn * 1.2 + 8,
+    suggestion: momentum.exposure > 0.5 ? 'Already high' : 'Consider adding',
+    color: momentum.exposure > 0.5 ? 'amber' : 'emerald' },
+  { factor: 'Quality', etf: 'QUAL', name: 'iShares Quality', expense: 0.15, ytd: totalReturn * 0.9 + 6,
+    suggestion: quality.exposure > 0.6 ? 'Already high' : 'Consider adding',
+    color: quality.exposure > 0.6 ? 'amber' : 'emerald' },
+  { factor: 'Low Vol', etf: 'USMV', name: 'iShares Min Vol', expense: 0.15, ytd: totalReturn * 0.5 + 2,
+    suggestion: lowVol.exposure < 0.3 ? 'Consider adding' : 'Already covered',
+    color: lowVol.exposure < 0.3 ? 'sky' : 'amber' }
+];
+%>
+<%- include('../partials/header', { pageTitle: 'Factor Investing' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header mb-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-amber-400">FACTOR INVESTING</h1>
+      <p class="text-slate-400">Smart beta factor exposure analysis</p>
+    </div>
+    <button class="bloomberg-btn bloomberg-btn-primary" onclick="window.location.reload()">REFRESH</button>
+  </div>
+</div>
+
+<% if (!factors) { %>
+<div class="bloomberg-card text-center py-12">
+  <p class="text-amber-400 text-lg">No factor data available</p>
+  <p class="text-slate-400 mt-2">Add holdings to your portfolio to see factor analysis.</p>
+</div>
+<% } else { %>
+
+<!-- Factor Exposure Summary -->
+<div class="bloomberg-card p-5 bg-gradient-to-r from-purple-900/20 to-sky-900/20">
+  <h3 class="font-semibold text-amber-400 mb-4">PORTFOLIO FACTOR EXPOSURES</h3>
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Market</p>
+      <p class="text-2xl font-bold font-mono text-sky-400"><%= formatNum(marketBeta.exposure) %></p>
+      <p class="text-xs text-<%= marketLabel.color %>-400"><%= marketLabel.text %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Size</p>
+      <p class="text-2xl font-bold font-mono text-purple-400"><%= formatNum(size.exposure) %></p>
+      <p class="text-xs text-<%= sizeLabel.color %>-400"><%= sizeLabel.text %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Value</p>
+      <p class="text-2xl font-bold font-mono text-<%= value.exposure < 0 ? 'red' : 'emerald' %>-400"><%= formatNum(value.exposure) %></p>
+      <p class="text-xs text-<%= valueLabel.color %>-400"><%= valueLabel.text %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Momentum</p>
+      <p class="text-2xl font-bold font-mono text-emerald-400"><%= formatNum(momentum.exposure) %></p>
+      <p class="text-xs text-<%= momLabel.color %>-400"><%= momLabel.text %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Quality</p>
+      <p class="text-2xl font-bold font-mono text-emerald-400"><%= formatNum(quality.exposure) %></p>
+      <p class="text-xs text-<%= qualLabel.color %>-400"><%= qualLabel.text %></p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm text-slate-400">Volatility</p>
+      <p class="text-2xl font-bold font-mono text-amber-400"><%= formatNum(lowVol.exposure) %></p>
+      <p class="text-xs text-<%= volLabel.color %>-400"><%= volLabel.text %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Factor Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4">FACTOR RADAR</h3>
+    <div class="h-64"><canvas id="radarChart"></canvas></div>
+  </div>
+  <div class="bloomberg-card p-5">
+    <h3 class="font-semibold text-amber-400 mb-4">FACTOR CONTRIBUTION (YTD)</h3>
+    <div class="h-64"><canvas id="factorPerfChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Factor Breakdown -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">FACTOR BREAKDOWN</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="p-4 rounded-lg bg-sky-500/10">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-sky-400">Market (Beta)</h4>
+        <span class="text-xl font-bold font-mono"><%= formatNum(marketBeta.exposure) %></span>
+      </div>
+      <p class="text-sm text-slate-400 mb-2">Sensitivity to overall market movements</p>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-sky-500" style="width:<%= Math.min(100, marketBeta.exposure * 60) %>%"></div></div>
+      <p class="text-xs text-slate-400 mt-1"><%= marketBeta.exposure > 1 ? 'More' : 'Less' %> market risk than benchmark</p>
+    </div>
+    <div class="p-4 rounded-lg bg-purple-500/10">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-purple-400">Size (SMB)</h4>
+        <span class="text-xl font-bold font-mono"><%= formatNum(size.exposure) %></span>
+      </div>
+      <p class="text-sm text-slate-400 mb-2">Small vs large company exposure</p>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-purple-500" style="width:<%= getBarWidth(size.exposure) %>%"></div></div>
+      <p class="text-xs text-slate-400 mt-1"><%= size.exposure < 0 ? 'Tilted toward large-cap stocks' : 'Tilted toward small-cap stocks' %></p>
+    </div>
+    <div class="p-4 rounded-lg bg-<%= value.exposure < 0 ? 'red' : 'emerald' %>-500/10">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-<%= value.exposure < 0 ? 'red' : 'emerald' %>-400">Value (HML)</h4>
+        <span class="text-xl font-bold font-mono"><%= formatNum(value.exposure) %></span>
+      </div>
+      <p class="text-sm text-slate-400 mb-2">Value vs growth stock exposure</p>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-<%= value.exposure < 0 ? 'red' : 'emerald' %>-500" style="width:<%= getBarWidth(value.exposure) %>%"></div></div>
+      <p class="text-xs text-slate-400 mt-1"><%= value.exposure < 0 ? 'Growth-oriented' : 'Value-oriented' %></p>
+    </div>
+    <div class="p-4 rounded-lg bg-emerald-500/10">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-emerald-400">Momentum (MOM)</h4>
+        <span class="text-xl font-bold font-mono"><%= formatNum(momentum.exposure) %></span>
+      </div>
+      <p class="text-sm text-slate-400 mb-2">Exposure to recent winners</p>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-emerald-500" style="width:<%= Math.min(100, momentum.exposure * 70 + 30) %>%"></div></div>
+      <p class="text-xs text-slate-400 mt-1"><%= momentum.exposure > 0.5 ? 'Strong momentum tilt - riding winners' : 'Moderate momentum exposure' %></p>
+    </div>
+    <div class="p-4 rounded-lg bg-emerald-500/10">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-emerald-400">Quality (QMJ)</h4>
+        <span class="text-xl font-bold font-mono"><%= formatNum(quality.exposure) %></span>
+      </div>
+      <p class="text-sm text-slate-400 mb-2">Profitable, stable companies</p>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-emerald-500" style="width:<%= Math.min(100, quality.exposure * 80 + 20) %>%"></div></div>
+      <p class="text-xs text-slate-400 mt-1"><%= quality.exposure > 0.6 ? 'High-quality companies with strong fundamentals' : 'Mixed quality exposure' %></p>
+    </div>
+    <div class="p-4 rounded-lg bg-amber-500/10">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-amber-400">Low Vol (BAB)</h4>
+        <span class="text-xl font-bold font-mono"><%= formatNum(lowVol.exposure) %></span>
+      </div>
+      <p class="text-sm text-slate-400 mb-2">Low volatility stock exposure</p>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-amber-500" style="width:<%= Math.min(100, lowVol.exposure * 100 + 30) %>%"></div></div>
+      <p class="text-xs text-slate-400 mt-1"><%= lowVol.exposure > 0.5 ? 'High volatility exposure' : 'Moderate to low volatility' %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Factor ETF Recommendations -->
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">FACTOR ETF RECOMMENDATIONS</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800 text-slate-400 text-left">
+          <th class="px-4 py-3">Factor</th>
+          <th class="px-4 py-3">ETF</th>
+          <th class="px-4 py-3">Expense</th>
+          <th class="px-4 py-3 text-center">YTD Est.</th>
+          <th class="px-4 py-3">Suggestion</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="text-white">
+        <% factorETFs.forEach(etf => { %>
+        <tr class="border-b border-slate-700/50">
+          <td class="px-4 py-3 font-medium"><%= etf.factor %></td>
+          <td class="px-4 py-3"><span class="font-mono font-bold"><%= etf.etf %></span> <%= etf.name %></td>
+          <td class="px-4 py-3 font-mono text-<%= etf.expense < 0.1 ? 'emerald' : 'amber' %>-400"><%= etf.expense.toFixed(2) %>%</td>
+          <td class="px-4 py-3 text-center font-mono text-<%= etf.ytd >= 0 ? 'emerald' : 'red' %>-400"><%= formatPct(etf.ytd) %></td>
+          <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-<%= etf.color %>-500/20 text-<%= etf.color %>-400 text-xs"><%= etf.suggestion %></span></td>
+          <td class="px-4 py-3"><button class="bloomberg-btn-ghost btn-sm"><%= etf.suggestion.includes('Add') || etf.suggestion.includes('Consider') ? 'ADD' : '-' %></button></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Sector Attribution (if available) -->
+<% if (sectorAttribution.length > 0) { %>
+<div class="bloomberg-card p-5">
+  <h3 class="font-semibold text-amber-400 mb-4">SECTOR ATTRIBUTION</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-800 text-slate-400 text-left">
+          <th class="px-4 py-3">Sector</th>
+          <th class="px-4 py-3 text-right">Weight</th>
+          <th class="px-4 py-3 text-right">Return</th>
+          <th class="px-4 py-3 text-right">Contribution</th>
+        </tr>
+      </thead>
+      <tbody class="text-white">
+        <% sectorAttribution.forEach(sector => { %>
+        <tr class="border-b border-slate-700/50">
+          <td class="px-4 py-3 font-medium"><%= sector.sector %></td>
+          <td class="px-4 py-3 text-right font-mono"><%= (sector.weight || 0).toFixed(1) %>%</td>
+          <td class="px-4 py-3 text-right font-mono text-<%= (sector.return || 0) >= 0 ? 'emerald' : 'red' %>-400"><%= formatPct(sector.return) %></td>
+          <td class="px-4 py-3 text-right font-mono text-<%= (sector.contribution || 0) >= 0 ? 'emerald' : 'red' %>-400"><%= formatPct(sector.contribution) %></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+<% } %>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+<% if (factors) { %>
+// Factor data for charts
+const portfolioData = [
+  <%= marketBeta.exposure %>,
+  <%= Math.abs(size.exposure) + 0.5 %>,
+  <%= Math.abs(value.exposure) + 0.5 %>,
+  <%= momentum.exposure %>,
+  <%= quality.exposure %>,
+  <%= lowVol.exposure + 0.5 %>
+];
+
+const benchmarkData = [1.0, 0.5, 0.5, 0.5, 0.5, 0.5];
+
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Market', 'Size', 'Value', 'Momentum', 'Quality', 'Low Vol'],
+    datasets: [
+      {
+        label: 'Your Portfolio',
+        data: portfolioData,
+        backgroundColor: 'rgba(14,165,233,0.2)',
+        borderColor: '#0ea5e9',
+        pointBackgroundColor: '#0ea5e9'
+      },
+      {
+        label: 'Benchmark',
+        data: benchmarkData,
+        backgroundColor: 'rgba(148,163,184,0.2)',
+        borderColor: '#94a3b8',
+        pointBackgroundColor: '#94a3b8'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 1.5,
+        grid: { color: '#1e293b' },
+        angleLines: { color: '#1e293b' },
+        pointLabels: { color: '#94a3b8' },
+        ticks: { color: '#94a3b8', backdropColor: 'transparent' }
+      }
+    },
+    plugins: {
+      legend: { labels: { color: '#94a3b8' } }
+    }
+  }
+});
+
+// Factor contribution chart
+const factorContributions = [
+  <%= marketBeta.contribution %>,
+  <%= size.contribution %>,
+  <%= value.contribution %>,
+  <%= momentum.contribution %>,
+  <%= quality.contribution %>,
+  <%= lowVol.contribution %>
+];
+
+new Chart(document.getElementById('factorPerfChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Market', 'Size', 'Value', 'Momentum', 'Quality', 'Low Vol'],
+    datasets: [{
+      data: factorContributions.map(v => Math.abs(v) + 2),
+      backgroundColor: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#10b981', '#f59e0b'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        grid: { color: '#1e293b' },
+        ticks: { color: '#94a3b8', callback: v => v.toFixed(1) + '%' }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    }
+  }
+});
+<% } %>
+</script>
+<%- include('../partials/footer') %>

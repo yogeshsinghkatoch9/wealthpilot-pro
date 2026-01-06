@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MACD Analysis | WealthPilot Pro</title>
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- TradingView Lightweight Charts -->
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  <!-- Theme Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4850e5",
+            "background-light": "#f6f6f8",
+            "background-dark": "#111221",
+            "surface-dark": "#1e1f2e",
+            "border-dark": "#292a38",
+            "text-secondary": "#9e9fb7"
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"]
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111221;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #292a38;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3d3e52;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex flex-col overflow-x-hidden selection:bg-primary/30">
+  <%
+    // Safe defaults
+    const macdData = typeof technicals !== 'undefined' && technicals ? technicals : {};
+    const macdObj = macdData.macd || {};
+    const macd = typeof macdObj === 'object' ? (macdObj.macd || 0) : (macdObj || 0);
+    const signalVal = typeof macdObj === 'object' ? (macdObj.signal || 0) : 0;
+    const histogram = typeof macdObj === 'object' ? (macdObj.histogram || 0) : 0;
+    const price = macdData.price?.current || macdData.price || 0;
+    const priceChange = macdData.price?.changePercent || 1.2;
+
+    function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+    function formatNum(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(4); }
+
+    let macdSignal = 'NEUTRAL';
+    let signalColor = 'gray';
+    if (macd > signalVal && histogram > 0) {
+      macdSignal = 'BULLISH';
+      signalColor = 'green';
+    } else if (macd < signalVal && histogram < 0) {
+      macdSignal = 'BEARISH';
+      signalColor = 'red';
+    }
+
+    const bullishCross = macd > signalVal && histogram > 0;
+    const bearishCross = macd < signalVal && histogram < 0;
+  %>
+
+  <div class="flex min-h-screen">
+    <%- include('../partials/sidebar') %>
+
+    <div class="flex-1 flex flex-col">
+      <%- include('../partials/header') %>
+
+      <!-- Main Content -->
+      <main class="flex-1 px-4 py-6 md:px-8 lg:px-12 xl:px-20 max-w-[1600px] mx-auto w-full">
+        <!-- Breadcrumbs -->
+        <div class="flex flex-wrap gap-2 py-4">
+          <a class="text-text-secondary hover:text-white transition-colors text-sm font-medium" href="/technical-summary">Analysis</a>
+          <span class="text-text-secondary text-sm font-medium">/</span>
+          <a class="text-text-secondary hover:text-white transition-colors text-sm font-medium" href="/technical-summary">Technical Indicators</a>
+          <span class="text-text-secondary text-sm font-medium">/</span>
+          <span class="text-primary text-sm font-medium">MACD</span>
+        </div>
+
+        <!-- Page Heading -->
+        <div class="flex flex-wrap justify-between gap-3 py-4 border-b border-border-dark mb-6">
+          <div class="flex min-w-72 flex-col gap-2">
+            <h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">MACD Analysis: <%= symbol || 'AAPL' %></h1>
+            <div class="flex items-center gap-3">
+              <p class="text-white text-xl font-bold"><%= formatPrice(price) %></p>
+              <span class="<%= priceChange >= 0 ? 'text-[#0bda65]' : 'text-red-500' %> text-base font-medium"><%= priceChange >= 0 ? '+' : '' %><%= priceChange.toFixed(1) %>% (Today)</span>
+              <span class="text-text-secondary text-base">•</span>
+              <p class="text-text-secondary text-base font-normal">NASDAQ</p>
+            </div>
+          </div>
+          <div class="flex gap-3 items-center">
+            <form method="GET" action="/macd" class="flex gap-2">
+              <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" placeholder="Symbol"
+                class="w-24 px-3 py-2 bg-surface-dark border border-border-dark rounded-lg text-white text-sm font-mono uppercase focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+              <button type="submit" class="px-4 py-2 bg-surface-dark hover:bg-border-dark text-white text-sm font-bold rounded-lg transition-colors">
+                Analyze
+              </button>
+            </form>
+            <button class="flex items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-surface-dark hover:bg-border-dark text-white text-sm font-bold transition-colors">
+              <span class="material-symbols-outlined mr-2 text-[18px]">bookmark</span>
+              <span class="truncate">Watchlist</span>
+            </button>
+            <button class="flex items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-colors shadow-lg shadow-primary/20">
+              <span class="material-symbols-outlined mr-2 text-[18px]">download</span>
+              <span class="truncate">Export Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Layout Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left Column: Charts (Span 9) -->
+          <div class="lg:col-span-9 flex flex-col gap-6">
+            <!-- Price Chart Section -->
+            <div class="rounded-xl border border-border-dark bg-surface-dark p-6 overflow-hidden relative">
+              <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col">
+                  <p class="text-text-secondary text-sm font-medium uppercase tracking-wider">Price Action</p>
+                </div>
+                <!-- Timeframe Toggles -->
+                <div class="flex bg-[#111217] rounded-lg p-1 gap-1">
+                  <button class="px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded transition-colors">1H</button>
+                  <button class="px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded transition-colors">4H</button>
+                  <button class="px-3 py-1 text-xs font-bold text-white bg-primary rounded shadow-sm">1D</button>
+                  <button class="px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded transition-colors">1W</button>
+                  <button class="px-3 py-1 text-xs font-medium text-text-secondary hover:text-white rounded transition-colors">1M</button>
+                </div>
+              </div>
+              <!-- Price Chart Container -->
+              <div id="priceChart" class="w-full h-[300px]"></div>
+            </div>
+
+            <!-- MACD Chart Section -->
+            <div class="rounded-xl border border-border-dark bg-surface-dark p-6">
+              <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-4">
+                  <h3 class="text-white text-base font-bold">MACD Oscillator</h3>
+                  <div class="flex gap-4 text-xs">
+                    <span class="flex items-center gap-1.5 text-text-secondary">
+                      <span class="w-2 h-2 rounded-full bg-[#4850e5]"></span> MACD (12, 26)
+                    </span>
+                    <span class="flex items-center gap-1.5 text-text-secondary">
+                      <span class="w-2 h-2 rounded-full bg-[#fb923c]"></span> Signal (9)
+                    </span>
+                    <span class="flex items-center gap-1.5 text-text-secondary">
+                      <span class="w-2 h-2 rounded-full bg-[#0bda65]"></span> Histogram
+                    </span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-white text-lg font-bold font-mono"><%= formatNum(histogram) %></p>
+                  <p class="text-<%= signalColor === 'green' ? '[#0bda65]' : signalColor === 'red' ? 'red-500' : 'text-secondary' %> text-xs font-medium"><%= bullishCross ? 'Bullish Crossover' : bearishCross ? 'Bearish Crossover' : 'Neutral' %></p>
+                </div>
+              </div>
+              <div id="tvMacdChart" class="w-full h-[250px]"></div>
+            </div>
+          </div>
+
+          <!-- Right Column: Sidebar (Span 3) -->
+          <div class="lg:col-span-3 flex flex-col gap-6">
+            <!-- Configuration Panel -->
+            <div class="rounded-xl border border-border-dark bg-surface-dark p-5">
+              <div class="flex items-center gap-2 mb-5">
+                <span class="material-symbols-outlined text-primary">tune</span>
+                <h3 class="text-white font-bold text-base">Configuration</h3>
+              </div>
+              <div class="flex flex-col gap-4">
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Fast Period</label>
+                  <div class="flex items-center bg-[#111217] rounded-lg border border-border-dark overflow-hidden">
+                    <input type="number" value="12" class="w-full bg-transparent border-none text-white p-2.5 text-sm focus:ring-0 text-center font-mono">
+                    <div class="flex flex-col border-l border-border-dark">
+                      <button class="px-2 py-0.5 hover:bg-border-dark text-text-secondary hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">expand_less</span>
+                      </button>
+                      <button class="px-2 py-0.5 hover:bg-border-dark text-text-secondary hover:text-white transition-colors border-t border-border-dark">
+                        <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Slow Period</label>
+                  <div class="flex items-center bg-[#111217] rounded-lg border border-border-dark overflow-hidden">
+                    <input type="number" value="26" class="w-full bg-transparent border-none text-white p-2.5 text-sm focus:ring-0 text-center font-mono">
+                    <div class="flex flex-col border-l border-border-dark">
+                      <button class="px-2 py-0.5 hover:bg-border-dark text-text-secondary hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">expand_less</span>
+                      </button>
+                      <button class="px-2 py-0.5 hover:bg-border-dark text-text-secondary hover:text-white transition-colors border-t border-border-dark">
+                        <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Signal Smoothing</label>
+                  <div class="flex items-center bg-[#111217] rounded-lg border border-border-dark overflow-hidden">
+                    <input type="number" value="9" class="w-full bg-transparent border-none text-white p-2.5 text-sm focus:ring-0 text-center font-mono">
+                    <div class="flex flex-col border-l border-border-dark">
+                      <button class="px-2 py-0.5 hover:bg-border-dark text-text-secondary hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">expand_less</span>
+                      </button>
+                      <button class="px-2 py-0.5 hover:bg-border-dark text-text-secondary hover:text-white transition-colors border-t border-border-dark">
+                        <span class="material-symbols-outlined text-[14px]">expand_more</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="space-y-1.5">
+                  <label class="text-xs font-semibold text-text-secondary uppercase tracking-wide">Source</label>
+                  <select class="w-full bg-[#111217] border border-border-dark text-white rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-primary focus:border-primary">
+                    <option>Close</option>
+                    <option>Open</option>
+                    <option>High</option>
+                    <option>Low</option>
+                  </select>
+                </div>
+                <button class="mt-2 w-full bg-primary/20 hover:bg-primary/30 text-primary font-bold py-2.5 rounded-lg text-sm transition-colors border border-primary/20">
+                  Apply Defaults
+                </button>
+              </div>
+            </div>
+
+            <!-- Signal Feed -->
+            <div class="rounded-xl border border-border-dark bg-surface-dark p-5">
+              <div class="flex items-center gap-2 mb-5">
+                <span class="material-symbols-outlined text-[#0bda65]">analytics</span>
+                <h3 class="text-white font-bold text-base">Signal Feed</h3>
+              </div>
+              <div class="flex flex-col gap-4">
+                <!-- Signal Item -->
+                <div class="flex gap-3 items-start p-3 rounded-lg bg-[#111217] border border-border-dark <%= bullishCross ? '' : 'opacity-60' %>">
+                  <div class="bg-[#0bda65]/20 p-1.5 rounded text-[#0bda65]">
+                    <span class="material-symbols-outlined text-[18px]">trending_up</span>
+                  </div>
+                  <div>
+                    <p class="text-white text-sm font-bold">Bullish Crossover</p>
+                    <p class="text-text-secondary text-xs mt-0.5">MACD crossed above Signal line. Momentum building.</p>
+                    <p class="text-text-secondary text-[10px] mt-2 font-mono"><%= bullishCross ? 'Active' : '—' %></p>
+                  </div>
+                </div>
+                <!-- Signal Item -->
+                <div class="flex gap-3 items-start p-3 rounded-lg bg-[#111217] border border-border-dark <%= bearishCross ? '' : 'opacity-60' %>">
+                  <div class="bg-red-500/20 p-1.5 rounded text-red-500">
+                    <span class="material-symbols-outlined text-[18px]">trending_down</span>
+                  </div>
+                  <div>
+                    <p class="text-white text-sm font-bold">Bearish Crossover</p>
+                    <p class="text-text-secondary text-xs mt-0.5">MACD crossed below Signal line. Selling pressure.</p>
+                    <p class="text-text-secondary text-[10px] mt-2 font-mono"><%= bearishCross ? 'Active' : '—' %></p>
+                  </div>
+                </div>
+                <!-- Signal Item -->
+                <div class="flex gap-3 items-start p-3 rounded-lg bg-[#111217] border border-border-dark opacity-60">
+                  <div class="bg-text-secondary/20 p-1.5 rounded text-text-secondary">
+                    <span class="material-symbols-outlined text-[18px]">horizontal_rule</span>
+                  </div>
+                  <div>
+                    <p class="text-white text-sm font-bold">Zero Line Approach</p>
+                    <p class="text-text-secondary text-xs mt-0.5">Histogram approaching neutral zone.</p>
+                    <p class="text-text-secondary text-[10px] mt-2 font-mono">Yesterday</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Education Card -->
+            <div class="rounded-xl bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 p-5">
+              <h4 class="text-primary font-bold text-sm mb-2">Did you know?</h4>
+              <p class="text-text-secondary text-xs leading-relaxed">
+                Divergences between the MACD and price action can signal trend reversals. A <strong>bearish divergence</strong> occurs when price makes a new high, but MACD makes a lower high.
+              </p>
+              <a class="inline-flex items-center gap-1 text-xs text-white mt-3 font-semibold hover:underline" href="#">
+                Learn more <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- MACD Values Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="rounded-xl border border-border-dark bg-surface-dark p-5">
+            <p class="text-text-secondary text-xs font-medium uppercase tracking-wider mb-2">MACD Line</p>
+            <p class="text-2xl font-mono font-bold <%= macd >= 0 ? 'text-[#0bda65]' : 'text-red-500' %>"><%= formatNum(macd) %></p>
+            <p class="text-xs text-text-secondary mt-2">12-period EMA minus 26-period EMA</p>
+          </div>
+          <div class="rounded-xl border border-border-dark bg-surface-dark p-5">
+            <p class="text-text-secondary text-xs font-medium uppercase tracking-wider mb-2">Signal Line</p>
+            <p class="text-2xl font-mono font-bold text-white"><%= formatNum(signalVal) %></p>
+            <p class="text-xs text-text-secondary mt-2">9-period EMA of MACD line</p>
+          </div>
+          <div class="rounded-xl border border-border-dark bg-surface-dark p-5">
+            <p class="text-text-secondary text-xs font-medium uppercase tracking-wider mb-2">Histogram</p>
+            <p class="text-2xl font-mono font-bold <%= histogram >= 0 ? 'text-[#0bda65]' : 'text-red-500' %>"><%= formatNum(histogram) %></p>
+            <p class="text-xs text-text-secondary mt-2">MACD minus Signal line</p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 border-t border-border-dark pt-6 pb-4">
+          <div class="flex flex-col md:flex-row justify-between items-center text-xs text-text-secondary">
+            <p>© 2024 WealthPilot Pro. All rights reserved.</p>
+            <div class="flex gap-4 mt-2 md:mt-0">
+              <a class="hover:text-white" href="#">Privacy Policy</a>
+              <a class="hover:text-white" href="#">Terms of Service</a>
+              <a class="hover:text-white" href="#">Support</a>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const symbol = '<%= symbol || "AAPL" %>';
+    const macdContainer = document.getElementById('tvMacdChart');
+    const priceContainer = document.getElementById('priceChart');
+
+    async function loadCharts() {
+      try {
+        const token = localStorage.getItem('wealthpilot_token');
+        const response = await fetch(`/api/technicals/${symbol}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch data');
+
+        const data = await response.json();
+        const macdSeries = data.macd?.series || {};
+        const dates = data.dates || [];
+        const priceSeries = data.prices || [];
+
+        // Price Chart
+        if (priceContainer && priceSeries.length > 0) {
+          const priceChart = LightweightCharts.createChart(priceContainer, {
+            width: priceContainer.clientWidth,
+            height: 300,
+            layout: {
+              background: { type: 'solid', color: '#1e1f2e' },
+              textColor: '#9e9fb7',
+            },
+            grid: {
+              vertLines: { color: '#292a38' },
+              horzLines: { color: '#292a38' },
+            },
+            rightPriceScale: { borderColor: '#292a38' },
+            timeScale: { borderColor: '#292a38', timeVisible: true },
+          });
+
+          const areaSeries = priceChart.addAreaSeries({
+            lineColor: '#4850e5',
+            topColor: 'rgba(72, 80, 229, 0.3)',
+            bottomColor: 'rgba(72, 80, 229, 0)',
+            lineWidth: 2,
+          });
+
+          const priceData = priceSeries.map((value, i) => ({
+            time: dates[i] || new Date(Date.now() - (priceSeries.length - i) * 86400000).toISOString().split('T')[0],
+            value: value
+          }));
+          areaSeries.setData(priceData);
+          priceChart.timeScale().fitContent();
+
+          new ResizeObserver(entries => {
+            priceChart.applyOptions({ width: entries[0].contentRect.width });
+          }).observe(priceContainer);
+        }
+
+        // MACD Chart
+        if (macdContainer && macdSeries.macd && macdSeries.macd.length > 0) {
+          const chart = LightweightCharts.createChart(macdContainer, {
+            width: macdContainer.clientWidth,
+            height: 250,
+            layout: {
+              background: { type: 'solid', color: '#1e1f2e' },
+              textColor: '#9e9fb7',
+            },
+            grid: {
+              vertLines: { color: '#292a38' },
+              horzLines: { color: '#292a38' },
+            },
+            rightPriceScale: { borderColor: '#292a38' },
+            timeScale: { borderColor: '#292a38', timeVisible: true },
+          });
+
+          const histogramChart = chart.addHistogramSeries({ priceScaleId: 'right' });
+          const macdLine = chart.addLineSeries({ color: '#4850e5', lineWidth: 2, priceScaleId: 'right' });
+          const signalLine = chart.addLineSeries({ color: '#fb923c', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Dashed, priceScaleId: 'right' });
+
+          const macdData = macdSeries.macd.map((value, i) => ({
+            time: dates[i] || new Date(Date.now() - (macdSeries.macd.length - i) * 86400000).toISOString().split('T')[0],
+            value: value
+          }));
+
+          const signalData = macdSeries.signal.map((value, i) => ({
+            time: dates[i] || new Date(Date.now() - (macdSeries.signal.length - i) * 86400000).toISOString().split('T')[0],
+            value: value
+          }));
+
+          const histogramData = macdSeries.histogram.map((value, i) => ({
+            time: dates[i] || new Date(Date.now() - (macdSeries.histogram.length - i) * 86400000).toISOString().split('T')[0],
+            value: value,
+            color: value >= 0 ? 'rgba(11, 218, 101, 0.6)' : 'rgba(239, 68, 68, 0.6)'
+          }));
+
+          histogramChart.setData(histogramData);
+          macdLine.setData(macdData);
+          signalLine.setData(signalData);
+
+          macdLine.createPriceLine({
+            price: 0,
+            color: '#64748b',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            axisLabelVisible: false,
+          });
+
+          chart.timeScale().fitContent();
+
+          new ResizeObserver(entries => {
+            chart.applyOptions({ width: entries[0].contentRect.width });
+          }).observe(macdContainer);
+        }
+
+      } catch (error) {
+        console.error('Chart error:', error);
+        if (macdContainer) macdContainer.innerHTML = '<p class="text-text-secondary text-center py-8">Chart unavailable</p>';
+        if (priceContainer) priceContainer.innerHTML = '<p class="text-text-secondary text-center py-8">Chart unavailable</p>';
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadCharts);
+    } else {
+      loadCharts();
+    }
+  </script>
+</body>
+</html>

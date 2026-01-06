@@ -1,0 +1,183 @@
+<%- include('../partials/header', { pageTitle: 'Risk Parity' }) %>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div><h1 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Risk Parity Analysis</h1><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Equal risk contribution allocation</p></div>
+<button class="btn-primary">Calculate Optimal</button>
+</div>
+
+<!-- Risk Overview -->
+<div class="card p-5 bg-gradient-to-r <%= theme === 'light' ? 'from-amber-50 to-red-50' : 'from-amber-900/20 to-red-900/20' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Portfolio Risk Summary</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Portfolio Vol</p>
+<p class="text-3xl font-bold text-amber-400">18.4%</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Annualized</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">VaR (95%)</p>
+<p class="text-3xl font-bold text-red-400">-$12,840</p>
+<p class="text-xs text-red-400">Daily 1-day</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Beta</p>
+<p class="text-3xl font-bold text-sky-400">1.12</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">vs S&P 500</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Sharpe Ratio</p>
+<p class="text-3xl font-bold text-emerald-400">1.24</p>
+<p class="text-xs text-emerald-400">Good</p>
+</div>
+<div class="text-center">
+<p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Max Drawdown</p>
+<p class="text-3xl font-bold text-red-400">-14.2%</p>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">12-month</p>
+</div>
+</div>
+</div>
+
+<!-- Risk Contribution Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Current Risk Contribution</h3>
+<div class="h-64"><canvas id="currentRiskChart"></canvas></div>
+<p class="text-center text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-2">⚠️ Tech contributes 62% of portfolio risk</p>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Risk Parity Target</h3>
+<div class="h-64"><canvas id="targetRiskChart"></canvas></div>
+<p class="text-center text-sm text-emerald-400 mt-2">✓ Equal 20% risk per asset class</p>
+</div>
+</div>
+
+<!-- Risk Contribution Table -->
+<div class="card overflow-hidden">
+<div class="p-4 border-b <%= theme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Holdings Risk Contribution</h3>
+</div>
+<table class="w-full text-sm">
+<thead>
+<tr class="<%= theme === 'light' ? 'bg-gray-50 text-gray-500' : 'bg-slate-800 text-slate-400' %> text-left">
+<th class="px-4 py-3">Asset</th>
+<th class="px-4 py-3 text-center">Weight</th>
+<th class="px-4 py-3 text-center">Volatility</th>
+<th class="px-4 py-3 text-center">Risk Contribution</th>
+<th class="px-4 py-3">Risk Bar</th>
+<th class="px-4 py-3 text-center">Optimal Weight</th>
+<th class="px-4 py-3 text-center">Action</th>
+</tr>
+</thead>
+<tbody class="<%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">NVDA</td>
+<td class="px-4 py-3 text-center">18%</td>
+<td class="px-4 py-3 text-center text-red-400">48.2%</td>
+<td class="px-4 py-3 text-center font-bold text-red-400">32.4%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-red-500" style="width:32%"></div></div></td>
+<td class="px-4 py-3 text-center text-sky-400">8%</td>
+<td class="px-4 py-3 text-center"><span class="text-red-400 text-xs">↓ Reduce</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">TSLA</td>
+<td class="px-4 py-3 text-center">8%</td>
+<td class="px-4 py-3 text-center text-red-400">52.4%</td>
+<td class="px-4 py-3 text-center font-bold text-amber-400">18.2%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-amber-500" style="width:18%"></div></div></td>
+<td class="px-4 py-3 text-center text-sky-400">4%</td>
+<td class="px-4 py-3 text-center"><span class="text-red-400 text-xs">↓ Reduce</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">AAPL</td>
+<td class="px-4 py-3 text-center">15%</td>
+<td class="px-4 py-3 text-center text-amber-400">28.4%</td>
+<td class="px-4 py-3 text-center font-bold">14.8%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-sky-500" style="width:15%"></div></div></td>
+<td class="px-4 py-3 text-center text-sky-400">12%</td>
+<td class="px-4 py-3 text-center"><span class="text-amber-400 text-xs">→ Slight</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">MSFT</td>
+<td class="px-4 py-3 text-center">12%</td>
+<td class="px-4 py-3 text-center text-amber-400">24.8%</td>
+<td class="px-4 py-3 text-center font-bold">10.2%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-sky-500" style="width:10%"></div></div></td>
+<td class="px-4 py-3 text-center text-sky-400">14%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400 text-xs">↑ Add</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">JNJ</td>
+<td class="px-4 py-3 text-center">10%</td>
+<td class="px-4 py-3 text-center text-emerald-400">14.2%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">4.8%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:5%"></div></div></td>
+<td class="px-4 py-3 text-center text-sky-400">18%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400 text-xs">↑ Add</span></td>
+</tr>
+<tr class="border-b <%= theme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
+<td class="px-4 py-3 font-medium">BND (Bonds)</td>
+<td class="px-4 py-3 text-center">15%</td>
+<td class="px-4 py-3 text-center text-emerald-400">6.2%</td>
+<td class="px-4 py-3 text-center font-bold text-emerald-400">3.2%</td>
+<td class="px-4 py-3"><div class="h-3 rounded-full <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>"><div class="h-3 rounded-full bg-emerald-500" style="width:3%"></div></div></td>
+<td class="px-4 py-3 text-center text-sky-400">28%</td>
+<td class="px-4 py-3 text-center"><span class="text-emerald-400 text-xs">↑ Add</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- Optimization Results -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">📊 Risk Parity Benefits</h3>
+<div class="space-y-4">
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<div class="flex justify-between mb-2"><span>Estimated Volatility</span><span class="font-bold">18.4% → <span class="text-emerald-400">12.8%</span></span></div>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">-30% risk reduction</p>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<div class="flex justify-between mb-2"><span>Expected Sharpe</span><span class="font-bold">1.24 → <span class="text-emerald-400">1.48</span></span></div>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">+19% risk-adjusted return</p>
+</div>
+<div class="p-4 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<div class="flex justify-between mb-2"><span>Max Drawdown</span><span class="font-bold">-14.2% → <span class="text-emerald-400">-9.8%</span></span></div>
+<p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">-31% drawdown reduction</p>
+</div>
+</div>
+</div>
+<div class="card p-5">
+<h3 class="font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">⚙️ Rebalancing Actions</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<span class="font-medium">Sell NVDA</span><span class="text-red-400 font-bold">-$27,700</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-red-50' : 'bg-red-500/10' %>">
+<span class="font-medium">Sell TSLA</span><span class="text-red-400 font-bold">-$11,070</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="font-medium">Buy JNJ</span><span class="text-emerald-400 font-bold">+$22,150</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg <%= theme === 'light' ? 'bg-emerald-50' : 'bg-emerald-500/10' %>">
+<span class="font-medium">Buy BND</span><span class="text-emerald-400 font-bold">+$35,970</span>
+</div>
+</div>
+<button class="btn-primary w-full mt-4">Apply Risk Parity</button>
+</div>
+</div>
+</div></div></main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById('currentRiskChart'), {
+  type: 'doughnut',
+  data: { labels: ['NVDA','TSLA','AAPL','MSFT','Others','Bonds'], datasets: [{ data: [32.4,18.2,14.8,10.2,21.2,3.2], backgroundColor: ['#ef4444','#f59e0b','#0ea5e9','#8b5cf6','#94a3b8','#10b981'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+});
+new Chart(document.getElementById('targetRiskChart'), {
+  type: 'doughnut',
+  data: { labels: ['Stocks','Bonds','Commodities','Real Estate','Cash'], datasets: [{ data: [20,20,20,20,20], backgroundColor: ['#8b5cf6','#10b981','#f59e0b','#0ea5e9','#94a3b8'] }] },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+});
+</script>
+<%- include('../partials/footer') %>

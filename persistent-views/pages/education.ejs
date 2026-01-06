@@ -1,0 +1,344 @@
+<%- include('../partials/header', { pageTitle: 'Education Center' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header-bar">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="bloomberg-header-title">EDUCATION CENTER</h1>
+      <p class="bloomberg-header-subtitle">Learn investing fundamentals and advanced strategies</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="px-3 py-1 bg-[#00d084]/20 text-[#00d084] text-xs font-mono uppercase border border-[#00d084]/30">
+        4 COURSES COMPLETED
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Progress Overview -->
+<div class="bloomberg-card">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-bold text-white uppercase tracking-wider">YOUR LEARNING PROGRESS</h3>
+    <span class="text-[#f7931e] font-mono text-sm">42% COMPLETE</span>
+  </div>
+  <div class="h-2 bg-black/30 border border-[#1a1a1a]">
+    <div class="h-full bg-[#f7931e]" style="width: 42%"></div>
+  </div>
+  <div class="grid grid-cols-4 gap-4 mt-6">
+    <div class="text-center border-r border-[#1a1a1a] last:border-r-0">
+      <p class="text-2xl font-bold text-[#00d084] font-mono">4</p>
+      <p class="text-xs text-slate-400 uppercase tracking-wide mt-1">Completed</p>
+    </div>
+    <div class="text-center border-r border-[#1a1a1a] last:border-r-0">
+      <p class="text-2xl font-bold text-[#f7931e] font-mono">2</p>
+      <p class="text-xs text-slate-400 uppercase tracking-wide mt-1">In Progress</p>
+    </div>
+    <div class="text-center border-r border-[#1a1a1a] last:border-r-0">
+      <p class="text-2xl font-bold text-white font-mono">12</p>
+      <p class="text-xs text-slate-400 uppercase tracking-wide mt-1">Available</p>
+    </div>
+    <div class="text-center">
+      <p class="text-2xl font-bold text-[#2e77e5] font-mono">8h</p>
+      <p class="text-xs text-slate-400 uppercase tracking-wide mt-1">Time Invested</p>
+    </div>
+  </div>
+</div>
+
+<!-- Category Tabs -->
+<div class="flex flex-wrap gap-2 mb-6">
+  <button onclick="showCategory('all')" class="bloomberg-btn bloomberg-btn-sm edu-tab active" data-cat="all">
+    ALL COURSES
+  </button>
+  <button onclick="showCategory('beginner')" class="bloomberg-btn bloomberg-btn-sm edu-tab" data-cat="beginner">
+    BEGINNER
+  </button>
+  <button onclick="showCategory('intermediate')" class="bloomberg-btn bloomberg-btn-sm edu-tab" data-cat="intermediate">
+    INTERMEDIATE
+  </button>
+  <button onclick="showCategory('advanced')" class="bloomberg-btn bloomberg-btn-sm edu-tab" data-cat="advanced">
+    ADVANCED
+  </button>
+  <button onclick="showCategory('glossary')" class="bloomberg-btn bloomberg-btn-sm edu-tab" data-cat="glossary">
+    GLOSSARY
+  </button>
+</div>
+
+<!-- Courses Grid -->
+<div id="courses-section">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+    <!-- Course 1 - Completed -->
+    <div class="bloomberg-card p-0 overflow-hidden course-card" data-level="beginner">
+      <div class="h-32 bg-gradient-to-br from-[#00d084] to-[#00a066] flex items-center justify-center relative">
+        <span class="text-5xl">📊</span>
+        <div class="absolute top-2 right-2">
+          <span class="px-2 py-1 bg-black/50 text-[#00d084] text-xs font-mono uppercase border border-[#00d084]">
+            ✓ COMPLETED
+          </span>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-0.5 bg-[#00d084]/20 text-[#00d084] text-xs font-mono uppercase border border-[#00d084]/30">
+            BEGINNER
+          </span>
+        </div>
+        <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-wide">INVESTING 101</h4>
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Learn the basics of stocks, bonds, ETFs, and building your first portfolio.
+        </p>
+        <div class="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
+          <span class="text-xs text-slate-500 font-mono">8 LESSONS • 45 MIN</span>
+          <button class="bloomberg-btn bloomberg-btn-sm">REVIEW</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course 2 - In Progress -->
+    <div class="bloomberg-card p-0 overflow-hidden course-card" data-level="beginner">
+      <div class="h-32 bg-gradient-to-br from-[#f7931e] to-[#c97519] flex items-center justify-center relative">
+        <span class="text-5xl">💰</span>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+          <div class="h-1 bg-[#00d084]" style="width: 65%"></div>
+        </div>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-0.5 bg-[#00d084]/20 text-[#00d084] text-xs font-mono uppercase border border-[#00d084]/30">
+            BEGINNER
+          </span>
+          <span class="px-2 py-0.5 bg-[#f7931e]/20 text-[#f7931e] text-xs font-mono uppercase border border-[#f7931e]/30">
+            65% COMPLETE
+          </span>
+        </div>
+        <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-wide">DIVIDEND INVESTING</h4>
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Build passive income with dividend stocks and understand yield, payout ratios.
+        </p>
+        <div class="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
+          <span class="text-xs text-slate-500 font-mono">10 LESSONS • 1 HR</span>
+          <button class="bloomberg-btn bloomberg-btn-sm bloomberg-btn-primary">CONTINUE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course 3 -->
+    <div class="bloomberg-card p-0 overflow-hidden course-card" data-level="intermediate">
+      <div class="h-32 bg-gradient-to-br from-[#2e77e5] to-[#1e56b3] flex items-center justify-center">
+        <span class="text-5xl">📈</span>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-0.5 bg-[#2e77e5]/20 text-[#2e77e5] text-xs font-mono uppercase border border-[#2e77e5]/30">
+            INTERMEDIATE
+          </span>
+        </div>
+        <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-wide">TECHNICAL ANALYSIS</h4>
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Master chart patterns, indicators, support/resistance, and trend analysis.
+        </p>
+        <div class="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
+          <span class="text-xs text-slate-500 font-mono">15 LESSONS • 2 HR</span>
+          <button class="bloomberg-btn bloomberg-btn-sm bloomberg-btn-primary">START</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course 4 -->
+    <div class="bloomberg-card p-0 overflow-hidden course-card" data-level="intermediate">
+      <div class="h-32 bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+        <span class="text-5xl">🧮</span>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-0.5 bg-[#2e77e5]/20 text-[#2e77e5] text-xs font-mono uppercase border border-[#2e77e5]/30">
+            INTERMEDIATE
+          </span>
+        </div>
+        <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-wide">FUNDAMENTAL ANALYSIS</h4>
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Read financial statements, calculate ratios, and value companies.
+        </p>
+        <div class="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
+          <span class="text-xs text-slate-500 font-mono">12 LESSONS • 1.5 HR</span>
+          <button class="bloomberg-btn bloomberg-btn-sm bloomberg-btn-primary">START</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course 5 -->
+    <div class="bloomberg-card p-0 overflow-hidden course-card" data-level="advanced">
+      <div class="h-32 bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center">
+        <span class="text-5xl">⚡</span>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-0.5 bg-rose-500/20 text-rose-400 text-xs font-mono uppercase border border-rose-500/30">
+            ADVANCED
+          </span>
+        </div>
+        <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-wide">OPTIONS TRADING</h4>
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Calls, puts, spreads, Greeks, and options strategies for income and hedging.
+        </p>
+        <div class="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
+          <span class="text-xs text-slate-500 font-mono">20 LESSONS • 3 HR</span>
+          <button class="bloomberg-btn bloomberg-btn-sm bloomberg-btn-primary">START</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course 6 -->
+    <div class="bloomberg-card p-0 overflow-hidden course-card" data-level="advanced">
+      <div class="h-32 bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
+        <span class="text-5xl">🎯</span>
+      </div>
+      <div class="p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-0.5 bg-rose-500/20 text-rose-400 text-xs font-mono uppercase border border-rose-500/30">
+            ADVANCED
+          </span>
+        </div>
+        <h4 class="font-bold text-white mb-2 text-sm uppercase tracking-wide">PORTFOLIO MANAGEMENT</h4>
+        <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          Asset allocation, rebalancing, risk management, and modern portfolio theory.
+        </p>
+        <div class="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
+          <span class="text-xs text-slate-500 font-mono">14 LESSONS • 2 HR</span>
+          <button class="bloomberg-btn bloomberg-btn-sm bloomberg-btn-primary">START</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Glossary Section -->
+<div id="glossary-section" class="hidden">
+  <div class="bloomberg-card">
+    <div class="mb-4">
+      <input
+        type="text"
+        id="glossarySearch"
+        class="w-full bg-black/30 border border-[#1a1a1a] text-white px-4 py-2 text-sm font-mono focus:outline-none focus:border-[#f7931e]"
+        placeholder="SEARCH TERMS..."
+        oninput="filterGlossary()"
+      >
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="glossaryList">
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">ALPHA</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          A measure of an investment's performance relative to a benchmark. Positive alpha means outperformance.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">BETA</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          A measure of a stock's volatility relative to the market. Beta > 1 means more volatile than market.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">CAGR</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Compound Annual Growth Rate. The mean annual growth rate over a specified time period.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">DIVIDEND YIELD</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Annual dividend per share divided by stock price. Shows income return on investment.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">EPS</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Earnings Per Share. Net income divided by outstanding shares. Key profitability metric.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">MARKET CAP</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Market Capitalization. Total value of a company's outstanding shares (price × shares).
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">P/E RATIO</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Price-to-Earnings ratio. Stock price divided by EPS. Shows how much investors pay per dollar of earnings.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">SHARPE RATIO</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Risk-adjusted return metric. Higher values indicate better return per unit of risk taken.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">VAR</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Value at Risk. Maximum expected loss over a time period at a given confidence level.
+        </p>
+      </div>
+      <div class="glossary-item p-4 bg-black/20 border border-[#1a1a1a]">
+        <h4 class="font-bold text-white text-sm uppercase tracking-wide mb-2">VOLATILITY</h4>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Statistical measure of price fluctuation. Higher volatility means larger price swings.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.edu-tab {
+  transition: all 0.2s ease;
+}
+.edu-tab:not(.active) {
+  background-color: transparent;
+  border-color: #1a1a1a;
+  color: #94a3b8;
+}
+.edu-tab:not(.active):hover {
+  background-color: rgba(247, 147, 30, 0.1);
+  border-color: #f7931e;
+  color: #f7931e;
+}
+.edu-tab.active {
+  background-color: #f7931e;
+  border-color: #f7931e;
+  color: #000;
+}
+</style>
+
+<script>
+function showCategory(cat) {
+  document.querySelectorAll('.edu-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-cat="${cat}"]`).classList.add('active');
+
+  if (cat === 'glossary') {
+    document.getElementById('courses-section').classList.add('hidden');
+    document.getElementById('glossary-section').classList.remove('hidden');
+  } else {
+    document.getElementById('courses-section').classList.remove('hidden');
+    document.getElementById('glossary-section').classList.add('hidden');
+
+    document.querySelectorAll('.course-card').forEach(card => {
+      if (cat === 'all' || card.dataset.level === cat) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+}
+
+function filterGlossary() {
+  const query = document.getElementById('glossarySearch').value.toLowerCase();
+  document.querySelectorAll('.glossary-item').forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(query) ? 'block' : 'none';
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

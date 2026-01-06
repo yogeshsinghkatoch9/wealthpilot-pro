@@ -1,0 +1,440 @@
+<%- include('../partials/header', { pageTitle: 'Tax Lots' }) %>
+<%
+  // Safe defaults
+  const safeLots = typeof lots !== 'undefined' && lots ? lots : [];
+  const safeSummary = typeof summary !== 'undefined' && summary ? summary : {};
+  const safeHoldings = typeof holdingsSummary !== 'undefined' && holdingsSummary ? holdingsSummary : [];
+  const safeApproaching = typeof approachingLT !== 'undefined' && approachingLT ? approachingLT : [];
+  const safeLossCandidates = typeof taxLossCandidates !== 'undefined' && taxLossCandidates ? taxLossCandidates : [];
+
+  // Calculate totals
+  const totalCostBasis = safeLots.reduce((sum, l) => sum + (l.totalCost || 0), 0);
+  const totalMarketValue = safeLots.reduce((sum, l) => sum + (l.currentValue || 0), 0);
+  const unrealizedGain = totalMarketValue - totalCostBasis;
+  const unrealizedPct = totalCostBasis > 0 ? (unrealizedGain / totalCostBasis) * 100 : 0;
+  const ltGain = safeSummary.totalLongTermGain || 0;
+  const stGain = safeSummary.totalShortTermGain || 0;
+  const estimatedTax = safeSummary.estimatedTax || 0;
+
+  const longTermLots = safeLots.filter(l => l.isLongTerm);
+  const shortTermLots = safeLots.filter(l => !l.isLongTerm);
+%>
+
+<main class="p-4 lg:p-6">
+  <div class="max-w-full mx-auto space-y-4">
+
+    <!-- Bloomberg-Style Header Bar -->
+    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+      <div class="flex items-center gap-6">
+        <h1 class="text-lg font-semibold text-white">Tax Lots</h1>
+        <span class="status-live">LIVE</span>
+        <span class="text-xs text-slate-400 font-mono">Cost basis & holding period analysis</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <select id="filterType" onchange="filterLots(this.value)" class="bg-slate-800 border border-slate-600 text-white rounded px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none">
+          <option value="all" selected>All Holdings</option>
+          <option value="long">Long-Term Only</option>
+          <option value="short">Short-Term Only</option>
+          <option value="gains">Gains Only</option>
+          <option value="losses">Losses Only</option>
+        </select>
+        <select id="costBasisMethod" class="bg-slate-800 border border-slate-600 text-white rounded px-3 py-1.5 text-sm focus:border-sky-500 focus:outline-none">
+          <option value="fifo" selected>FIFO</option>
+          <option value="lifo">LIFO</option>
+          <option value="hifo">HIFO</option>
+          <option value="specific">Specific ID</option>
+        </select>
+        <button onclick="location.reload()" class="bloomberg-btn bloomberg-btn-ghost">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Summary Bar -->
+    <div class="kpi-bar rounded-md overflow-hidden">
+      <div class="kpi-item">
+        <div class="kpi-label">Total Cost Basis</div>
+        <div class="kpi-value"><%= fmt.compact(totalCostBasis) %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Market Value</div>
+        <div class="kpi-value text-sky-400"><%= fmt.compact(totalMarketValue) %></div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Unrealized Gain</div>
+        <div class="kpi-value <%= unrealizedGain >= 0 ? 'positive' : 'negative' %>">
+          <%= unrealizedGain >= 0 ? '+' : '' %><%= fmt.compact(unrealizedGain) %>
+          <span class="text-xs ml-1">(<%= unrealizedPct >= 0 ? '+' : '' %><%= unrealizedPct.toFixed(1) %>%)</span>
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Long-Term</div>
+        <div class="kpi-value <%= ltGain >= 0 ? 'positive' : 'negative' %>">
+          <%= fmt.compact(ltGain) %>
+          <span class="text-xs text-slate-400 ml-1">(15%)</span>
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Short-Term</div>
+        <div class="kpi-value <%= stGain >= 0 ? 'positive' : 'negative' %>">
+          <%= fmt.compact(stGain) %>
+          <span class="text-xs text-slate-400 ml-1">(37%)</span>
+        </div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Tax Lots</div>
+        <div class="kpi-value text-purple-400"><%= safeLots.length %></div>
+      </div>
+    </div>
+
+    <% if (safeLots.length === 0) { %>
+    <!-- Empty State -->
+    <div class="bloomberg-card">
+      <div class="p-12 text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+        </svg>
+        <h3 class="text-lg font-semibold text-white mb-2">No Tax Lots Found</h3>
+        <p class="text-slate-400 mb-4">Add holdings to your portfolio to track tax lots and cost basis</p>
+        <a href="/holdings" class="bloomberg-btn bloomberg-btn-primary">Go to Holdings</a>
+      </div>
+    </div>
+    <% } else { %>
+
+    <!-- Tax Optimization Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Approaching Long-Term -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-emerald-400 font-semibold">Approaching Long-Term</span>
+          <span class="text-xs text-slate-500">Within 60 days of 1Y</span>
+        </div>
+        <div class="p-4 space-y-2">
+          <% if (safeApproaching.length > 0) { %>
+            <% safeApproaching.slice(0, 5).forEach(item => { %>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-slate-300"><%= item.symbol %> (<%= item.shares %> shares)</span>
+              <span class="font-bold text-emerald-400"><%= item.daysToLT %> days</span>
+            </div>
+            <% }); %>
+          <% } else { %>
+            <p class="text-sm text-slate-500">No holdings approaching long-term status</p>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Tax Loss Candidates -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-red-400 font-semibold">Tax Loss Candidates</span>
+          <span class="text-xs text-slate-500">Losses > $1K</span>
+        </div>
+        <div class="p-4 space-y-2">
+          <% if (safeLossCandidates.length > 0) { %>
+            <% safeLossCandidates.slice(0, 5).forEach(item => { %>
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-slate-300"><%= item.symbol %></span>
+              <span class="font-bold text-red-400"><%= fmt.compact(item.loss) %></span>
+            </div>
+            <% }); %>
+          <% } else { %>
+            <p class="text-sm text-slate-500">No significant loss candidates</p>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Estimated Tax -->
+      <div class="bloomberg-card">
+        <div class="bloomberg-card-header">
+          <span class="text-purple-400 font-semibold">Estimated Tax Impact</span>
+          <span class="text-xs text-slate-500">Based on current rates</span>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-slate-400">LT Gains Tax (15%)</span>
+            <span class="font-bold text-slate-300"><%= fmt.compact(ltGain * 0.15) %></span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-slate-400">ST Gains Tax (37%)</span>
+            <span class="font-bold text-slate-300"><%= fmt.compact(stGain * 0.37) %></span>
+          </div>
+          <div class="flex justify-between items-center text-sm pt-2 border-t border-slate-700">
+            <span class="text-slate-300 font-medium">Total Est. Tax</span>
+            <span class="font-bold text-red-400"><%= fmt.compact(estimatedTax) %></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Tax Lots Table -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">All Tax Lots</span>
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-emerald-400 font-mono"><%= longTermLots.length %> Long-term</span>
+          <span class="text-xs text-amber-400 font-mono"><%= shortTermLots.length %> Short-term</span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="bloomberg-table" id="lotsTable">
+          <thead>
+            <tr>
+              <th class="cursor-pointer" onclick="sortLotsTable('symbol')">Symbol</th>
+              <th class="text-right cursor-pointer" onclick="sortLotsTable('purchaseDate')">Purchase Date</th>
+              <th class="text-right cursor-pointer" onclick="sortLotsTable('shares')">Shares</th>
+              <th class="text-right cursor-pointer" onclick="sortLotsTable('costBasis')">Cost/Share</th>
+              <th class="text-right">Total Cost</th>
+              <th class="text-right cursor-pointer" onclick="sortLotsTable('currentPrice')">Current Price</th>
+              <th class="text-right">Current Value</th>
+              <th class="text-right cursor-pointer" onclick="sortLotsTable('gain')">Gain/Loss</th>
+              <th class="text-right cursor-pointer" onclick="sortLotsTable('holdingPeriod')">Holding</th>
+              <th class="text-center">Type</th>
+            </tr>
+          </thead>
+          <tbody id="lotsBody">
+            <% safeLots.forEach(lot => { %>
+            <tr class="lot-row" data-type="<%= lot.isLongTerm ? 'long' : 'short' %>" data-gain="<%= lot.gain >= 0 ? 'gain' : 'loss' %>">
+              <td>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    <%= lot.symbol ? lot.symbol.slice(0,2) : '??' %>
+                  </div>
+                  <a href="/stock/<%= lot.symbol %>" class="text-white font-medium hover:text-sky-400"><%= lot.symbol %></a>
+                </div>
+              </td>
+              <td class="text-right text-slate-400 font-mono">
+                <%= lot.purchaseDate ? new Date(lot.purchaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-' %>
+              </td>
+              <td class="text-right text-slate-300 font-mono"><%= lot.shares ? lot.shares.toLocaleString() : 0 %></td>
+              <td class="text-right text-slate-400 font-mono"><%= fmt.money(lot.costBasis) %></td>
+              <td class="text-right text-slate-400 font-mono"><%= fmt.money(lot.totalCost) %></td>
+              <td class="text-right text-white font-mono font-medium"><%= fmt.money(lot.currentPrice) %></td>
+              <td class="text-right text-white font-mono"><%= fmt.money(lot.currentValue) %></td>
+              <td class="text-right font-mono font-bold <%= lot.gain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= lot.gain >= 0 ? '+' : '' %><%= fmt.money(lot.gain) %>
+                <span class="text-xs ml-1">(<%= lot.gainPct >= 0 ? '+' : '' %><%= (lot.gainPct || 0).toFixed(1) %>%)</span>
+              </td>
+              <td class="text-right text-slate-300 font-mono"><%= fmt.days(lot.holdingPeriod || 0) %></td>
+              <td class="text-center">
+                <% if (lot.isLongTerm) { %>
+                <span class="px-2 py-1 rounded text-xs font-mono bg-emerald-500/20 text-emerald-400">Long</span>
+                <% } else { %>
+                <span class="px-2 py-1 rounded text-xs font-mono bg-amber-500/20 text-amber-400">Short</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Holdings Summary -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Holdings Tax Summary</span>
+        <span class="text-xs text-slate-500 font-mono"><%= safeHoldings.length %> holdings</span>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="bloomberg-table">
+          <thead>
+            <tr>
+              <th>Stock</th>
+              <th class="text-center">Lots</th>
+              <th class="text-right">Cost Basis</th>
+              <th class="text-right">Market Value</th>
+              <th class="text-right">LT Gain</th>
+              <th class="text-right">ST Gain</th>
+              <th class="text-right">Total Gain</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% safeHoldings.forEach(h => {
+               const totalGain = (h.ltGain || 0) + (h.stGain || 0);
+            %>
+            <tr>
+              <td class="font-bold text-white"><%= h.symbol %></td>
+              <td class="text-center text-slate-400"><%= h.lots.length %></td>
+              <td class="text-right text-slate-400 font-mono"><%= fmt.compact(h.totalCost) %></td>
+              <td class="text-right text-white font-mono"><%= fmt.compact(h.currentValue) %></td>
+              <td class="text-right font-mono <%= h.ltGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= h.ltGain >= 0 ? '+' : '' %><%= fmt.compact(h.ltGain) %>
+              </td>
+              <td class="text-right font-mono <%= h.stGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= h.stGain >= 0 ? '+' : '' %><%= fmt.compact(h.stGain) %>
+              </td>
+              <td class="text-right font-bold font-mono <%= totalGain >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+                <%= totalGain >= 0 ? '+' : '' %><%= fmt.compact(totalGain) %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="bloomberg-card">
+      <div class="bloomberg-card-header">
+        <span class="bloomberg-card-title">Gain/Loss by Holding Period</span>
+      </div>
+      <div class="p-4">
+        <div class="h-64"><canvas id="lotChart"></canvas></div>
+      </div>
+    </div>
+    <% } %>
+
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Organize lots by holding period
+const lots = <%- JSON.stringify(safeLots) %>;
+
+function groupByHoldingPeriod(lots) {
+  const periods = {
+    '<3M': { gain: 0, loss: 0 },
+    '3-6M': { gain: 0, loss: 0 },
+    '6-12M': { gain: 0, loss: 0 },
+    '1-2Y': { gain: 0, loss: 0 },
+    '2-3Y': { gain: 0, loss: 0 },
+    '3Y+': { gain: 0, loss: 0 }
+  };
+
+  lots.forEach(lot => {
+    const days = lot.holdingPeriod || 0;
+    let period;
+    if (days < 90) period = '<3M';
+    else if (days < 180) period = '3-6M';
+    else if (days < 365) period = '6-12M';
+    else if (days < 730) period = '1-2Y';
+    else if (days < 1095) period = '2-3Y';
+    else period = '3Y+';
+
+    if (lot.gain >= 0) {
+      periods[period].gain += lot.gain;
+    } else {
+      periods[period].loss += lot.gain;
+    }
+  });
+
+  return periods;
+}
+
+const periodData = groupByHoldingPeriod(lots);
+const labels = Object.keys(periodData);
+const gains = labels.map(l => periodData[l].gain);
+const losses = labels.map(l => periodData[l].loss);
+
+if (document.getElementById('lotChart')) {
+  new Chart(document.getElementById('lotChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Gains',
+          data: gains,
+          backgroundColor: '#10b981',
+          borderRadius: 4
+        },
+        {
+          label: 'Losses',
+          data: losses,
+          backgroundColor: '#ef4444',
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#94a3b8' }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#334155' },
+          ticks: { color: '#94a3b8' }
+        },
+        y: {
+          grid: { color: '#334155' },
+          ticks: {
+            color: '#94a3b8',
+            callback: function(value) {
+              if (Math.abs(value) >= 1000000) return '$' + (value / 1000000).toFixed(1) + 'M';
+              if (Math.abs(value) >= 1000) return '$' + (value / 1000).toFixed(1) + 'K';
+              return '$' + value;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Filter lots
+function filterLots(type) {
+  const rows = document.querySelectorAll('.lot-row');
+  rows.forEach(row => {
+    const lotType = row.dataset.type;
+    const gainType = row.dataset.gain;
+
+    let show = true;
+    if (type === 'long' && lotType !== 'long') show = false;
+    if (type === 'short' && lotType !== 'short') show = false;
+    if (type === 'gains' && gainType !== 'gain') show = false;
+    if (type === 'losses' && gainType !== 'loss') show = false;
+
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Sort table
+let sortDirection = {};
+function sortLotsTable(column) {
+  const table = document.getElementById('lotsTable');
+  const tbody = document.getElementById('lotsBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  sortDirection[column] = !sortDirection[column];
+  const dir = sortDirection[column] ? 1 : -1;
+
+  const columnIndex = {
+    'symbol': 0,
+    'purchaseDate': 1,
+    'shares': 2,
+    'costBasis': 3,
+    'currentPrice': 5,
+    'gain': 7,
+    'holdingPeriod': 8
+  };
+
+  rows.sort((a, b) => {
+    const aVal = a.cells[columnIndex[column]]?.textContent.trim() || '';
+    const bVal = b.cells[columnIndex[column]]?.textContent.trim() || '';
+
+    // Try numeric sort first
+    const aNum = parseFloat(aVal.replace(/[$,%+]/g, ''));
+    const bNum = parseFloat(bVal.replace(/[$,%+]/g, ''));
+
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return (aNum - bNum) * dir;
+    }
+    return aVal.localeCompare(bVal) * dir;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+}
+</script>
+
+<%- include('../partials/footer') %>

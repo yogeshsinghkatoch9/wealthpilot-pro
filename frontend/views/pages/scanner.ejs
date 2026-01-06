@@ -1,0 +1,1081 @@
+<%- include('../partials/header', { pageTitle: 'Market Scanner' }) %>
+
+<!-- Bloomberg Header Bar -->
+<div class="bloomberg-header">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-amber-400 tracking-wide">MARKET SCANNER</h1>
+      <p class="text-xs text-slate-400 mt-1">Real-time scanning with custom conditions</p>
+    </div>
+    <button onclick="runScanner()" class="bloomberg-btn bloomberg-btn-primary">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      RUN SCAN
+    </button>
+  </div>
+</div>
+
+<!-- Scanner Presets - Horizontally scrollable on mobile -->
+<div class="overflow-x-auto -mx-4 px-4 mb-6 md:mx-0 md:px-0">
+  <div class="flex gap-2 pb-2 min-w-max md:flex-wrap md:min-w-0">
+    <button onclick="loadPreset('gainers')" class="preset-btn bloomberg-btn bloomberg-btn-sm bg-emerald-500 text-black font-bold whitespace-nowrap">
+      TOP GAINERS
+    </button>
+    <button onclick="loadPreset('losers')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      TOP LOSERS
+    </button>
+    <button onclick="loadPreset('volume')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      HIGH VOLUME
+    </button>
+    <button onclick="loadPreset('breakout')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      BREAKOUTS
+    </button>
+    <button onclick="loadPreset('oversold')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      OVERSOLD RSI
+    </button>
+    <button onclick="loadPreset('overbought')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      OVERBOUGHT RSI
+    </button>
+    <button onclick="loadPreset('earnings')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      EARNINGS SOON
+    </button>
+    <button onclick="loadPreset('dividend')" class="preset-btn bloomberg-btn bloomberg-btn-sm whitespace-nowrap">
+      HIGH DIVIDEND
+    </button>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+  <!-- Filter Builder - Collapsible on mobile -->
+  <div class="bloomberg-card">
+    <div class="p-5">
+      <button onclick="toggleFilters()" class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-amber-400 mb-4 tracking-wide">
+        <span>FILTERS</span>
+        <svg id="filterChevron" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <h3 class="hidden lg:block text-sm font-bold text-amber-400 mb-4 tracking-wide">FILTERS</h3>
+      <div id="filterContent" class="hidden lg:block space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">MARKET CAP</label>
+          <select name="marketCap" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>Any</option>
+            <option>Mega ($200B+)</option>
+            <option>Large ($10B-$200B)</option>
+            <option>Mid ($2B-$10B)</option>
+            <option>Small ($300M-$2B)</option>
+            <option>Micro (&lt;$300M)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">SECTOR</label>
+          <select name="sector" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>All Sectors</option>
+            <option>Technology</option>
+            <option>Healthcare</option>
+            <option>Financial Services</option>
+            <option>Consumer Cyclical</option>
+            <option>Energy</option>
+            <option>Communication Services</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">PRICE RANGE</label>
+          <div class="flex gap-2">
+            <input type="number" name="minPrice" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="maxPrice" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">DAILY CHANGE %</label>
+          <div class="flex gap-2">
+            <input type="number" name="minChange" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="maxChange" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">VOLUME</label>
+          <select name="volumeFilter" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>Above Average</option>
+            <option>2x Average</option>
+            <option>5x Average</option>
+            <option>10x Average</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">RSI (14)</label>
+          <div class="flex gap-2">
+            <input type="number" name="minRsi" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="maxRsi" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">52-WEEK POSITION</label>
+          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option>Any</option>
+            <option>Near 52W High</option>
+            <option>Near 52W Low</option>
+            <option>New 52W High</option>
+            <option>New 52W Low</option>
+          </select>
+        </div>
+
+        <button onclick="addCondition()" class="bloomberg-btn bloomberg-btn-sm w-full text-xs">
+          + ADD CUSTOM CONDITION
+        </button>
+
+        <!-- Custom Conditions Container -->
+        <div id="customConditions" class="mt-4 space-y-2 hidden">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-medium text-amber-400">CUSTOM CONDITIONS</label>
+            <button onclick="clearAllConditions()" class="text-xs text-red-400 hover:text-red-300">Clear All</button>
+          </div>
+          <div id="conditionsList" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Condition Modal -->
+  <div id="conditionModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-md">
+      <div class="p-4 border-b border-slate-700">
+        <h3 class="text-sm font-bold text-amber-400 tracking-wide">ADD CUSTOM CONDITION</h3>
+      </div>
+      <div class="p-4 space-y-4">
+        <!-- Field Selection -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">FIELD</label>
+          <select id="conditionField" onchange="updateOperators()" class="w-full bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option value="price">Price ($)</option>
+            <option value="changePercent">Change %</option>
+            <option value="rsi">RSI (14)</option>
+            <option value="volume">Volume</option>
+            <option value="volumeRatio">Volume Ratio (vs Avg)</option>
+            <option value="marketCap">Market Cap</option>
+            <option value="pe">P/E Ratio</option>
+            <option value="dividendYield">Dividend Yield %</option>
+          </select>
+        </div>
+
+        <!-- Operator Selection -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">OPERATOR</label>
+          <select id="conditionOperator" onchange="updateValueInputs()" class="w-full bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+            <option value="gt">Greater than (&gt;)</option>
+            <option value="gte">Greater than or equal (&gt;=)</option>
+            <option value="lt">Less than (&lt;)</option>
+            <option value="lte">Less than or equal (&lt;=)</option>
+            <option value="eq">Equal to (=)</option>
+            <option value="between">Between</option>
+          </select>
+        </div>
+
+        <!-- Value Input(s) -->
+        <div id="valueInputContainer">
+          <label class="block text-xs font-medium text-slate-400 mb-2">VALUE</label>
+          <div id="valueInputs" class="flex gap-2">
+            <input type="number" id="conditionValue1" placeholder="Value" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+          </div>
+        </div>
+
+        <!-- Quick Presets for this field -->
+        <div id="quickPresets" class="hidden">
+          <label class="block text-xs font-medium text-slate-400 mb-2">QUICK PRESETS</label>
+          <div id="presetsGrid" class="grid grid-cols-3 gap-2"></div>
+        </div>
+      </div>
+      <div class="p-4 border-t border-slate-700 flex gap-2">
+        <button onclick="closeConditionModal()" class="flex-1 bloomberg-btn">CANCEL</button>
+        <button onclick="saveCondition()" class="flex-1 bloomberg-btn bloomberg-btn-primary">ADD CONDITION</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="lg:col-span-3 space-y-4">
+    <!-- Results Header - Stacks on mobile -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <p class="text-sm text-slate-400">
+        <span class="font-bold text-emerald-400 font-mono" id="resultCount">47</span> STOCKS MATCH YOUR CRITERIA
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <select class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-400 flex-1 sm:flex-none min-w-[140px]">
+          <option>SORT: CHANGE %</option>
+          <option>SORT: VOLUME</option>
+          <option>SORT: MARKET CAP</option>
+          <option>SORT: PRICE</option>
+        </select>
+        <button onclick="saveScanner()" class="bloomberg-btn bloomberg-btn-sm flex-1 sm:flex-none">SAVE</button>
+        <button onclick="exportResults()" class="bloomberg-btn bloomberg-btn-sm flex-1 sm:flex-none">EXPORT</button>
+      </div>
+    </div>
+
+    <div class="bloomberg-card overflow-hidden">
+      <table class="bloomberg-table">
+        <thead>
+          <tr>
+            <th>SYMBOL</th>
+            <th>PRICE</th>
+            <th>CHANGE</th>
+            <th>VOLUME</th>
+            <th>MARKET CAP</th>
+            <th>RSI</th>
+            <th>SIGNAL</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="scanResults">
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+                  SMCI
+                </div>
+                <div>
+                  <p class="font-bold text-white">SMCI</p>
+                  <p class="text-xs text-slate-500">Super Micro</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$42.85</td>
+            <td class="font-mono text-emerald-400 font-bold">+18.4%</td>
+            <td class="font-mono text-slate-400">45.2M</td>
+            <td class="font-mono text-slate-400">$25B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">58</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">BREAKOUT</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">
+                  PLTR
+                </div>
+                <div>
+                  <p class="font-bold text-white">PLTR</p>
+                  <p class="text-xs text-slate-500">Palantir</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$71.24</td>
+            <td class="font-mono text-emerald-400 font-bold">+12.8%</td>
+            <td class="font-mono text-slate-400">89.4M</td>
+            <td class="font-mono text-slate-400">$158B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-mono font-bold">78</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">52W HIGH</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
+                  RIVN
+                </div>
+                <div>
+                  <p class="font-bold text-white">RIVN</p>
+                  <p class="text-xs text-slate-500">Rivian</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$14.87</td>
+            <td class="font-mono text-emerald-400 font-bold">+9.2%</td>
+            <td class="font-mono text-slate-400">67.8M</td>
+            <td class="font-mono text-slate-400">$15B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-mono font-bold">42</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-sky-500/20 text-sky-400 rounded text-xs font-bold">VOLUME</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-rose-500 to-rose-600 flex items-center justify-center text-white text-xs font-bold">
+                  MARA
+                </div>
+                <div>
+                  <p class="font-bold text-white">MARA</p>
+                  <p class="text-xs text-slate-500">Marathon Digital</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$24.56</td>
+            <td class="font-mono text-emerald-400 font-bold">+8.7%</td>
+            <td class="font-mono text-slate-400">52.1M</td>
+            <td class="font-mono text-slate-400">$7.8B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">55</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">CRYPTO</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                  SOUN
+                </div>
+                <div>
+                  <p class="font-bold text-white">SOUN</p>
+                  <p class="text-xs text-slate-500">SoundHound AI</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$8.42</td>
+            <td class="font-mono text-emerald-400 font-bold">+7.5%</td>
+            <td class="font-mono text-slate-400">38.9M</td>
+            <td class="font-mono text-slate-400">$2.8B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">62</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">AI THEME</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                  IONQ
+                </div>
+                <div>
+                  <p class="font-bold text-white">IONQ</p>
+                  <p class="text-xs text-slate-500">IonQ</p>
+                </div>
+              </div>
+            </td>
+            <td class="font-mono text-white">$42.18</td>
+            <td class="font-mono text-emerald-400 font-bold">+6.9%</td>
+            <td class="font-mono text-slate-400">24.5M</td>
+            <td class="font-mono text-slate-400">$9.2B</td>
+            <td>
+              <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs font-mono font-bold">72</span>
+            </td>
+            <td>
+              <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">QUANTUM</span>
+            </td>
+            <td>
+              <button class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex justify-center">
+      <button class="bloomberg-btn">LOAD MORE RESULTS</button>
+    </div>
+  </div>
+</div>
+
+<!-- Saved Scanners -->
+<div class="bloomberg-card mt-6">
+  <div class="p-5">
+    <h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wide">SAVED SCANNERS</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('momentum')">
+        <p class="font-bold text-white text-sm">MOMENTUM PLAYS</p>
+        <p class="text-xs text-slate-400 mt-1">RSI > 60, Vol > 2x</p>
+      </div>
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('value')">
+        <p class="font-bold text-white text-sm">VALUE STOCKS</p>
+        <p class="text-xs text-slate-400 mt-1">P/E < 15, Div > 2%</p>
+      </div>
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('smallcap')">
+        <p class="font-bold text-white text-sm">SMALL CAP GROWTH</p>
+        <p class="text-xs text-slate-400 mt-1">$300M-$2B, +50% YoY</p>
+      </div>
+      <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('squeeze')">
+        <p class="font-bold text-white text-sm">SHORT SQUEEZE</p>
+        <p class="text-xs text-slate-400 mt-1">SI > 20%, Days < 5</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentPreset = 'gainers';
+let currentFilters = {};
+let filtersOpen = false;
+let customConditions = [];
+
+// Field metadata for custom conditions
+const FIELD_CONFIG = {
+  price: {
+    label: 'Price',
+    unit: '$',
+    presets: [
+      { label: '< $10', op: 'lt', val: 10 },
+      { label: '$10-50', op: 'between', val: 10, val2: 50 },
+      { label: '$50-100', op: 'between', val: 50, val2: 100 },
+      { label: '> $100', op: 'gt', val: 100 },
+      { label: '> $500', op: 'gt', val: 500 },
+      { label: '> $1000', op: 'gt', val: 1000 }
+    ]
+  },
+  changePercent: {
+    label: 'Change %',
+    unit: '%',
+    presets: [
+      { label: '> +5%', op: 'gt', val: 5 },
+      { label: '> +10%', op: 'gt', val: 10 },
+      { label: '< -5%', op: 'lt', val: -5 },
+      { label: '< -10%', op: 'lt', val: -10 },
+      { label: 'Flat (±1%)', op: 'between', val: -1, val2: 1 },
+      { label: '> +20%', op: 'gt', val: 20 }
+    ]
+  },
+  rsi: {
+    label: 'RSI (14)',
+    unit: '',
+    presets: [
+      { label: '< 30 (Oversold)', op: 'lt', val: 30 },
+      { label: '30-50', op: 'between', val: 30, val2: 50 },
+      { label: '50-70', op: 'between', val: 50, val2: 70 },
+      { label: '> 70 (Overbought)', op: 'gt', val: 70 },
+      { label: '< 20 (Extreme)', op: 'lt', val: 20 },
+      { label: '> 80 (Extreme)', op: 'gt', val: 80 }
+    ]
+  },
+  volume: {
+    label: 'Volume',
+    unit: '',
+    format: 'volume',
+    presets: [
+      { label: '> 1M', op: 'gt', val: 1000000 },
+      { label: '> 5M', op: 'gt', val: 5000000 },
+      { label: '> 10M', op: 'gt', val: 10000000 },
+      { label: '> 50M', op: 'gt', val: 50000000 },
+      { label: '> 100M', op: 'gt', val: 100000000 },
+      { label: '< 100K', op: 'lt', val: 100000 }
+    ]
+  },
+  volumeRatio: {
+    label: 'Volume Ratio',
+    unit: 'x',
+    presets: [
+      { label: '> 1.5x', op: 'gt', val: 1.5 },
+      { label: '> 2x', op: 'gt', val: 2 },
+      { label: '> 3x', op: 'gt', val: 3 },
+      { label: '> 5x', op: 'gt', val: 5 },
+      { label: '> 10x', op: 'gt', val: 10 },
+      { label: '< 0.5x', op: 'lt', val: 0.5 }
+    ]
+  },
+  marketCap: {
+    label: 'Market Cap',
+    unit: '$',
+    format: 'marketCap',
+    presets: [
+      { label: '< $300M (Micro)', op: 'lt', val: 300000000 },
+      { label: '$300M-2B (Small)', op: 'between', val: 300000000, val2: 2000000000 },
+      { label: '$2B-10B (Mid)', op: 'between', val: 2000000000, val2: 10000000000 },
+      { label: '$10B-200B (Large)', op: 'between', val: 10000000000, val2: 200000000000 },
+      { label: '> $200B (Mega)', op: 'gt', val: 200000000000 },
+      { label: '> $1T', op: 'gt', val: 1000000000000 }
+    ]
+  },
+  pe: {
+    label: 'P/E Ratio',
+    unit: '',
+    presets: [
+      { label: '< 10 (Value)', op: 'lt', val: 10 },
+      { label: '< 15', op: 'lt', val: 15 },
+      { label: '10-20', op: 'between', val: 10, val2: 20 },
+      { label: '20-40', op: 'between', val: 20, val2: 40 },
+      { label: '> 50 (Growth)', op: 'gt', val: 50 },
+      { label: '> 100', op: 'gt', val: 100 }
+    ]
+  },
+  dividendYield: {
+    label: 'Dividend Yield',
+    unit: '%',
+    presets: [
+      { label: '> 1%', op: 'gt', val: 1 },
+      { label: '> 2%', op: 'gt', val: 2 },
+      { label: '> 3%', op: 'gt', val: 3 },
+      { label: '> 4%', op: 'gt', val: 4 },
+      { label: '> 5%', op: 'gt', val: 5 },
+      { label: '> 7%', op: 'gt', val: 7 }
+    ]
+  }
+};
+
+const OPERATOR_LABELS = {
+  gt: '>',
+  gte: '>=',
+  lt: '<',
+  lte: '<=',
+  eq: '=',
+  between: 'between'
+};
+
+// Mobile filter toggle
+function toggleFilters() {
+  filtersOpen = !filtersOpen;
+  const filterContent = document.getElementById('filterContent');
+  const chevron = document.getElementById('filterChevron');
+
+  if (filtersOpen) {
+    filterContent.classList.remove('hidden');
+    chevron.classList.add('rotate-180');
+  } else {
+    filterContent.classList.add('hidden');
+    chevron.classList.remove('rotate-180');
+  }
+}
+
+async function runScanner() {
+  showToast('Scanning markets...', 'info');
+
+  try {
+    // Build query params
+    const params = new URLSearchParams();
+    if (currentPreset) params.append('preset', currentPreset);
+
+    // Get filter values
+    const marketCap = document.querySelector('select[name="marketCap"]')?.value;
+    const sector = document.querySelector('select[name="sector"]')?.value;
+    const minPrice = document.querySelector('input[name="minPrice"]')?.value;
+    const maxPrice = document.querySelector('input[name="maxPrice"]')?.value;
+    const minChange = document.querySelector('input[name="minChange"]')?.value;
+    const maxChange = document.querySelector('input[name="maxChange"]')?.value;
+    const minRsi = document.querySelector('input[name="minRsi"]')?.value;
+    const maxRsi = document.querySelector('input[name="maxRsi"]')?.value;
+
+    if (sector && sector !== 'All Sectors') params.append('sector', sector);
+    if (minPrice) params.append('minPrice', minPrice);
+    if (maxPrice) params.append('maxPrice', maxPrice);
+    if (minChange) params.append('minChange', minChange);
+    if (maxChange) params.append('maxChange', maxChange);
+    if (minRsi) params.append('minRsi', minRsi);
+    if (maxRsi) params.append('maxRsi', maxRsi);
+
+    // Map market cap to values
+    const marketCapMap = {
+      'Mega ($200B+)': { min: 200000000000 },
+      'Large ($10B-$200B)': { min: 10000000000, max: 200000000000 },
+      'Mid ($2B-$10B)': { min: 2000000000, max: 10000000000 },
+      'Small ($300M-$2B)': { min: 300000000, max: 2000000000 },
+      'Micro (<$300M)': { max: 300000000 }
+    };
+    if (marketCap && marketCapMap[marketCap]) {
+      if (marketCapMap[marketCap].min) params.append('minMarketCap', marketCapMap[marketCap].min);
+      if (marketCapMap[marketCap].max) params.append('maxMarketCap', marketCapMap[marketCap].max);
+    }
+
+    // Apply custom conditions to params
+    applyCustomConditionsToParams(params);
+
+    const response = await fetch(`/api/scanner/scan?${params.toString()}`);
+    const data = await response.json();
+
+    if (data.success) {
+      // Apply custom conditions that backend doesn't support (client-side filtering)
+      let results = data.results;
+      results = applyCustomConditionsClientSide(results);
+
+      renderResults(results);
+      document.getElementById('resultCount').textContent = results.length;
+
+      const conditionCount = customConditions.length;
+      if (conditionCount > 0) {
+        showToast(`Scan complete! ${conditionCount} custom condition(s) applied.`, 'success');
+      } else {
+        showToast('Scan complete!', 'success');
+      }
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Scanner error:', error);
+    showToast('Scan failed: ' + error.message, 'error');
+  }
+}
+
+// Apply custom conditions to API query params (for supported fields)
+function applyCustomConditionsToParams(params) {
+  const fieldToParamMap = {
+    price: { min: 'minPrice', max: 'maxPrice' },
+    changePercent: { min: 'minChange', max: 'maxChange' },
+    rsi: { min: 'minRsi', max: 'maxRsi' },
+    marketCap: { min: 'minMarketCap', max: 'maxMarketCap' },
+    dividendYield: { min: 'minDividendYield', max: 'maxDividendYield' },
+    volume: { min: 'minVolume', max: 'maxVolume' },
+    volumeRatio: { min: 'minVolumeRatio', max: 'maxVolumeRatio' },
+    pe: { min: 'minPe', max: 'maxPe' }
+  };
+
+  customConditions.forEach(c => {
+    const mapping = fieldToParamMap[c.field];
+    if (!mapping) return; // Field not supported by backend, will filter client-side
+
+    switch (c.operator) {
+      case 'gt':
+      case 'gte':
+        if (mapping.min && !params.has(mapping.min)) {
+          params.set(mapping.min, c.value1);
+        }
+        break;
+      case 'lt':
+      case 'lte':
+        if (mapping.max && !params.has(mapping.max)) {
+          params.set(mapping.max, c.value1);
+        }
+        break;
+      case 'between':
+        if (mapping.min && !params.has(mapping.min)) {
+          params.set(mapping.min, c.value1);
+        }
+        if (mapping.max && !params.has(mapping.max)) {
+          params.set(mapping.max, c.value2);
+        }
+        break;
+    }
+  });
+}
+
+// Apply custom conditions client-side for fields not supported by backend
+function applyCustomConditionsClientSide(results) {
+  if (customConditions.length === 0) return results;
+
+  return results.filter(stock => {
+    return customConditions.every(c => {
+      const value = stock[c.field];
+      if (value === undefined || value === null) return true; // Skip if field doesn't exist
+
+      switch (c.operator) {
+        case 'gt':
+          return value > c.value1;
+        case 'gte':
+          return value >= c.value1;
+        case 'lt':
+          return value < c.value1;
+        case 'lte':
+          return value <= c.value1;
+        case 'eq':
+          return Math.abs(value - c.value1) < 0.001; // Float comparison
+        case 'between':
+          return value >= c.value1 && value <= c.value2;
+        default:
+          return true;
+      }
+    });
+  });
+}
+
+function renderResults(stocks) {
+  const tbody = document.getElementById('scanResults');
+  if (!stocks || stocks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-slate-400 py-8">No stocks match your criteria</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = stocks.map(stock => `
+    <tr>
+      <td>
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded bg-gradient-to-br from-${getColorForSymbol(stock.symbol)}-500 to-${getColorForSymbol(stock.symbol)}-600 flex items-center justify-center text-white text-xs font-bold">
+            ${stock.symbol.substring(0, 4)}
+          </div>
+          <div>
+            <p class="font-bold text-white">${stock.symbol}</p>
+            <p class="text-xs text-slate-500">${stock.name || ''}</p>
+          </div>
+        </div>
+      </td>
+      <td class="font-mono text-white">$${stock.price?.toFixed(2) || '-'}</td>
+      <td class="font-mono ${stock.changePercent >= 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">
+        ${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent?.toFixed(1) || '0'}%
+      </td>
+      <td class="font-mono text-slate-400">${formatVolume(stock.volume)}</td>
+      <td class="font-mono text-slate-400">${formatMarketCap(stock.marketCap)}</td>
+      <td>
+        <span class="px-2 py-0.5 ${getRsiClass(stock.rsi)} rounded text-xs font-mono font-bold">
+          ${stock.rsi?.toFixed(0) || '-'}
+        </span>
+      </td>
+      <td>
+        <span class="px-2 py-1 bg-${stock.signal?.color || 'slate'}-500/20 text-${stock.signal?.color || 'slate'}-400 rounded text-xs font-bold">
+          ${stock.signal?.type || 'NEUTRAL'}
+        </span>
+      </td>
+      <td>
+        <button onclick="addToWatchlist('${stock.symbol}')" class="bloomberg-btn bloomberg-btn-sm">ADD</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getColorForSymbol(symbol) {
+  const colors = ['purple', 'sky', 'emerald', 'rose', 'amber', 'indigo'];
+  const hash = symbol.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+}
+
+function getRsiClass(rsi) {
+  if (rsi < 30) return 'bg-emerald-500/20 text-emerald-400';
+  if (rsi > 70) return 'bg-red-500/20 text-red-400';
+  return 'bg-amber-500/20 text-amber-400';
+}
+
+function formatVolume(vol) {
+  if (!vol) return '-';
+  if (vol >= 1e9) return (vol / 1e9).toFixed(1) + 'B';
+  if (vol >= 1e6) return (vol / 1e6).toFixed(1) + 'M';
+  if (vol >= 1e3) return (vol / 1e3).toFixed(1) + 'K';
+  return vol.toString();
+}
+
+function formatMarketCap(cap) {
+  if (!cap) return '-';
+  if (cap >= 1e12) return '$' + (cap / 1e12).toFixed(1) + 'T';
+  if (cap >= 1e9) return '$' + (cap / 1e9).toFixed(0) + 'B';
+  if (cap >= 1e6) return '$' + (cap / 1e6).toFixed(0) + 'M';
+  return '$' + cap.toString();
+}
+
+function loadPreset(preset) {
+  currentPreset = preset;
+  // Reset all preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.className = 'preset-btn bloomberg-btn bloomberg-btn-sm';
+  });
+  // Highlight selected preset
+  event.currentTarget.className = 'preset-btn bloomberg-btn bloomberg-btn-sm bg-emerald-500 text-black font-bold';
+  showToast(`Loaded ${preset} preset`, 'info');
+  runScanner();
+}
+
+async function saveScanner() {
+  const name = prompt('Enter a name for this scanner:');
+  if (!name) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/scanner/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, filters: currentFilters })
+    });
+    const data = await response.json();
+    if (data.success) {
+      showToast('Scanner saved!', 'success');
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    showToast('Failed to save scanner', 'error');
+  }
+}
+
+function exportResults() {
+  showToast('Exporting to CSV...', 'info');
+
+  const rows = Array.from(document.querySelectorAll('#scanResults tr')).map(row => {
+    const cells = row.querySelectorAll('td');
+    return [
+      cells[0]?.querySelector('.font-bold')?.textContent || '',
+      cells[1]?.textContent?.trim() || '',
+      cells[2]?.textContent?.trim() || '',
+      cells[3]?.textContent?.trim() || '',
+      cells[4]?.textContent?.trim() || '',
+      cells[5]?.textContent?.trim() || ''
+    ].join(',');
+  });
+
+  const csv = 'Symbol,Price,Change%,Volume,MarketCap,RSI\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `scanner-results-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  showToast('Export complete!', 'success');
+}
+
+// ===== Custom Condition Functions =====
+
+function addCondition() {
+  const modal = document.getElementById('conditionModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  // Reset form
+  document.getElementById('conditionField').value = 'price';
+  document.getElementById('conditionOperator').value = 'gt';
+  document.getElementById('conditionValue1').value = '';
+
+  // Update UI for initial field
+  updateOperators();
+  updateValueInputs();
+  updateQuickPresets();
+}
+
+function closeConditionModal() {
+  const modal = document.getElementById('conditionModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+function updateOperators() {
+  // All fields support same operators, but we can customize later if needed
+  updateQuickPresets();
+}
+
+function updateValueInputs() {
+  const operator = document.getElementById('conditionOperator').value;
+  const container = document.getElementById('valueInputs');
+
+  if (operator === 'between') {
+    container.innerHTML = `
+      <input type="number" id="conditionValue1" placeholder="Min" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+      <span class="text-slate-400 self-center">to</span>
+      <input type="number" id="conditionValue2" placeholder="Max" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+    `;
+  } else {
+    container.innerHTML = `
+      <input type="number" id="conditionValue1" placeholder="Value" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+    `;
+  }
+}
+
+function updateQuickPresets() {
+  const field = document.getElementById('conditionField').value;
+  const config = FIELD_CONFIG[field];
+  const presetsContainer = document.getElementById('quickPresets');
+  const presetsGrid = document.getElementById('presetsGrid');
+
+  if (config && config.presets && config.presets.length > 0) {
+    presetsContainer.classList.remove('hidden');
+    presetsGrid.innerHTML = config.presets.map(preset => `
+      <button type="button" onclick="applyPreset('${preset.op}', ${preset.val}, ${preset.val2 || 'null'})"
+        class="px-2 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition-colors truncate">
+        ${preset.label}
+      </button>
+    `).join('');
+  } else {
+    presetsContainer.classList.add('hidden');
+  }
+}
+
+function applyPreset(op, val, val2) {
+  document.getElementById('conditionOperator').value = op;
+  updateValueInputs();
+  document.getElementById('conditionValue1').value = val;
+  if (val2 && val2 !== 'null') {
+    const val2Input = document.getElementById('conditionValue2');
+    if (val2Input) val2Input.value = val2;
+  }
+}
+
+function saveCondition() {
+  const field = document.getElementById('conditionField').value;
+  const operator = document.getElementById('conditionOperator').value;
+  const value1 = parseFloat(document.getElementById('conditionValue1').value);
+  const value2Input = document.getElementById('conditionValue2');
+  const value2 = value2Input ? parseFloat(value2Input.value) : null;
+
+  // Validation
+  if (isNaN(value1)) {
+    showToast('Please enter a valid value', 'error');
+    return;
+  }
+
+  if (operator === 'between' && (isNaN(value2) || value2 <= value1)) {
+    showToast('Please enter valid min and max values', 'error');
+    return;
+  }
+
+  // Create condition object
+  const condition = {
+    id: Date.now(),
+    field,
+    operator,
+    value1,
+    value2: operator === 'between' ? value2 : null
+  };
+
+  // Check for duplicates
+  const exists = customConditions.some(c =>
+    c.field === condition.field &&
+    c.operator === condition.operator &&
+    c.value1 === condition.value1
+  );
+
+  if (exists) {
+    showToast('This condition already exists', 'error');
+    return;
+  }
+
+  customConditions.push(condition);
+  renderConditions();
+  closeConditionModal();
+  showToast('Condition added! Click RUN SCAN to apply.', 'success');
+}
+
+function removeCondition(id) {
+  customConditions = customConditions.filter(c => c.id !== id);
+  renderConditions();
+  showToast('Condition removed', 'info');
+}
+
+function clearAllConditions() {
+  customConditions = [];
+  renderConditions();
+  showToast('All conditions cleared', 'info');
+}
+
+function renderConditions() {
+  const container = document.getElementById('customConditions');
+  const list = document.getElementById('conditionsList');
+
+  if (customConditions.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  list.innerHTML = customConditions.map(c => {
+    const config = FIELD_CONFIG[c.field];
+    const label = config ? config.label : c.field;
+    const unit = config ? config.unit : '';
+
+    let valueDisplay;
+    if (c.operator === 'between') {
+      valueDisplay = `${formatConditionValue(c.value1, c.field)} - ${formatConditionValue(c.value2, c.field)}`;
+    } else {
+      valueDisplay = `${OPERATOR_LABELS[c.operator]} ${formatConditionValue(c.value1, c.field)}`;
+    }
+
+    return `
+      <div class="flex items-center justify-between p-2 bg-slate-800/50 rounded border border-slate-700">
+        <div class="flex-1 min-w-0">
+          <span class="text-xs font-medium text-amber-400">${label}</span>
+          <span class="text-xs text-slate-300 ml-2">${valueDisplay}</span>
+        </div>
+        <button onclick="removeCondition(${c.id})" class="ml-2 p-1 text-red-400 hover:text-red-300 flex-shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatConditionValue(value, field) {
+  const config = FIELD_CONFIG[field];
+  if (!config) return value;
+
+  if (config.format === 'volume') {
+    if (value >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+    if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+    if (value >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+    return value;
+  }
+
+  if (config.format === 'marketCap') {
+    if (value >= 1e12) return '$' + (value / 1e12).toFixed(1) + 'T';
+    if (value >= 1e9) return '$' + (value / 1e9).toFixed(0) + 'B';
+    if (value >= 1e6) return '$' + (value / 1e6).toFixed(0) + 'M';
+    return '$' + value;
+  }
+
+  if (config.unit === '$') {
+    return '$' + value;
+  }
+
+  if (config.unit) {
+    return value + config.unit;
+  }
+
+  return value;
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeConditionModal();
+  }
+});
+
+// Close modal on backdrop click
+document.getElementById('conditionModal')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) {
+    closeConditionModal();
+  }
+});
+
+function loadSaved(name) {
+  currentPreset = name;
+  showToast(`Loading ${name} scanner...`, 'info');
+  runScanner();
+}
+
+async function addToWatchlist(symbol) {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch('/api/watchlist/add', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ symbol })
+    });
+    showToast(`${symbol} added to watchlist!`, 'success');
+  } catch (error) {
+    showToast('Failed to add to watchlist', 'error');
+  }
+}
+
+// Load scanner on page load
+document.addEventListener('DOMContentLoaded', () => {
+  runScanner();
+});
+</script>
+
+<%- include('../partials/footer') %>

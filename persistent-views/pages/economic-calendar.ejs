@@ -1,0 +1,945 @@
+<%
+const safeFmt = fmt || {
+  compact: (val) => typeof val === 'number' ? val.toLocaleString() : val,
+  pct: (val) => typeof val === 'number' ? val.toFixed(2) + '%' : val,
+  number: (val) => typeof val === 'number' ? val.toFixed(2) : val,
+  currency: (val) => typeof val === 'number' ? '$' + val.toLocaleString() : val,
+  billions: (val) => typeof val === 'number' ? '$' + (val / 1e9).toFixed(1) + 'B' : val
+};
+%>
+<%- include('../partials/header', { pageTitle: 'Economic Calendar' }) %>
+
+<style>
+  .glass-card {
+    background: rgba(22, 27, 34, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(48, 54, 61, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-header {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
+    border-bottom: 2px solid #f59e0b;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #334155;
+    transition: all 0.3s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(245, 158, 11, 0.2);
+    border-color: #f59e0b;
+  }
+
+  .impact-badge-high {
+    background: linear-gradient(135deg, #dc2626, #991b1b);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  }
+
+  .impact-badge-medium {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  }
+
+  .impact-badge-low {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .event-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid #334155;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .event-card:hover {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: #f59e0b;
+    transform: translateX(8px);
+  }
+
+  .modal-overlay {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+  }
+
+  .modal-content {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .btn-calendar {
+    background: linear-gradient(135deg, #10b981, #059669);
+    transition: all 0.3s ease;
+  }
+
+  .btn-calendar:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  }
+
+  .filter-select {
+    background: #1e293b;
+    border: 1px solid #334155;
+    transition: all 0.2s ease;
+  }
+
+  .filter-select:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+  }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+  }
+
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    position: absolute;
+    left: -6px;
+  }
+
+  .timeline-line {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #f59e0b, transparent);
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.5s ease-out;
+  }
+
+  .pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.1);
+    }
+  }
+
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+</style>
+
+<div class="min-h-screen p-6 lg:p-8">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Hero Header -->
+    <div class="glass-card rounded-2xl p-8 animate-slide-in">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+              <i class="fas fa-calendar-alt text-white text-xl"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-white">Economic Calendar</h1>
+          </div>
+          <p class="text-gray-400 text-lg">Track high-impact economic events and market movers</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <span class="pulse-ring absolute inset-0 w-3 h-3 bg-emerald-500 rounded-full"></span>
+            <span class="relative inline-block w-3 h-3 bg-emerald-500 rounded-full"></span>
+          </div>
+          <div>
+            <div class="text-emerald-400 font-semibold text-sm">LIVE DATA</div>
+            <div class="text-gray-500 text-xs">Updated in real-time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in" style="animation-delay: 0.1s">
+      <!-- Total Events Card -->
+      <div class="stat-card rounded-xl p-6">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <i class="fas fa-calendar-check text-blue-400 text-lg"></i>
+          </div>
+          <span class="text-2xl">📊</span>
+        </div>
+        <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Total Events</div>
+        <div class="text-3xl font-bold text-white"><%= statistics.total || 0 %></div>
+        <div class="text-gray-500 text-xs mt-1">This week</div>
+      </div>
+
+      <!-- High Impact Card -->
+      <div class="stat-card rounded-xl p-6 border-l-4 border-red-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-red-400 text-lg"></i>
+          </div>
+          <span class="text-2xl">🔴</span>
+        </div>
+        <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">High Impact</div>
+        <div class="text-3xl font-bold text-red-500"><%= statistics.byImpact?.High || 0 %></div>
+        <div class="text-gray-500 text-xs mt-1">Major market movers</div>
+      </div>
+
+      <!-- Medium Impact Card -->
+      <div class="stat-card rounded-xl p-6 border-l-4 border-amber-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+            <i class="fas fa-chart-line text-amber-400 text-lg"></i>
+          </div>
+          <span class="text-2xl">🟡</span>
+        </div>
+        <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Medium Impact</div>
+        <div class="text-3xl font-bold text-amber-500"><%= statistics.byImpact?.Medium || 0 %></div>
+        <div class="text-gray-500 text-xs mt-1">Moderate influence</div>
+      </div>
+
+      <!-- Upcoming Card -->
+      <div class="stat-card rounded-xl p-6 border-l-4 border-emerald-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+            <i class="fas fa-clock text-emerald-400 text-lg"></i>
+          </div>
+          <span class="text-2xl">⏰</span>
+        </div>
+        <div class="text-gray-400 text-xs uppercase tracking-wider mb-1">Upcoming Critical</div>
+        <div class="text-3xl font-bold text-emerald-500"><%= statistics.upcomingHighImpact || 0 %></div>
+        <div class="text-gray-500 text-xs mt-1">Next 7 days</div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="glass-card rounded-2xl p-6 animate-slide-in" style="animation-delay: 0.2s">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fas fa-filter text-amber-500"></i>
+          Filter Events
+        </h2>
+        <button onclick="resetFilters()" class="text-gray-400 hover:text-white text-sm">
+          <i class="fas fa-redo mr-1"></i>Clear All
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="block text-gray-300 text-sm font-semibold mb-2">
+            <i class="fas fa-calendar mr-2 text-amber-500"></i>Date Range
+          </label>
+          <select id="dateRange" class="filter-select w-full rounded-lg px-4 py-3 text-white focus:outline-none">
+            <option value="today">Today</option>
+            <option value="tomorrow">Tomorrow</option>
+            <option value="week" selected>This Week</option>
+            <option value="month">This Month</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-gray-300 text-sm font-semibold mb-2">
+            <i class="fas fa-globe mr-2 text-amber-500"></i>Country
+          </label>
+          <select id="countryFilter" class="filter-select w-full rounded-lg px-4 py-3 text-white focus:outline-none">
+            <option value="">🌍 All Countries</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="EU">🇪🇺 Euro Zone</option>
+            <option value="JP">🇯🇵 Japan</option>
+            <option value="CN">🇨🇳 China</option>
+            <option value="CA">🇨🇦 Canada</option>
+            <option value="AU">🇦🇺 Australia</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-gray-300 text-sm font-semibold mb-2">
+            <i class="fas fa-bolt mr-2 text-amber-500"></i>Impact Level
+          </label>
+          <select id="impactFilter" class="filter-select w-full rounded-lg px-4 py-3 text-white focus:outline-none">
+            <option value="">All Impacts</option>
+            <option value="High">🔴 High Impact</option>
+            <option value="Medium">🟡 Medium Impact</option>
+            <option value="Low">🟢 Low Impact</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-gray-300 text-sm font-semibold mb-2">
+            <i class="fas fa-tags mr-2 text-amber-500"></i>Category
+          </label>
+          <select id="categoryFilter" class="filter-select w-full rounded-lg px-4 py-3 text-white focus:outline-none">
+            <option value="">All Categories</option>
+            <option value="GDP">📈 GDP</option>
+            <option value="Employment">👔 Employment</option>
+            <option value="Inflation">💰 Inflation</option>
+            <option value="Interest Rates">🏦 Interest Rates</option>
+            <option value="Consumer">🛒 Consumer</option>
+            <option value="Manufacturing">🏭 Manufacturing</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <button onclick="applyFilters()" class="btn-primary px-6 py-3 text-black font-semibold rounded-lg">
+          <i class="fas fa-search mr-2"></i>Apply Filters
+        </button>
+        <button onclick="refreshData()" class="px-6 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600">
+          <i class="fas fa-sync-alt mr-2"></i>Refresh Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Events List -->
+    <div class="glass-card rounded-2xl overflow-hidden animate-slide-in" style="animation-delay: 0.3s">
+      <div class="glass-header px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fas fa-list text-amber-500"></i>
+            Upcoming Events
+          </h2>
+          <span class="text-sm text-gray-400">
+            <%= upcomingEvents?.length || 0 %> events
+          </span>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-3">
+        <% if (upcomingEvents && upcomingEvents.length > 0) { %>
+          <% upcomingEvents.slice(0, 20).forEach((event, index) => { %>
+            <div class="event-card rounded-xl p-5"
+                 style="animation-delay: <%= (0.4 + index * 0.05) %>s"
+                 onclick="showEventDetails(this)"
+                 data-event='<%- JSON.stringify(event) %>'>
+              <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                <!-- Date/Time -->
+                <div class="lg:w-32 flex-shrink-0">
+                  <div class="text-amber-400 font-bold text-sm">
+                    <%= new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+                  </div>
+                  <div class="text-gray-500 text-xs">
+                    <%= new Date(event.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) %>
+                  </div>
+                </div>
+
+                <!-- Event Details -->
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-lg"><%= event.country_code === 'US' ? '🇺🇸' : event.country_code === 'GB' ? '🇬🇧' : event.country_code === 'EU' ? '🇪🇺' : event.country_code === 'JP' ? '🇯🇵' : event.country_code === 'CN' ? '🇨🇳' : '🌍' %></span>
+                    <h3 class="text-white font-semibold text-base"><%= event.event_name %></h3>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <span class="category-badge bg-slate-700 text-gray-300">
+                      <%= event.category || 'Other' %>
+                    </span>
+                    <% if (event.impact === 'High') { %>
+                      <span class="category-badge impact-badge-high text-white">
+                        <i class="fas fa-circle text-xs mr-1"></i>High Impact
+                      </span>
+                    <% } else if (event.impact === 'Medium') { %>
+                      <span class="category-badge impact-badge-medium text-black">
+                        <i class="fas fa-circle text-xs mr-1"></i>Medium
+                      </span>
+                    <% } else { %>
+                      <span class="category-badge impact-badge-low text-white">
+                        <i class="fas fa-circle text-xs mr-1"></i>Low
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <!-- Values -->
+                <div class="lg:w-80 grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">Actual</div>
+                    <div class="text-white font-mono font-bold"><%= event.actual || '-' %></div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">Forecast</div>
+                    <div class="text-gray-400 font-mono"><%= event.estimate || '-' %></div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">Previous</div>
+                    <div class="text-gray-600 font-mono"><%= event.previous || '-' %></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="text-center py-16">
+            <i class="fas fa-calendar-times text-6xl text-gray-600 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-400 mb-2">No Events Found</h3>
+            <p class="text-gray-500">Try adjusting your filters to see more events</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-in" style="animation-delay: 0.4s">
+      <!-- Impact Distribution Chart -->
+      <div class="glass-card rounded-2xl p-6">
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <i class="fas fa-chart-pie text-amber-500"></i>
+          Impact Distribution
+        </h3>
+        <div class="chart-container">
+          <canvas id="impactChart"></canvas>
+        </div>
+        <div class="mt-6 grid grid-cols-3 gap-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-red-500"><%= statistics.byImpact?.High || 0 %></div>
+            <div class="text-xs text-gray-400">High Impact</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-amber-500"><%= statistics.byImpact?.Medium || 0 %></div>
+            <div class="text-xs text-gray-400">Medium Impact</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-emerald-500"><%= statistics.byImpact?.Low || 0 %></div>
+            <div class="text-xs text-gray-400">Low Impact</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Breakdown Chart -->
+      <div class="glass-card rounded-2xl p-6">
+        <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <i class="fas fa-chart-bar text-amber-500"></i>
+          Events by Category
+        </h3>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Event Details Modal -->
+<div id="eventModal" class="fixed inset-0 z-50 hidden">
+  <div class="modal-overlay absolute inset-0" onclick="closeEventModal()"></div>
+  <div class="flex items-center justify-center min-h-screen px-4 py-8">
+    <div class="modal-content relative rounded-2xl p-8 max-w-3xl w-full transform transition-all">
+      <!-- Close Button -->
+      <button onclick="closeEventModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+        <i class="fas fa-times text-2xl"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="mb-6">
+        <div class="flex items-center gap-3 mb-3">
+          <span id="modal-country-flag" class="text-3xl"></span>
+          <h2 id="modal-event-name" class="text-3xl font-bold text-white"></h2>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span id="modal-category" class="category-badge bg-slate-700 text-gray-300"></span>
+          <span id="modal-impact" class="category-badge"></span>
+        </div>
+      </div>
+
+      <!-- Event Details Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Date & Time -->
+        <div class="glass-card p-4 rounded-xl">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fas fa-calendar text-amber-500"></i>
+            <h3 class="text-sm font-semibold text-gray-400">Date & Time</h3>
+          </div>
+          <div id="modal-date" class="text-xl font-bold text-white"></div>
+          <div id="modal-time" class="text-sm text-gray-400"></div>
+        </div>
+
+        <!-- Country -->
+        <div class="glass-card p-4 rounded-xl">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="fas fa-globe text-amber-500"></i>
+            <h3 class="text-sm font-semibold text-gray-400">Country</h3>
+          </div>
+          <div id="modal-country" class="text-xl font-bold text-white"></div>
+          <div id="modal-currency" class="text-sm text-gray-400"></div>
+        </div>
+      </div>
+
+      <!-- Economic Values -->
+      <div class="glass-card p-6 rounded-xl mb-6">
+        <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <i class="fas fa-chart-line text-amber-500"></i>
+          Economic Values
+        </h3>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="text-xs text-gray-500 mb-2">Actual</div>
+            <div id="modal-actual" class="text-2xl font-mono font-bold text-white"></div>
+            <div id="modal-change" class="text-sm mt-1"></div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-gray-500 mb-2">Forecast</div>
+            <div id="modal-forecast" class="text-2xl font-mono font-bold text-gray-400"></div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-gray-500 mb-2">Previous</div>
+            <div id="modal-previous" class="text-2xl font-mono font-bold text-gray-600"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Info -->
+      <div class="glass-card p-6 rounded-xl mb-6">
+        <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+          <i class="fas fa-info-circle text-amber-500"></i>
+          Additional Information
+        </h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Category:</span>
+            <span id="modal-category-detail" class="text-white font-semibold"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Source:</span>
+            <span id="modal-source" class="text-white font-semibold"></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Unit:</span>
+            <span id="modal-unit" class="text-white font-semibold"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-4">
+        <button onclick="addToCalendar()" class="btn-calendar flex-1 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+          <i class="fas fa-calendar-plus"></i>
+          Add to Calendar
+        </button>
+        <button onclick="shareEvent()" class="btn-primary flex-1 text-white px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+          <i class="fas fa-share-alt"></i>
+          Share Event
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Chart.js Configuration
+  Chart.defaults.color = '#9ca3af';
+  Chart.defaults.borderColor = 'rgba(75, 85, 99, 0.3)';
+
+  const statistics = <%- JSON.stringify(statistics) %>;
+
+  // Impact Distribution Chart
+  const impactCtx = document.getElementById('impactChart').getContext('2d');
+  new Chart(impactCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['High Impact', 'Medium Impact', 'Low Impact'],
+      datasets: [{
+        data: [
+          statistics.byImpact?.High || 0,
+          statistics.byImpact?.Medium || 0,
+          statistics.byImpact?.Low || 0
+        ],
+        backgroundColor: [
+          'rgba(220, 38, 38, 0.8)',
+          'rgba(245, 158, 11, 0.8)',
+          'rgba(16, 185, 129, 0.8)'
+        ],
+        borderColor: [
+          'rgba(220, 38, 38, 1)',
+          'rgba(245, 158, 11, 1)',
+          'rgba(16, 185, 129, 1)'
+        ],
+        borderWidth: 2,
+        hoverOffset: 15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#e5e7eb',
+            padding: 20,
+            font: {
+              size: 13,
+              weight: '500'
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+          titleColor: '#f59e0b',
+          bodyColor: '#e5e7eb',
+          borderColor: '#374151',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            label: function(context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((context.parsed / total) * 100).toFixed(1);
+              return ` ${context.label}: ${context.parsed} events (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Category Breakdown Chart
+  const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+  const categoryLabels = Object.keys(statistics.byCategory || {});
+  const categoryData = Object.values(statistics.byCategory || {});
+
+  new Chart(categoryCtx, {
+    type: 'bar',
+    data: {
+      labels: categoryLabels,
+      datasets: [{
+        label: 'Number of Events',
+        data: categoryData,
+        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+        borderColor: 'rgba(245, 158, 11, 1)',
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: 'rgba(245, 158, 11, 0.9)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#9ca3af',
+            font: { size: 12 },
+            stepSize: 1
+          },
+          grid: {
+            color: 'rgba(75, 85, 99, 0.2)',
+            drawBorder: false
+          }
+        },
+        x: {
+          ticks: {
+            color: '#9ca3af',
+            font: { size: 12 }
+          },
+          grid: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+          titleColor: '#f59e0b',
+          bodyColor: '#e5e7eb',
+          borderColor: '#374151',
+          borderWidth: 1,
+          padding: 12
+        }
+      }
+    }
+  });
+
+  // Filter Functions
+  function applyFilters() {
+    const dateRange = document.getElementById('dateRange').value;
+    const country = document.getElementById('countryFilter').value;
+    const impact = document.getElementById('impactFilter').value;
+    const category = document.getElementById('categoryFilter').value;
+
+    const params = new URLSearchParams();
+    if (dateRange) params.append('range', dateRange);
+    if (country) params.append('country', country);
+    if (impact) params.append('impact', impact);
+    if (category) params.append('category', category);
+
+    window.location.href = '/economic-calendar?' + params.toString();
+  }
+
+  function resetFilters() {
+    window.location.href = '/economic-calendar';
+  }
+
+  function refreshData() {
+    window.location.reload();
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      refreshData();
+    }
+    if (e.key === 'Escape') {
+      closeEventModal();
+    }
+  });
+
+  // Event Modal Functions
+  let currentEvent = null;
+
+  function getCountryFlag(countryCode) {
+    const flags = {
+      'US': '🇺🇸',
+      'GB': '🇬🇧',
+      'EU': '🇪🇺',
+      'JP': '🇯🇵',
+      'CN': '🇨🇳',
+      'CA': '🇨🇦',
+      'AU': '🇦🇺',
+      'DE': '🇩🇪',
+      'FR': '🇫🇷',
+      'IN': '🇮🇳',
+      'BR': '🇧🇷',
+      'RU': '🇷🇺',
+      'KR': '🇰🇷'
+    };
+    return flags[countryCode] || '🌍';
+  }
+
+  function showEventDetails(element) {
+    const eventData = element.getAttribute('data-event');
+    currentEvent = JSON.parse(eventData);
+
+    const eventDate = new Date(currentEvent.date);
+
+    // Update modal content
+    document.getElementById('modal-country-flag').textContent = getCountryFlag(currentEvent.country_code);
+    document.getElementById('modal-event-name').textContent = currentEvent.event_name;
+    document.getElementById('modal-category').textContent = currentEvent.category || 'Other';
+
+    // Set impact badge
+    const impactBadge = document.getElementById('modal-impact');
+    impactBadge.textContent = currentEvent.impact + ' Impact';
+    impactBadge.className = 'category-badge';
+    if (currentEvent.impact === 'High') {
+      impactBadge.classList.add('impact-badge-high', 'text-white');
+    } else if (currentEvent.impact === 'Medium') {
+      impactBadge.classList.add('impact-badge-medium', 'text-black');
+    } else {
+      impactBadge.classList.add('impact-badge-low', 'text-white');
+    }
+
+    // Date and Time
+    document.getElementById('modal-date').textContent = eventDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    document.getElementById('modal-time').textContent = eventDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+
+    // Country
+    document.getElementById('modal-country').textContent = currentEvent.country;
+    document.getElementById('modal-currency').textContent = 'Currency: ' + (currentEvent.currency || 'USD');
+
+    // Economic Values
+    document.getElementById('modal-actual').textContent = currentEvent.actual || '-';
+    document.getElementById('modal-forecast').textContent = currentEvent.estimate || '-';
+    document.getElementById('modal-previous').textContent = currentEvent.previous || '-';
+
+    // Change indicator
+    const changeEl = document.getElementById('modal-change');
+    if (currentEvent.change_percent !== null && currentEvent.change_percent !== undefined) {
+      const change = currentEvent.change_percent;
+      const isPositive = change >= 0;
+      changeEl.innerHTML = `<span class="${isPositive ? 'text-green-500' : 'text-red-500'}">
+        <i class="fas fa-arrow-${isPositive ? 'up' : 'down'}"></i> ${Math.abs(change).toFixed(1)}%
+      </span>`;
+    } else {
+      changeEl.textContent = '';
+    }
+
+    // Additional Info
+    document.getElementById('modal-category-detail').textContent = currentEvent.category || 'Other';
+    document.getElementById('modal-source').textContent = currentEvent.source || 'Live Data';
+    document.getElementById('modal-unit').textContent = currentEvent.unit || 'N/A';
+
+    // Show modal
+    document.getElementById('eventModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeEventModal() {
+    document.getElementById('eventModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    currentEvent = null;
+  }
+
+  function addToCalendar() {
+    if (!currentEvent) return;
+
+    const eventDate = new Date(currentEvent.date);
+
+    // Format date for ICS file
+    function formatDateForICS(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+    }
+
+    const startDate = formatDateForICS(eventDate);
+    const endDate = formatDateForICS(new Date(eventDate.getTime() + 30 * 60000)); // 30 min duration
+
+    // Build description
+    let description = `${currentEvent.event_name}\\n\\n`;
+    description += `Country: ${currentEvent.country}\\n`;
+    description += `Impact: ${currentEvent.impact}\\n`;
+    description += `Category: ${currentEvent.category}\\n\\n`;
+
+    if (currentEvent.estimate) description += `Forecast: ${currentEvent.estimate}\\n`;
+    if (currentEvent.previous) description += `Previous: ${currentEvent.previous}\\n`;
+    if (currentEvent.actual) description += `Actual: ${currentEvent.actual}\\n`;
+
+    // Create ICS content
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//WealthPilot Pro//Economic Calendar//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${currentEvent.event_id}@wealthpilot.com`,
+      `DTSTAMP:${formatDateForICS(new Date())}`,
+      `DTSTART:${startDate}`,
+      `DTEND:${endDate}`,
+      `SUMMARY:📊 ${currentEvent.event_name} (${currentEvent.country_code})`,
+      `DESCRIPTION:${description}`,
+      `LOCATION:${currentEvent.country}`,
+      `STATUS:CONFIRMED`,
+      `CATEGORIES:Economics,Finance,${currentEvent.category}`,
+      `PRIORITY:${currentEvent.impact === 'High' ? '1' : currentEvent.impact === 'Medium' ? '5' : '9'}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT15M',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Economic Event in 15 minutes',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\\r\\n');
+
+    // Download ICS file
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${currentEvent.event_name.replace(/[^a-z0-9]/gi, '_')}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message
+    showToast('Event added to calendar!', 'success');
+  }
+
+  function shareEvent() {
+    if (!currentEvent) return;
+
+    const eventDate = new Date(currentEvent.date);
+    const shareText = `📊 Economic Event: ${currentEvent.event_name}\\n` +
+      `📅 ${eventDate.toLocaleDateString()} at ${eventDate.toLocaleTimeString()}\\n` +
+      `🌍 ${currentEvent.country}\\n` +
+      `⚡ ${currentEvent.impact} Impact\\n` +
+      (currentEvent.estimate ? `📈 Forecast: ${currentEvent.estimate}\\n` : '') +
+      (currentEvent.previous ? `📉 Previous: ${currentEvent.previous}` : '');
+
+    if (navigator.share) {
+      navigator.share({
+        title: currentEvent.event_name,
+        text: shareText
+      }).then(() => {
+        showToast('Event shared successfully!', 'success');
+      }).catch((err) => {
+        console.log('Share cancelled');
+      });
+    } else {
+      // Fallback: Copy to clipboard
+      navigator.clipboard.writeText(shareText).then(() => {
+        showToast('Event details copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Failed to copy event details', 'error');
+      });
+    }
+  }
+
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl font-semibold text-white z-50 transition-all transform translate-y-0 ${
+      type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+    }`;
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>${message}`;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.transform = 'translateY(100px)';
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+</script>
+
+<%- include('../partials/footer') %>

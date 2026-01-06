@@ -1,0 +1,533 @@
+<%- include('../partials/header', { pageTitle: 'AI Chat Assistant' }) %>
+
+<style>
+  /* Stitch AI Chat Theme Overrides */
+  .ai-chat-container {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .surface-dark {
+    background-color: #1c1d26;
+  }
+
+  .surface-dark-highlight {
+    background-color: #292a38;
+  }
+
+  .border-stitch {
+    border-color: #3d3e52;
+  }
+
+  .border-stitch-secondary {
+    border-color: #292a38;
+  }
+
+  .text-secondary-stitch {
+    color: #9e9fb7;
+  }
+
+  /* AI Avatar Glow Effect */
+  .ai-avatar {
+    border: 1px solid rgba(72, 80, 229, 0.3);
+    box-shadow: 0 0 10px rgba(72, 80, 229, 0.2);
+  }
+
+  /* User Message Shadow */
+  .user-message {
+    box-shadow: 0 10px 15px -3px rgba(72, 80, 229, 0.1);
+  }
+
+  /* Custom scrollbar for chat */
+  #chat-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  #chat-container::-webkit-scrollbar-track {
+    background: #1c1d26;
+  }
+
+  #chat-container::-webkit-scrollbar-thumb {
+    background: #3d3e52;
+    border-radius: 3px;
+  }
+
+  #chat-container::-webkit-scrollbar-thumb:hover {
+    background: #4d4e62;
+  }
+
+  /* Hide scrollbar for suggested queries */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Typing indicator animation */
+  .typing-dot {
+    animation: typing-bounce 1.4s ease-in-out infinite;
+  }
+
+  .typing-dot:nth-child(1) { animation-delay: 0ms; }
+  .typing-dot:nth-child(2) { animation-delay: 200ms; }
+  .typing-dot:nth-child(3) { animation-delay: 400ms; }
+
+  @keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-4px); }
+  }
+
+  /* Focus ring for input */
+  .chat-input-container:focus-within {
+    ring: 2px;
+    ring-color: rgba(72, 80, 229, 0.5);
+    border-color: #4850e5;
+  }
+
+  /* Textarea auto-resize */
+  .chat-textarea {
+    min-height: 44px;
+    max-height: 128px;
+  }
+</style>
+
+<main class="ai-chat-container flex flex-1 flex-col h-[calc(100vh-56px)] relative bg-[#111217]">
+  <!-- Header -->
+  <header class="flex flex-wrap items-center justify-between gap-3 px-6 py-5 border-b border-stitch-secondary shrink-0 bg-[#111217] z-10">
+    <div class="flex flex-col gap-1">
+      <div class="flex items-center gap-2">
+        <h2 class="text-white tracking-tight text-2xl font-bold leading-tight">AI Chat Assistant</h2>
+        <span class="bg-primary/20 text-primary text-xs font-bold px-2 py-0.5 rounded-full border border-primary/20">BETA</span>
+      </div>
+      <p class="text-secondary-stitch text-sm font-normal leading-normal">Ask financial questions and receive AI-powered analysis.</p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="showChatHistory()" class="flex items-center justify-center gap-2 h-9 px-4 rounded-lg bg-[#292a38] hover:bg-[#353646] text-white text-sm font-medium transition-colors border border-stitch">
+        <span class="material-symbols-outlined text-[18px]">history</span>
+        <span>History</span>
+      </button>
+      <button onclick="startNewChat()" class="flex items-center justify-center gap-2 h-9 px-4 rounded-lg bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        <span>New Chat</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Chat Area -->
+  <div class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth" id="chat-container">
+    <!-- Date Separator -->
+    <div class="flex justify-center">
+      <span class="text-xs text-secondary-stitch font-medium surface-dark px-3 py-1 rounded-full" id="chat-date">Today</span>
+    </div>
+
+    <!-- AI Welcome Message -->
+    <div class="flex items-start gap-4 max-w-3xl" id="welcome-message">
+      <div class="ai-avatar bg-gradient-to-br from-primary to-purple-600 rounded-full w-10 h-10 shrink-0 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-xl">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-sm font-semibold">WealthPilot AI</span>
+          <span class="text-secondary-stitch text-xs" id="welcome-time"></span>
+        </div>
+        <div class="surface-dark-highlight p-4 rounded-2xl rounded-tl-none text-white text-sm leading-relaxed border border-stitch">
+          <p>Hello<%= typeof user !== 'undefined' && user && user.full_name ? ', ' + user.full_name.split(' ')[0] : '' %>! I'm your advanced financial assistant. I have real-time access to your portfolio and market data. How can I help you optimize your strategy today?</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages will be appended here -->
+    <div id="chat-messages"></div>
+
+    <!-- Typing Indicator (hidden by default) -->
+    <div class="flex items-start gap-4 max-w-3xl hidden" id="typing-indicator">
+      <div class="ai-avatar bg-gradient-to-br from-primary to-purple-600 rounded-full w-10 h-10 shrink-0 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-xl">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-sm font-semibold">WealthPilot AI</span>
+        </div>
+        <div class="surface-dark-highlight p-4 rounded-2xl rounded-tl-none border border-stitch">
+          <div class="flex gap-1.5">
+            <span class="typing-dot w-2 h-2 bg-secondary-stitch rounded-full"></span>
+            <span class="typing-dot w-2 h-2 bg-secondary-stitch rounded-full"></span>
+            <span class="typing-dot w-2 h-2 bg-secondary-stitch rounded-full"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spacer for scrolling -->
+    <div class="h-4"></div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="p-4 md:px-6 md:pb-6 bg-[#111217] border-t border-stitch-secondary shrink-0 z-10">
+    <div class="max-w-4xl mx-auto flex flex-col gap-3">
+      <!-- Suggested Queries -->
+      <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar" id="suggested-queries">
+        <button onclick="sendSuggestedQuery('What is the current market outlook?')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">trending_up</span>
+          Market Outlook
+        </button>
+        <button onclick="sendSuggestedQuery('Please help me rebalance my portfolio')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">pie_chart</span>
+          Rebalance Portfolio
+        </button>
+        <button onclick="sendSuggestedQuery('Show me dividend yields for my holdings')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">attach_money</span>
+          Dividend Yields
+        </button>
+        <button onclick="sendSuggestedQuery('Analyze energy sector performance')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">bolt</span>
+          Energy Sector
+        </button>
+        <button onclick="sendSuggestedQuery('What are my tax harvesting opportunities?')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+          Tax Harvesting
+        </button>
+        <button onclick="sendSuggestedQuery('Analyze my portfolio risk exposure')" class="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full surface-dark border border-stitch hover:border-primary/50 text-secondary-stitch hover:text-white text-xs font-medium transition-all">
+          <span class="material-symbols-outlined text-[16px]">warning</span>
+          Risk Analysis
+        </button>
+      </div>
+
+      <!-- Input Box -->
+      <form onsubmit="sendMessage(event)" class="relative flex items-end gap-2 surface-dark-highlight rounded-xl border border-stitch shadow-sm focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary p-2 chat-input-container">
+        <button type="button" onclick="showAttachmentOptions()" class="p-2 text-secondary-stitch hover:text-white transition-colors rounded-lg hover:bg-[#353646]">
+          <span class="material-symbols-outlined">add_circle</span>
+        </button>
+        <textarea
+          id="chat-input"
+          class="chat-textarea w-full bg-transparent border-none text-white text-sm placeholder:text-secondary-stitch focus:ring-0 focus:outline-none resize-none py-2.5"
+          placeholder="Ask about stocks, markets, or your portfolio..."
+          rows="1"
+          onkeydown="handleKeyDown(event)"
+          oninput="autoResizeTextarea(this)"
+        ></textarea>
+        <div class="flex items-center gap-1 pb-1">
+          <button type="button" onclick="startVoiceInput()" id="voice-btn" class="p-2 text-secondary-stitch hover:text-white transition-colors rounded-lg hover:bg-[#353646]">
+            <span class="material-symbols-outlined text-[20px]">mic</span>
+          </button>
+          <button type="submit" id="send-btn" class="p-2 bg-primary hover:bg-primary/90 text-white transition-colors rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined text-[20px]">send</span>
+          </button>
+        </div>
+      </form>
+      <p class="text-center text-[10px] text-secondary-stitch">WealthPilot AI can make mistakes. Consider checking important financial information.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+// Portfolio context from server
+const portfolioContext = <%- JSON.stringify(typeof portfolioData !== 'undefined' ? portfolioData : {}) %>;
+const userName = '<%= typeof user !== "undefined" && user ? user.full_name : "" %>';
+const userInitial = userName ? userName.charAt(0).toUpperCase() : 'U';
+
+// Set initial time
+document.getElementById('welcome-time').textContent = formatTime(new Date());
+
+// Format time helper
+function formatTime(date) {
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Auto-resize textarea
+function autoResizeTextarea(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
+}
+
+// Handle keyboard shortcuts
+function handleKeyDown(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage(event);
+  }
+}
+
+// Add user message to chat
+function addUserMessage(content) {
+  const container = document.getElementById('chat-messages');
+  const time = formatTime(new Date());
+
+  const messageHtml = `
+    <div class="flex items-end gap-3 justify-end mb-6">
+      <div class="flex flex-col gap-2 items-end max-w-2xl">
+        <div class="flex items-center gap-2">
+          <span class="text-secondary-stitch text-xs">${time}</span>
+          <span class="text-white text-sm font-semibold">You</span>
+        </div>
+        <div class="user-message bg-primary p-4 rounded-2xl rounded-br-none text-white text-sm leading-relaxed">
+          <p>${escapeHtml(content)}</p>
+        </div>
+      </div>
+      <div class="bg-gradient-to-br from-sky-500 to-purple-500 rounded-full w-10 h-10 shrink-0 flex items-center justify-center text-white font-bold text-sm">
+        ${userInitial}
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', messageHtml);
+  scrollToBottom();
+}
+
+// Add AI message to chat
+function addAIMessage(content, includeActions = false) {
+  const container = document.getElementById('chat-messages');
+  const time = formatTime(new Date());
+
+  let actionsHtml = '';
+  if (includeActions) {
+    actionsHtml = `
+      <div class="flex gap-2 mt-3">
+        <button onclick="exportData()" class="text-xs surface-dark hover:bg-[#353646] text-secondary-stitch hover:text-white border border-stitch px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">download</span> Export Data
+        </button>
+        <button onclick="viewChart()" class="text-xs surface-dark hover:bg-[#353646] text-secondary-stitch hover:text-white border border-stitch px-3 py-2 rounded-lg transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">show_chart</span> View Chart
+        </button>
+      </div>
+    `;
+  }
+
+  const messageHtml = `
+    <div class="flex items-start gap-4 max-w-4xl w-full mb-6">
+      <div class="ai-avatar bg-gradient-to-br from-primary to-purple-600 rounded-full w-10 h-10 shrink-0 flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-xl">smart_toy</span>
+      </div>
+      <div class="flex flex-col gap-2 w-full">
+        <div class="flex items-center gap-2">
+          <span class="text-white text-sm font-semibold">WealthPilot AI</span>
+          <span class="text-secondary-stitch text-xs">${time}</span>
+        </div>
+        <div class="surface-dark-highlight p-4 rounded-2xl rounded-tl-none text-white text-sm leading-relaxed border border-stitch">
+          ${content}
+          ${actionsHtml}
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', messageHtml);
+  scrollToBottom();
+}
+
+// Show typing indicator
+function showTypingIndicator() {
+  document.getElementById('typing-indicator').classList.remove('hidden');
+  scrollToBottom();
+}
+
+// Hide typing indicator
+function hideTypingIndicator() {
+  document.getElementById('typing-indicator').classList.add('hidden');
+}
+
+// Scroll to bottom of chat
+function scrollToBottom() {
+  const container = document.getElementById('chat-container');
+  container.scrollTop = container.scrollHeight;
+}
+
+// Send message
+async function sendMessage(event) {
+  event.preventDefault();
+
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  // Clear input and reset height
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Add user message
+  addUserMessage(message);
+
+  // Show typing indicator
+  showTypingIndicator();
+
+  // Disable send button
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  sendBtn.classList.add('opacity-50');
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message,
+        context: portfolioContext
+      })
+    });
+
+    const data = await response.json();
+
+    hideTypingIndicator();
+
+    if (data.success !== false) {
+      // Check if response contains table data
+      const hasTable = data.response && (data.response.includes('<table') || data.response.includes('|'));
+      addAIMessage(data.response || data.message, hasTable);
+    } else {
+      addAIMessage('I apologize, but I encountered an issue processing your request. Please try again.');
+    }
+  } catch (error) {
+    console.error('Chat error:', error);
+    hideTypingIndicator();
+    addAIMessage('I apologize, but I encountered a connection error. Please check your internet connection and try again.');
+  }
+
+  // Re-enable send button
+  sendBtn.disabled = false;
+  sendBtn.classList.remove('opacity-50');
+  input.focus();
+}
+
+// Send suggested query
+function sendSuggestedQuery(query) {
+  const input = document.getElementById('chat-input');
+  input.value = query;
+  sendMessage(new Event('submit'));
+}
+
+// Start new chat
+function startNewChat() {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '';
+
+  // Reset welcome time
+  document.getElementById('welcome-time').textContent = formatTime(new Date());
+
+  // Show toast
+  if (typeof showToast === 'function') {
+    showToast('Started new chat session', 'success');
+  }
+
+  scrollToBottom();
+}
+
+// Show chat history (placeholder)
+function showChatHistory() {
+  if (typeof showToast === 'function') {
+    showToast('Chat history feature coming soon', 'info');
+  }
+}
+
+// Show attachment options (placeholder)
+function showAttachmentOptions() {
+  if (typeof showToast === 'function') {
+    showToast('File attachment feature coming soon', 'info');
+  }
+}
+
+// Export data (placeholder)
+function exportData() {
+  if (typeof showToast === 'function') {
+    showToast('Exporting data...', 'info');
+  }
+}
+
+// View chart (placeholder)
+function viewChart() {
+  if (typeof showToast === 'function') {
+    showToast('Opening chart view...', 'info');
+  }
+}
+
+// Voice input
+let recognition = null;
+let isListening = false;
+
+function startVoiceInput() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (typeof showToast === 'function') {
+      showToast('Voice recognition not supported in this browser', 'error');
+    }
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voiceBtn = document.getElementById('voice-btn');
+
+  if (!recognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      isListening = true;
+      voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[20px] text-red-500 animate-pulse">mic</span>';
+      voiceBtn.classList.add('bg-red-500/20');
+      if (typeof showToast === 'function') {
+        showToast('Listening... Speak now', 'info');
+      }
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join('');
+      document.getElementById('chat-input').value = transcript;
+      autoResizeTextarea(document.getElementById('chat-input'));
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">mic</span>';
+      voiceBtn.classList.remove('bg-red-500/20');
+
+      const input = document.getElementById('chat-input').value;
+      if (input.trim()) {
+        sendMessage(new Event('submit'));
+      }
+    };
+
+    recognition.onerror = (event) => {
+      isListening = false;
+      voiceBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">mic</span>';
+      voiceBtn.classList.remove('bg-red-500/20');
+      if (typeof showToast === 'function') {
+        showToast('Voice error: ' + event.error, 'error');
+      }
+    };
+  }
+
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Focus input
+  document.getElementById('chat-input').focus();
+
+  // Set today's date
+  const today = new Date();
+  const options = { weekday: 'long', month: 'short', day: 'numeric' };
+  const dateStr = today.toLocaleDateString('en-US', options);
+  document.getElementById('chat-date').textContent = `Today, ${dateStr}`;
+});
+</script>
+
+<%- include('../partials/footer') %>

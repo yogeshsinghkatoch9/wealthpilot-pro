@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Data | WealthPilot Pro</title>
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Theme Configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4850e5",
+            "background-light": "#f6f6f8",
+            "background-dark": "#111221",
+            "surface-dark": "#1c1d2e",
+            "surface-dark-highlight": "#2a2b3d",
+            "text-secondary": "#9e9fb7",
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111221;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a2b3d;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4850e5;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+      'FILL' 0,
+      'wght' 400,
+      'GRAD' 0,
+      'opsz' 24
+    }
+    .icon-filled {
+      font-variation-settings: 'FILL' 1;
+    }
+
+    /* Tab switching */
+    .tab-btn.active {
+      background: #1c1d2e;
+      color: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* Heatmap hover effects */
+    .heatmap-cell:hover {
+      transform: scale(1.02);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden antialiased selection:bg-primary selection:text-white">
+  <div class="flex h-screen w-full">
+    <%- include('../partials/sidebar') %>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col h-full min-w-0 overflow-hidden bg-background-dark relative">
+      <%- include('../partials/header') %>
+
+      <!-- Top Navigation & Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 px-6 py-6 pb-2 shrink-0">
+        <div class="flex flex-col gap-1">
+          <h2 class="text-3xl font-black text-white tracking-tight">Market Data</h2>
+          <div class="flex items-center gap-2">
+            <div class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" id="market-status-indicator"></div>
+            <p class="text-text-secondary text-sm" id="market-status-text">Market is Open • Real-time Data</p>
+          </div>
+        </div>
+        <div class="w-full md:w-96 relative group">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <span class="material-symbols-outlined text-text-secondary">search</span>
+          </div>
+          <input
+            type="text"
+            id="stock-search"
+            class="block w-full pl-10 pr-4 py-3 rounded-lg bg-surface-dark border-none text-white placeholder-text-secondary focus:ring-2 focus:ring-primary focus:bg-surface-dark-highlight transition-all"
+            placeholder="Search stocks, ETFs, crypto..."
+            onkeypress="if(event.key === 'Enter' && this.value.trim()) window.location.href = '/stock/' + this.value.trim().toUpperCase()"
+          >
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <kbd class="hidden sm:inline-block px-2 py-0.5 text-xs text-text-secondary bg-[#2a2b3d] rounded border border-[#3d3e52]">⌘K</kbd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Content Area -->
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
+        <!-- Market Indices Overview -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <!-- SPY -->
+          <div class="p-5 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-colors group">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-text-secondary font-bold text-sm tracking-wide">SPY</span>
+              <div class="bg-surface-dark-highlight p-1.5 rounded-md <%= (typeof indices !== 'undefined' && indices?.SPY?.changePercent >= 0) ? 'text-emerald-400 group-hover:bg-emerald-500' : 'text-rose-400 group-hover:bg-rose-500' %> group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]"><%= (typeof indices !== 'undefined' && indices?.SPY?.changePercent >= 0) ? 'trending_up' : 'trending_down' %></span>
+              </div>
+            </div>
+            <div class="flex items-end gap-3">
+              <span class="text-2xl font-bold text-white"><%= typeof indices !== 'undefined' && indices?.SPY?.price ? indices.SPY.price.toFixed(2) : '445.20' %></span>
+              <span class="text-sm font-medium <%= (typeof indices !== 'undefined' && indices?.SPY?.changePercent >= 0) ? 'text-emerald-400' : 'text-rose-400' %> mb-1">
+                <%= typeof indices !== 'undefined' && indices?.SPY?.changePercent ? (indices.SPY.changePercent >= 0 ? '+' : '') + indices.SPY.changePercent.toFixed(2) + '%' : '+1.20%' %>
+              </span>
+            </div>
+            <div class="w-full bg-[#2d2e40] h-1 mt-4 rounded-full overflow-hidden">
+              <div class="<%= (typeof indices !== 'undefined' && indices?.SPY?.changePercent >= 0) ? 'bg-emerald-500' : 'bg-rose-500' %> h-full" style="width: <%= typeof indices !== 'undefined' && indices?.SPY?.changePercent ? Math.min(Math.abs(indices.SPY.changePercent) * 20 + 30, 100) : 65 %>%"></div>
+            </div>
+          </div>
+
+          <!-- QQQ -->
+          <div class="p-5 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-colors group">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-text-secondary font-bold text-sm tracking-wide">QQQ</span>
+              <div class="bg-surface-dark-highlight p-1.5 rounded-md <%= (typeof indices !== 'undefined' && indices?.QQQ?.changePercent >= 0) ? 'text-emerald-400 group-hover:bg-emerald-500' : 'text-rose-400 group-hover:bg-rose-500' %> group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]"><%= (typeof indices !== 'undefined' && indices?.QQQ?.changePercent >= 0) ? 'trending_up' : 'trending_down' %></span>
+              </div>
+            </div>
+            <div class="flex items-end gap-3">
+              <span class="text-2xl font-bold text-white"><%= typeof indices !== 'undefined' && indices?.QQQ?.price ? indices.QQQ.price.toFixed(2) : '372.15' %></span>
+              <span class="text-sm font-medium <%= (typeof indices !== 'undefined' && indices?.QQQ?.changePercent >= 0) ? 'text-emerald-400' : 'text-rose-400' %> mb-1">
+                <%= typeof indices !== 'undefined' && indices?.QQQ?.changePercent ? (indices.QQQ.changePercent >= 0 ? '+' : '') + indices.QQQ.changePercent.toFixed(2) + '%' : '-0.45%' %>
+              </span>
+            </div>
+            <div class="w-full bg-[#2d2e40] h-1 mt-4 rounded-full overflow-hidden">
+              <div class="<%= (typeof indices !== 'undefined' && indices?.QQQ?.changePercent >= 0) ? 'bg-emerald-500' : 'bg-rose-500' %> h-full" style="width: <%= typeof indices !== 'undefined' && indices?.QQQ?.changePercent ? Math.min(Math.abs(indices.QQQ.changePercent) * 20 + 30, 100) : 35 %>%"></div>
+            </div>
+          </div>
+
+          <!-- DIA -->
+          <div class="p-5 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-colors group">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-text-secondary font-bold text-sm tracking-wide">DIA</span>
+              <div class="bg-surface-dark-highlight p-1.5 rounded-md <%= (typeof indices !== 'undefined' && indices?.DIA?.changePercent >= 0) ? 'text-emerald-400 group-hover:bg-emerald-500' : 'text-rose-400 group-hover:bg-rose-500' %> group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]"><%= (typeof indices !== 'undefined' && indices?.DIA?.changePercent >= 0) ? 'trending_up' : 'trending_down' %></span>
+              </div>
+            </div>
+            <div class="flex items-end gap-3">
+              <span class="text-2xl font-bold text-white"><%= typeof indices !== 'undefined' && indices?.DIA?.price ? indices.DIA.price.toFixed(2) : '348.90' %></span>
+              <span class="text-sm font-medium <%= (typeof indices !== 'undefined' && indices?.DIA?.changePercent >= 0) ? 'text-emerald-400' : 'text-rose-400' %> mb-1">
+                <%= typeof indices !== 'undefined' && indices?.DIA?.changePercent ? (indices.DIA.changePercent >= 0 ? '+' : '') + indices.DIA.changePercent.toFixed(2) + '%' : '+0.10%' %>
+              </span>
+            </div>
+            <div class="w-full bg-[#2d2e40] h-1 mt-4 rounded-full overflow-hidden">
+              <div class="<%= (typeof indices !== 'undefined' && indices?.DIA?.changePercent >= 0) ? 'bg-emerald-500' : 'bg-rose-500' %> h-full" style="width: <%= typeof indices !== 'undefined' && indices?.DIA?.changePercent ? Math.min(Math.abs(indices.DIA.changePercent) * 20 + 30, 100) : 52 %>%"></div>
+            </div>
+          </div>
+
+          <!-- IWM -->
+          <div class="p-5 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-colors group">
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-text-secondary font-bold text-sm tracking-wide">IWM</span>
+              <div class="bg-surface-dark-highlight p-1.5 rounded-md <%= (typeof indices !== 'undefined' && indices?.IWM?.changePercent >= 0) ? 'text-emerald-400 group-hover:bg-emerald-500' : 'text-rose-400 group-hover:bg-rose-500' %> group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]"><%= (typeof indices !== 'undefined' && indices?.IWM?.changePercent >= 0) ? 'trending_up' : 'trending_down' %></span>
+              </div>
+            </div>
+            <div class="flex items-end gap-3">
+              <span class="text-2xl font-bold text-white"><%= typeof indices !== 'undefined' && indices?.IWM?.price ? indices.IWM.price.toFixed(2) : '185.40' %></span>
+              <span class="text-sm font-medium <%= (typeof indices !== 'undefined' && indices?.IWM?.changePercent >= 0) ? 'text-emerald-400' : 'text-rose-400' %> mb-1">
+                <%= typeof indices !== 'undefined' && indices?.IWM?.changePercent ? (indices.IWM.changePercent >= 0 ? '+' : '') + indices.IWM.changePercent.toFixed(2) + '%' : '+2.30%' %>
+              </span>
+            </div>
+            <div class="w-full bg-[#2d2e40] h-1 mt-4 rounded-full overflow-hidden">
+              <div class="<%= (typeof indices !== 'undefined' && indices?.IWM?.changePercent >= 0) ? 'bg-emerald-500' : 'bg-rose-500' %> h-full" style="width: <%= typeof indices !== 'undefined' && indices?.IWM?.changePercent ? Math.min(Math.abs(indices.IWM.changePercent) * 20 + 30, 100) : 80 %>%"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Middle Section: Heatmap & Movers -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-auto lg:h-[420px]">
+          <!-- Sector Rotation Heatmap -->
+          <div class="lg:col-span-2 flex flex-col bg-surface-dark rounded-xl border border-[#2d2e40] overflow-hidden">
+            <div class="p-4 border-b border-[#2d2e40] flex justify-between items-center">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">grid_view</span>
+                <h3 class="text-white font-bold text-lg">Sector Rotation</h3>
+              </div>
+              <div class="flex gap-2">
+                <button class="sector-period-btn px-3 py-1 rounded-md bg-surface-dark-highlight text-xs font-medium text-white hover:bg-primary hover:text-white transition-colors" data-period="1D">1D</button>
+                <button class="sector-period-btn px-3 py-1 rounded-md bg-transparent text-xs font-medium text-text-secondary hover:bg-surface-dark-highlight transition-colors" data-period="1W">1W</button>
+                <button class="sector-period-btn px-3 py-1 rounded-md bg-transparent text-xs font-medium text-text-secondary hover:bg-surface-dark-highlight transition-colors" data-period="1M">1M</button>
+              </div>
+            </div>
+            <div class="flex-1 p-4">
+              <!-- Heatmap Grid -->
+              <div class="w-full h-full grid grid-cols-4 grid-rows-3 gap-1" id="sector-heatmap">
+                <%
+                  const sectorData = typeof sectors !== 'undefined' && sectors?.data ? sectors.data : [
+                    { name: 'Technology', symbol: 'XLK', change: 2.4 },
+                    { name: 'Finance', symbol: 'XLF', change: 1.1 },
+                    { name: 'Healthcare', symbol: 'XLV', change: -0.8 },
+                    { name: 'Energy', symbol: 'XLE', change: -0.2 },
+                    { name: 'Consumer Disc', symbol: 'XLY', change: 1.5 },
+                    { name: 'Utilities', symbol: 'XLU', change: 0.0 },
+                    { name: 'Industrial', symbol: 'XLI', change: 0.5 }
+                  ];
+
+                  const getSectorClass = (change) => {
+                    if (change > 2) return 'bg-emerald-900/40 border-emerald-500/20 hover:bg-emerald-900/60';
+                    if (change > 0.5) return 'bg-emerald-900/20 border-emerald-500/20 hover:bg-emerald-900/40';
+                    if (change > -0.5) return 'bg-slate-800/40 border-slate-500/20 hover:bg-slate-700/40';
+                    if (change > -2) return 'bg-rose-900/20 border-rose-500/20 hover:bg-rose-900/40';
+                    return 'bg-rose-900/40 border-rose-500/20 hover:bg-rose-900/60';
+                  };
+
+                  const getTextClass = (change) => {
+                    if (change > 0) return 'text-emerald-400';
+                    if (change < 0) return 'text-rose-400';
+                    return 'text-text-secondary';
+                  };
+                %>
+
+                <!-- Technology: Big Winner -->
+                <div class="heatmap-cell col-span-2 row-span-2 <%= getSectorClass(sectorData[0]?.change || 2.4) %> border p-3 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-white text-lg"><%= sectorData[0]?.name || 'Technology' %></span>
+                    <span class="<%= getTextClass(sectorData[0]?.change || 2.4) %> font-bold"><%= sectorData[0]?.change >= 0 ? '+' : '' %><%= (sectorData[0]?.change || 2.4).toFixed(1) %>%</span>
+                  </div>
+                  <span class="absolute bottom-2 right-2 text-xs <%= getTextClass(sectorData[0]?.change || 2.4) %>/50 group-hover:<%= getTextClass(sectorData[0]?.change || 2.4) %>"><%= sectorData[0]?.symbol || 'XLK' %></span>
+                </div>
+
+                <!-- Finance: Moderate Winner -->
+                <div class="heatmap-cell col-span-1 row-span-2 <%= getSectorClass(sectorData[1]?.change || 1.1) %> border p-3 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-white text-sm"><%= sectorData[1]?.name || 'Finance' %></span>
+                    <span class="<%= getTextClass(sectorData[1]?.change || 1.1) %> font-bold"><%= sectorData[1]?.change >= 0 ? '+' : '' %><%= (sectorData[1]?.change || 1.1).toFixed(1) %>%</span>
+                  </div>
+                  <span class="absolute bottom-2 right-2 text-xs <%= getTextClass(sectorData[1]?.change || 1.1) %>/50 group-hover:<%= getTextClass(sectorData[1]?.change || 1.1) %>"><%= sectorData[1]?.symbol || 'XLF' %></span>
+                </div>
+
+                <!-- Healthcare: Loser -->
+                <div class="heatmap-cell col-span-1 row-span-1 <%= getSectorClass(sectorData[2]?.change || -0.8) %> border p-2 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-white text-xs"><%= sectorData[2]?.name || 'Healthcare' %></span>
+                    <span class="<%= getTextClass(sectorData[2]?.change || -0.8) %> font-bold text-xs"><%= sectorData[2]?.change >= 0 ? '+' : '' %><%= (sectorData[2]?.change || -0.8).toFixed(1) %>%</span>
+                  </div>
+                </div>
+
+                <!-- Energy: Flat/Loser -->
+                <div class="heatmap-cell col-span-1 row-span-1 <%= getSectorClass(sectorData[3]?.change || -0.2) %> border p-2 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-white text-xs"><%= sectorData[3]?.name || 'Energy' %></span>
+                    <span class="<%= getTextClass(sectorData[3]?.change || -0.2) %> font-bold text-xs"><%= sectorData[3]?.change >= 0 ? '+' : '' %><%= (sectorData[3]?.change || -0.2).toFixed(1) %>%</span>
+                  </div>
+                </div>
+
+                <!-- Consumer Disc: Winner -->
+                <div class="heatmap-cell col-span-1 row-span-1 <%= getSectorClass(sectorData[4]?.change || 1.5) %> border p-2 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-white text-xs"><%= sectorData[4]?.name || 'Cons. Disc' %></span>
+                    <span class="<%= getTextClass(sectorData[4]?.change || 1.5) %> font-bold text-xs"><%= sectorData[4]?.change >= 0 ? '+' : '' %><%= (sectorData[4]?.change || 1.5).toFixed(1) %>%</span>
+                  </div>
+                </div>
+
+                <!-- Utilities: Neutral -->
+                <div class="heatmap-cell col-span-1 row-span-1 <%= getSectorClass(sectorData[5]?.change || 0.0) %> border p-2 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-text-secondary text-xs"><%= sectorData[5]?.name || 'Utilities' %></span>
+                    <span class="<%= getTextClass(sectorData[5]?.change || 0.0) %> font-bold text-xs"><%= sectorData[5]?.change >= 0 ? '+' : '' %><%= (sectorData[5]?.change || 0.0).toFixed(1) %>%</span>
+                  </div>
+                </div>
+
+                <!-- Industrial: Winner -->
+                <div class="heatmap-cell col-span-2 row-span-1 <%= getSectorClass(sectorData[6]?.change || 0.5) %> border p-2 rounded cursor-pointer relative group transition-all" onclick="window.location.href='/sector-analysis'">
+                  <div class="absolute inset-0 flex flex-col justify-center items-center">
+                    <span class="font-bold text-white text-sm"><%= sectorData[6]?.name || 'Industrial' %></span>
+                    <span class="<%= getTextClass(sectorData[6]?.change || 0.5) %> font-bold text-xs"><%= sectorData[6]?.change >= 0 ? '+' : '' %><%= (sectorData[6]?.change || 0.5).toFixed(1) %>%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Movers -->
+          <div class="lg:col-span-1 flex flex-col bg-surface-dark rounded-xl border border-[#2d2e40] overflow-hidden">
+            <div class="p-4 border-b border-[#2d2e40]">
+              <h3 class="text-white font-bold text-lg mb-4">Top Movers</h3>
+              <div class="flex rounded-lg bg-background-dark p-1">
+                <button class="tab-btn active flex-1 py-1.5 text-sm font-medium rounded-md transition-all" data-tab="gainers">Gainers</button>
+                <button class="tab-btn flex-1 py-1.5 text-sm font-medium rounded-md text-text-secondary hover:text-white transition-all" data-tab="losers">Losers</button>
+                <button class="tab-btn flex-1 py-1.5 text-sm font-medium rounded-md text-text-secondary hover:text-white transition-all" data-tab="active">Active</button>
+              </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2">
+              <table class="w-full text-left">
+                <tbody id="movers-table" class="divide-y divide-[#2d2e40]">
+                  <%
+                    const moversData = typeof topMovers !== 'undefined' && topMovers?.gainers ? topMovers.gainers : [
+                      { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 460.18, changePercent: 4.12 },
+                      { symbol: 'TSLA', name: 'Tesla Inc.', price: 245.60, changePercent: 2.85 },
+                      { symbol: 'AMD', name: 'Adv. Micro Dev', price: 108.25, changePercent: 1.95 },
+                      { symbol: 'COIN', name: 'Coinbase', price: 82.40, changePercent: 1.40 }
+                    ];
+
+                    moversData.slice(0, 5).forEach((stock) => {
+                  %>
+                  <tr class="group hover:bg-surface-dark-highlight/50 transition-colors cursor-pointer" onclick="window.location.href='/stock/<%= stock.symbol %>'">
+                    <td class="py-3 px-2">
+                      <div class="flex items-center gap-3">
+                        <div class="size-8 rounded bg-primary/20 p-0.5 flex items-center justify-center">
+                          <span class="text-primary text-xs font-black"><%= stock.symbol?.substring(0, 3) %></span>
+                        </div>
+                        <div>
+                          <p class="text-white font-bold text-sm"><%= stock.symbol %></p>
+                          <p class="text-text-secondary text-xs truncate max-w-[100px]"><%= stock.name %></p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-right py-3 px-2">
+                      <p class="text-white font-medium text-sm"><%= stock.price?.toFixed(2) %></p>
+                      <p class="<%= stock.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400' %> text-xs font-bold">
+                        <%= stock.changePercent >= 0 ? '+' : '' %><%= stock.changePercent?.toFixed(2) %>%
+                      </p>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Links Section -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <a href="/market-breadth" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="material-symbols-outlined text-primary">analytics</span>
+              <span class="text-white font-bold text-sm">Market Breadth</span>
+            </div>
+            <p class="text-text-secondary text-xs">Advancing: <%= typeof breadth !== 'undefined' && breadth?.indicators?.advanceDecline?.advancing ? breadth.indicators.advanceDecline.advancing : '-' %></p>
+          </a>
+
+          <a href="/top-movers" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="material-symbols-outlined text-primary">trending_up</span>
+              <span class="text-white font-bold text-sm">Top Movers</span>
+            </div>
+            <p class="text-text-secondary text-xs">Top Gainer: <%= typeof topMovers !== 'undefined' && topMovers?.gainers?.[0]?.symbol ? topMovers.gainers[0].symbol : '-' %></p>
+          </a>
+
+          <a href="/sentiment" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="material-symbols-outlined text-primary">sentiment_satisfied</span>
+              <span class="text-white font-bold text-sm">Sentiment</span>
+            </div>
+            <p class="text-text-secondary text-xs">Score: <%= typeof sentiment !== 'undefined' && sentiment?.overall?.score ? sentiment.overall.score.toFixed(1) + '/100' : '-' %></p>
+          </a>
+
+          <a href="/sector-analysis" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="material-symbols-outlined text-primary">pie_chart</span>
+              <span class="text-white font-bold text-sm">Sector Analysis</span>
+            </div>
+            <p class="text-text-secondary text-xs">Best: <%= typeof sectors !== 'undefined' && sectors?.bestPerformer?.name ? sectors.bestPerformer.name : '-' %></p>
+          </a>
+        </section>
+
+        <!-- Market Calendar -->
+        <section class="bg-surface-dark rounded-xl border border-[#2d2e40] overflow-hidden">
+          <div class="p-6 border-b border-[#2d2e40] flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-primary">calendar_month</span>
+              <h3 class="text-white font-bold text-lg">Market Calendar</h3>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="calendar-filter-btn px-4 py-2 rounded-full bg-primary text-white text-sm font-medium shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all" data-filter="all">All Events</button>
+              <button class="calendar-filter-btn px-4 py-2 rounded-full bg-surface-dark-highlight text-text-secondary text-sm font-medium border border-transparent hover:border-[#3d3e52] hover:text-white transition-all" data-filter="earnings">Earnings</button>
+              <button class="calendar-filter-btn px-4 py-2 rounded-full bg-surface-dark-highlight text-text-secondary text-sm font-medium border border-transparent hover:border-[#3d3e52] hover:text-white transition-all" data-filter="dividends">Dividends</button>
+              <button class="calendar-filter-btn px-4 py-2 rounded-full bg-surface-dark-highlight text-text-secondary text-sm font-medium border border-transparent hover:border-[#3d3e52] hover:text-white transition-all" data-filter="economics">Economics</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left min-w-[600px]">
+              <thead class="bg-surface-dark-highlight text-text-secondary text-xs uppercase font-semibold">
+                <tr>
+                  <th class="py-4 px-6">Time</th>
+                  <th class="py-4 px-6">Event</th>
+                  <th class="py-4 px-6">Impact</th>
+                  <th class="py-4 px-6">Forecast</th>
+                  <th class="py-4 px-6">Previous</th>
+                  <th class="py-4 px-6 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="calendar-table" class="divide-y divide-[#2d2e40]">
+                <%
+                  const calendarEvents = typeof calendar !== 'undefined' && calendar?.events ? calendar.events : [
+                    { time: '08:30 AM', name: 'CPI Data Release', category: 'United States • Inflation', impact: 'High', forecast: '3.6%', previous: '3.7%', type: 'economics' },
+                    { time: '10:00 AM', name: 'Consumer Sentiment', category: 'University of Michigan', impact: 'Medium', forecast: '68.0', previous: '67.5', type: 'economics' },
+                    { time: 'After Close', name: 'Apple (AAPL) Earnings', category: 'Quarterly Report • Q3', impact: 'High', forecast: '$1.39 EPS', previous: '$1.26 EPS', type: 'earnings' }
+                  ];
+
+                  calendarEvents.slice(0, 5).forEach((event) => {
+                    const impactClass = event.impact === 'High' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                       event.impact === 'Medium' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                       'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+                %>
+                <tr class="calendar-row hover:bg-surface-dark-highlight/30 transition-colors" data-type="<%= event.type %>">
+                  <td class="py-4 px-6 text-white font-medium"><%= event.time %></td>
+                  <td class="py-4 px-6">
+                    <div class="flex flex-col">
+                      <span class="text-white font-medium"><%= event.name %></span>
+                      <span class="text-xs text-text-secondary"><%= event.category %></span>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold <%= impactClass %> border"><%= event.impact %></span>
+                  </td>
+                  <td class="py-4 px-6 text-text-secondary"><%= event.forecast %></td>
+                  <td class="py-4 px-6 text-text-secondary"><%= event.previous %></td>
+                  <td class="py-4 px-6 text-right">
+                    <button class="text-primary hover:text-white transition-colors" onclick="alert('Alert set for <%= event.name %>')">
+                      <span class="material-symbols-outlined">notifications</span>
+                    </button>
+                  </td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Calendar Quick Links -->
+        <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <a href="/economic-calendar" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">event</span>
+            <p class="text-white font-bold text-sm">Economic Calendar</p>
+            <p class="text-text-secondary text-xs mt-1"><%= typeof economic !== 'undefined' && economic?.upcoming ? economic.upcoming : 0 %> upcoming</p>
+          </a>
+
+          <a href="/earnings-calendar" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">bar_chart</span>
+            <p class="text-white font-bold text-sm">Earnings Calendar</p>
+            <p class="text-text-secondary text-xs mt-1"><%= typeof earnings !== 'undefined' && earnings?.upcoming ? earnings.upcoming : 0 %> upcoming</p>
+          </a>
+
+          <a href="/dividend-calendar" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">payments</span>
+            <p class="text-white font-bold text-sm">Dividend Calendar</p>
+            <p class="text-text-secondary text-xs mt-1"><%= typeof dividend !== 'undefined' && dividend?.upcoming ? dividend.upcoming : 0 %> upcoming</p>
+          </a>
+
+          <a href="/ipo-tracker" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">rocket_launch</span>
+            <p class="text-white font-bold text-sm">IPO Tracker</p>
+            <p class="text-text-secondary text-xs mt-1"><%= typeof ipo !== 'undefined' && ipo?.thisWeek ? ipo.thisWeek : 0 %> this week</p>
+          </a>
+
+          <a href="/spac-tracker" class="p-4 rounded-xl bg-surface-dark border border-[#2d2e40] hover:border-primary/50 transition-all group text-center">
+            <span class="material-symbols-outlined text-primary text-2xl mb-2">deployed_code</span>
+            <p class="text-white font-bold text-sm">SPAC Tracker</p>
+            <p class="text-text-secondary text-xs mt-1"><%= typeof spac !== 'undefined' && spac?.active ? spac.active : 0 %> active</p>
+          </a>
+        </section>
+
+        <footer class="py-6 text-center text-text-secondary text-sm">
+          © 2024 WealthPilot Pro. Data provided for informational purposes only.
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Market status check
+    function updateMarketStatus() {
+      const now = new Date();
+      const day = now.getDay();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const currentTime = hours * 60 + minutes;
+
+      // Market hours: Mon-Fri 9:30 AM - 4:00 PM EST
+      const marketOpen = 9 * 60 + 30;
+      const marketClose = 16 * 60;
+      const isWeekday = day >= 1 && day <= 5;
+      const isDuringHours = currentTime >= marketOpen && currentTime < marketClose;
+
+      const indicator = document.getElementById('market-status-indicator');
+      const text = document.getElementById('market-status-text');
+
+      if (isWeekday && isDuringHours) {
+        indicator.classList.remove('bg-rose-500');
+        indicator.classList.add('bg-emerald-500');
+        indicator.style.boxShadow = '0 0 8px rgba(16,185,129,0.5)';
+        text.textContent = 'Market is Open • Real-time Data';
+      } else {
+        indicator.classList.remove('bg-emerald-500');
+        indicator.classList.add('bg-rose-500');
+        indicator.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+        text.textContent = 'Market is Closed • After Hours';
+      }
+    }
+
+    updateMarketStatus();
+    setInterval(updateMarketStatus, 60000);
+
+    // Tab switching for Top Movers
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        const tab = this.dataset.tab;
+        // Here you would typically fetch and update the movers data
+        console.log('Switching to tab:', tab);
+      });
+    });
+
+    // Sector period buttons
+    const sectorBtns = document.querySelectorAll('.sector-period-btn');
+    sectorBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        sectorBtns.forEach(b => {
+          b.classList.remove('bg-surface-dark-highlight', 'text-white');
+          b.classList.add('bg-transparent', 'text-text-secondary');
+        });
+        this.classList.remove('bg-transparent', 'text-text-secondary');
+        this.classList.add('bg-surface-dark-highlight', 'text-white');
+
+        const period = this.dataset.period;
+        console.log('Switching to period:', period);
+      });
+    });
+
+    // Calendar filter buttons
+    const calendarBtns = document.querySelectorAll('.calendar-filter-btn');
+    calendarBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        calendarBtns.forEach(b => {
+          b.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+          b.classList.add('bg-surface-dark-highlight', 'text-text-secondary');
+        });
+        this.classList.remove('bg-surface-dark-highlight', 'text-text-secondary');
+        this.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20');
+
+        const filter = this.dataset.filter;
+        const rows = document.querySelectorAll('.calendar-row');
+
+        rows.forEach(row => {
+          if (filter === 'all' || row.dataset.type === filter) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    });
+
+    // Keyboard shortcut for search
+    document.addEventListener('keydown', function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('stock-search').focus();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earnings Calendar | WealthPilot Pro</title>
+  <!-- Google Fonts: Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <!-- Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#4850e5",
+            "background-dark": "#111217",
+            "card-dark": "#292a38",
+            "text-secondary": "#9e9fb7"
+          },
+          fontFamily: {
+            "display": ["Manrope", "sans-serif"]
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #111217; }
+    ::-webkit-scrollbar-thumb { background: #292a38; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4850e5; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .icon-fill { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  </style>
+</head>
+<body class="bg-[#111217] text-white font-display overflow-x-hidden">
+  <div class="relative flex h-screen w-full bg-[#111217] dark overflow-hidden">
+    <%- include('../partials/sidebar') %>
+
+    <div class="flex flex-col flex-1 h-full overflow-hidden">
+      <%- include('../partials/header') %>
+
+      <!-- Scrollable Content -->
+      <main class="flex-1 overflow-y-auto p-4 md:p-8 lg:px-12 scroll-smooth">
+        <div class="max-w-7xl mx-auto flex flex-col gap-6 pb-12">
+          <!-- Page Heading -->
+          <div class="flex flex-col md:flex-row justify-between gap-4 items-start md:items-end">
+            <div class="flex flex-col gap-2">
+              <h2 class="text-white text-3xl md:text-4xl font-bold leading-tight tracking-tight">Earnings Calendar</h2>
+              <p class="text-[#9e9fb7] text-base font-normal max-w-2xl">
+                Track upcoming earnings reports, estimates, and actuals for your watchlist and the broader market.
+              </p>
+            </div>
+            <button class="flex items-center gap-2 h-10 px-4 bg-[#292a38] hover:bg-[#363749] text-white rounded-lg text-sm font-bold transition-colors border border-[#3e3f50]">
+              <span class="material-symbols-outlined text-[20px]">download</span>
+              <span>Export CSV</span>
+            </button>
+          </div>
+
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="flex flex-col gap-1 rounded-xl p-5 bg-[#292a38] border border-[#3e3f50]/30 shadow-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-primary">calendar_today</span>
+                <p class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Reporting Today</p>
+              </div>
+              <p class="text-white text-2xl font-bold"><%= typeof data !== 'undefined' && data?.todayCount ? data.todayCount : '145' %> Companies</p>
+            </div>
+            <div class="flex flex-col gap-1 rounded-xl p-5 bg-[#292a38] border border-[#3e3f50]/30 shadow-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-green-400">trending_up</span>
+                <p class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Bullish Surprises</p>
+              </div>
+              <p class="text-white text-2xl font-bold"><%= typeof data !== 'undefined' && data?.bullishCount ? data.bullishCount : '32' %> <span class="text-sm font-normal text-[#9e9fb7] ml-1">(Top: NVDA)</span></p>
+            </div>
+            <div class="flex flex-col gap-1 rounded-xl p-5 bg-[#292a38] border border-[#3e3f50]/30 shadow-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-red-400">trending_down</span>
+                <p class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Bearish Surprises</p>
+              </div>
+              <p class="text-white text-2xl font-bold"><%= typeof data !== 'undefined' && data?.bearishCount ? data.bearishCount : '12' %> <span class="text-sm font-normal text-[#9e9fb7] ml-1">(Top: F)</span></p>
+            </div>
+            <div class="flex flex-col gap-1 rounded-xl p-5 bg-[#292a38] border border-[#3e3f50]/30 shadow-lg">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-blue-400">show_chart</span>
+                <p class="text-[#9e9fb7] text-xs font-bold uppercase tracking-wider">Avg. Volatility</p>
+              </div>
+              <p class="text-white text-2xl font-bold">+/- 4.2%</p>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="flex flex-col lg:flex-row gap-4 p-4 rounded-xl bg-[#292a38] border border-[#3e3f50]/50 items-center justify-between">
+            <div class="flex flex-wrap gap-4 w-full lg:w-auto items-center">
+              <!-- Date Filter -->
+              <div class="relative">
+                <select id="dateFilter" class="h-10 pl-3 pr-10 bg-[#111217] border border-[#3e3f50] text-white text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary appearance-none cursor-pointer min-w-[140px]">
+                  <option value="week">This Week</option>
+                  <option value="nextweek">Next Week</option>
+                  <option value="month" selected>This Month</option>
+                  <option value="30days">Next 30 Days</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-2 top-2.5 pointer-events-none text-[#9e9fb7] text-[20px]">expand_more</span>
+              </div>
+              <!-- Sector Filter -->
+              <div class="relative">
+                <select id="sectorFilter" class="h-10 pl-3 pr-10 bg-[#111217] border border-[#3e3f50] text-white text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary appearance-none cursor-pointer min-w-[160px]">
+                  <option value="">All Sectors</option>
+                  <option value="tech">Technology</option>
+                  <option value="finance">Financials</option>
+                  <option value="health">Healthcare</option>
+                  <option value="energy">Energy</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-2 top-2.5 pointer-events-none text-[#9e9fb7] text-[20px]">expand_more</span>
+              </div>
+              <!-- Portfolio Toggle -->
+              <label class="inline-flex items-center cursor-pointer ml-2">
+                <input type="checkbox" class="sr-only peer" id="portfolioOnly">
+                <div class="relative w-11 h-6 bg-[#111217] border border-[#3e3f50] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary peer-checked:border-primary"></div>
+                <span class="ms-3 text-sm font-medium text-white">My Portfolio Only</span>
+              </label>
+            </div>
+            <div class="flex gap-2 w-full lg:w-auto justify-end">
+              <button id="applyFilters" class="h-10 px-4 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(72,80,229,0.3)]">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+
+          <!-- Earnings Data Table -->
+          <div class="rounded-xl overflow-hidden border border-[#3e3f50]/50 bg-[#292a38]">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-[#9e9fb7]">
+                <thead class="bg-[#1a1d24] text-xs uppercase text-[#9e9fb7] font-semibold">
+                  <tr>
+                    <th class="px-6 py-4" scope="col">Company</th>
+                    <th class="px-6 py-4" scope="col">Schedule</th>
+                    <th class="px-6 py-4 text-right" scope="col">EPS Est.</th>
+                    <th class="px-6 py-4 text-right" scope="col">EPS Act.</th>
+                    <th class="px-6 py-4 text-right" scope="col">Surprise</th>
+                    <th class="px-6 py-4 text-right" scope="col">Revenue</th>
+                    <th class="px-6 py-4 text-center" scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="earningsTableBody" class="divide-y divide-[#3e3f50]/30">
+                  <%
+                    const earnings = typeof data !== 'undefined' && data?.earnings ? data.earnings : [
+                      { symbol: 'NVDA', name: 'NVIDIA Corp', schedule: 'Today', time: 'Post-Market', epsEst: 3.37, epsAct: 4.02, surprise: 19.2, revenue: '18.12B', logo: '' },
+                      { symbol: 'F', name: 'Ford Motor Co', schedule: 'Yesterday', time: 'Post-Market', epsEst: 0.45, epsAct: 0.39, surprise: -13.3, revenue: '41.2B', logo: '' },
+                      { symbol: 'AAPL', name: 'Apple Inc.', schedule: 'Tomorrow', time: 'Post-Market', epsEst: 1.39, epsAct: null, surprise: null, revenue: null, logo: '' },
+                      { symbol: 'AMZN', name: 'Amazon.com', schedule: 'Oct 27', time: 'Post-Market', epsEst: 0.58, epsAct: null, surprise: null, revenue: null, logo: '' },
+                      { symbol: 'V', name: 'Visa Inc.', schedule: 'Yesterday', time: 'Post-Market', epsEst: 2.33, epsAct: 2.33, surprise: 0, revenue: '8.61B', logo: '' }
+                    ];
+
+                    earnings.forEach((item) => {
+                      const surpriseClass = item.surprise > 0 ? 'bg-green-900/30 text-green-400 border-green-900/50' :
+                                           item.surprise < 0 ? 'bg-red-900/30 text-red-400 border-red-900/50' :
+                                           item.surprise === 0 ? 'bg-[#3e3f50] text-white' : 'bg-[#3e3f50] text-[#9e9fb7]';
+                      const surpriseText = item.surprise !== null ? (item.surprise > 0 ? '+' : '') + item.surprise.toFixed(1) + '%' : 'Pending';
+                      const timeIcon = item.time === 'Pre-Market' ? 'wb_sunny' : 'bedtime';
+                      const timeColor = item.time === 'Pre-Market' ? 'text-yellow-300' : 'text-blue-300';
+                  %>
+                  <tr class="hover:bg-[#363749] transition-colors group">
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="size-8 rounded bg-white flex items-center justify-center shrink-0">
+                          <span class="text-xs font-bold text-black"><%= item.symbol.substring(0, 2) %></span>
+                        </div>
+                        <div class="flex flex-col">
+                          <span class="text-white font-bold text-base"><%= item.symbol %></span>
+                          <span class="text-xs"><%= item.name %></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex flex-col">
+                        <span class="text-white font-medium"><%= item.schedule %></span>
+                        <div class="flex items-center gap-1 text-xs text-[#9e9fb7]">
+                          <span class="material-symbols-outlined text-[14px] <%= timeColor %>"><%= timeIcon %></span>
+                          <span><%= item.time %></span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-right font-mono text-white">$<%= item.epsEst.toFixed(2) %></td>
+                    <td class="px-6 py-4 text-right font-mono <%= item.epsAct ? 'text-white' : 'text-[#9e9fb7]' %>"><%= item.epsAct ? '$' + item.epsAct.toFixed(2) : '-' %></td>
+                    <td class="px-6 py-4 text-right">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= surpriseClass %> border">
+                        <%= surpriseText %>
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right font-mono <%= item.revenue ? 'text-white' : 'text-[#9e9fb7]' %>"><%= item.revenue ? '$' + item.revenue : '-' %></td>
+                    <td class="px-6 py-4 text-center">
+                      <button class="text-[#9e9fb7] hover:text-white p-1 rounded hover:bg-[#111217]" onclick="window.location.href='/stock/<%= item.symbol %>'">
+                        <span class="material-symbols-outlined">more_horiz</span>
+                      </button>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Table Pagination -->
+            <div class="flex items-center justify-between border-t border-[#3e3f50]/30 px-6 py-3 bg-[#1a1d24]">
+              <p class="text-sm text-[#9e9fb7]">Showing <span class="text-white font-medium">1-5</span> of <span class="text-white font-medium">145</span> companies</p>
+              <div class="flex gap-2">
+                <button class="flex items-center justify-center h-8 w-8 rounded hover:bg-[#292a38] text-[#9e9fb7] disabled:opacity-50">
+                  <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                </button>
+                <button class="flex items-center justify-center h-8 w-8 rounded bg-primary text-white text-sm font-bold">1</button>
+                <button class="flex items-center justify-center h-8 w-8 rounded hover:bg-[#292a38] text-[#9e9fb7] text-sm">2</button>
+                <button class="flex items-center justify-center h-8 w-8 rounded hover:bg-[#292a38] text-[#9e9fb7] text-sm">3</button>
+                <button class="flex items-center justify-center h-8 w-8 rounded hover:bg-[#292a38] text-[#9e9fb7]">
+                  <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Links -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <a href="/earnings-analysis" class="p-4 rounded-xl bg-[#292a38] border border-[#3e3f50]/50 hover:border-primary/50 transition-all group text-center">
+              <span class="material-symbols-outlined text-primary text-2xl mb-2">analytics</span>
+              <p class="text-white font-bold text-sm">Earnings Analysis</p>
+              <p class="text-[#9e9fb7] text-xs mt-1">Deep dive into reports</p>
+            </a>
+            <a href="/earnings-whispers" class="p-4 rounded-xl bg-[#292a38] border border-[#3e3f50]/50 hover:border-primary/50 transition-all group text-center">
+              <span class="material-symbols-outlined text-primary text-2xl mb-2">campaign</span>
+              <p class="text-white font-bold text-sm">Earnings Whispers</p>
+              <p class="text-[#9e9fb7] text-xs mt-1">Street expectations</p>
+            </a>
+            <a href="/earnings-surprises" class="p-4 rounded-xl bg-[#292a38] border border-[#3e3f50]/50 hover:border-primary/50 transition-all group text-center">
+              <span class="material-symbols-outlined text-primary text-2xl mb-2">trending_up</span>
+              <p class="text-white font-bold text-sm">Earnings Surprises</p>
+              <p class="text-[#9e9fb7] text-xs mt-1">Beat/miss history</p>
+            </a>
+            <a href="/fundamental-analysis" class="p-4 rounded-xl bg-[#292a38] border border-[#3e3f50]/50 hover:border-primary/50 transition-all group text-center">
+              <span class="material-symbols-outlined text-primary text-2xl mb-2">description</span>
+              <p class="text-white font-bold text-sm">Fundamentals</p>
+              <p class="text-[#9e9fb7] text-xs mt-1">Financial statements</p>
+            </a>
+          </div>
+
+          <footer class="py-6 text-center text-[#9e9fb7] text-xs">
+            <p>Data provided by Financial Data Services. © 2024 WealthPilot Pro.</p>
+          </footer>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('applyFilters')?.addEventListener('click', function() {
+      const dateFilter = document.getElementById('dateFilter').value;
+      const sectorFilter = document.getElementById('sectorFilter').value;
+      const portfolioOnly = document.getElementById('portfolioOnly').checked;
+      console.log('Applying filters:', { dateFilter, sectorFilter, portfolioOnly });
+    });
+  </script>
+</body>
+</html>
