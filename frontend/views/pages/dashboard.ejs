@@ -8,6 +8,23 @@
   const dayChangePct = safeTotals.value > 0 ? (safeTotals.dayChange / safeTotals.value) * 100 : 0;
   const safePortfolios = typeof portfolios !== 'undefined' && portfolios ? portfolios : [];
   const safeNews = typeof news !== 'undefined' && news ? news : [];
+  const safeMovers = typeof movers !== 'undefined' && movers ? movers : { gainers: [], losers: [] };
+  const safeIndices = typeof indices !== 'undefined' && indices ? indices : [];
+
+  // Prepare ticker data from movers
+  const tickerStocks = [
+    ...(safeMovers.gainers || []).slice(0, 5),
+    ...(safeMovers.losers || []).slice(0, 3)
+  ];
+
+  // Market status (9:30 AM - 4:00 PM ET)
+  const now = new Date();
+  const etOffset = -5;
+  const utcHours = now.getUTCHours();
+  const etHours = utcHours + etOffset;
+  const dayOfWeek = now.getDay();
+  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  const marketOpen = isWeekday && etHours >= 9.5 && etHours < 16;
 
   const formatCurrency = (val) => {
     if (val === undefined || val === null || isNaN(val)) return '$0.00';
@@ -296,7 +313,202 @@
   .animate-glow {
     animation: pulse-glow 3s ease-in-out infinite;
   }
+
+  /* Stock Ticker Bar */
+  .live-ticker-bar {
+    position: relative;
+    z-index: 40;
+    background: linear-gradient(90deg, rgba(5, 46, 22, 0.9) 0%, rgba(17, 24, 39, 0.95) 50%, rgba(5, 46, 22, 0.9) 100%);
+    border-bottom: 1px solid rgba(34, 197, 94, 0.3);
+  }
+  .animate-ticker {
+    animation: ticker 45s linear infinite;
+  }
+  .animate-ticker:hover {
+    animation-play-state: paused;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    border-color: rgba(34, 197, 94, 0.2) !important;
+  }
+  .ticker-link {
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .ticker-link:hover {
+    transform: scale(1.02);
+  }
+
+  /* News Ticker Bar */
+  .news-ticker-bar {
+    position: relative;
+    z-index: 40;
+    background: linear-gradient(90deg, rgba(30, 58, 138, 0.3) 0%, rgba(17, 24, 39, 0.95) 50%, rgba(30, 58, 138, 0.3) 100%);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  }
+  .animate-news-ticker {
+    animation: news-ticker 80s linear infinite;
+  }
+  .animate-news-ticker:hover {
+    animation-play-state: paused;
+  }
+  @keyframes news-ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Market Sidebar */
+  .market-sidebar {
+    background: linear-gradient(180deg, rgba(5, 46, 22, 0.95) 0%, rgba(17, 24, 39, 0.98) 100%);
+    border-left-color: rgba(34, 197, 94, 0.2);
+  }
+  .market-sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-toggle-btn {
+    background: linear-gradient(135deg, rgba(5, 46, 22, 0.9) 0%, rgba(17, 24, 39, 0.9) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-right: none;
+  }
+  .sidebar-toggle-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.5);
+  }
 </style>
+
+<!-- Stock Ticker Bar -->
+<div class="live-ticker-bar overflow-hidden" id="stockTickerBar">
+  <div class="ticker-content flex items-center animate-ticker whitespace-nowrap py-1.5">
+    <!-- LIVE Indicator -->
+    <span class="flex items-center gap-1.5 px-3 mr-4">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+      </span>
+      <span class="text-xs font-semibold text-green-400">STOCKS</span>
+    </span>
+
+    <!-- Stock Tickers - First Set -->
+    <% tickerStocks.forEach(function(stock, idx) {
+      const change = stock.changePercent || stock.change_percent || 0;
+      const isPositive = change >= 0;
+    %>
+    <a href="/stock/<%= stock.symbol %>" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-green-500/20 hover:bg-green-500/10 transition-colors">
+      <span class="font-semibold text-white text-xs"><%= stock.symbol %></span>
+      <span class="text-gray-300 text-xs">$<%= (stock.price || 0).toFixed(2) %></span>
+      <span class="text-xs font-medium <%= isPositive ? 'text-green-400' : 'text-red-400' %>">
+        <%= isPositive ? '+' : '' %><%= change.toFixed(2) %>%
+      </span>
+    </a>
+    <% }); %>
+
+    <!-- Major Indices -->
+    <%
+    const defaultIndices = [
+      { symbol: 'SPY', name: 'S&P 500' },
+      { symbol: 'QQQ', name: 'NASDAQ' },
+      { symbol: 'DIA', name: 'DOW' }
+    ];
+    safeIndices.slice(0, 3).forEach(function(idx) {
+      const change = idx.changePercent || idx.change_percent || 0;
+      const isPositive = change >= 0;
+    %>
+    <a href="/stock/<%= idx.symbol %>" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-green-500/20 hover:bg-green-500/10 transition-colors">
+      <span class="font-semibold text-yellow-400 text-xs"><%= idx.symbol %></span>
+      <span class="text-gray-300 text-xs">$<%= (idx.price || 0).toFixed(2) %></span>
+      <span class="text-xs font-medium <%= isPositive ? 'text-green-400' : 'text-red-400' %>">
+        <%= isPositive ? '+' : '' %><%= change.toFixed(2) %>%
+      </span>
+    </a>
+    <% }); %>
+
+    <!-- Repeat for continuous scroll -->
+    <% tickerStocks.forEach(function(stock, idx) {
+      const change = stock.changePercent || stock.change_percent || 0;
+      const isPositive = change >= 0;
+    %>
+    <a href="/stock/<%= stock.symbol %>" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-green-500/20 hover:bg-green-500/10 transition-colors">
+      <span class="font-semibold text-white text-xs"><%= stock.symbol %></span>
+      <span class="text-gray-300 text-xs">$<%= (stock.price || 0).toFixed(2) %></span>
+      <span class="text-xs font-medium <%= isPositive ? 'text-green-400' : 'text-red-400' %>">
+        <%= isPositive ? '+' : '' %><%= change.toFixed(2) %>%
+      </span>
+    </a>
+    <% }); %>
+
+    <% safeIndices.slice(0, 3).forEach(function(idx) {
+      const change = idx.changePercent || idx.change_percent || 0;
+      const isPositive = change >= 0;
+    %>
+    <a href="/stock/<%= idx.symbol %>" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-green-500/20 hover:bg-green-500/10 transition-colors">
+      <span class="font-semibold text-yellow-400 text-xs"><%= idx.symbol %></span>
+      <span class="text-gray-300 text-xs">$<%= (idx.price || 0).toFixed(2) %></span>
+      <span class="text-xs font-medium <%= isPositive ? 'text-green-400' : 'text-red-400' %>">
+        <%= isPositive ? '+' : '' %><%= change.toFixed(2) %>%
+      </span>
+    </a>
+    <% }); %>
+  </div>
+</div>
+
+<!-- News Ticker Bar -->
+<div class="news-ticker-bar overflow-hidden" id="newsTickerBar">
+  <div class="news-ticker-content flex items-center animate-news-ticker whitespace-nowrap py-1.5">
+    <!-- NEWS Indicator -->
+    <span class="flex items-center gap-1.5 px-3 mr-4">
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+      </span>
+      <span class="text-xs font-semibold text-blue-400">NEWS</span>
+    </span>
+
+    <!-- Real News from API -->
+    <% safeNews.slice(0, 6).forEach(function(article) { %>
+    <a href="<%= article.url || article.link || '#' %>" target="_blank" rel="noopener" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-blue-500/20 hover:bg-blue-500/10 transition-colors">
+      <span class="text-xs font-medium text-blue-400"><%= (article.source || 'NEWS').toUpperCase().substring(0, 10) %></span>
+      <span class="text-xs text-gray-300 max-w-xs truncate"><%= article.title %></span>
+    </a>
+    <% }); %>
+
+    <!-- Market Status -->
+    <a href="/market" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-blue-500/20 hover:bg-blue-500/10 transition-colors">
+      <span class="text-xs font-medium text-green-400">MARKETS</span>
+      <span class="text-xs text-gray-300">U.S. markets <%= marketOpen ? 'OPEN' : 'CLOSED' %> - Real-time data streaming</span>
+    </a>
+
+    <a href="/performance" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-blue-500/20 hover:bg-blue-500/10 transition-colors">
+      <span class="text-xs font-medium text-purple-400">WEALTHPILOT</span>
+      <span class="text-xs text-gray-300">Track your portfolio performance against major benchmarks</span>
+    </a>
+
+    <a href="/assistant" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-blue-500/20 hover:bg-blue-500/10 transition-colors">
+      <span class="text-xs font-medium text-teal-400">AI INSIGHTS</span>
+      <span class="text-xs text-gray-300">AI-powered analysis for smarter investment decisions</span>
+    </a>
+
+    <!-- Repeat for continuous scroll -->
+    <% safeNews.slice(0, 6).forEach(function(article) { %>
+    <a href="<%= article.url || article.link || '#' %>" target="_blank" rel="noopener" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-blue-500/20 hover:bg-blue-500/10 transition-colors">
+      <span class="text-xs font-medium text-blue-400"><%= (article.source || 'NEWS').toUpperCase().substring(0, 10) %></span>
+      <span class="text-xs text-gray-300 max-w-xs truncate"><%= article.title %></span>
+    </a>
+    <% }); %>
+
+    <a href="/market" class="ticker-item ticker-link flex items-center gap-2 px-4 border-r border-blue-500/20 hover:bg-blue-500/10 transition-colors">
+      <span class="text-xs font-medium text-green-400">MARKETS</span>
+      <span class="text-xs text-gray-300">U.S. markets <%= marketOpen ? 'OPEN' : 'CLOSED' %> - Real-time data streaming</span>
+    </a>
+
+    <span class="ticker-item flex items-center gap-2 px-4 border-r border-blue-500/20">
+      <span class="text-xs font-medium text-purple-400">WEALTHPILOT</span>
+      <span class="text-xs text-gray-300">Track your portfolio performance against major benchmarks</span>
+    </span>
+  </div>
+</div>
 
 <div class="dashboard-container">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -413,13 +625,76 @@
               <h3 class="text-lg font-bold text-white">Performance</h3>
               <p id="portfolioChartInfo" class="text-sm text-green-400 mt-0.5">Loading...</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
               <select id="portfolioSelector" class="portfolio-select text-sm">
                 <option value="all">All Portfolios</option>
                 <% safePortfolios.forEach(p => { %>
                 <option value="<%= p.id %>"><%= p.name %></option>
                 <% }); %>
               </select>
+
+              <!-- Benchmark Selector -->
+              <div class="relative" id="benchmarkDropdown">
+                <button type="button" id="benchmarkToggle" class="portfolio-select text-sm flex items-center gap-2" style="background-image: none; padding-right: 1rem;">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                  </svg>
+                  <span id="benchmarkLabel">Benchmarks</span>
+                  <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                <div id="benchmarkMenu" class="hidden absolute right-0 top-full mt-2 w-56 bg-gray-900 border border-green-500/20 rounded-xl shadow-xl shadow-black/50 z-50 overflow-hidden">
+                  <div class="p-2 border-b border-gray-800">
+                    <p class="text-xs font-bold text-gray-400 uppercase px-2">Compare Against</p>
+                  </div>
+                  <div class="p-2 space-y-1">
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors">
+                      <input type="checkbox" value="SPY" class="benchmark-checkbox w-4 h-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900" checked>
+                      <div>
+                        <span class="text-white text-sm font-medium">S&P 500</span>
+                        <span class="text-gray-500 text-xs ml-2">SPY</span>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors">
+                      <input type="checkbox" value="QQQ" class="benchmark-checkbox w-4 h-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900">
+                      <div>
+                        <span class="text-white text-sm font-medium">NASDAQ 100</span>
+                        <span class="text-gray-500 text-xs ml-2">QQQ</span>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors">
+                      <input type="checkbox" value="DIA" class="benchmark-checkbox w-4 h-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900">
+                      <div>
+                        <span class="text-white text-sm font-medium">Dow Jones</span>
+                        <span class="text-gray-500 text-xs ml-2">DIA</span>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors">
+                      <input type="checkbox" value="IWM" class="benchmark-checkbox w-4 h-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900">
+                      <div>
+                        <span class="text-white text-sm font-medium">Russell 2000</span>
+                        <span class="text-gray-500 text-xs ml-2">IWM</span>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors">
+                      <input type="checkbox" value="VTI" class="benchmark-checkbox w-4 h-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900">
+                      <div>
+                        <span class="text-white text-sm font-medium">Total Market</span>
+                        <span class="text-gray-500 text-xs ml-2">VTI</span>
+                      </div>
+                    </label>
+                    <label class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-500/10 cursor-pointer transition-colors">
+                      <input type="checkbox" value="BTC-USD" class="benchmark-checkbox w-4 h-4 rounded border-gray-600 bg-gray-800 text-green-500 focus:ring-green-500 focus:ring-offset-gray-900">
+                      <div>
+                        <span class="text-white text-sm font-medium">Bitcoin</span>
+                        <span class="text-gray-500 text-xs ml-2">BTC</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div class="timeframe-container">
                 <button class="tf-btn" data-period="1D">1D</button>
                 <button class="tf-btn" data-period="1W">1W</button>
@@ -586,10 +861,236 @@
   </div>
 </div>
 
+<!-- Market Sidebar Toggle Button -->
+<button id="marketSidebarToggle" onclick="toggleMarketSidebar()" class="sidebar-toggle-btn fixed right-0 top-1/2 -translate-y-1/2 z-50 rounded-l-lg px-2 py-4 text-green-400 hover:text-green-300 transition-all shadow-lg">
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+  </svg>
+  <span class="sr-only">Market Widget</span>
+</button>
+
+<!-- Market Sidebar Widget -->
+<aside id="marketSidebar" class="market-sidebar fixed right-0 top-0 h-full w-80 backdrop-blur-sm border-l border-green-500/20 transform translate-x-full transition-transform duration-300 ease-in-out z-40 overflow-y-auto">
+  <div class="p-4">
+    <!-- Close Button -->
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-white">Market Widget</h3>
+      <button onclick="toggleMarketSidebar()" class="text-gray-400 hover:text-white p-1">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Quote Lookup -->
+    <div class="mb-6">
+      <label class="block text-xs text-gray-400 mb-2">Quote Lookup</label>
+      <div class="relative">
+        <input type="text" id="quoteLookupInput" placeholder="Search symbol..."
+          class="w-full bg-green-900/20 border border-green-500/30 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50">
+        <button onclick="lookupQuote()" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-400">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </button>
+      </div>
+      <div id="quoteLookupResult" class="mt-2 hidden"></div>
+    </div>
+
+    <!-- U.S. Markets Status -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs text-gray-400">U.S. Markets</span>
+        <span class="flex items-center gap-1.5">
+          <span class="relative flex h-2 w-2">
+            <% if (marketOpen) { %>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            <% } else { %>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-gray-500"></span>
+            <% } %>
+          </span>
+          <span class="text-xs font-medium <%= marketOpen ? 'text-green-400' : 'text-gray-500' %>">
+            <%= marketOpen ? 'Open' : 'Closed' %>
+          </span>
+        </span>
+      </div>
+
+      <!-- Major Indices -->
+      <div class="space-y-2" id="sidebarIndices">
+        <%
+          const displayIndices = safeIndices.length > 0 ? safeIndices.slice(0, 3) : [
+            { symbol: 'SPY', name: 'S&P 500', price: 592.45, changePercent: 0.45 },
+            { symbol: 'QQQ', name: 'Nasdaq 100', price: 518.23, changePercent: 0.62 },
+            { symbol: 'DIA', name: 'Dow Jones', price: 432.18, changePercent: 0.28 }
+          ];
+          displayIndices.forEach(function(idx) {
+            const chg = idx.changePercent || idx.change_percent || 0;
+        %>
+        <div class="flex items-center justify-between p-2 rounded-lg bg-green-900/20 hover:bg-green-900/30 transition-colors">
+          <div>
+            <div class="text-sm font-medium text-white"><%= idx.symbol %></div>
+            <div class="text-xs text-gray-500"><%= idx.name || '' %></div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm text-white tabular-nums">$<%= (idx.price || 0).toFixed(2) %></div>
+            <div class="text-xs tabular-nums <%= chg >= 0 ? 'text-green-400' : 'text-red-400' %>">
+              <%= chg >= 0 ? '+' : '' %><%= chg.toFixed(2) %>%
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Top Gainers -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs text-gray-400">Top Gainers</span>
+        <span class="flex items-center gap-1.5">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          <span class="text-xs font-medium text-green-400">LIVE</span>
+        </span>
+      </div>
+
+      <div class="space-y-2" id="topGainers">
+        <%
+          const gainers = safeMovers.gainers || [];
+          gainers.slice(0, 5).forEach(function(stock) {
+            const chg = stock.changePercent || stock.change_percent || 0;
+        %>
+        <a href="/stock/<%= stock.symbol %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-green-900/30 transition-colors cursor-pointer block">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <span class="text-xs font-bold text-green-400"><%= stock.symbol.substring(0, 2) %></span>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white"><%= stock.symbol %></div>
+              <div class="text-xs text-gray-500">$<%= (stock.price || 0).toFixed(2) %></div>
+            </div>
+          </div>
+          <span class="text-sm font-medium text-green-400 tabular-nums">+<%= Math.abs(chg).toFixed(2) %>%</span>
+        </a>
+        <% });
+        if (gainers.length === 0) { %>
+        <div class="text-center py-4 text-gray-500 text-xs">Loading gainers...</div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Top Losers -->
+    <div class="mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs text-gray-400">Top Losers</span>
+        <span class="flex items-center gap-1.5">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          <span class="text-xs font-medium text-red-400">LIVE</span>
+        </span>
+      </div>
+
+      <div class="space-y-2" id="topLosers">
+        <%
+          const losers = safeMovers.losers || [];
+          losers.slice(0, 5).forEach(function(stock) {
+            const chg = stock.changePercent || stock.change_percent || 0;
+        %>
+        <a href="/stock/<%= stock.symbol %>" class="flex items-center justify-between p-2 rounded-lg hover:bg-red-900/20 transition-colors cursor-pointer block">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+              <span class="text-xs font-bold text-red-400"><%= stock.symbol.substring(0, 2) %></span>
+            </div>
+            <div>
+              <div class="text-sm font-medium text-white"><%= stock.symbol %></div>
+              <div class="text-xs text-gray-500">$<%= (stock.price || 0).toFixed(2) %></div>
+            </div>
+          </div>
+          <span class="text-sm font-medium text-red-400 tabular-nums"><%= chg.toFixed(2) %>%</span>
+        </a>
+        <% });
+        if (losers.length === 0) { %>
+        <div class="text-center py-4 text-gray-500 text-xs">Loading losers...</div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- View Full Market -->
+    <a href="/market" class="block w-full py-3 text-center rounded-xl bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white text-sm font-bold transition-all shadow-lg shadow-green-900/30">
+      View Full Market
+    </a>
+  </div>
+</aside>
+
 <script>
+  // Market Sidebar Toggle
+  function toggleMarketSidebar() {
+    const sidebar = document.getElementById('marketSidebar');
+    const toggle = document.getElementById('marketSidebarToggle');
+    sidebar.classList.toggle('open');
+    if (sidebar.classList.contains('open')) {
+      toggle.style.right = '320px';
+    } else {
+      toggle.style.right = '0';
+    }
+  }
+
+  // Quote Lookup
+  async function lookupQuote() {
+    const input = document.getElementById('quoteLookupInput');
+    const result = document.getElementById('quoteLookupResult');
+    const symbol = input.value.trim().toUpperCase();
+    if (!symbol) return;
+
+    result.classList.remove('hidden');
+    result.innerHTML = '<div class="text-center py-2 text-gray-400 text-xs">Loading...</div>';
+
+    try {
+      const res = await fetch('/api/market/quote/' + symbol);
+      if (res.ok) {
+        const data = await res.json();
+        const chg = data.changePercent || 0;
+        result.innerHTML = `
+          <div class="p-3 rounded-lg bg-green-900/20 border border-green-500/20">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-bold text-white">${data.symbol}</span>
+              <span class="text-xs ${chg >= 0 ? 'text-green-400' : 'text-red-400'}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</span>
+            </div>
+            <div class="text-xl font-bold text-white">$${(data.price || 0).toFixed(2)}</div>
+            <a href="/stock/${data.symbol}" class="text-xs text-green-400 hover:underline mt-2 inline-block">View Details →</a>
+          </div>
+        `;
+      } else {
+        result.innerHTML = '<div class="text-center py-2 text-red-400 text-xs">Symbol not found</div>';
+      }
+    } catch (e) {
+      result.innerHTML = '<div class="text-center py-2 text-red-400 text-xs">Error loading quote</div>';
+    }
+  }
+
+  // Enter key for quote lookup
+  document.getElementById('quoteLookupInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') lookupQuote();
+  });
+
   let portfolioChart = null;
   let currentTimeframe = '1M';
   let selectedPortfolioId = 'all';
+  let selectedBenchmarks = ['SPY'];
+
+  // Benchmark configurations with colors
+  const benchmarkConfig = {
+    'SPY': { label: 'S&P 500', color: '#6b7280', dashStyle: [4, 4] },
+    'QQQ': { label: 'NASDAQ 100', color: '#8b5cf6', dashStyle: [6, 3] },
+    'DIA': { label: 'Dow Jones', color: '#f59e0b', dashStyle: [2, 2] },
+    'IWM': { label: 'Russell 2000', color: '#06b6d4', dashStyle: [8, 4] },
+    'VTI': { label: 'Total Market', color: '#ec4899', dashStyle: [3, 3] },
+    'BTC-USD': { label: 'Bitcoin', color: '#f97316', dashStyle: [5, 5] }
+  };
 
   // Chart
   const ctx = document.getElementById('portfolioChart');
@@ -603,24 +1104,15 @@
           data: [],
           borderColor: '#22c55e',
           backgroundColor: 'rgba(34, 197, 94, 0.1)',
-          borderWidth: 2,
+          borderWidth: 2.5,
           fill: true,
           tension: 0.4,
           pointRadius: 0,
           pointHoverRadius: 6,
           pointHoverBackgroundColor: '#22c55e',
           pointHoverBorderColor: '#fff',
-          pointHoverBorderWidth: 2
-        }, {
-          label: 'S&P 500',
-          data: [],
-          borderColor: '#6b7280',
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderDash: [4, 4],
-          fill: false,
-          tension: 0.4,
-          pointRadius: 0
+          pointHoverBorderWidth: 2,
+          order: 0
         }]
       },
       options: {
@@ -631,17 +1123,30 @@
             display: true,
             position: 'top',
             align: 'end',
-            labels: { color: '#9ca3af', usePointStyle: true, pointStyle: 'line', font: { size: 11 } }
+            labels: {
+              color: '#9ca3af',
+              usePointStyle: true,
+              pointStyle: 'line',
+              font: { size: 11 },
+              padding: 15
+            }
           },
           tooltip: {
-            backgroundColor: '#1f2937',
+            backgroundColor: 'rgba(17, 24, 39, 0.95)',
             titleColor: '#9ca3af',
             bodyColor: '#fff',
-            borderColor: '#374151',
+            borderColor: 'rgba(34, 197, 94, 0.3)',
             borderWidth: 1,
             padding: 12,
+            displayColors: true,
             callbacks: {
-              label: ctx => ctx.dataset.label + ': $' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 })
+              label: function(ctx) {
+                const value = ctx.raw;
+                if (typeof value === 'number') {
+                  return ctx.dataset.label + ': $' + value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                return ctx.dataset.label + ': ' + value;
+              }
             }
           }
         },
@@ -661,18 +1166,82 @@
     });
   }
 
+  // Create benchmark dataset
+  function createBenchmarkDataset(symbol, data) {
+    const config = benchmarkConfig[symbol] || { label: symbol, color: '#6b7280', dashStyle: [4, 4] };
+    return {
+      label: config.label,
+      data: data,
+      borderColor: config.color,
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: config.dashStyle,
+      fill: false,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: config.color,
+      order: 1
+    };
+  }
+
+  // Update benchmark label
+  function updateBenchmarkLabel() {
+    const label = document.getElementById('benchmarkLabel');
+    if (label) {
+      const count = selectedBenchmarks.length;
+      if (count === 0) {
+        label.textContent = 'No Benchmarks';
+      } else if (count === 1) {
+        label.textContent = benchmarkConfig[selectedBenchmarks[0]]?.label || selectedBenchmarks[0];
+      } else {
+        label.textContent = `${count} Benchmarks`;
+      }
+    }
+  }
+
   async function loadPerformanceData(timeframe = '1M', portfolioId = 'all') {
     if (!portfolioChart) return;
     try {
-      let url = `/api/analytics/performance-history?timeframe=${timeframe}`;
+      const benchmarks = selectedBenchmarks.join(',');
+      let url = `/api/analytics/performance-history?timeframe=${timeframe}&benchmarks=${benchmarks}`;
       if (portfolioId && portfolioId !== 'all') url += `&portfolioId=${portfolioId}`;
       const res = await fetch(url, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         portfolioChart.data.labels = data.labels || [];
-        portfolioChart.data.datasets[0].data = data.portfolio || [];
-        portfolioChart.data.datasets[1].data = data.benchmark || [];
+
+        // Reset datasets to just portfolio
+        portfolioChart.data.datasets = [{
+          label: 'Portfolio',
+          data: data.portfolio || [],
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#22c55e',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+          order: 0
+        }];
+
+        // Add benchmark datasets
+        if (data.benchmarks && typeof data.benchmarks === 'object') {
+          Object.keys(data.benchmarks).forEach(symbol => {
+            if (data.benchmarks[symbol] && data.benchmarks[symbol].length > 0) {
+              portfolioChart.data.datasets.push(createBenchmarkDataset(symbol, data.benchmarks[symbol]));
+            }
+          });
+        } else if (data.benchmark && selectedBenchmarks.includes('SPY')) {
+          // Fallback for old API format
+          portfolioChart.data.datasets.push(createBenchmarkDataset('SPY', data.benchmark));
+        }
+
         portfolioChart.update('none');
+
         if (data.stats) {
           const info = document.getElementById('portfolioChartInfo');
           if (info) {
@@ -686,6 +1255,37 @@
       }
     } catch (e) { console.error('Chart error:', e); }
   }
+
+  // Benchmark dropdown toggle
+  document.getElementById('benchmarkToggle')?.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('benchmarkMenu');
+    menu.classList.toggle('hidden');
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('benchmarkDropdown');
+    const menu = document.getElementById('benchmarkMenu');
+    if (dropdown && menu && !dropdown.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+
+  // Benchmark checkbox handlers
+  document.querySelectorAll('.benchmark-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      if (this.checked) {
+        if (!selectedBenchmarks.includes(this.value)) {
+          selectedBenchmarks.push(this.value);
+        }
+      } else {
+        selectedBenchmarks = selectedBenchmarks.filter(b => b !== this.value);
+      }
+      updateBenchmarkLabel();
+      loadPerformanceData(currentTimeframe, selectedPortfolioId);
+    });
+  });
 
   async function loadMarketData() {
     const container = document.getElementById('marketOverview');

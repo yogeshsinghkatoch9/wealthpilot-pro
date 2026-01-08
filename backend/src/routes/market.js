@@ -256,38 +256,109 @@ router.get('/detail/:symbol', async (req, res) => {
       return res.status(404).json({ error: 'Symbol not found' });
     }
 
-    // Fetch key statistics from Finnhub
+    // Fetch key statistics using Alpha Vantage API (most reliable for fundamental data)
     let keyStats = {};
-    try {
-      const axios = require('axios');
-      const finnhubKey = process.env.FINNHUB_API_KEY;
-      if (finnhubKey) {
-        const metricsUrl = `https://finnhub.io/api/v1/stock/metric?symbol=${symbol}&metric=all&token=${finnhubKey}`;
-        const metricsRes = await axios.get(metricsUrl, { timeout: 5000 }).catch(() => ({ data: {} }));
-        const m = metricsRes.data?.metric || {};
+    const axios = require('axios');
+    const NodeCache = require('node-cache');
 
-        keyStats = {
-          peRatio: m.peNormalizedAnnual || m.peTTM,
-          forwardPE: m.peAnnual,
-          pegRatio: m.pegRatio,
-          priceToBook: m.pbAnnual || m.pbQuarterly,
-          dividendYield: m.dividendYieldIndicatedAnnual ? m.dividendYieldIndicatedAnnual / 100 : null,
-          dividendRate: m.dividendPerShareAnnual,
-          beta: m.beta,
-          fiftyTwoWeekHigh: m['52WeekHigh'],
-          fiftyTwoWeekLow: m['52WeekLow'],
-          fiftyDayAverage: m['10DayAverageTradingVolume'], // Finnhub doesn't have this exact field
-          eps: m.epsNormalizedAnnual || m.epsTTM,
-          marketCap: m.marketCapitalization ? m.marketCapitalization * 1000000 : null,
-          revenueGrowth: m.revenueGrowthQuarterlyYoy,
-          profitMargins: m.netProfitMarginTTM ? m.netProfitMarginTTM / 100 : null,
-          returnOnEquity: m.roeTTM ? m.roeTTM / 100 : null,
-          currentRatio: m.currentRatioQuarterly,
-          debtToEquity: m.totalDebt2TotalEquityQuarterly
-        };
+    // Initialize cache for fundamental data (cache for 1 hour to avoid rate limits)
+    if (!global.fundamentalDataCache) {
+      global.fundamentalDataCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
+    }
+
+    // Primary: Alpha Vantage OVERVIEW endpoint for fundamental data
+    try {
+      const avKey = process.env.ALPHA_VANTAGE_API_KEY;
+      if (avKey && avKey !== 'demo') {
+        // Check cache first
+        const cacheKey = `fundamental_${symbol}`;
+        const cachedData = global.fundamentalDataCache.get(cacheKey);
+
+        let av = cachedData;
+        if (!cachedData) {
+          // Wait a bit to avoid rate limits (Alpha Vantage free tier: 5 calls/min)
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+          const avUrl = `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${avKey}`;
+          const avRes = await axios.get(avUrl, { timeout: 10000 }).catch(err => {
+            logger.warn(`[Detail] Alpha Vantage failed: ${err.message}`);
+            return { data: {} };
+          });
+          av = avRes.data || {};
+
+          // Only cache if we got valid data (not rate limit message)
+          if (av.Symbol && !av.Information && !av.Note) {
+            global.fundamentalDataCache.set(cacheKey, av);
+            logger.info(`[Detail] Alpha Vantage cached for ${symbol}`);
+          } else if (av.Information || av.Note) {
+            logger.warn(`[Detail] Alpha Vantage rate limited for ${symbol}`);
+          }
+        } else {
+          logger.info(`[Detail] Using cached fundamental data for ${symbol}`);
+        }
+
+        if (av.Symbol) {
+          keyStats = {
+            marketCap: av.MarketCapitalization ? parseFloat(av.MarketCapitalization) : null,
+            peRatio: av.PERatio && av.PERatio !== 'None' && av.PERatio !== '-' ? parseFloat(av.PERatio) : null,
+            forwardPE: av.ForwardPE && av.ForwardPE !== 'None' && av.ForwardPE !== '-' ? parseFloat(av.ForwardPE) : null,
+            pegRatio: av.PEGRatio && av.PEGRatio !== 'None' && av.PEGRatio !== '-' ? parseFloat(av.PEGRatio) : null,
+            priceToBook: av.PriceToBookRatio && av.PriceToBookRatio !== 'None' && av.PriceToBookRatio !== '-' ? parseFloat(av.PriceToBookRatio) : null,
+            eps: av.EPS && av.EPS !== 'None' && av.EPS !== '-' ? parseFloat(av.EPS) : null,
+            bookValue: av.BookValue && av.BookValue !== 'None' && av.BookValue !== '-' ? parseFloat(av.BookValue) : null,
+            dividendYield: av.DividendYield && av.DividendYield !== 'None' && av.DividendYield !== '0' ? parseFloat(av.DividendYield) : null,
+            dividendRate: av.DividendPerShare && av.DividendPerShare !== 'None' && av.DividendPerShare !== '0' ? parseFloat(av.DividendPerShare) : null,
+            fiftyTwoWeekHigh: av['52WeekHigh'] ? parseFloat(av['52WeekHigh']) : null,
+            fiftyTwoWeekLow: av['52WeekLow'] ? parseFloat(av['52WeekLow']) : null,
+            fiftyDayAverage: av['50DayMovingAverage'] ? parseFloat(av['50DayMovingAverage']) : null,
+            twoHundredDayAverage: av['200DayMovingAverage'] ? parseFloat(av['200DayMovingAverage']) : null,
+            beta: av.Beta && av.Beta !== 'None' && av.Beta !== '-' ? parseFloat(av.Beta) : null,
+            sharesOutstanding: av.SharesOutstanding ? parseFloat(av.SharesOutstanding) : null,
+            profitMargins: av.ProfitMargin && av.ProfitMargin !== 'None' ? parseFloat(av.ProfitMargin) : null,
+            returnOnEquity: av.ReturnOnEquityTTM && av.ReturnOnEquityTTM !== 'None' ? parseFloat(av.ReturnOnEquityTTM) : null,
+            sector: av.Sector,
+            industry: av.Industry,
+            description: av.Description
+          };
+          logger.info(`[Detail] Alpha Vantage success for ${symbol} - marketCap: ${keyStats.marketCap}, pe: ${keyStats.peRatio}, beta: ${keyStats.beta}`);
+        }
       }
     } catch (err) {
-      logger.warn(`[Detail] Finnhub metrics failed for ${symbol}: ${err.message}`);
+      logger.warn(`[Detail] Alpha Vantage error for ${symbol}: ${err.message}`);
+    }
+
+    // Fallback: Use Yahoo v8 chart API for 52-week data if not available
+    if (!keyStats.fiftyTwoWeekHigh || !keyStats.fiftyTwoWeekLow) {
+      try {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d&includePrePost=false`;
+        const yahooRes = await axios.get(yahooUrl, {
+          timeout: 8000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+          }
+        }).catch(() => ({ data: null }));
+
+        const meta = yahooRes.data?.chart?.result?.[0]?.meta;
+        if (meta) {
+          keyStats.fiftyTwoWeekHigh = keyStats.fiftyTwoWeekHigh || meta.fiftyTwoWeekHigh;
+          keyStats.fiftyTwoWeekLow = keyStats.fiftyTwoWeekLow || meta.fiftyTwoWeekLow;
+          keyStats.fiftyDayAverage = keyStats.fiftyDayAverage || meta.fiftyDayAverage;
+          keyStats.twoHundredDayAverage = keyStats.twoHundredDayAverage || meta.twoHundredDayAverage;
+          logger.info(`[Detail] Yahoo v8 chart success for ${symbol} - 52wkHigh: ${keyStats.fiftyTwoWeekHigh}`);
+        }
+      } catch (err) {
+        logger.warn(`[Detail] Yahoo v8 chart failed: ${err.message}`);
+      }
+    }
+
+    // Calculate 52-week range from history if not available
+    if ((!keyStats.fiftyTwoWeekHigh || !keyStats.fiftyTwoWeekLow) && history && history.length > 0) {
+      const prices = history.map(h => h.close).filter(p => p > 0);
+      if (prices.length > 0) {
+        keyStats.fiftyTwoWeekHigh = keyStats.fiftyTwoWeekHigh || Math.max(...prices);
+        keyStats.fiftyTwoWeekLow = keyStats.fiftyTwoWeekLow || Math.min(...prices);
+        logger.info(`[Detail] Calculated 52-week range from history for ${symbol}`);
+      }
     }
 
     // Build comprehensive response

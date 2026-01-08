@@ -234,11 +234,13 @@ router.get('/dashboard', async (req, res) => {
  * Query params:
  *   - timeframe: 1D, 1W, 1M, 3M, 6M, 1Y, YTD, ALL
  *   - portfolioId: (optional) specific portfolio ID to filter by
+ *   - benchmarks: (optional) comma-separated benchmark symbols (SPY,QQQ,DIA,IWM,VTI,BTC-USD)
  */
 router.get('/performance-history', async (req, res) => {
   try {
     const timeframe = req.query.timeframe || '1M';
     const portfolioId = req.query.portfolioId; // Optional filter
+    const benchmarkSymbols = req.query.benchmarks ? req.query.benchmarks.split(',').filter(s => s) : ['SPY'];
 
     // Build where clause based on whether portfolioId is provided
     const whereClause = { user_id: req.user.id };
@@ -311,18 +313,33 @@ router.get('/performance-history', async (req, res) => {
     // Determine data point interval based on timeframe
     const dataPoints = Math.min(days + 1, 60); // Max 60 data points
 
-    // Fetch real SPY historical data for benchmark
-    let spyPrices = [];
-    try {
-      spyPrices = await MarketDataService.getHistoricalPrices('SPY', days);
-    } catch (err) {
-      logger.warn('Failed to fetch SPY historical prices:', err.message);
+    // Fetch historical data for all requested benchmarks
+    const benchmarkPrices = {};
+    const benchmarkStartPrices = {};
+    const benchmarkReturns = {};
+
+    logger.info(`[Performance History] Fetching ${benchmarkSymbols.length} benchmark(s): ${benchmarkSymbols.join(', ')}`);
+
+    for (const symbol of benchmarkSymbols) {
+      try {
+        const prices = await MarketDataService.getHistoricalPrices(symbol, days);
+        if (prices && prices.length > 0) {
+          benchmarkPrices[symbol] = prices;
+          benchmarkStartPrices[symbol] = Number(prices[0].close) || 100;
+          const endPrice = Number(prices[prices.length - 1].close) || 100;
+          benchmarkReturns[symbol] = benchmarkStartPrices[symbol] > 0
+            ? (endPrice - benchmarkStartPrices[symbol]) / benchmarkStartPrices[symbol]
+            : 0;
+        }
+      } catch (err) {
+        logger.warn(`Failed to fetch ${symbol} historical prices:`, err.message);
+      }
     }
 
-    // Calculate SPY start/end for benchmark returns
-    const spyStartPrice = spyPrices.length > 0 ? Number(spyPrices[0].close) : 100;
-    const spyEndPrice = spyPrices.length > 0 ? Number(spyPrices[spyPrices.length - 1].close) : 100;
-    const spyReturn = spyStartPrice > 0 ? (spyEndPrice - spyStartPrice) / spyStartPrice : 0;
+    // Keep backward compatibility with SPY
+    const spyPrices = benchmarkPrices['SPY'] || [];
+    const spyStartPrice = benchmarkStartPrices['SPY'] || 100;
+    const spyReturn = benchmarkReturns['SPY'] || 0;
 
     // Build a map of symbol -> shares and value for quick lookup
     const sharesMap = {};
@@ -358,6 +375,35 @@ router.get('/performance-history', async (req, res) => {
       }
     }
 
+    // Initialize benchmark data arrays
+    const benchmarkData = {};
+    benchmarkSymbols.forEach(symbol => {
+      benchmarkData[symbol] = [];
+    });
+
+    // FIRST PASS: Calculate portfolio's starting value (first data point)
+    // This is the key for normalized comparison - all lines start at this value
+    let portfolioStartValue = totalCash;
+    for (const [symbol, shares] of Object.entries(sharesMap)) {
+      const history = holdingHistories[symbol];
+      if (history && history.length > 0) {
+        // Use the first (oldest) historical price
+        const startHistPrice = Number(history[0]?.close) || 0;
+        portfolioStartValue += shares * startHistPrice;
+      } else {
+        const quote = quotes[symbol] || {};
+        const price = Number(quote.price) || 0;
+        portfolioStartValue += shares * price;
+      }
+    }
+
+    // Ensure we have a valid starting value
+    if (portfolioStartValue <= 0) {
+      portfolioStartValue = currentValue || 100000;
+    }
+
+    logger.info(`[Performance History] Normalized comparison - Portfolio start value: $${portfolioStartValue.toFixed(2)}`);
+
     for (let i = 0; i < dataPoints; i++) {
       const daysAgo = Math.floor((dataPoints - 1 - i) * (days / (dataPoints - 1)));
       const date = new Date(now);
@@ -377,18 +423,16 @@ router.get('/performance-history', async (req, res) => {
       labels.push(label);
 
       // Calculate portfolio value using actual historical prices
-      let portfolioValue = totalCash; // Start with cash
+      let portfolioValue = totalCash;
       const targetIndex = Math.floor((i / (dataPoints - 1)) * (days - 1));
 
       for (const [symbol, shares] of Object.entries(sharesMap)) {
         const history = holdingHistories[symbol];
         if (history && history.length > 0) {
-          // Find the price at the appropriate historical point
           const priceIndex = Math.min(targetIndex, history.length - 1);
           const histPrice = Number(history[priceIndex]?.close) || Number(history[0]?.close) || 0;
           portfolioValue += shares * histPrice;
         } else {
-          // Fallback: use current quote price (no historical data available)
           const quote = quotes[symbol] || {};
           const price = Number(quote.price) || 0;
           portfolioValue += shares * price;
@@ -396,17 +440,39 @@ router.get('/performance-history', async (req, res) => {
       }
       portfolio.push(Math.round(portfolioValue * 100) / 100);
 
-      // S&P 500 benchmark - use real historical prices
+      // ROOT FIX: Calculate all benchmark values using PORTFOLIO'S STARTING VALUE
+      // This ensures all lines start at the same point for true apples-to-apples comparison
+      for (const symbol of benchmarkSymbols) {
+        const prices = benchmarkPrices[symbol];
+        const benchmarkStartPrice = benchmarkStartPrices[symbol] || 100;
+        const returnVal = benchmarkReturns[symbol] || 0;
+
+        if (prices && prices.length > 0) {
+          const priceIndex = Math.min(targetIndex, prices.length - 1);
+          const currentBenchmarkPrice = Number(prices[priceIndex]?.close) || benchmarkStartPrice;
+          // Calculate percentage return from benchmark's start
+          const percentReturn = (currentBenchmarkPrice - benchmarkStartPrice) / benchmarkStartPrice;
+          // Apply that percentage return to portfolio's starting value
+          const benchmarkValue = portfolioStartValue * (1 + percentReturn);
+          benchmarkData[symbol].push(Math.round(benchmarkValue * 100) / 100);
+        } else {
+          // Fallback if no data - linear interpolation
+          const progress = i / (dataPoints - 1);
+          const benchmarkValue = portfolioStartValue * (1 + returnVal * progress);
+          benchmarkData[symbol].push(Math.round(benchmarkValue * 100) / 100);
+        }
+      }
+
+      // S&P 500 benchmark for backward compatibility (also normalized)
       if (spyPrices.length > 0) {
         const spyIndex = Math.min(targetIndex, spyPrices.length - 1);
         const spyPrice = Number(spyPrices[spyIndex]?.close) || spyStartPrice;
         const spyReturnAtPoint = (spyPrice - spyStartPrice) / spyStartPrice;
-        const benchmarkValue = totalCost * (1 + spyReturnAtPoint);
+        const benchmarkValue = portfolioStartValue * (1 + spyReturnAtPoint);
         benchmark.push(Math.round(benchmarkValue * 100) / 100);
       } else {
-        // Fallback if no SPY data
         const progress = i / (dataPoints - 1);
-        const benchmarkValue = totalCost * (1 + spyReturn * progress);
+        const benchmarkValue = portfolioStartValue * (1 + spyReturn * progress);
         benchmark.push(Math.round(benchmarkValue * 100) / 100);
       }
     }
@@ -414,16 +480,24 @@ router.get('/performance-history', async (req, res) => {
     // Include portfolio names in response for transparency
     const portfolioNames = portfolios.map(p => p.name);
 
-    logger.info(`[Performance History] Returning chart data: ${portfolio.length} data points, current value $${currentValue.toFixed(2)}, portfolios: ${portfolioNames.join(', ')}`);
+    logger.info(`[Performance History] Returning chart data: ${portfolio.length} data points, current value $${currentValue.toFixed(2)}, portfolios: ${portfolioNames.join(', ')}, benchmarks: ${benchmarkSymbols.join(', ')}`);
+
+    // Calculate portfolio's percentage return over the period
+    const portfolioPercentReturn = portfolioStartValue > 0
+      ? ((currentValue - portfolioStartValue) / portfolioStartValue * 100)
+      : 0;
 
     res.json({
       labels,
       portfolio,
-      benchmark,
+      benchmark, // Keep for backward compatibility (SPY)
+      benchmarks: benchmarkData, // All requested benchmarks (normalized)
       stats: {
         currentValue: Math.round(currentValue * 100) / 100,
+        startValue: Math.round(portfolioStartValue * 100) / 100, // Starting value for the period
         totalCost: Math.round(totalCost * 100) / 100,
-        totalReturn: Math.round(totalReturn * 10000) / 100,
+        totalReturn: Math.round(totalReturn * 10000) / 100, // All-time return
+        periodReturn: Math.round(portfolioPercentReturn * 100) / 100, // Return for this period
         portfolioCount: portfolios.length,
         portfolioNames,
         holdingsCount: totalHoldings
