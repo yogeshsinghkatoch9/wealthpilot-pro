@@ -197,7 +197,7 @@ function formatMoney(val) {
     <div class="flex items-center gap-3">
       <form method="GET" class="flex items-center gap-2">
         <select name="portfolio" onchange="this.form.submit()"
-                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-green-400">
           <% if (typeof portfolios !== 'undefined' && portfolios) { %>
           <% portfolios.forEach(p => { %>
           <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
@@ -232,7 +232,7 @@ function formatMoney(val) {
           </div>
           <div>
             <p class="text-slate-400 text-xs">Volatility</p>
-            <p class="text-amber-400 font-bold font-mono"><%= (volatility * 100).toFixed(1) %>%</p>
+            <p class="text-green-400 font-bold font-mono"><%= (volatility * 100).toFixed(1) %>%</p>
           </div>
           <div>
             <p class="text-slate-400 text-xs">Sharpe Ratio</p>
@@ -248,7 +248,7 @@ function formatMoney(val) {
     <!-- Parameters Panel -->
     <div class="sim-container">
       <div class="sim-header">
-        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Simulation Parameters</h3>
+        <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Simulation Parameters</h3>
       </div>
       <div class="p-4 space-y-4">
         <div class="input-group">
@@ -295,7 +295,7 @@ function formatMoney(val) {
     <!-- Main Chart -->
     <div class="sim-container lg:col-span-2">
       <div class="sim-header">
-        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Projection Paths</h3>
+        <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Projection Paths</h3>
         <div class="flex items-center gap-4">
           <div class="distribution-legend"><div class="dot bg-emerald-500"></div>90th %ile</div>
           <div class="distribution-legend"><div class="dot bg-sky-500"></div>50th %ile</div>
@@ -346,7 +346,7 @@ function formatMoney(val) {
       <!-- Distribution Histogram -->
       <div class="sim-container">
         <div class="sim-header">
-          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Outcome Distribution</h3>
+          <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Outcome Distribution</h3>
         </div>
         <div class="p-4">
           <div style="height: 250px;">
@@ -358,7 +358,7 @@ function formatMoney(val) {
       <!-- Percentile Bars -->
       <div class="sim-container">
         <div class="sim-header">
-          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Confidence Intervals</h3>
+          <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Confidence Intervals</h3>
         </div>
         <div class="p-4 space-y-4">
           <div>
@@ -373,10 +373,10 @@ function formatMoney(val) {
           <div>
             <div class="flex justify-between text-sm mb-2">
               <span class="text-slate-400">25th Percentile</span>
-              <span class="font-mono text-amber-400" id="p25">--</span>
+              <span class="font-mono text-green-400" id="p25">--</span>
             </div>
             <div class="percentile-bar">
-              <div class="percentile-fill bg-amber-500/60" id="p25Bar" style="width: 0%"></div>
+              <div class="percentile-fill bg-green-500/60" id="p25Bar" style="width: 0%"></div>
             </div>
           </div>
           <div>
@@ -414,7 +414,7 @@ function formatMoney(val) {
   <!-- Quick Scenarios -->
   <div class="sim-container">
     <div class="sim-header">
-      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Quick Scenarios</h3>
+      <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Quick Scenarios</h3>
     </div>
     <div class="p-4">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -448,8 +448,8 @@ function formatMoney(val) {
 
         <div class="scenario-card" onclick="applyScenario('aggressive')">
           <div class="flex items-center gap-3 mb-3">
-            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
               </svg>
             </div>
@@ -718,7 +718,7 @@ function updateResults(results, targetGoal, years) {
   const successTile = document.getElementById('successTile');
   successTile.className = 'stat-tile ' + (successProb >= 70 ? 'success' : successProb >= 40 ? 'warning' : 'danger');
   document.getElementById('successProb').className = 'text-3xl font-bold font-mono ' +
-    (successProb >= 70 ? 'text-emerald-400' : successProb >= 40 ? 'text-amber-400' : 'text-red-400');
+    (successProb >= 70 ? 'text-emerald-400' : successProb >= 40 ? 'text-green-400' : 'text-red-400');
 
   // Other stats
   document.getElementById('medianOutcome').textContent = formatMoney(percentiles.p50);

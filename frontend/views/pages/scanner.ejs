@@ -4,7 +4,7 @@
 <div class="bloomberg-header">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-xl font-bold text-amber-400 tracking-wide">MARKET SCANNER</h1>
+      <h1 class="text-xl font-bold text-green-400 tracking-wide">MARKET SCANNER</h1>
       <p class="text-xs text-slate-400 mt-1">Real-time scanning with custom conditions</p>
     </div>
     <button onclick="runScanner()" class="bloomberg-btn bloomberg-btn-primary">
@@ -50,17 +50,17 @@
   <!-- Filter Builder - Collapsible on mobile -->
   <div class="bloomberg-card">
     <div class="p-5">
-      <button onclick="toggleFilters()" class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-amber-400 mb-4 tracking-wide">
+      <button onclick="toggleFilters()" class="lg:hidden w-full flex items-center justify-between text-sm font-bold text-green-400 mb-4 tracking-wide">
         <span>FILTERS</span>
         <svg id="filterChevron" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
         </svg>
       </button>
-      <h3 class="hidden lg:block text-sm font-bold text-amber-400 mb-4 tracking-wide">FILTERS</h3>
+      <h3 class="hidden lg:block text-sm font-bold text-green-400 mb-4 tracking-wide">FILTERS</h3>
       <div id="filterContent" class="hidden lg:block space-y-4">
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">MARKET CAP</label>
-          <select name="marketCap" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select name="marketCap" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400">
             <option>Any</option>
             <option>Mega ($200B+)</option>
             <option>Large ($10B-$200B)</option>
@@ -72,7 +72,7 @@
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">SECTOR</label>
-          <select name="sector" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select name="sector" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400">
             <option>All Sectors</option>
             <option>Technology</option>
             <option>Healthcare</option>
@@ -86,22 +86,22 @@
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">PRICE RANGE</label>
           <div class="flex gap-2">
-            <input type="number" name="minPrice" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
-            <input type="number" name="maxPrice" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="minPrice" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
+            <input type="number" name="maxPrice" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">DAILY CHANGE %</label>
           <div class="flex gap-2">
-            <input type="number" name="minChange" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
-            <input type="number" name="maxChange" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="minChange" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
+            <input type="number" name="maxChange" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">VOLUME</label>
-          <select name="volumeFilter" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select name="volumeFilter" class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400">
             <option>Above Average</option>
             <option>2x Average</option>
             <option>5x Average</option>
@@ -112,14 +112,14 @@
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">RSI (14)</label>
           <div class="flex gap-2">
-            <input type="number" name="minRsi" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
-            <input type="number" name="maxRsi" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" name="minRsi" placeholder="Min" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
+            <input type="number" name="maxRsi" placeholder="Max" class="w-1/2 bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">52-WEEK POSITION</label>
-          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select class="w-full bg-slate-900 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400">
             <option>Any</option>
             <option>Near 52W High</option>
             <option>Near 52W Low</option>
@@ -135,7 +135,7 @@
         <!-- Custom Conditions Container -->
         <div id="customConditions" class="mt-4 space-y-2 hidden">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-medium text-amber-400">CUSTOM CONDITIONS</label>
+            <label class="text-xs font-medium text-green-400">CUSTOM CONDITIONS</label>
             <button onclick="clearAllConditions()" class="text-xs text-red-400 hover:text-red-300">Clear All</button>
           </div>
           <div id="conditionsList" class="space-y-2"></div>
@@ -148,13 +148,13 @@
   <div id="conditionModal" class="fixed inset-0 bg-black/80 z-50 hidden items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-md">
       <div class="p-4 border-b border-slate-700">
-        <h3 class="text-sm font-bold text-amber-400 tracking-wide">ADD CUSTOM CONDITION</h3>
+        <h3 class="text-sm font-bold text-green-400 tracking-wide">ADD CUSTOM CONDITION</h3>
       </div>
       <div class="p-4 space-y-4">
         <!-- Field Selection -->
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">FIELD</label>
-          <select id="conditionField" onchange="updateOperators()" class="w-full bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select id="conditionField" onchange="updateOperators()" class="w-full bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400">
             <option value="price">Price ($)</option>
             <option value="changePercent">Change %</option>
             <option value="rsi">RSI (14)</option>
@@ -169,7 +169,7 @@
         <!-- Operator Selection -->
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-2">OPERATOR</label>
-          <select id="conditionOperator" onchange="updateValueInputs()" class="w-full bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400">
+          <select id="conditionOperator" onchange="updateValueInputs()" class="w-full bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400">
             <option value="gt">Greater than (&gt;)</option>
             <option value="gte">Greater than or equal (&gt;=)</option>
             <option value="lt">Less than (&lt;)</option>
@@ -183,7 +183,7 @@
         <div id="valueInputContainer">
           <label class="block text-xs font-medium text-slate-400 mb-2">VALUE</label>
           <div id="valueInputs" class="flex gap-2">
-            <input type="number" id="conditionValue1" placeholder="Value" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+            <input type="number" id="conditionValue1" placeholder="Value" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
           </div>
         </div>
 
@@ -208,7 +208,7 @@
         <span class="font-bold text-emerald-400 font-mono" id="resultCount">47</span> STOCKS MATCH YOUR CRITERIA
       </p>
       <div class="flex flex-wrap gap-2">
-        <select class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded focus:outline-none focus:border-amber-400 flex-1 sm:flex-none min-w-[140px]">
+        <select class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded focus:outline-none focus:border-green-400 flex-1 sm:flex-none min-w-[140px]">
           <option>SORT: CHANGE %</option>
           <option>SORT: VOLUME</option>
           <option>SORT: MARKET CAP</option>
@@ -251,7 +251,7 @@
             <td class="font-mono text-slate-400">45.2M</td>
             <td class="font-mono text-slate-400">$25B</td>
             <td>
-              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">58</span>
+              <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-mono font-bold">58</span>
             </td>
             <td>
               <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">BREAKOUT</span>
@@ -332,7 +332,7 @@
             <td class="font-mono text-slate-400">52.1M</td>
             <td class="font-mono text-slate-400">$7.8B</td>
             <td>
-              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">55</span>
+              <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-mono font-bold">55</span>
             </td>
             <td>
               <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs font-bold">CRYPTO</span>
@@ -345,7 +345,7 @@
           <tr>
             <td>
               <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xs font-bold">
                   SOUN
                 </div>
                 <div>
@@ -359,7 +359,7 @@
             <td class="font-mono text-slate-400">38.9M</td>
             <td class="font-mono text-slate-400">$2.8B</td>
             <td>
-              <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs font-mono font-bold">62</span>
+              <span class="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-xs font-mono font-bold">62</span>
             </td>
             <td>
               <span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-bold">AI THEME</span>
@@ -408,7 +408,7 @@
 <!-- Saved Scanners -->
 <div class="bloomberg-card mt-6">
   <div class="p-5">
-    <h3 class="text-sm font-bold text-amber-400 mb-4 tracking-wide">SAVED SCANNERS</h3>
+    <h3 class="text-sm font-bold text-green-400 mb-4 tracking-wide">SAVED SCANNERS</h3>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="p-4 rounded bg-slate-800/50 hover:bg-slate-800 cursor-pointer border border-slate-700 transition-all" onclick="loadSaved('momentum')">
         <p class="font-bold text-white text-sm">MOMENTUM PLAYS</p>
@@ -753,7 +753,7 @@ function getColorForSymbol(symbol) {
 function getRsiClass(rsi) {
   if (rsi < 30) return 'bg-emerald-500/20 text-emerald-400';
   if (rsi > 70) return 'bg-red-500/20 text-red-400';
-  return 'bg-amber-500/20 text-amber-400';
+  return 'bg-green-500/20 text-green-400';
 }
 
 function formatVolume(vol) {
@@ -871,13 +871,13 @@ function updateValueInputs() {
 
   if (operator === 'between') {
     container.innerHTML = `
-      <input type="number" id="conditionValue1" placeholder="Min" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+      <input type="number" id="conditionValue1" placeholder="Min" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
       <span class="text-slate-400 self-center">to</span>
-      <input type="number" id="conditionValue2" placeholder="Max" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+      <input type="number" id="conditionValue2" placeholder="Max" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
     `;
   } else {
     container.innerHTML = `
-      <input type="number" id="conditionValue1" placeholder="Value" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-amber-400 font-mono">
+      <input type="number" id="conditionValue1" placeholder="Value" step="any" class="flex-1 bg-slate-800 border border-slate-700 text-white text-sm px-3 py-2 rounded focus:outline-none focus:border-green-400 font-mono">
     `;
   }
 }
@@ -993,7 +993,7 @@ function renderConditions() {
     return `
       <div class="flex items-center justify-between p-2 bg-slate-800/50 rounded border border-slate-700">
         <div class="flex-1 min-w-0">
-          <span class="text-xs font-medium text-amber-400">${label}</span>
+          <span class="text-xs font-medium text-green-400">${label}</span>
           <span class="text-xs text-slate-300 ml-2">${valueDisplay}</span>
         </div>
         <button onclick="removeCondition(${c.id})" class="ml-2 p-1 text-red-400 hover:text-red-300 flex-shrink-0">

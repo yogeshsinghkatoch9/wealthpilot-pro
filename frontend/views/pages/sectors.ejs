@@ -70,10 +70,10 @@
 
         <div class="bloomberg-kpi-item">
           <div class="bloomberg-kpi-label">CONCENTRATION</div>
-          <div class="bloomberg-kpi-value font-mono <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-amber-400' : 'text-emerald-400' %>">
+          <div class="bloomberg-kpi-value font-mono <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-green-400' : 'text-emerald-400' %>">
             <%= hhiScore ? hhiScore.toFixed(0) : 'N/A' %>
           </div>
-          <div class="bloomberg-kpi-sublabel <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-amber-400' : 'text-emerald-400' %>">
+          <div class="bloomberg-kpi-sublabel <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-green-400' : 'text-emerald-400' %>">
             <%= hhiScore > 2500 ? 'High' : hhiScore > 1500 ? 'Moderate' : 'Diversified' %>
           </div>
         </div>

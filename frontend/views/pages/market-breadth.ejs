@@ -24,9 +24,9 @@
             type="text"
             id="stockSearch"
             placeholder="Search stocks..."
-            class="bg-bloomberg-elevated border border-bloomberg-border text-white px-3 py-1.5 rounded text-sm w-48 focus:outline-none focus:border-amber-500"
+            class="bg-bloomberg-elevated border border-bloomberg-border text-white px-3 py-1.5 rounded text-sm w-48 focus:outline-none focus:border-green-500"
           />
-          <button onclick="searchStock()" class="absolute right-1 top-1/2 -translate-y-1/2 text-amber-400 hover:text-amber-300">
+          <button onclick="searchStock()" class="absolute right-1 top-1/2 -translate-y-1/2 text-green-400 hover:text-amber-300">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -65,7 +65,7 @@
     <div class="bloomberg-card">
       <div class="bloomberg-card-header">
         <span class="bloomberg-card-title">📊 Market Health Score</span>
-        <span id="healthScoreValue" class="text-2xl font-mono font-bold text-amber-400">--</span>
+        <span id="healthScoreValue" class="text-2xl font-mono font-bold text-green-400">--</span>
       </div>
       <div class="bloomberg-card-body">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -167,7 +167,7 @@
             <div class="bg-bloomberg-elevated rounded p-4">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-sm text-slate-400">20-Day MA</span>
-                <span id="ma20Value" class="text-xl font-mono font-bold text-blue-400">--%</span>
+                <span id="ma20Value" class="text-xl font-mono font-bold text-green-400">--%</span>
               </div>
               <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
                 <div id="ma20Bar" class="h-full bg-blue-400" style="width: 0%"></div>
@@ -194,10 +194,10 @@
             <div class="bg-bloomberg-elevated rounded p-4">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-sm text-slate-400">200-Day MA</span>
-                <span id="ma200Value" class="text-xl font-mono font-bold text-amber-400">--%</span>
+                <span id="ma200Value" class="text-xl font-mono font-bold text-green-400">--%</span>
               </div>
               <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div id="ma200Bar" class="h-full bg-amber-400" style="width: 0%"></div>
+                <div id="ma200Bar" class="h-full bg-green-400" style="width: 0%"></div>
               </div>
             </div>
           </div>

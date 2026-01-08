@@ -44,7 +44,7 @@ const bearishCross = kValue < dValue;
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">STOCHASTIC OSCILLATOR</h1>
+      <h1 class="text-2xl font-bold text-green-400">STOCHASTIC OSCILLATOR</h1>
       <p class="text-slate-400 mt-1">%K and %D momentum analysis</p>
     </div>
     <form method="GET" action="/stochastic" class="flex gap-2">
@@ -57,9 +57,9 @@ const bearishCross = kValue < dValue;
 <!-- Stochastic Overview -->
 <div class="bloomberg-card p-5 bg-gradient-to-r from-<%= signalColor %>-900/20 to-slate-900">
   <div class="flex items-center gap-4 flex-wrap">
-    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
     <div class="flex-1">
-      <h2 class="text-xl font-bold text-amber-400"><%= symbol %></h2>
+      <h2 class="text-xl font-bold text-green-400"><%= symbol %></h2>
       <p class="text-slate-400">Current Price: <span class="font-mono text-white"><%= formatPrice(price) %></span></p>
     </div>
     <div class="text-center px-4">
@@ -92,17 +92,17 @@ const bearishCross = kValue < dValue;
   <div class="bloomberg-card p-5">
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-          <span class="text-amber-400 font-bold">%D</span>
+        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+          <span class="text-green-400 font-bold">%D</span>
         </div>
         <div>
           <p class="text-sm text-slate-400">%D (Slow Line)</p>
-          <p class="text-2xl font-mono font-bold text-amber-400"><%= dValue.toFixed(1) %></p>
+          <p class="text-2xl font-mono font-bold text-green-400"><%= dValue.toFixed(1) %></p>
         </div>
       </div>
     </div>
     <div class="h-4 bg-slate-700 rounded-full overflow-hidden">
-      <div class="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500" style="width: <%= dValue %>%"></div>
+      <div class="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-500" style="width: <%= dValue %>%"></div>
     </div>
     <p class="text-xs text-slate-400 mt-2">3-period SMA of %K</p>
   </div>
@@ -110,7 +110,7 @@ const bearishCross = kValue < dValue;
 
 <!-- Stochastic Gauge -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">Stochastic Gauge</h3>
+  <h3 class="font-semibold text-green-400 mb-4">Stochastic Gauge</h3>
   <div class="relative h-8 bg-gradient-to-r from-emerald-500 via-amber-500 to-red-500 rounded-full overflow-hidden">
     <div class="absolute inset-y-0 left-0 w-[20%] border-r-2 border-white/30 flex items-center justify-center">
       <span class="text-xs font-bold text-white drop-shadow">OVERSOLD</span>
@@ -124,7 +124,7 @@ const bearishCross = kValue < dValue;
     <!-- %K marker -->
     <div class="absolute top-0 w-3 h-full bg-sky-400 border-2 border-white shadow-lg transition-all duration-500" style="left: calc(<%= kValue %>% - 6px);" title="%K"></div>
     <!-- %D marker -->
-    <div class="absolute bottom-0 w-3 h-1/2 bg-amber-400 border border-white shadow-lg transition-all duration-500" style="left: calc(<%= dValue %>% - 6px);" title="%D"></div>
+    <div class="absolute bottom-0 w-3 h-1/2 bg-green-400 border border-white shadow-lg transition-all duration-500" style="left: calc(<%= dValue %>% - 6px);" title="%D"></div>
   </div>
   <div class="flex justify-between text-sm text-slate-400 mt-2">
     <span>0</span>
@@ -139,7 +139,7 @@ const bearishCross = kValue < dValue;
       <span class="text-sm text-slate-400">%K (Fast)</span>
     </div>
     <div class="flex items-center gap-2">
-      <div class="w-3 h-3 bg-amber-400 rounded"></div>
+      <div class="w-3 h-3 bg-green-400 rounded"></div>
       <span class="text-sm text-slate-400">%D (Slow)</span>
     </div>
   </div>
@@ -180,13 +180,13 @@ const bearishCross = kValue < dValue;
 
 <!-- Stochastic Chart -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">Stochastic Chart</h3>
+  <h3 class="font-semibold text-green-400 mb-4">Stochastic Chart</h3>
   <div id="tvStochChart" class="h-80"></div>
 </div>
 
 <!-- Trading Guide -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">Trading Signals</h3>
+  <h3 class="font-semibold text-green-400 mb-4">Trading Signals</h3>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
       <h4 class="font-bold text-emerald-400 mb-2">Buy Signals</h4>

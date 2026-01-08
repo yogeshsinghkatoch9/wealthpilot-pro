@@ -55,7 +55,7 @@ const shortColor = getShortColor(shortPct);
 
 <% if (!shortInterest) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No short interest data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No short interest data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol.</p>
 </div>
 <% } else { %>
@@ -109,7 +109,7 @@ const shortColor = getShortColor(shortPct);
 <!-- Analysis -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4 font-mono">SHORT INTEREST BREAKDOWN</h3>
+    <h3 class="font-semibold text-green-400 mb-4 font-mono">SHORT INTEREST BREAKDOWN</h3>
     <div class="space-y-4">
       <div>
         <div class="flex justify-between text-sm mb-1">
@@ -148,7 +148,7 @@ const shortColor = getShortColor(shortPct);
   </div>
 
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4 font-mono">SQUEEZE ANALYSIS</h3>
+    <h3 class="font-semibold text-green-400 mb-4 font-mono">SQUEEZE ANALYSIS</h3>
 
     <div class="p-4 rounded-lg border-2 border-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-400 bg-<%= squeezeScore > 70 ? 'red' : squeezeScore > 40 ? 'amber' : 'emerald' %>-500/10 mb-4">
       <div class="flex items-center justify-between">
@@ -184,7 +184,7 @@ const shortColor = getShortColor(shortPct);
       <% if (squeezeScore > 70) { %>
         <strong class="text-red-400">Warning:</strong> This stock shows characteristics of a potential short squeeze. High short interest combined with low days to cover and high borrow costs create conditions for rapid price movements.
       <% } else if (squeezeScore > 40) { %>
-        <strong class="text-amber-400">Note:</strong> Moderate squeeze potential. Monitor for changes in short interest and borrow costs.
+        <strong class="text-green-400">Note:</strong> Moderate squeeze potential. Monitor for changes in short interest and borrow costs.
       <% } else { %>
         <strong class="text-emerald-400">Normal:</strong> Short interest metrics are within typical ranges. Low squeeze risk.
       <% } %>

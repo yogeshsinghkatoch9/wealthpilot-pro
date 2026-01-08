@@ -181,7 +181,7 @@ function formatPercent(val) {
     <div class="flex items-center gap-3">
       <form method="GET" class="flex items-center gap-2">
         <select name="portfolio" onchange="this.form.submit()"
-                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-green-400">
           <% if (typeof portfolios !== 'undefined' && portfolios) { %>
           <% portfolios.forEach(p => { %>
           <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
@@ -191,7 +191,7 @@ function formatPercent(val) {
           <% } %>
         </select>
         <select name="minThreshold" onchange="this.form.submit()"
-                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-green-400">
           <option value="3" <%= minThreshold == 3 ? 'selected' : '' %>>3%+ Loss</option>
           <option value="5" <%= minThreshold == 5 || !minThreshold ? 'selected' : '' %>>5%+ Loss</option>
           <option value="10" <%= minThreshold == 10 ? 'selected' : '' %>>10%+ Loss</option>
@@ -251,7 +251,7 @@ function formatPercent(val) {
             <div>
               <div class="flex items-center gap-3 mb-1">
                 <span class="text-xl font-bold text-white font-mono"><%= opp.symbol %></span>
-                <span class="text-xs px-2 py-1 rounded <%= (opp.holdingPeriod || 'short-term') === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400' %>">
+                <span class="text-xs px-2 py-1 rounded <%= (opp.holdingPeriod || 'short-term') === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-green-500/15 text-green-400' %>">
                   <%= opp.holdingPeriod || 'short-term' %>
                 </span>
                 <% if (opp.inWashSaleWindow) { %>
@@ -402,7 +402,7 @@ function formatPercent(val) {
     </div>
     <div id="harvestPreviewContent">
       <div class="flex items-center justify-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
       </div>
     </div>
   </div>
@@ -452,7 +452,7 @@ async function previewHarvest(symbol, replacement) {
   document.getElementById('harvestModal').classList.add('flex');
   document.getElementById('harvestPreviewContent').innerHTML = `
     <div class="flex items-center justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
     </div>
   `;
 
@@ -472,7 +472,7 @@ async function previewHarvest(symbol, replacement) {
           <div class="p-4 bg-black/30 rounded-lg">
             <div class="flex justify-between items-center mb-3">
               <span class="text-lg font-bold text-white font-mono">${symbol}</span>
-              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
+              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-green-500/15 text-green-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
             </div>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div><span class="text-slate-400">Shares:</span> <span class="text-white font-mono">${data.holding?.shares?.toFixed(2) || '0'}</span></div>
@@ -506,8 +506,8 @@ async function previewHarvest(symbol, replacement) {
           ` : ''}
 
           ${data.warnings?.length ? `
-          <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <p class="text-amber-400 text-sm">${data.warnings.join(', ')}</p>
+          <div class="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+            <p class="text-green-400 text-sm">${data.warnings.join(', ')}</p>
           </div>
           ` : ''}
 

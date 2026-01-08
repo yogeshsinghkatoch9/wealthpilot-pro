@@ -8,8 +8,8 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 <%- include('../partials/header', { pageTitle: 'Copy Trading' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-black border-b-2 border-amber-400 px-6 py-3 -mx-6 -mt-6 mb-6">
-  <h1 class="text-2xl font-bold text-amber-400 tracking-wide">COPY TRADING</h1>
+<div class="bg-black border-b-2 border-green-400 px-6 py-3 -mx-6 -mt-6 mb-6">
+  <h1 class="text-2xl font-bold text-green-400 tracking-wide">COPY TRADING</h1>
   <p class="text-slate-400 text-sm mt-1">Follow top performers and mirror their trades</p>
 </div>
 
@@ -19,7 +19,7 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 <p class="text-slate-400 text-sm uppercase tracking-wider">Following</p>
 <p class="text-2xl font-bold text-white font-mono"><%= safeFollowing.length %> Traders</p>
 <% const totalAllocated = safeFollowing.reduce((sum, t) => sum + (t.allocation_percent || 0), 0); %>
-<p class="text-sm text-amber-400 font-mono"><%= totalAllocated.toFixed(0) %>% allocated</p>
+<p class="text-sm text-green-400 font-mono"><%= totalAllocated.toFixed(0) %>% allocated</p>
 </div>
 <div class="bloomberg-card p-4">
 <p class="text-slate-400 text-sm uppercase tracking-wider">Total P/L</p>
@@ -35,14 +35,14 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 </div>
 <div class="bloomberg-card p-4">
 <p class="text-slate-400 text-sm uppercase tracking-wider">Available</p>
-<p class="text-2xl font-bold text-amber-400 font-mono"><%= safeAvailableTraders.length %></p>
+<p class="text-2xl font-bold text-green-400 font-mono"><%= safeAvailableTraders.length %></p>
 <p class="text-sm text-slate-400 uppercase">traders to follow</p>
 </div>
 </div>
 
 <!-- Currently Following -->
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Currently Following (<%= safeFollowing.length %>)</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Currently Following (<%= safeFollowing.length %>)</h3>
 <% if (safeFollowing.length === 0) { %>
 <div class="text-center py-8">
 <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,7 +56,7 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 <% safeFollowing.forEach(trader => { %>
 <div class="p-4 rounded border-2 <%= trader.is_active ? 'border-emerald-400/50 bg-emerald-400/5' : 'border-slate-600/50 bg-slate-800/50' %>">
 <div class="flex items-center gap-3 mb-3">
-<div class="w-12 h-12 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold"><%= (trader.trader_name || 'T').substring(0, 2).toUpperCase() %></div>
+<div class="w-12 h-12 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-black font-bold"><%= (trader.trader_name || 'T').substring(0, 2).toUpperCase() %></div>
 <div>
 <p class="font-bold text-white uppercase"><%= trader.trader_name %></p>
 <p class="text-xs font-mono <%= trader.is_active ? 'text-emerald-400' : 'text-slate-400' %>"><%= trader.is_active ? 'ACTIVE' : 'PAUSED' %></p>
@@ -79,14 +79,14 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 
 <!-- Available Traders -->
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Top Traders to Follow</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Top Traders to Follow</h3>
 <% if (safeAvailableTraders.length === 0) { %>
 <p class="text-center py-8 text-slate-400">No traders available at the moment</p>
 <% } else { %>
 <div class="overflow-x-auto">
 <table class="bloomberg-table w-full text-sm">
 <thead>
-<tr class="bg-black/50 text-slate-400 text-left border-b-2 border-amber-400">
+<tr class="bg-black/50 text-slate-400 text-left border-b-2 border-green-400">
 <th class="px-4 py-3 uppercase tracking-wider">Trader</th>
 <th class="px-4 py-3 uppercase tracking-wider">Return</th>
 <th class="px-4 py-3 uppercase tracking-wider">Win Rate</th>
@@ -99,7 +99,7 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 <tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
 <td class="px-4 py-4">
 <div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold"><%= (trader.display_name || 'T').substring(0, 2).toUpperCase() %></div>
+<div class="w-10 h-10 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-black font-bold"><%= (trader.display_name || 'T').substring(0, 2).toUpperCase() %></div>
 <p class="font-medium text-white"><%= trader.display_name %></p>
 </div>
 </td>
@@ -120,7 +120,7 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 <!-- Follow Modal -->
 <div id="followModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
 <div class="bloomberg-card p-6 w-full max-w-md mx-4">
-<h3 class="text-xl font-bold text-amber-400 mb-4 uppercase tracking-wide" id="followModalTitle">Follow Trader</h3>
+<h3 class="text-xl font-bold text-green-400 mb-4 uppercase tracking-wide" id="followModalTitle">Follow Trader</h3>
 <form id="followForm" class="space-y-4">
 <input type="hidden" name="traderId" id="traderIdInput">
 <input type="hidden" name="traderName" id="traderNameInput">

@@ -19,7 +19,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
     <div class="flex items-center justify-between flex-wrap gap-4">
       <div class="flex items-center gap-6">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
             <i class="fas fa-chart-line text-slate-900 text-lg"></i>
           </div>
           <div>
@@ -48,7 +48,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
               type="text"
               id="quickSearch"
               placeholder="Search symbol (Ctrl+F)"
-              class="pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all w-56"
+              class="pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-green-500 transition-all w-56"
               autocomplete="off"
             />
           </div>
@@ -171,7 +171,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
       <!-- Drawing Tools (Hidden by default) -->
       <div id="drawingToolbar" class="bloomberg-card p-4 mb-4 hidden">
         <div class="flex items-center gap-2">
-          <div class="text-xs text-amber-400 font-semibold mr-2">Drawing Tools:</div>
+          <div class="text-xs text-green-400 font-semibold mr-2">Drawing Tools:</div>
           <button onclick="selectTool('trendline')" class="tool-btn" data-tool="trendline" title="Trendline (T)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4" stroke-width="2"></line></svg>
             Trendline
@@ -231,7 +231,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
       <div class="bloomberg-card p-4 mb-4">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-sm font-semibold text-white">Watchlist</h3>
-          <button onclick="addToWatchlist()" class="text-amber-400 hover:text-amber-300 text-xs">+ Add</button>
+          <button onclick="addToWatchlist()" class="text-green-400 hover:text-amber-300 text-xs">+ Add</button>
         </div>
 
         <div class="space-y-1 max-h-[400px] overflow-y-auto" id="watchlistItems">
@@ -314,7 +314,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
 }
 
 .timeframe-btn.active, .chart-type-btn.active, .indicator-btn.active, .tool-btn.active {
-  @apply bg-amber-500 text-slate-900 border-amber-400;
+  @apply bg-green-500 text-slate-900 border-green-400;
   @apply font-semibold;
 }
 
@@ -324,7 +324,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
 }
 
 .watchlist-item.active {
-  @apply border-amber-500 bg-slate-800;
+  @apply border-green-500 bg-slate-800;
 }
 
 .news-item {
@@ -390,7 +390,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Profession
 }
 
 .toast.warning {
-  @apply border-amber-500;
+  @apply border-green-500;
 }
 </style>
 
@@ -808,7 +808,7 @@ const ProCharts = {
     // Escape message to prevent XSS
     const safeMessage = this.escapeHtml(String(message));
     toast.innerHTML = `
-      <svg class="w-5 h-5 ${type === 'success' ? 'text-emerald-400' : type === 'error' ? 'text-red-400' : 'text-amber-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 ${type === 'success' ? 'text-emerald-400' : type === 'error' ? 'text-red-400' : 'text-green-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
       <span class="text-white">${safeMessage}</span>

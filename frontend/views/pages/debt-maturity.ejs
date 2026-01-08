@@ -354,7 +354,7 @@
     </div>
     <div class="summary-card">
       <div class="summary-label">Maturing 2026</div>
-      <div class="summary-value text-amber-400" id="maturing2025">--</div>
+      <div class="summary-value text-green-400" id="maturing2025">--</div>
       <div class="summary-sub" id="maturing2025Pct">-- of total</div>
     </div>
     <div class="summary-card">
@@ -380,7 +380,7 @@
     <div class="debt-card">
       <div class="debt-card-header">
         <div class="debt-card-title">
-          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
           Maturity Wall
@@ -601,7 +601,7 @@ async function loadDebtData(portfolioId) {
   document.getElementById('holdingsTable').innerHTML = `
     <tr><td colspan="7" class="text-center py-8">
       <div class="flex items-center justify-center gap-2">
-        <svg class="animate-spin h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24">
+        <svg class="animate-spin h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -646,7 +646,7 @@ function updateUI(data) {
   const riskEl = document.getElementById('refinanceRisk');
   riskEl.textContent = summary.refinanceRisk || '--';
   riskEl.className = 'summary-value ' + (summary.refinanceRisk === 'High' ? 'text-red-400' :
-    summary.refinanceRisk === 'Medium' ? 'text-amber-400' : 'text-emerald-400');
+    summary.refinanceRisk === 'Medium' ? 'text-green-400' : 'text-emerald-400');
   document.getElementById('riskCount').textContent = `${summary.highRiskCount || 0} high risk`;
 
   // Update holdings table
@@ -683,11 +683,11 @@ function updateHoldingsTable(holdings) {
           </div>
         </div>
       </td>
-      <td class="text-right font-bold ${h.totalDebt > 50e9 ? 'text-amber-400' : 'text-white'}">${formatCurrency(h.totalDebt)}</td>
-      <td class="text-right ${h.due2025 > 10e9 ? 'text-amber-400' : 'text-slate-300'}">${formatCurrency(h.due2025)}</td>
-      <td class="text-right ${h.due2026 > 10e9 ? 'text-amber-400' : 'text-slate-300'}">${formatCurrency(h.due2026)}</td>
+      <td class="text-right font-bold ${h.totalDebt > 50e9 ? 'text-green-400' : 'text-white'}">${formatCurrency(h.totalDebt)}</td>
+      <td class="text-right ${h.due2025 > 10e9 ? 'text-green-400' : 'text-slate-300'}">${formatCurrency(h.due2025)}</td>
+      <td class="text-right ${h.due2026 > 10e9 ? 'text-green-400' : 'text-slate-300'}">${formatCurrency(h.due2026)}</td>
       <td class="text-right text-emerald-400">${formatCurrency(h.cash)}</td>
-      <td class="text-right ${h.debtToEbitda > 3 ? 'text-red-400' : h.debtToEbitda > 2 ? 'text-amber-400' : 'text-emerald-400'}">
+      <td class="text-right ${h.debtToEbitda > 3 ? 'text-red-400' : h.debtToEbitda > 2 ? 'text-green-400' : 'text-emerald-400'}">
         ${h.debtToEbitda ? h.debtToEbitda.toFixed(1) + 'x' : 'N/M'}
       </td>
       <td class="text-center">
@@ -718,7 +718,7 @@ function updateRiskCategories(categories) {
     monitorEl.innerHTML = categories.monitor.map(item => `
       <div class="risk-item">
         <span class="text-white">${item.symbol}</span>
-        <span class="font-bold text-amber-400">${item.metric}</span>
+        <span class="font-bold text-green-400">${item.metric}</span>
       </div>
     `).join('');
   } else {

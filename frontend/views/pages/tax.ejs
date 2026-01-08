@@ -217,7 +217,7 @@ function formatMoney(val) {
     <div class="flex items-center gap-3">
       <form method="GET" class="flex items-center gap-2">
         <select name="portfolio" onchange="this.form.submit()"
-                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-green-400">
           <% if (typeof portfolios !== 'undefined' && portfolios) { %>
           <% portfolios.forEach(p => { %>
           <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
@@ -226,12 +226,12 @@ function formatMoney(val) {
           <option>My Portfolio</option>
           <% } %>
         </select>
-        <select class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+        <select class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-green-400">
           <option value="2024">Tax Year 2024</option>
           <option value="2023">Tax Year 2023</option>
         </select>
       </form>
-      <button onclick="runAnalysis()" class="px-4 py-2 bg-amber-500 text-black font-bold text-sm rounded-lg hover:bg-amber-400 transition-colors flex items-center gap-2">
+      <button onclick="runAnalysis()" class="px-4 py-2 bg-green-500 text-black font-bold text-sm rounded-lg hover:bg-green-400 transition-colors flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -298,14 +298,14 @@ function formatMoney(val) {
 
   <!-- Wash Sale Warning -->
   <div class="tax-container">
-    <div class="p-4 flex items-start gap-4 bg-amber-500/10">
-      <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="p-4 flex items-start gap-4 bg-green-500/10">
+      <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
         </svg>
       </div>
       <div class="flex-1">
-        <h4 class="font-bold text-amber-400">Wash Sale Rule</h4>
+        <h4 class="font-bold text-green-400">Wash Sale Rule</h4>
         <p class="text-slate-300 text-sm mt-1"><%= washSaleWarning %></p>
         <div class="mt-4">
           <div class="flex items-center gap-4 text-sm text-slate-400">
@@ -316,7 +316,7 @@ function formatMoney(val) {
               </div>
               <div class="flex justify-between mt-1 text-xs">
                 <span>-30 days</span>
-                <span class="text-amber-400 font-bold">Sale Date</span>
+                <span class="text-green-400 font-bold">Sale Date</span>
                 <span>+30 days</span>
               </div>
             </div>
@@ -329,7 +329,7 @@ function formatMoney(val) {
   <!-- Opportunities List -->
   <div class="tax-container">
     <div class="tax-header">
-      <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Harvesting Opportunities</h3>
+      <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Harvesting Opportunities</h3>
       <div class="flex items-center gap-2">
         <span class="text-xs text-slate-500">Sort by:</span>
         <select class="px-3 py-1.5 bg-black/40 border border-slate-700 rounded text-sm text-white focus:outline-none">
@@ -379,7 +379,7 @@ function formatMoney(val) {
               </div>
               <div>
                 <span class="text-slate-500">Wash Sale Ends</span>
-                <p class="text-amber-400 font-mono"><%= opp.wash_sale_end || 'Jan 15, 2025' %></p>
+                <p class="text-green-400 font-mono"><%= opp.wash_sale_end || 'Jan 15, 2025' %></p>
               </div>
             </div>
           </div>
@@ -449,7 +449,7 @@ function formatMoney(val) {
               </div>
               <div>
                 <span class="text-slate-500">Wash Sale Ends</span>
-                <p class="text-amber-400 font-mono"><%= opp.wash_sale_end %></p>
+                <p class="text-green-400 font-mono"><%= opp.wash_sale_end %></p>
               </div>
             </div>
           </div>
@@ -481,7 +481,7 @@ function formatMoney(val) {
     <!-- Strategy Guide -->
     <div class="tax-container">
       <div class="tax-header">
-        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Harvesting Strategy</h3>
+        <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Harvesting Strategy</h3>
       </div>
       <div class="p-4 space-y-4">
         <div class="flex items-start gap-3">
@@ -506,9 +506,9 @@ function formatMoney(val) {
           </div>
         </div>
         <div class="flex items-start gap-3">
-          <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-sm">!</div>
+          <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 font-bold text-sm">!</div>
           <div>
-            <h4 class="font-bold text-amber-400">Avoid Wash Sales</h4>
+            <h4 class="font-bold text-green-400">Avoid Wash Sales</h4>
             <p class="text-slate-400 text-sm">Wait 31+ days before repurchasing the original security.</p>
           </div>
         </div>
@@ -518,7 +518,7 @@ function formatMoney(val) {
     <!-- YTD Summary -->
     <div class="tax-container">
       <div class="tax-header">
-        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Year-to-Date Summary</h3>
+        <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Year-to-Date Summary</h3>
       </div>
       <div class="p-4">
         <div class="space-y-4">
@@ -539,9 +539,9 @@ function formatMoney(val) {
             <span class="text-white font-bold">Net Taxable Gain</span>
             <span class="text-white font-mono font-bold">$10,420</span>
           </div>
-          <div class="flex justify-between items-center p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <span class="text-amber-400 font-bold">Est. Tax Liability</span>
-            <span class="text-amber-400 font-mono font-bold">$3,334</span>
+          <div class="flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+            <span class="text-green-400 font-bold">Est. Tax Liability</span>
+            <span class="text-green-400 font-mono font-bold">$3,334</span>
           </div>
         </div>
       </div>
@@ -558,7 +558,7 @@ function formatMoney(val) {
     </div>
     <h3 class="text-2xl font-bold text-white mb-3">Start Tax Loss Harvesting</h3>
     <p class="text-slate-400 max-w-md mx-auto mb-6">Select a portfolio above to analyze your holdings for tax-saving opportunities.</p>
-    <button onclick="runAnalysis()" class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition-colors">
+    <button onclick="runAnalysis()" class="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-black font-bold rounded-lg hover:bg-green-400 transition-colors">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
       </svg>

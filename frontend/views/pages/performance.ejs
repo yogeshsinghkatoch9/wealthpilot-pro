@@ -18,7 +18,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
         <div class="bloomberg-header">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
-                    <h1 class="text-xl font-bold text-amber-400 tracking-wide">PERFORMANCE</h1>
+                    <h1 class="text-xl font-bold text-green-400 tracking-wide">PERFORMANCE</h1>
                     <div class="flex items-center gap-2 text-emerald-400 text-xs">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span class="font-mono">LIVE</span>
@@ -59,14 +59,14 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
                 </div>
                 <div class="kpi-item">
                     <div class="kpi-label">VOLATILITY</div>
-                    <div class="kpi-value text-amber-400 font-mono"><%= (safePerformance.metrics?.volatility || 0).toFixed(1) %>%</div>
+                    <div class="kpi-value text-green-400 font-mono"><%= (safePerformance.metrics?.volatility || 0).toFixed(1) %>%</div>
                 </div>
             </div>
 
             <!-- Performance Chart -->
             <div class="bloomberg-card mb-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-amber-400 tracking-wide">PORTFOLIO VALUE OVER TIME</h3>
+                    <h3 class="text-sm font-bold text-green-400 tracking-wide">PORTFOLIO VALUE OVER TIME</h3>
                     <span class="text-xs text-slate-500 font-mono"><%= safePeriod %> PERIOD</span>
                 </div>
                 <div class="h-80">
@@ -77,7 +77,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Risk Metrics -->
                 <div class="bloomberg-card">
-                    <h3 class="text-sm font-bold text-amber-400 tracking-wide mb-4">RISK METRICS</h3>
+                    <h3 class="text-sm font-bold text-green-400 tracking-wide mb-4">RISK METRICS</h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center py-2 border-b border-slate-800">
                             <span class="text-slate-400 text-sm">BETA</span>
@@ -102,7 +102,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
                 <!-- Returns Distribution -->
                 <div class="bloomberg-card">
-                    <h3 class="text-sm font-bold text-amber-400 tracking-wide mb-4">RETURNS SUMMARY</h3>
+                    <h3 class="text-sm font-bold text-green-400 tracking-wide mb-4">RETURNS SUMMARY</h3>
                     <div class="h-48">
                         <canvas id="returnsChart"></canvas>
                     </div>
@@ -112,7 +112,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
             <% if (safeComparison) { %>
             <!-- Benchmark Comparison -->
             <div class="bloomberg-card mb-6">
-                <h3 class="text-sm font-bold text-amber-400 tracking-wide mb-4">BENCHMARK COMPARISON</h3>
+                <h3 class="text-sm font-bold text-green-400 tracking-wide mb-4">BENCHMARK COMPARISON</h3>
                 <div class="h-64">
                     <canvas id="comparisonChart"></canvas>
                 </div>
@@ -135,7 +135,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
             <!-- Top Holdings Performance -->
             <div class="bloomberg-card overflow-hidden">
                 <div class="mb-4">
-                    <h3 class="text-sm font-bold text-amber-400 tracking-wide">HOLDINGS PERFORMANCE</h3>
+                    <h3 class="text-sm font-bold text-green-400 tracking-wide">HOLDINGS PERFORMANCE</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="bloomberg-table">
@@ -154,7 +154,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
                             <tr>
                                 <td>
                                     <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded border border-amber-500/30 bg-slate-900 flex items-center justify-center text-amber-400 text-xs font-bold font-mono">
+                                        <div class="w-8 h-8 rounded border border-green-500/30 bg-slate-900 flex items-center justify-center text-green-400 text-xs font-bold font-mono">
                                             <%= h.symbol ? h.symbol.slice(0, 2) : '??' %>
                                         </div>
                                         <span class="text-white font-mono font-semibold"><%= h.symbol %></span>
@@ -184,7 +184,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
                 <svg class="w-16 h-16 mx-auto mb-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
-                <h3 class="text-lg font-bold text-amber-400 mb-2 tracking-wide">NO PERFORMANCE DATA</h3>
+                <h3 class="text-lg font-bold text-green-400 mb-2 tracking-wide">NO PERFORMANCE DATA</h3>
                 <p class="text-slate-400">Add holdings to your portfolios to see performance metrics</p>
             </div>
             <% } %>

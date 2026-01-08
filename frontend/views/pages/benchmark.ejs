@@ -27,7 +27,7 @@ const sampleSize = safeBenchmarkData.sample_size || 0;
     <!-- Bloomberg Header Bar -->
     <div class="bloomberg-header">
       <div>
-        <h1 class="text-2xl font-bold text-amber-400">COMMUNITY BENCHMARK</h1>
+        <h1 class="text-2xl font-bold text-green-400">COMMUNITY BENCHMARK</h1>
         <p class="text-slate-400 text-sm mt-1">ANONYMOUS PERFORMANCE COMPARISON</p>
       </div>
     </div>
@@ -78,11 +78,11 @@ const sampleSize = safeBenchmarkData.sample_size || 0;
 
     <!-- Performance Insights -->
     <div class="bloomberg-card">
-      <h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Performance Insights</h3>
+      <h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Performance Insights</h3>
       <div class="space-y-2">
         <% if (safeInsights.length > 0) { safeInsights.forEach(ins => { %>
         <p class="text-slate-300 flex items-start gap-3">
-          <span class="text-amber-400 mt-1">▸</span>
+          <span class="text-green-400 mt-1">▸</span>
           <span><%= ins %></span>
         </p>
         <% }) } else { %>
@@ -96,7 +96,7 @@ const sampleSize = safeBenchmarkData.sample_size || 0;
     <% if (leaderboard) { %>
     <div class="bloomberg-card">
       <div class="flex items-center justify-between mb-6">
-        <h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wide">Leaderboard</h3>
+        <h3 class="text-lg font-semibold text-green-400 uppercase tracking-wide">Leaderboard</h3>
 
         <!-- Metric Toggle Buttons -->
         <div class="flex gap-2">
@@ -121,16 +121,16 @@ const sampleSize = safeBenchmarkData.sample_size || 0;
           <tbody>
             <% if (safeLeaderboardData.length > 0) {
                safeLeaderboardData.slice(0, 10).forEach((e, i) => { %>
-            <tr class="border-b border-slate-800 <%= e.is_you ? 'bg-amber-400/10' : 'hover:bg-slate-800/30' %> transition-colors">
+            <tr class="border-b border-slate-800 <%= e.is_you ? 'bg-green-400/10' : 'hover:bg-slate-800/30' %> transition-colors">
               <td class="py-3 px-4">
-                <span class="w-8 h-8 rounded-full inline-flex items-center justify-center text-sm font-bold <%= i === 0 ? 'bg-amber-500 text-black' : i === 1 ? 'bg-slate-400 text-black' : i === 2 ? 'bg-amber-700 text-white' : 'bg-slate-700 text-white' %>">
+                <span class="w-8 h-8 rounded-full inline-flex items-center justify-center text-sm font-bold <%= i === 0 ? 'bg-green-500 text-black' : i === 1 ? 'bg-slate-400 text-black' : i === 2 ? 'bg-green-700 text-white' : 'bg-slate-700 text-white' %>">
                   <%= e.rank %>
                 </span>
               </td>
-              <td class="py-3 px-4 font-medium <%= e.is_you ? 'text-amber-400' : 'text-white' %>">
+              <td class="py-3 px-4 font-medium <%= e.is_you ? 'text-green-400' : 'text-white' %>">
                 <%= e.is_you ? 'YOU' : e.username %>
                 <% if (e.is_you) { %>
-                <span class="ml-2 text-xs px-2 py-1 bg-amber-400/20 rounded text-amber-400">CURRENT</span>
+                <span class="ml-2 text-xs px-2 py-1 bg-green-400/20 rounded text-green-400">CURRENT</span>
                 <% } %>
               </td>
               <td class="py-3 px-4 text-right">

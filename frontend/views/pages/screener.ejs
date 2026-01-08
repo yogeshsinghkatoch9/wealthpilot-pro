@@ -4,7 +4,7 @@
   <!-- Page Header -->
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
     <div class="flex items-center gap-4">
-      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+      <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
@@ -45,7 +45,7 @@
       </svg>
       High Dividend
     </button>
-    <button onclick="applyPreset('value')" class="preset-btn bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20">
+    <button onclick="applyPreset('value')" class="preset-btn bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01"/>
       </svg>
@@ -57,7 +57,7 @@
       </svg>
       Growth Stocks
     </button>
-    <button onclick="applyPreset('mega')" class="preset-btn bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20">
+    <button onclick="applyPreset('mega')" class="preset-btn bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
       </svg>
@@ -90,7 +90,7 @@
         <div class="p-4 border-b border-slate-700/50">
           <div class="flex items-center justify-between">
             <h3 class="text-white font-semibold">Filters</h3>
-            <span id="activeFilters" class="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">0 active</span>
+            <span id="activeFilters" class="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400">0 active</span>
           </div>
         </div>
 
@@ -388,7 +388,7 @@
           </div>
           <div class="flex items-center gap-2">
             <span class="text-xs text-slate-400">View:</span>
-            <button onclick="setView('table')" id="viewTable" class="p-1.5 rounded bg-blue-500/20 text-blue-400">
+            <button onclick="setView('table')" id="viewTable" class="p-1.5 rounded bg-green-500/20 text-green-400">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
               </svg>
@@ -458,7 +458,7 @@
   <div class="absolute inset-4 md:inset-10 bg-slate-900 rounded-2xl border border-slate-700/50 overflow-hidden flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-slate-700/50">
       <div class="flex items-center gap-3">
-        <span id="modalSymbol" class="text-xl font-bold text-amber-400">AAPL</span>
+        <span id="modalSymbol" class="text-xl font-bold text-green-400">AAPL</span>
         <span id="modalName" class="text-slate-400">Apple Inc.</span>
       </div>
       <button onclick="closeStockModal()" class="text-slate-400 hover:text-white">
@@ -656,7 +656,7 @@ function renderTable() {
   tbody.innerHTML = filteredData.map(stock => `
     <tr class="border-b border-slate-700/30 hover:bg-slate-800/30 transition-colors">
       <td class="px-4 py-3">
-        <button onclick="openStockModal('${stock.symbol}')" class="font-bold text-amber-400 hover:text-amber-300 transition">${stock.symbol}</button>
+        <button onclick="openStockModal('${stock.symbol}')" class="font-bold text-green-400 hover:text-amber-300 transition">${stock.symbol}</button>
       </td>
       <td class="px-4 py-3 text-slate-300 text-sm">${stock.name}</td>
       <td class="px-4 py-3 text-right font-mono text-white">$${stock.price.toFixed(2)}</td>
@@ -745,7 +745,7 @@ function renderCards() {
     <div class="glass-card-elevated p-4 hover:border-slate-600 transition cursor-pointer" onclick="openStockModal('${stock.symbol}')">
       <div class="flex items-start justify-between mb-3">
         <div>
-          <span class="text-lg font-bold text-amber-400">${stock.symbol}</span>
+          <span class="text-lg font-bold text-green-400">${stock.symbol}</span>
           <p class="text-sm text-slate-400 truncate">${stock.name}</p>
         </div>
         <span class="${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'} font-mono">${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%</span>
@@ -771,8 +771,8 @@ function renderCards() {
 
 function setView(view) {
   currentView = view;
-  document.getElementById('viewTable').className = view === 'table' ? 'p-1.5 rounded bg-blue-500/20 text-blue-400' : 'p-1.5 rounded text-slate-400 hover:text-white';
-  document.getElementById('viewCards').className = view === 'cards' ? 'p-1.5 rounded bg-blue-500/20 text-blue-400' : 'p-1.5 rounded text-slate-400 hover:text-white';
+  document.getElementById('viewTable').className = view === 'table' ? 'p-1.5 rounded bg-green-500/20 text-green-400' : 'p-1.5 rounded text-slate-400 hover:text-white';
+  document.getElementById('viewCards').className = view === 'cards' ? 'p-1.5 rounded bg-green-500/20 text-green-400' : 'p-1.5 rounded text-slate-400 hover:text-white';
   document.getElementById('tableView').classList.toggle('hidden', view !== 'table');
   document.getElementById('cardsView').classList.toggle('hidden', view !== 'cards');
   renderResults();
@@ -876,7 +876,7 @@ function openStockModal(symbol) {
         <div>
           <h4 class="text-white font-semibold mb-3">Analyst Rating</h4>
           <div class="flex items-center gap-4">
-            <span class="px-4 py-2 rounded-lg text-sm font-semibold ${stock.rating === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : stock.rating === 'outperform' ? 'bg-blue-500/20 text-blue-400' : stock.rating === 'hold' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}">${stock.rating.toUpperCase()}</span>
+            <span class="px-4 py-2 rounded-lg text-sm font-semibold ${stock.rating === 'buy' ? 'bg-emerald-500/20 text-emerald-400' : stock.rating === 'outperform' ? 'bg-green-500/20 text-green-400' : stock.rating === 'hold' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${stock.rating.toUpperCase()}</span>
             <span class="text-slate-400">Target Upside: <span class="text-white font-mono">+${stock.targetUpside}%</span></span>
           </div>
         </div>
@@ -986,13 +986,13 @@ document.addEventListener('DOMContentLoaded', () => {
 <style>
 .filter-group { }
 .filter-label { @apply block text-xs text-slate-400 mb-1.5; }
-.filter-select { @apply w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition; }
-.filter-input { @apply w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm font-mono focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition; }
+.filter-select { @apply w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 transition; }
+.filter-input { @apply w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm font-mono focus:border-green-500 focus:ring-1 focus:ring-green-500 transition; }
 .preset-btn { @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors; }
 .glass-card-elevated { @apply bg-slate-800/50 border border-slate-700/50 rounded-xl backdrop-blur-sm; }
 .btn-glass { @apply inline-flex items-center gap-2 px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white hover:bg-slate-600/50 transition; }
 .btn-ghost { @apply inline-flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white transition; }
-.btn-primary { @apply inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-400 hover:to-purple-500 transition shadow-lg shadow-blue-500/25; }
+.btn-primary { @apply inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-purple-600 text-white rounded-lg hover:from-green-400 hover:to-purple-500 transition shadow-lg shadow-blue-500/25; }
 </style>
 
 <%- include('../partials/footer') %>

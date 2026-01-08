@@ -17,7 +17,7 @@
   // Risk colors
   const riskColors = {
     'HIGH': { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500' },
-    'MODERATE': { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500' },
+    'MODERATE': { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500' },
     'LOW': { bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500' }
   };
   const currentRiskColor = riskColors[safeOverallRisk] || riskColors['LOW'];
@@ -29,7 +29,7 @@
     <!-- Bloomberg-Style Header Bar -->
     <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
       <div class="flex items-center gap-6">
-        <h1 class="text-lg font-semibold text-amber-400">Concentration Risk</h1>
+        <h1 class="text-lg font-semibold text-green-400">Concentration Risk</h1>
         <span class="status-live">LIVE</span>
         <span class="text-xs text-slate-400 font-mono">Position, sector & geographic analysis</span>
       </div>
@@ -70,28 +70,28 @@
       </div>
       <div class="kpi-item">
         <div class="kpi-label">Top Position</div>
-        <div class="kpi-value <%= safeTopPosition.weight > 15 ? 'text-red-400' : safeTopPosition.weight > 10 ? 'text-amber-400' : 'text-emerald-400' %>">
+        <div class="kpi-value <%= safeTopPosition.weight > 15 ? 'text-red-400' : safeTopPosition.weight > 10 ? 'text-green-400' : 'text-emerald-400' %>">
           <%= fmt.pct(safeTopPosition.weight) %>
         </div>
         <div class="text-xs text-slate-400"><%= safeTopPosition.symbol %></div>
       </div>
       <div class="kpi-item">
         <div class="kpi-label">Top 5 Holdings</div>
-        <div class="kpi-value <%= safeTop5Weight > 60 ? 'text-red-400' : safeTop5Weight > 50 ? 'text-amber-400' : 'text-emerald-400' %>">
+        <div class="kpi-value <%= safeTop5Weight > 60 ? 'text-red-400' : safeTop5Weight > 50 ? 'text-green-400' : 'text-emerald-400' %>">
           <%= fmt.pct(safeTop5Weight) %>
         </div>
         <div class="text-xs text-slate-400"><%= safeTop5Weight > 50 ? 'Above target 50%' : 'Within target' %></div>
       </div>
       <div class="kpi-item">
         <div class="kpi-label">Top Sector</div>
-        <div class="kpi-value <%= safeTopSector.weight > 40 ? 'text-red-400' : safeTopSector.weight > 30 ? 'text-amber-400' : 'text-emerald-400' %>">
+        <div class="kpi-value <%= safeTopSector.weight > 40 ? 'text-red-400' : safeTopSector.weight > 30 ? 'text-green-400' : 'text-emerald-400' %>">
           <%= fmt.pct(safeTopSector.weight) %>
         </div>
         <div class="text-xs text-slate-400"><%= safeTopSector.name %></div>
       </div>
       <div class="kpi-item">
         <div class="kpi-label">HHI Index</div>
-        <div class="kpi-value <%= safeHHI > 2500 ? 'text-red-400' : safeHHI > 1000 ? 'text-amber-400' : 'text-emerald-400' %>">
+        <div class="kpi-value <%= safeHHI > 2500 ? 'text-red-400' : safeHHI > 1000 ? 'text-green-400' : 'text-emerald-400' %>">
           <%= safeHHI.toLocaleString() %>
         </div>
         <div class="text-xs text-slate-400"><%= safeHHI > 2500 ? 'Concentrated' : safeHHI > 1000 ? 'Moderate' : 'Diversified' %></div>
@@ -113,9 +113,9 @@
         <div class="p-4">
           <div class="h-64"><canvas id="positionChart"></canvas></div>
           <% if (safeTopPosition.weight > 10) { %>
-          <div class="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <div class="mt-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
             <p class="text-sm">
-              <span class="text-amber-400 font-bold">Warning:</span>
+              <span class="text-green-400 font-bold">Warning:</span>
               <%= safeTopPosition.symbol %> at <span class="font-mono"><%= fmt.pct(safeTopPosition.weight) %></span> exceeds 10% single-position guideline
             </p>
           </div>
@@ -217,7 +217,7 @@
           <div>
             <div class="flex justify-between mb-1">
               <span class="text-slate-300">Herfindahl-Hirschman Index (HHI)</span>
-              <span class="font-bold font-mono <%= safeHHI > 2500 ? 'text-red-400' : safeHHI > 1000 ? 'text-amber-400' : 'text-emerald-400' %>">
+              <span class="font-bold font-mono <%= safeHHI > 2500 ? 'text-red-400' : safeHHI > 1000 ? 'text-green-400' : 'text-emerald-400' %>">
                 <%= safeHHI.toLocaleString() %>
               </span>
             </div>
@@ -237,7 +237,7 @@
           <div>
             <div class="flex justify-between mb-1">
               <span class="text-slate-300">Sector HHI</span>
-              <span class="font-bold font-mono <%= safeSectorHHI > 2500 ? 'text-red-400' : safeSectorHHI > 1500 ? 'text-amber-400' : 'text-emerald-400' %>">
+              <span class="font-bold font-mono <%= safeSectorHHI > 2500 ? 'text-red-400' : safeSectorHHI > 1500 ? 'text-green-400' : 'text-emerald-400' %>">
                 <%= safeSectorHHI.toLocaleString() %>
               </span>
             </div>
@@ -306,7 +306,7 @@
               </td>
               <td class="text-center">
                 <% if (s.weight > 30) { %>
-                <span class="px-2 py-1 rounded text-xs font-mono bg-amber-500/20 text-amber-400">HIGH</span>
+                <span class="px-2 py-1 rounded text-xs font-mono bg-green-500/20 text-green-400">HIGH</span>
                 <% } else { %>
                 <span class="px-2 py-1 rounded text-xs font-mono bg-emerald-500/20 text-emerald-400">OK</span>
                 <% } %>

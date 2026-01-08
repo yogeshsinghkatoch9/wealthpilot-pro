@@ -1,10 +1,10 @@
 <%- include('../partials/header', { pageTitle: 'Broker Connect' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 p-4 -mt-6 -mx-6 mb-6">
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-green-400 p-4 -mt-6 -mx-6 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400 tracking-tight">BROKER CONNECTIONS</h1>
+      <h1 class="text-2xl font-bold text-green-400 tracking-tight">BROKER CONNECTIONS</h1>
       <p class="text-slate-300 text-sm mt-1">Link your brokerage accounts for automatic syncing</p>
     </div>
   </div>
@@ -16,7 +16,7 @@
 <div class="bloomberg-card p-4">
 <div class="flex items-center justify-between">
 <span class="text-slate-400 text-sm font-medium">Connected Accounts</span>
-<span class="text-2xl font-bold text-amber-400"><%= connections.length %></span>
+<span class="text-2xl font-bold text-green-400"><%= connections.length %></span>
 </div>
 </div>
 <div class="bloomberg-card p-4">
@@ -28,14 +28,14 @@
 <div class="bloomberg-card p-4">
 <div class="flex items-center justify-between">
 <span class="text-slate-400 text-sm font-medium">Last Sync</span>
-<span class="text-lg font-medium text-amber-400"><%= connections.length > 0 && connections[0].last_sync ? new Date(connections[0].last_sync).toLocaleString() : 'Never' %></span>
+<span class="text-lg font-medium text-green-400"><%= connections.length > 0 && connections[0].last_sync ? new Date(connections[0].last_sync).toLocaleString() : 'Never' %></span>
 </div>
 </div>
 </div>
 
 <!-- Connected Brokers -->
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Connected Accounts (<%= connections.length %>)</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Connected Accounts (<%= connections.length %>)</h3>
 <% if (connections.length === 0) { %>
 <div class="text-center py-8">
 <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
@@ -49,7 +49,7 @@
   const color = colors[conn.broker_name?.toLowerCase()] || 'slate';
   const initials = (conn.broker_name || 'BR').substring(0, 2).toUpperCase();
 %>
-<div class="flex items-center justify-between p-4 rounded-lg border-2 <%= conn.status === 'active' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5' %> hover:bg-slate-700/30 transition-all">
+<div class="flex items-center justify-between p-4 rounded-lg border-2 <%= conn.status === 'active' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-green-500/30 bg-green-500/5' %> hover:bg-slate-700/30 transition-all">
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white font-bold text-lg"><%= initials %></div>
 <div>
@@ -60,7 +60,7 @@
 <div class="text-right">
 <p class="font-bold text-white"><%= fmt.money(conn.balance || 0) %></p>
 <div class="flex items-center gap-2 mt-1">
-<span class="px-2 py-0.5 <%= conn.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400' %> rounded text-xs font-medium"><%= conn.status === 'active' ? 'Connected' : 'Needs Reauth' %></span>
+<span class="px-2 py-0.5 <%= conn.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-green-500/20 text-green-400' %> rounded text-xs font-medium"><%= conn.status === 'active' ? 'Connected' : 'Needs Reauth' %></span>
 <button onclick="syncBroker('<%= conn.id %>')" class="bloomberg-btn-secondary text-sm px-2 py-1">Sync</button>
 <button onclick="disconnectBroker('<%= conn.id %>')" class="text-red-400 hover:text-red-300 text-sm font-medium">Disconnect</button>
 </div>
@@ -73,7 +73,7 @@
 
 <!-- Available Brokers -->
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Add New Connection</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Add New Connection</h3>
 <%
 const defaultBrokers = [
   { id: 'schwab', name: 'Charles Schwab', description: 'Stocks, ETFs, Options', color: 'sky', initials: 'CS' },
@@ -93,7 +93,7 @@ const brokersToShow = (supportedBrokers && supportedBrokers.length > 0) ? suppor
   const color = broker.color || colors[broker.id] || 'slate';
   const initials = broker.initials || (broker.name || '').substring(0, 2).toUpperCase();
 %>
-<button onclick="connectBroker('<%= broker.id %>')" class="p-4 rounded-lg border-2 border-transparent bg-slate-800 hover:bg-slate-700 hover:border-amber-400 transition-all text-center">
+<button onclick="connectBroker('<%= broker.id %>')" class="p-4 rounded-lg border-2 border-transparent bg-slate-800 hover:bg-slate-700 hover:border-green-400 transition-all text-center">
 <div class="w-12 h-12 mx-auto rounded-lg bg-gradient-to-br from-<%= color %>-500 to-<%= color %>-600 flex items-center justify-center text-white font-bold text-lg mb-2"><%= initials %></div>
 <p class="font-medium text-white"><%= broker.name %></p>
 <p class="text-xs text-slate-400"><%= broker.description || 'Brokerage' %></p>
@@ -105,15 +105,15 @@ const brokersToShow = (supportedBrokers && supportedBrokers.length > 0) ? suppor
 <!-- Sync Settings -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Sync Settings</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Sync Settings</h3>
 <div class="space-y-4">
 <div class="flex items-center justify-between">
 <div><p class="font-medium text-white">Auto-Sync</p><p class="text-sm text-slate-400">Automatically sync accounts</p></div>
-<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div></label>
+<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div></label>
 </div>
 <div class="flex items-center justify-between">
 <div><p class="font-medium text-white">Sync Frequency</p><p class="text-sm text-slate-400">How often to refresh data</p></div>
-<select class="bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:border-amber-400 focus:outline-none w-40">
+<select class="bg-slate-800 border border-slate-700 text-white rounded px-3 py-2 focus:border-green-400 focus:outline-none w-40">
 <option value="5">Every 5 minutes</option>
 <option value="15" selected>Every 15 minutes</option>
 <option value="30">Every 30 minutes</option>
@@ -122,13 +122,13 @@ const brokersToShow = (supportedBrokers && supportedBrokers.length > 0) ? suppor
 </div>
 <div class="flex items-center justify-between">
 <div><p class="font-medium text-white">Import Transactions</p><p class="text-sm text-slate-400">Sync buy/sell history</p></div>
-<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div></label>
+<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" checked class="sr-only peer"><div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div></label>
 </div>
 </div>
 </div>
 
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Recent Activity</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Recent Activity</h3>
 <div class="space-y-3">
 <div class="flex items-center gap-3 text-sm">
 <span class="w-2 h-2 bg-emerald-400 rounded-full"></span>
@@ -146,7 +146,7 @@ const brokersToShow = (supportedBrokers && supportedBrokers.length > 0) ? suppor
 <span class="text-slate-500 ml-auto">20m ago</span>
 </div>
 <div class="flex items-center gap-3 text-sm">
-<span class="w-2 h-2 bg-amber-400 rounded-full"></span>
+<span class="w-2 h-2 bg-green-400 rounded-full"></span>
 <span class="text-slate-300">Fidelity requires re-authentication</span>
 <span class="text-slate-500 ml-auto">2d ago</span>
 </div>
@@ -169,7 +169,7 @@ const brokersToShow = (supportedBrokers && supportedBrokers.length > 0) ? suppor
 <!-- Connect Modal -->
 <div id="connectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
 <div class="bloomberg-card p-6 w-full max-w-md mx-4">
-<h3 class="text-xl font-bold text-amber-400 mb-4 uppercase tracking-wide" id="modalTitle">Connect Broker</h3>
+<h3 class="text-xl font-bold text-green-400 mb-4 uppercase tracking-wide" id="modalTitle">Connect Broker</h3>
 <p class="text-slate-400 mb-6">You'll be redirected to securely link your account through Plaid.</p>
 <div class="flex gap-3">
 <button onclick="closeModal()" class="bloomberg-btn-ghost flex-1">Cancel</button>

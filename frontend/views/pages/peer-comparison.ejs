@@ -47,7 +47,7 @@ const comparisonMetrics = [
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">PEER COMPARISON</h1>
+      <h1 class="text-2xl font-bold text-green-400">PEER COMPARISON</h1>
       <p class="text-slate-400">Compare stocks against industry peers</p>
     </div>
     <form method="GET" action="/peer-comparison" class="flex gap-2">
@@ -59,15 +59,15 @@ const comparisonMetrics = [
 
 <% if (!peers) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No peer comparison data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No peer comparison data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol or check if peer data is available.</p>
 </div>
 <% } else { %>
 
 <!-- Stock Header -->
-<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-purple-900/20 border-amber-400/20">
+<div class="bloomberg-card p-5 bg-gradient-to-r from-sky-900/20 to-purple-900/20 border-green-400/20">
   <div class="flex items-center gap-4">
-    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
     <div class="flex-1">
       <h2 class="text-xl font-bold text-white"><%= companyName %></h2>
       <p class="text-slate-400 text-sm"><%= sector %> • <%= industry %></p>
@@ -81,11 +81,11 @@ const comparisonMetrics = [
 
 <!-- Peer Group -->
 <div class="bloomberg-card p-4">
-  <h3 class="font-semibold text-amber-400 mb-3 uppercase tracking-wide text-sm">Peer Group</h3>
+  <h3 class="font-semibold text-green-400 mb-3 uppercase tracking-wide text-sm">Peer Group</h3>
   <div class="flex flex-wrap gap-2">
-    <span class="px-3 py-1 rounded-full bg-amber-500 text-black text-sm font-bold font-mono"><%= symbol %> ★</span>
+    <span class="px-3 py-1 rounded-full bg-green-500 text-black text-sm font-bold font-mono"><%= symbol %> ★</span>
     <% peerSymbols.forEach(peer => { %>
-    <a href="/peer-comparison?symbol=<%= peer %>" class="px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-sm font-mono border border-slate-600 hover:border-amber-400/50 transition-colors"><%= peer %></a>
+    <a href="/peer-comparison?symbol=<%= peer %>" class="px-3 py-1 rounded-full bg-slate-700 text-slate-300 text-sm font-mono border border-slate-600 hover:border-green-400/50 transition-colors"><%= peer %></a>
     <% }); %>
     <% if (peerSymbols.length === 0) { %>
     <span class="text-slate-500 text-sm">No peers identified</span>
@@ -95,15 +95,15 @@ const comparisonMetrics = [
 
 <!-- Comparison Table -->
 <div class="bloomberg-card overflow-hidden">
-  <div class="p-4 border-b border-amber-400/30 bg-black">
-    <h3 class="font-semibold text-amber-400 uppercase tracking-wide text-sm">Valuation & Performance Comparison</h3>
+  <div class="p-4 border-b border-green-400/30 bg-black">
+    <h3 class="font-semibold text-green-400 uppercase tracking-wide text-sm">Valuation & Performance Comparison</h3>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
-        <tr class="bg-slate-900 text-amber-400 text-left">
+        <tr class="bg-slate-900 text-green-400 text-left">
           <th class="px-4 py-3 uppercase tracking-wide text-xs">Metric</th>
-          <th class="px-4 py-3 text-center bg-amber-500/10 uppercase tracking-wide text-xs"><%= symbol %></th>
+          <th class="px-4 py-3 text-center bg-green-500/10 uppercase tracking-wide text-xs"><%= symbol %></th>
           <% peerList.slice(0, 5).forEach(peer => { %>
           <th class="px-4 py-3 text-center uppercase tracking-wide text-xs"><%= peer.symbol || peer %></th>
           <% }); %>
@@ -128,7 +128,7 @@ const comparisonMetrics = [
         %>
         <tr class="border-b border-slate-700/50 hover:bg-slate-800/30">
           <td class="px-4 py-3 font-medium text-slate-300"><%= metric.name %></td>
-          <td class="px-4 py-3 text-center font-bold bg-amber-500/5 font-mono"><%= formatValue(companyVal, metric.format) %></td>
+          <td class="px-4 py-3 text-center font-bold bg-green-500/5 font-mono"><%= formatValue(companyVal, metric.format) %></td>
           <% peerList.slice(0, 5).forEach(peer => {
             const peerVal = peer[metric.key] || 0;
             let colorClass = '';
@@ -151,18 +151,18 @@ const comparisonMetrics = [
 <!-- Charts -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">Performance vs Peers (YTD)</h3>
+    <h3 class="font-semibold text-green-400 mb-4 uppercase tracking-wide text-sm">Performance vs Peers (YTD)</h3>
     <div class="h-64"><canvas id="perfChart"></canvas></div>
   </div>
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">Valuation Radar</h3>
+    <h3 class="font-semibold text-green-400 mb-4 uppercase tracking-wide text-sm">Valuation Radar</h3>
     <div class="h-64"><canvas id="radarChart"></canvas></div>
   </div>
 </div>
 
 <!-- Ranking -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">Peer Ranking (<%= symbol %> Position)</h3>
+  <h3 class="font-semibold text-green-400 mb-4 uppercase tracking-wide text-sm">Peer Ranking (<%= symbol %> Position)</h3>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
     <%
       const totalPeers = peerList.length + 1;
@@ -180,7 +180,7 @@ const comparisonMetrics = [
     %>
     <div class="text-center p-4 rounded-lg <%= isGood ? 'bg-emerald-500/10 border border-emerald-400/30' : isBad ? 'bg-red-500/10 border border-red-400/30' : 'bg-slate-800 border border-slate-700' %>">
       <p class="text-sm text-slate-400 uppercase tracking-wide text-xs"><%= rm.name %></p>
-      <p class="text-3xl font-bold font-mono <%= isGood ? 'text-emerald-400' : isBad ? 'text-red-400' : 'text-amber-400' %>">#<%= rank %></p>
+      <p class="text-3xl font-bold font-mono <%= isGood ? 'text-emerald-400' : isBad ? 'text-red-400' : 'text-green-400' %>">#<%= rank %></p>
       <p class="text-xs <%= isGood ? 'text-emerald-400' : isBad ? 'text-red-400' : 'text-slate-500' %>">
         <%= isGood ? (rm.good ? 'Best in class' : 'Attractive') : isBad ? 'Below peers' : 'of ' + totalPeers + ' peers' %>
       </p>
@@ -191,7 +191,7 @@ const comparisonMetrics = [
 
 <!-- Competitive Analysis -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide text-sm">COMPETITIVE ANALYSIS</h3>
+  <h3 class="font-semibold text-green-400 mb-4 uppercase tracking-wide text-sm">COMPETITIVE ANALYSIS</h3>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <%
       const companyRoe = company.roe || p.roe || 0;

@@ -10,7 +10,7 @@ const safeFmt = fmt || { money: (val) => `$${(val || 0).toFixed(2)}` };
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">DIVIDEND REINVESTMENT (DRIP)</h1>
+      <h1 class="text-2xl font-bold text-green-400">DIVIDEND REINVESTMENT (DRIP)</h1>
       <p class="text-slate-400">Configure automatic dividend reinvestment settings</p>
     </div>
     <button onclick="enableAllDRIP()" class="bloomberg-btn bloomberg-btn-primary">Enable All DRIP</button>
@@ -44,14 +44,14 @@ const estAnnual = safeSettings.reduce((sum, s) => sum + (s.annual_dividend || 0)
 </div>
 <div class="tufte-stat-card">
 <p class="text-slate-400 text-sm">Est. Annual</p>
-<p class="text-2xl font-bold font-mono text-amber-400 tabular-nums"><%= safeFmt.money(estAnnual) %></p>
+<p class="text-2xl font-bold font-mono text-green-400 tabular-nums"><%= safeFmt.money(estAnnual) %></p>
 <p class="text-sm text-slate-400">compound growth</p>
 </div>
 </div>
 
 <!-- Global Settings -->
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4">Global DRIP Settings</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4">Global DRIP Settings</h3>
 <div class="space-y-4">
 <div class="flex items-center justify-between p-4 rounded-lg bg-slate-800">
 <div>
@@ -89,7 +89,7 @@ const estAnnual = safeSettings.reduce((sum, s) => sum + (s.annual_dividend || 0)
 <!-- Per-Stock Settings -->
 <div class="bloomberg-card overflow-hidden">
 <div class="p-4 border-b border-slate-700">
-<h3 class="text-lg font-semibold text-amber-400">Per-Stock DRIP Settings (<%= safeSettings.length %>)</h3>
+<h3 class="text-lg font-semibold text-green-400">Per-Stock DRIP Settings (<%= safeSettings.length %>)</h3>
 </div>
 <% if (safeSettings.length === 0) { %>
 <div class="p-12 text-center">

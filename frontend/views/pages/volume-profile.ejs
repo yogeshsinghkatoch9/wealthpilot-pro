@@ -41,7 +41,7 @@ const maxVol = levels.length > 0 ? Math.max(...levels.map(l => l.volume)) : 1;
 
 <% if (!volumeProfile) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No volume profile data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No volume profile data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol.</p>
 </div>
 <% } else { %>
@@ -173,7 +173,7 @@ const maxVol = levels.length > 0 ? Math.max(...levels.map(l => l.volume)) : 1;
       This suggests buyers are in control. Watch for potential pullback to POC as support.
     </p>
     <% } else if (currentPrice < pocPrice) { %>
-    <p class="text-amber-400">
+    <p class="text-green-400">
       <strong>Neutral to Bearish:</strong> Price is trading <strong>below the Point of Control</strong> at <%= formatPrice(poc.price) %>.
       The POC at <%= formatPrice(poc.price) %> may act as resistance. Watch for price to reclaim POC for bullish confirmation.
     </p>

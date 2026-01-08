@@ -19,7 +19,7 @@
           <span class="text-sm font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>" id="progress-text">0%</span>
         </div>
         <div class="h-2 <%= theme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %> rounded-full overflow-hidden">
-          <div class="h-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+          <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500" id="progress-bar" style="width: 0%"></div>
         </div>
       </div>
 
@@ -28,23 +28,23 @@
         <!-- Step 1: Choose Setup Method -->
         <div class="card p-6" id="step-1">
           <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <span class="text-blue-400 font-bold">1</span>
+            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-400 font-bold">1</span>
             </div>
             <div class="flex-1">
               <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
                 How would you like to set up your portfolio?
               </h3>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <button onclick="selectMethod('template')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors group" data-method="template">
-                  <svg class="w-8 h-8 text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onclick="selectMethod('template')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-green-500 text-left transition-colors group" data-method="template">
+                  <svg class="w-8 h-8 text-green-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
                   </svg>
                   <h4 class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Use a Template</h4>
                   <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Choose from pre-built portfolios</p>
                 </button>
                 
-                <button onclick="selectMethod('import')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors group" data-method="import">
+                <button onclick="selectMethod('import')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-green-500 text-left transition-colors group" data-method="import">
                   <svg class="w-8 h-8 text-emerald-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                   </svg>
@@ -52,7 +52,7 @@
                   <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Upload from your broker</p>
                 </button>
                 
-                <button onclick="selectMethod('manual')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors group" data-method="manual">
+                <button onclick="selectMethod('manual')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-green-500 text-left transition-colors group" data-method="manual">
                   <svg class="w-8 h-8 text-purple-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                   </svg>
@@ -67,8 +67,8 @@
         <!-- Step 2: Template Selection (hidden by default) -->
         <div class="card p-6 hidden" id="step-template">
           <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <span class="text-blue-400 font-bold">2</span>
+            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-400 font-bold">2</span>
             </div>
             <div class="flex-1">
               <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2">
@@ -86,7 +86,7 @@
                   <div class="relative flex-1">
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">$</span>
                     <input type="number" id="portfolio-value" value="100000" min="1000" 
-                      class="w-full pl-8 pr-4 py-3 <%= theme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-900/50 border-slate-600' %> border rounded-lg text-lg font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      class="w-full pl-8 pr-4 py-3 <%= theme === 'light' ? 'bg-white border-gray-300' : 'bg-slate-900/50 border-slate-600' %> border rounded-lg text-lg font-medium focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
                   </div>
                   <button onclick="createFromTemplate()" class="btn-primary px-6">
@@ -122,7 +122,7 @@
                 </label>
                 <p class="text-sm <%= theme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-4">
                   Supported formats: Fidelity, Schwab, Vanguard, TD Ameritrade, or 
-                  <a href="/api/import/template" class="text-blue-400 hover:underline">download our template</a>
+                  <a href="/api/import/template" class="text-green-400 hover:underline">download our template</a>
                 </p>
               </div>
               
@@ -170,7 +170,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
               <a href="/dashboard" class="p-4 rounded-xl <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors">
-                <svg class="w-8 h-8 mx-auto text-blue-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 mx-auto text-green-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
                 <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Dashboard</span>
@@ -184,7 +184,7 @@
               </a>
               
               <a href="/alerts" class="p-4 rounded-xl <%= theme === 'light' ? 'bg-gray-100 hover:bg-gray-200' : 'bg-slate-800 hover:bg-slate-700' %> transition-colors">
-                <svg class="w-8 h-8 mx-auto text-amber-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 mx-auto text-green-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
                 <span class="font-medium <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Set Alerts</span>
@@ -208,10 +208,10 @@ function selectMethod(method) {
   
   // Update button states
   document.querySelectorAll('[data-method]').forEach(btn => {
-    btn.classList.remove('border-blue-500', 'bg-blue-500/10');
+    btn.classList.remove('border-green-500', 'bg-green-500/10');
     btn.classList.add('border-slate-700');
   });
-  document.querySelector(`[data-method="${method}"]`).classList.add('border-blue-500', 'bg-blue-500/10');
+  document.querySelector(`[data-method="${method}"]`).classList.add('border-green-500', 'bg-green-500/10');
   
   // Show appropriate step
   document.getElementById('step-template').classList.add('hidden');
@@ -236,11 +236,11 @@ async function loadTemplates() {
     
     const grid = document.getElementById('templates-grid');
     grid.innerHTML = templates.map(t => `
-      <button onclick="selectTemplate('${t.id}')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-blue-500 text-left transition-colors" data-template="${t.id}">
+      <button onclick="selectTemplate('${t.id}')" class="p-4 rounded-xl border-2 border-slate-700 hover:border-green-500 text-left transition-colors" data-template="${t.id}">
         <h4 class="font-medium text-white mb-1">${t.name}</h4>
         <p class="text-sm text-slate-400 mb-2">${t.description}</p>
         <div class="flex items-center gap-2">
-          <span class="px-2 py-1 rounded text-xs ${t.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-400' : t.riskLevel === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}">
+          <span class="px-2 py-1 rounded text-xs ${t.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-400' : t.riskLevel === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">
             ${t.riskLevel} Risk
           </span>
           <span class="text-xs text-slate-500">${t.holdings.length} holdings</span>
@@ -256,9 +256,9 @@ function selectTemplate(id) {
   selectedTemplate = id;
   
   document.querySelectorAll('[data-template]').forEach(btn => {
-    btn.classList.remove('border-blue-500', 'bg-blue-500/10');
+    btn.classList.remove('border-green-500', 'bg-green-500/10');
   });
-  document.querySelector(`[data-template="${id}"]`).classList.add('border-blue-500', 'bg-blue-500/10');
+  document.querySelector(`[data-template="${id}"]`).classList.add('border-green-500', 'bg-green-500/10');
   
   document.getElementById('template-value-input').style.display = 'block';
   updateProgress(50);
@@ -402,16 +402,16 @@ const dropZone = document.getElementById('drop-zone');
 if (dropZone) {
   dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
-    dropZone.classList.add('border-blue-500', 'bg-blue-500/10');
+    dropZone.classList.add('border-green-500', 'bg-green-500/10');
   });
   
   dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+    dropZone.classList.remove('border-green-500', 'bg-green-500/10');
   });
   
   dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropZone.classList.remove('border-blue-500', 'bg-blue-500/10');
+    dropZone.classList.remove('border-green-500', 'bg-green-500/10');
     
     const file = e.dataTransfer.files[0];
     if (file && file.name.endsWith('.csv')) {

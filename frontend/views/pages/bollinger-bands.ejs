@@ -37,7 +37,7 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
 
 <!-- Bloomberg Header Bar -->
 <div class="bloomberg-header">
-  <h1 class="text-2xl font-bold text-amber-400">BOLLINGER BANDS</h1>
+  <h1 class="text-2xl font-bold text-green-400">BOLLINGER BANDS</h1>
   <p class="text-slate-400">Volatility bands & squeeze detection</p>
 </div>
 
@@ -50,7 +50,7 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
 
 <% if (!technicals) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No Bollinger Band data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No Bollinger Band data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol or check if the market is open.</p>
 </div>
 <% } else { %>
@@ -86,7 +86,7 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
     </div>
     <div class="text-center">
       <p class="text-sm text-slate-400">%B Position</p>
-      <p class="text-2xl font-bold font-mono text-amber-400"><%= percentB.toFixed(2) %></p>
+      <p class="text-2xl font-bold font-mono text-green-400"><%= percentB.toFixed(2) %></p>
       <p class="text-xs text-slate-400"><%= percentB > 0.5 ? 'Upper half' : 'Lower half' %></p>
     </div>
   </div>
@@ -169,11 +169,11 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
       </div>
       <div>
         <div class="flex justify-between text-sm mb-1">
-          <span class="text-amber-400 font-bold">Current Price</span>
-          <span class="text-amber-400 font-mono font-bold"><%= formatPrice(price) %></span>
+          <span class="text-green-400 font-bold">Current Price</span>
+          <span class="text-green-400 font-mono font-bold"><%= formatPrice(price) %></span>
         </div>
         <div class="h-3 bg-slate-700 rounded-full">
-          <div class="h-3 bg-amber-400 rounded-full" style="width: <%= Math.min(Math.max(percentB * 100, 5), 100) %>%"></div>
+          <div class="h-3 bg-green-400 rounded-full" style="width: <%= Math.min(Math.max(percentB * 100, 5), 100) %>%"></div>
         </div>
       </div>
       <div>
@@ -201,7 +201,7 @@ const squeezeStatus = getSqueezeStatus(bandWidth);
       <% } else if (percentB < 0) { %>
         Price is <strong class="text-emerald-400">below</strong> the lower band - potential bounce or breakdown.
       <% } else if (percentB > 0.8) { %>
-        Price is in the <strong class="text-amber-400">upper zone</strong> - watch for resistance.
+        Price is in the <strong class="text-green-400">upper zone</strong> - watch for resistance.
       <% } else if (percentB < 0.2) { %>
         Price is in the <strong class="text-sky-400">lower zone</strong> - watch for support.
       <% } else { %>

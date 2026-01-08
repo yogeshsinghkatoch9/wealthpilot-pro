@@ -231,14 +231,30 @@ router.get('/dashboard', async (req, res) => {
 /**
  * GET /api/analytics/performance-history
  * Historical performance data for charts
+ * Query params:
+ *   - timeframe: 1D, 1W, 1M, 3M, 6M, 1Y, YTD, ALL
+ *   - portfolioId: (optional) specific portfolio ID to filter by
  */
 router.get('/performance-history', async (req, res) => {
   try {
     const timeframe = req.query.timeframe || '1M';
+    const portfolioId = req.query.portfolioId; // Optional filter
+
+    // Build where clause based on whether portfolioId is provided
+    const whereClause = { user_id: req.user.id };
+    if (portfolioId && portfolioId !== 'all') {
+      whereClause.id = portfolioId;
+    }
+
     const portfolios = await prisma.portfolios.findMany({
-      where: { user_id: req.user.id },
+      where: whereClause,
       include: { holdings: true }
     });
+
+    // Log aggregation info
+    const totalHoldings = portfolios.reduce((sum, p) => sum + (p.holdings?.length || 0), 0);
+    const filterInfo = portfolioId && portfolioId !== 'all' ? ` (filtered to portfolio ${portfolioId})` : ' (all portfolios)';
+    logger.info(`[Performance History] Aggregating ${portfolios.length} portfolios with ${totalHoldings} total holdings for user ${req.user.id}${filterInfo}`);
 
     // Calculate number of days based on timeframe
     const days = {
@@ -308,9 +324,30 @@ router.get('/performance-history', async (req, res) => {
     const spyEndPrice = spyPrices.length > 0 ? Number(spyPrices[spyPrices.length - 1].close) : 100;
     const spyReturn = spyStartPrice > 0 ? (spyEndPrice - spyStartPrice) / spyStartPrice : 0;
 
-    // Fetch historical prices for all holdings to reconstruct portfolio history
+    // Build a map of symbol -> shares and value for quick lookup
+    const sharesMap = {};
+    const holdingValues = [];
+    for (const portfolio of portfolios) {
+      for (const h of portfolio.holdings) {
+        const shares = Number(h.shares);
+        sharesMap[h.symbol] = (sharesMap[h.symbol] || 0) + shares;
+        const quote = quotes[h.symbol] || {};
+        const price = Number(quote.price) || Number(h.avg_cost_basis) || 0;
+        holdingValues.push({ symbol: h.symbol, value: shares * price });
+      }
+    }
+
+    // Sort symbols by portfolio value (highest first) and fetch historical prices
+    // This ensures we get history for the most important holdings
+    const sortedSymbols = [...new Set(holdingValues
+      .sort((a, b) => b.value - a.value)
+      .map(h => h.symbol))];
+
+    logger.info(`[Performance History] Fetching historical prices for ${Math.min(sortedSymbols.length, 50)} of ${allSymbols.length} symbols (sorted by value)`);
+
     const holdingHistories = {};
-    for (const symbol of allSymbols.slice(0, 20)) { // Limit to 20 symbols for performance
+    // Fetch historical prices for top 50 symbols by value (covers majority of portfolio)
+    for (const symbol of sortedSymbols.slice(0, 50)) {
       try {
         const history = await MarketDataService.getHistoricalPrices(symbol, days);
         if (history && history.length > 0) {
@@ -318,14 +355,6 @@ router.get('/performance-history', async (req, res) => {
         }
       } catch (err) {
         logger.debug(`Failed to get history for ${symbol}:`, err.message);
-      }
-    }
-
-    // Build a map of symbol -> shares for quick lookup
-    const sharesMap = {};
-    for (const portfolio of portfolios) {
-      for (const h of portfolio.holdings) {
-        sharesMap[h.symbol] = (sharesMap[h.symbol] || 0) + Number(h.shares);
       }
     }
 
@@ -382,6 +411,11 @@ router.get('/performance-history', async (req, res) => {
       }
     }
 
+    // Include portfolio names in response for transparency
+    const portfolioNames = portfolios.map(p => p.name);
+
+    logger.info(`[Performance History] Returning chart data: ${portfolio.length} data points, current value $${currentValue.toFixed(2)}, portfolios: ${portfolioNames.join(', ')}`);
+
     res.json({
       labels,
       portfolio,
@@ -389,7 +423,10 @@ router.get('/performance-history', async (req, res) => {
       stats: {
         currentValue: Math.round(currentValue * 100) / 100,
         totalCost: Math.round(totalCost * 100) / 100,
-        totalReturn: Math.round(totalReturn * 10000) / 100
+        totalReturn: Math.round(totalReturn * 10000) / 100,
+        portfolioCount: portfolios.length,
+        portfolioNames,
+        holdingsCount: totalHoldings
       }
     });
   } catch (err) {

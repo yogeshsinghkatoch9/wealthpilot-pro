@@ -154,7 +154,7 @@ const topWinRateMonths = [...monthStats].sort((a, b) => b.winRate - a.winRate).s
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">SEASONALITY ANALYSIS</h1>
+      <h1 class="text-2xl font-bold text-green-400">SEASONALITY ANALYSIS</h1>
       <p class="text-slate-400">Historical monthly & quarterly patterns</p>
     </div>
     <form method="GET" action="/seasonality" class="flex gap-2">
@@ -250,7 +250,7 @@ const topWinRateMonths = [...monthStats].sort((a, b) => b.winRate - a.winRate).s
       <div class="flex items-center gap-3">
         <span class="w-24 text-sm font-medium"><%= m.name %></span>
         <div class="flex-1 h-4 rounded-full bg-slate-700">
-          <div class="h-4 rounded-full <%= m.winRate >= 60 ? 'bg-emerald-500' : m.winRate >= 50 ? 'bg-amber-500' : 'bg-red-500' %>" style="width:<%= m.winRate %>%"></div>
+          <div class="h-4 rounded-full <%= m.winRate >= 60 ? 'bg-emerald-500' : m.winRate >= 50 ? 'bg-green-500' : 'bg-red-500' %>" style="width:<%= m.winRate %>%"></div>
         </div>
         <span class="w-12 text-sm font-bold text-<%= m.winRate >= 60 ? 'emerald' : m.winRate >= 50 ? 'amber' : 'red' %>-400"><%= m.winRate.toFixed(0) %>%</span>
         <span class="w-16 text-right text-sm text-<%= m.avg >= 0 ? 'emerald' : 'red' %>-400"><%= formatPct(m.avg) %></span>
@@ -286,12 +286,12 @@ const topWinRateMonths = [...monthStats].sort((a, b) => b.winRate - a.winRate).s
         <% }); %>
       </div>
     </div>
-    <div class="p-4 rounded-lg border-l-4 border-amber-500 bg-amber-500/10">
-      <p class="font-bold text-amber-400">Neutral Months</p>
+    <div class="p-4 rounded-lg border-l-4 border-green-500 bg-green-500/10">
+      <p class="font-bold text-green-400">Neutral Months</p>
       <p class="text-sm text-slate-400 mt-1">Mixed historical performance</p>
       <div class="mt-2 flex flex-wrap gap-2">
         <% monthStats.filter(m => m.winRate >= 45 && m.winRate < 70).forEach(m => { %>
-        <span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-bold"><%= m.name.slice(0,3) %></span>
+        <span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-bold"><%= m.name.slice(0,3) %></span>
         <% }); %>
       </div>
     </div>

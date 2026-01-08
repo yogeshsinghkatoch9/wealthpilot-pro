@@ -6,19 +6,19 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Momentum S
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 px-6 py-4 mb-6">
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-green-400 px-6 py-4 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400 tracking-tight">MOMENTUM SCREENER</h1>
+      <h1 class="text-2xl font-bold text-green-400 tracking-tight">MOMENTUM SCREENER</h1>
       <p class="text-slate-300 text-sm mt-1">Find stocks with strong price momentum</p>
     </div>
     <div class="flex gap-2">
-      <select class="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded text-sm focus:border-amber-400 focus:ring-1 focus:ring-amber-400 w-32">
+      <select class="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded text-sm focus:border-green-400 focus:ring-1 focus:ring-amber-400 w-32">
         <option selected>S&P 500</option>
         <option>NASDAQ 100</option>
         <option>Russell 2000</option>
       </select>
-      <select class="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded text-sm focus:border-amber-400 focus:ring-1 focus:ring-amber-400 w-32">
+      <select class="bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded text-sm focus:border-green-400 focus:ring-1 focus:ring-amber-400 w-32">
         <option>1 Month</option>
         <option selected>3 Month</option>
         <option>6 Month</option>
@@ -55,7 +55,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Momentum S
     </div>
     <div class="text-center">
       <p class="text-sm text-slate-400 uppercase text-xs tracking-wider">Worst Sector</p>
-      <p class="text-3xl font-bold text-amber-400 font-mono">Energy</p>
+      <p class="text-3xl font-bold text-green-400 font-mono">Energy</p>
       <p class="text-xs font-mono">avg score 42</p>
     </div>
   </div>
@@ -63,8 +63,8 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Momentum S
 
 <!-- Top Momentum Stocks -->
 <div class="bloomberg-card overflow-hidden">
-  <div class="p-4 border-b border-amber-400/30 bg-slate-900/50">
-    <h3 class="font-semibold text-amber-400 uppercase tracking-wide">Top Momentum Stocks</h3>
+  <div class="p-4 border-b border-green-400/30 bg-slate-900/50">
+    <h3 class="font-semibold text-green-400 uppercase tracking-wide">Top Momentum Stocks</h3>
   </div>
   <table class="bloomberg-table w-full text-sm">
     <thead>
@@ -81,13 +81,13 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Momentum S
     </thead>
     <tbody class="text-white">
       <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
-        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold font-mono">#1</span></td>
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-green-500/20 text-green-400 font-bold font-mono">#1</span></td>
         <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
         <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">98</span></td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+18.4%</td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+42.8%</td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+124.2%</td>
-        <td class="px-4 py-3 text-center text-amber-400 font-mono">72</td>
+        <td class="px-4 py-3 text-center text-green-400 font-mono">72</td>
         <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
       </tr>
       <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
@@ -97,17 +97,17 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Momentum S
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+12.2%</td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+28.4%</td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+68.2%</td>
-        <td class="px-4 py-3 text-center text-amber-400 font-mono">68</td>
+        <td class="px-4 py-3 text-center text-green-400 font-mono">68</td>
         <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
       </tr>
       <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
-        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-amber-700/20 text-amber-600 font-bold font-mono">#3</span></td>
+        <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-green-700/20 text-amber-600 font-bold font-mono">#3</span></td>
         <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AVGO</div><span class="font-medium">Broadcom</span></div></td>
         <td class="px-4 py-3 text-center"><span class="px-3 py-1 rounded-full bg-emerald-500/30 text-emerald-400 font-bold font-mono">92</span></td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+14.8%</td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+32.4%</td>
         <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">+82.4%</td>
-        <td class="px-4 py-3 text-center text-amber-400 font-mono">74</td>
+        <td class="px-4 py-3 text-center text-green-400 font-mono">74</td>
         <td class="px-4 py-3 text-center text-emerald-400">Strong</td>
       </tr>
       <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">

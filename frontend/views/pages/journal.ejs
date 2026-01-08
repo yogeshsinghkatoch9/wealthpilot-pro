@@ -20,7 +20,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">TRADE JOURNAL</h1>
+      <h1 class="text-2xl font-bold text-green-400">TRADE JOURNAL</h1>
       <p class="text-slate-400 font-mono text-sm">Document your trades and learn from history</p>
     </div>
     <button onclick="openNewEntry()" class="bloomberg-btn bloomberg-btn-primary">
@@ -67,7 +67,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
       <svg class="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
       </svg>
-      <h3 class="text-lg font-semibold text-amber-400 mb-2 font-mono">NO JOURNAL ENTRIES YET</h3>
+      <h3 class="text-lg font-semibold text-green-400 mb-2 font-mono">NO JOURNAL ENTRIES YET</h3>
       <p class="text-slate-400 mb-4 font-mono text-sm">Start documenting your trades to track your progress</p>
       <button onclick="openNewEntry()" class="bloomberg-btn bloomberg-btn-primary">ADD YOUR FIRST ENTRY</button>
     </div>
@@ -123,7 +123,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
   <div class="space-y-6">
     <!-- Total P/L -->
     <div class="bloomberg-card p-5">
-      <h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">TOTAL P/L</h3>
+      <h3 class="text-lg font-semibold text-green-400 mb-4 font-mono">TOTAL P/L</h3>
       <p class="text-3xl font-bold <%= safeStats.totalProfitLoss >= 0 ? 'text-emerald-400' : 'text-red-400' %> font-mono">
         <%= safeStats.totalProfitLoss >= 0 ? '+' : '' %>$<%= safeFmt.number(safeStats.totalProfitLoss) %>
       </p>
@@ -134,7 +134,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
     <!-- Performance Summary -->
     <div class="bloomberg-card p-5">
-      <h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">PERFORMANCE SUMMARY</h3>
+      <h3 class="text-lg font-semibold text-green-400 mb-4 font-mono">PERFORMANCE SUMMARY</h3>
       <div class="space-y-3">
         <div>
           <div class="flex justify-between mb-1">
@@ -150,7 +150,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
     <!-- Quick Stats -->
     <div class="bloomberg-card p-5">
-      <h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">QUICK STATS</h3>
+      <h3 class="text-lg font-semibold text-green-400 mb-4 font-mono">QUICK STATS</h3>
       <div class="space-y-3">
         <div class="flex justify-between">
           <span class="text-slate-400 font-mono text-sm">TOTAL TRADES</span>
@@ -169,7 +169,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
     <!-- Tips -->
     <div class="bloomberg-card p-5">
-      <h3 class="text-lg font-semibold text-amber-400 mb-4 font-mono">TIPS</h3>
+      <h3 class="text-lg font-semibold text-green-400 mb-4 font-mono">TIPS</h3>
       <ul class="space-y-2 text-sm text-slate-400">
         <li>Document every trade, even losing ones</li>
         <li>Note your emotional state before trading</li>
@@ -184,7 +184,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <!-- New Entry Modal -->
 <div id="entryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
   <div class="bloomberg-card p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-    <h3 class="text-xl font-bold text-amber-400 mb-4 font-mono">NEW JOURNAL ENTRY</h3>
+    <h3 class="text-xl font-bold text-green-400 mb-4 font-mono">NEW JOURNAL ENTRY</h3>
     <form id="journalForm" class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div>

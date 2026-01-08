@@ -77,26 +77,33 @@ router.get('/', async (req, res) => {
 /**
  * POST /api/holdings
  * Add new holding to portfolio
+ * Accepts both camelCase and snake_case field names for flexibility
  */
-router.post('/', [
-  body('portfolioId').isUUID(),
-  body('symbol').trim().toUpperCase().notEmpty(),
-  body('shares').isFloat({ gt: 0 }),
-  body('avgCostBasis').isFloat({ gt: 0 }),
-  body('purchaseDate').optional().isISO8601(),
-  body('notes').optional().trim().isLength({ max: 500 })
-], async (req, res) => {
+router.post('/', async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    // Support both field name formats (camelCase and snake_case)
+    const portfolioId = req.body.portfolioId || req.body.portfolio_id;
+    const symbol = (req.body.symbol || '').trim().toUpperCase();
+    const shares = parseFloat(req.body.shares || req.body.quantity);
+    const avgCostBasis = parseFloat(req.body.avgCostBasis || req.body.purchase_price || req.body.avg_cost_basis);
+    const purchaseDate = req.body.purchaseDate || req.body.purchase_date;
+    const notes = req.body.notes || '';
+    const assetType = req.body.asset_type || req.body.assetType || 'stock';
+    const name = req.body.name || symbol;
 
-    const { portfolioId, symbol, purchaseDate, notes } = req.body;
-    
-    // Convert string values to numbers (for form-urlencoded requests)
-    const shares = parseFloat(req.body.shares);
-    const avgCostBasis = parseFloat(req.body.avgCostBasis);
+    // Validation
+    if (!portfolioId) {
+      return res.status(400).json({ error: 'Portfolio ID is required' });
+    }
+    if (!symbol) {
+      return res.status(400).json({ error: 'Symbol is required' });
+    }
+    if (isNaN(shares) || shares <= 0) {
+      return res.status(400).json({ error: 'Valid quantity/shares is required' });
+    }
+    if (isNaN(avgCostBasis) || avgCostBasis <= 0) {
+      return res.status(400).json({ error: 'Valid purchase price is required' });
+    }
 
     // Verify portfolio ownership
     const portfolio = await prisma.portfolios.findFirst({
@@ -110,10 +117,12 @@ router.post('/', [
       return res.status(404).json({ error: 'Portfolio not found' });
     }
 
-    // Get stock info
-    const quote = await MarketDataService.getQuote(symbol);
-    if (!quote) {
-      return res.status(400).json({ error: 'Invalid stock symbol' });
+    // Try to get stock info (but allow adding even if quote fails)
+    let quote = null;
+    try {
+      quote = await MarketDataService.getQuote(symbol);
+    } catch (err) {
+      logger.warn(`Could not fetch quote for ${symbol}, proceeding with user data`);
     }
 
     // Check if holding exists
@@ -136,15 +145,16 @@ router.post('/', [
       const now = new Date().toISOString();
       const holding = await prisma.holdings.update({
         where: { id: existingHolding.id },
-        data: { id: crypto.randomUUID(),
+        data: {
           shares: totalShares,
           avg_cost_basis: newAvgCost,
           updated_at: now,
           tax_lots: {
             create: {
+              id: crypto.randomUUID(),
               shares: newShares,
-              costBasis: newCost,
-              purchase_date: purchaseDate ? new Date(purchaseDate).toISOString() : now,
+              cost_basis: newCost,
+              purchase_date: purchaseDate ? new Date(purchaseDate) : new Date(now),
               created_at: now
             }
           }
@@ -158,17 +168,17 @@ router.post('/', [
 
     // Create new holding
     const now = new Date().toISOString();
-    logger.info(`Creating holding with created_at: ${now}, type: ${typeof now}`);
+    logger.info(`Creating holding: ${symbol} in portfolio ${portfolio.name}`);
     const holding = await prisma.holdings.create({
-      data: { id: crypto.randomUUID(),
+      data: {
         id: crypto.randomUUID(),
         portfolio_id: portfolioId,
         symbol,
         shares,
         avg_cost_basis: avgCostBasis,
-        sector: quote.sector,
-        asset_type: quote.assetType || 'stock',
-        notes,
+        sector: quote?.sector || null,
+        asset_type: quote?.assetType || assetType || 'stock',
+        notes: notes || null,
         created_at: now,
         updated_at: now,
         tax_lots: {

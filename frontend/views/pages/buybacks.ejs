@@ -7,10 +7,10 @@ const safePageTitle = 'Buyback Tracker';
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="mb-6 pb-4 border-b-2 border-amber-400">
+<div class="mb-6 pb-4 border-b-2 border-green-400">
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 <div>
-<h1 class="text-2xl font-bold text-amber-400 uppercase tracking-wide">Buyback Tracker</h1>
+<h1 class="text-2xl font-bold text-green-400 uppercase tracking-wide">Buyback Tracker</h1>
 <p class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-1">Stock repurchase programs & announcements</p>
 </div>
 <div class="flex gap-2">
@@ -25,11 +25,11 @@ const safePageTitle = 'Buyback Tracker';
 
 <!-- Portfolio Buyback Summary -->
 <div class="tufte-stat-card">
-<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wide mb-4">Portfolio Buyback Activity</h3>
+<h3 class="text-lg font-semibold text-green-400 uppercase tracking-wide mb-4">Portfolio Buyback Activity</h3>
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
 <div class="text-center">
 <p class="text-sm <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %> uppercase text-xs tracking-wider mb-2">Active Programs</p>
-<p class="text-3xl font-bold text-amber-400 tabular-nums">12</p>
+<p class="text-3xl font-bold text-green-400 tabular-nums">12</p>
 <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %>">of 16 holdings</p>
 </div>
 <div class="text-center">
@@ -58,7 +58,7 @@ const safePageTitle = 'Buyback Tracker';
 <!-- Holdings Buyback Table -->
 <div class="tufte-stat-card overflow-hidden">
 <div class="p-4 border-b <%= safeTheme === 'light' ? 'border-gray-200' : 'border-slate-700' %>">
-<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wide">Holdings Buyback Programs</h3>
+<h3 class="text-lg font-semibold text-green-400 uppercase tracking-wide">Holdings Buyback Programs</h3>
 </div>
 <table class="bloomberg-table">
 <thead>

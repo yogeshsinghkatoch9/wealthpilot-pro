@@ -14,7 +14,7 @@
   <div class="container mx-auto px-4 py-6">
     <!-- Page Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-bold text-amber-400 mb-2">Portfolio Optimization Tools</h1>
+      <h1 class="text-3xl font-bold text-green-400 mb-2">Portfolio Optimization Tools</h1>
       <p class="text-gray-400">Rebalancing, Tax Loss Harvesting & Dividend Forecasting</p>
     </div>
 
@@ -52,7 +52,7 @@
       <!-- No Portfolio Selected -->
       <div class="bg-[#161b22] border border-gray-700 rounded-lg p-8 text-center">
         <div class="text-6xl mb-4">📊</div>
-        <h2 class="text-2xl font-bold text-amber-400 mb-2">Select a Portfolio</h2>
+        <h2 class="text-2xl font-bold text-green-400 mb-2">Select a Portfolio</h2>
         <p class="text-gray-400">Choose a portfolio above to access optimization tools</p>
       </div>
     <% } else if (!toolData) { %>
@@ -69,14 +69,14 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <!-- Rebalancing Card -->
           <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
-            <h3 class="text-xl font-bold text-amber-400 mb-4">Rebalancing</h3>
+            <h3 class="text-xl font-bold text-green-400 mb-4">Rebalancing</h3>
             <div class="space-y-2">
               <div class="flex justify-between">
                 <span class="text-gray-400">Required Trades:</span>
                 <span class="text-white font-bold"><%= toolData.summary?.rebalancingTrades || 0 %></span>
               </div>
               <button onclick="window.location.href='/portfolio-tools?portfolio=<%= selectedPortfolio %>&tool=rebalancing'" 
-                      class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">
+                      class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
                 View Details
               </button>
             </div>
@@ -84,7 +84,7 @@
 
           <!-- Tax Loss Harvesting Card -->
           <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
-            <h3 class="text-xl font-bold text-amber-400 mb-4">Tax Loss Harvesting</h3>
+            <h3 class="text-xl font-bold text-green-400 mb-4">Tax Loss Harvesting</h3>
             <div class="space-y-2">
               <div class="flex justify-between">
                 <span class="text-gray-400">Opportunities:</span>
@@ -95,7 +95,7 @@
                 <span class="text-green-400 font-bold"><%= fmt.money(toolData.summary?.estimatedTaxSavings || 0) %></span>
               </div>
               <button onclick="window.location.href='/portfolio-tools?portfolio=<%= selectedPortfolio %>&tool=tax-loss'" 
-                      class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">
+                      class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
                 View Details
               </button>
             </div>
@@ -103,7 +103,7 @@
 
           <!-- Dividend Forecasting Card -->
           <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
-            <h3 class="text-xl font-bold text-amber-400 mb-4">Dividend Income</h3>
+            <h3 class="text-xl font-bold text-green-400 mb-4">Dividend Income</h3>
             <div class="space-y-2">
               <div class="flex justify-between">
                 <span class="text-gray-400">Annual Income:</span>
@@ -114,7 +114,7 @@
                 <span class="text-white font-bold"><%= toolData.summary?.portfolioDividendYield || 0 %>%</span>
               </div>
               <button onclick="window.location.href='/portfolio-tools?portfolio=<%= selectedPortfolio %>&tool=dividends'" 
-                      class="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded">
+                      class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
                 View Details
               </button>
             </div>
@@ -131,7 +131,7 @@
             </div>
             <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
               <div class="text-sm text-gray-400 mb-1">Required Trades</div>
-              <div class="text-2xl font-bold text-amber-400"><%= toolData.metrics?.totalTrades || 0 %></div>
+              <div class="text-2xl font-bold text-green-400"><%= toolData.metrics?.totalTrades || 0 %></div>
             </div>
             <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
               <div class="text-sm text-gray-400 mb-1">Turnover</div>
@@ -145,7 +145,7 @@
 
           <!-- Recommended Trades -->
           <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
-            <h3 class="text-xl font-bold text-amber-400 mb-4">Recommended Trades</h3>
+            <h3 class="text-xl font-bold text-green-400 mb-4">Recommended Trades</h3>
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
@@ -208,7 +208,7 @@
 
           <!-- Opportunities Table -->
           <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
-            <h3 class="text-xl font-bold text-amber-400 mb-4">Loss Harvesting Opportunities</h3>
+            <h3 class="text-xl font-bold text-green-400 mb-4">Loss Harvesting Opportunities</h3>
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
@@ -239,7 +239,7 @@
                         <% if (opp.recommendation.priority === 'high') { %>
                           <span class="bg-red-600 text-white px-2 py-1 rounded text-xs">HIGH</span>
                         <% } else if (opp.recommendation.priority === 'medium') { %>
-                          <span class="bg-amber-600 text-white px-2 py-1 rounded text-xs">MEDIUM</span>
+                          <span class="bg-green-600 text-white px-2 py-1 rounded text-xs">MEDIUM</span>
                         <% } else { %>
                           <span class="bg-gray-600 text-white px-2 py-1 rounded text-xs">LOW</span>
                         <% } %>
@@ -267,7 +267,7 @@
             </div>
             <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
               <div class="text-sm text-gray-400 mb-1">Portfolio Yield</div>
-              <div class="text-2xl font-bold text-amber-400"><%= toolData.summary?.portfolioYield || 0 %>%</div>
+              <div class="text-2xl font-bold text-green-400"><%= toolData.summary?.portfolioYield || 0 %>%</div>
             </div>
             <div class="bg-[#161b22] border border-gray-700 rounded-lg p-4">
               <div class="text-sm text-gray-400 mb-1">Dividend Stocks</div>
@@ -277,7 +277,7 @@
 
           <!-- Holdings Table -->
           <div class="bg-[#161b22] border border-gray-700 rounded-lg p-6">
-            <h3 class="text-xl font-bold text-amber-400 mb-4">Dividend Forecasts by Holding</h3>
+            <h3 class="text-xl font-bold text-green-400 mb-4">Dividend Forecasts by Holding</h3>
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>

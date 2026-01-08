@@ -11,7 +11,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <div class="max-w-5xl mx-auto">
   <!-- Header -->
   <div class="text-center mb-10">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 mb-4 shadow-lg shadow-amber-500/25">
+    <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-orange-600 mb-4 shadow-lg shadow-green-500/25">
       <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
       </svg>
@@ -30,12 +30,12 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
           </svg>
         </div>
-        <span class="text-xs font-medium mt-2 text-amber-400">Select Source</span>
+        <span class="text-xs font-medium mt-2 text-green-400">Select Source</span>
       </div>
 
       <!-- Progress Line 1-2 -->
       <div class="flex-1 h-1 mx-2 rounded-full bg-slate-700 relative">
-        <div class="progress-fill absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" data-progress="1-2" style="width: 0%"></div>
+        <div class="progress-fill absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-green-400 rounded-full" data-progress="1-2" style="width: 0%"></div>
       </div>
 
       <!-- Step 2 -->
@@ -50,7 +50,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
       <!-- Progress Line 2-3 -->
       <div class="flex-1 h-1 mx-2 rounded-full bg-slate-700 relative">
-        <div class="progress-fill absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" data-progress="2-3" style="width: 0%"></div>
+        <div class="progress-fill absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-green-400 rounded-full" data-progress="2-3" style="width: 0%"></div>
       </div>
 
       <!-- Step 3 -->
@@ -65,7 +65,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
       <!-- Progress Line 3-4 -->
       <div class="flex-1 h-1 mx-2 rounded-full bg-slate-700 relative">
-        <div class="progress-fill absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" data-progress="3-4" style="width: 0%"></div>
+        <div class="progress-fill absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-green-400 rounded-full" data-progress="3-4" style="width: 0%"></div>
       </div>
 
       <!-- Step 4 -->
@@ -88,8 +88,8 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <h2 class="text-xl font-semibold text-white">Choose Your Import Source</h2>
           <p class="text-slate-400 text-sm mt-1">Select your brokerage or file type</p>
         </div>
-        <div class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-          <span class="text-amber-400 text-xs font-medium">Step 1 of 4</span>
+        <div class="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+          <span class="text-green-400 text-xs font-medium">Step 1 of 4</span>
         </div>
       </div>
 
@@ -97,10 +97,10 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
       <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Popular Brokerages</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div onclick="selectSource('schwab')" class="source-card group">
-          <div class="source-icon bg-gradient-to-br from-sky-500 to-blue-600">
+          <div class="source-icon bg-gradient-to-br from-sky-500 to-green-600">
             <span class="text-2xl font-bold text-white">CS</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Schwab</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Schwab</p>
           <p class="text-xs text-slate-500">Export CSV</p>
         </div>
 
@@ -108,7 +108,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <div class="source-icon bg-gradient-to-br from-emerald-500 to-green-600">
             <span class="text-2xl">🟢</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Fidelity</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Fidelity</p>
           <p class="text-xs text-slate-500">Export CSV</p>
         </div>
 
@@ -116,7 +116,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <div class="source-icon bg-gradient-to-br from-red-500 to-rose-600">
             <span class="text-xl font-bold text-white">VG</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Vanguard</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Vanguard</p>
           <p class="text-xs text-slate-500">Export CSV</p>
         </div>
 
@@ -124,7 +124,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <div class="source-icon bg-gradient-to-br from-lime-400 to-green-500">
             <span class="text-2xl">🪶</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Robinhood</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Robinhood</p>
           <p class="text-xs text-slate-500">Export CSV</p>
         </div>
 
@@ -132,7 +132,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <div class="source-icon bg-gradient-to-br from-purple-500 to-indigo-600">
             <span class="text-xl">⭐</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">E*TRADE</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">E*TRADE</p>
           <p class="text-xs text-slate-500">Export CSV</p>
         </div>
 
@@ -140,7 +140,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <div class="source-icon bg-gradient-to-br from-green-600 to-emerald-700">
             <span class="text-xl font-bold text-white">TD</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">TD Ameritrade</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">TD Ameritrade</p>
           <p class="text-xs text-slate-500">Export CSV</p>
         </div>
 
@@ -148,15 +148,15 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <div class="source-icon bg-gradient-to-br from-red-600 to-red-700">
             <span class="text-xl font-bold text-white">IB</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Interactive Brokers</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Interactive Brokers</p>
           <p class="text-xs text-slate-500">Flex Query</p>
         </div>
 
         <div onclick="selectSource('coinbase')" class="source-card group">
-          <div class="source-icon bg-gradient-to-br from-blue-500 to-blue-600">
+          <div class="source-icon bg-gradient-to-br from-green-500 to-green-600">
             <span class="text-xl">🪙</span>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Coinbase</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Coinbase</p>
           <p class="text-xs text-slate-500">Crypto</p>
         </div>
       </div>
@@ -170,7 +170,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">CSV File</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">CSV File</p>
           <p class="text-xs text-slate-500">Comma-separated</p>
         </div>
 
@@ -180,17 +180,17 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Excel</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Excel</p>
           <p class="text-xs text-slate-500">.xlsx or .xls</p>
         </div>
 
         <div onclick="selectSource('manual')" class="source-card group">
-          <div class="source-icon bg-gradient-to-br from-amber-500 to-orange-600">
+          <div class="source-icon bg-gradient-to-br from-green-500 to-orange-600">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
           </div>
-          <p class="font-semibold text-white group-hover:text-amber-400 transition-colors">Manual Entry</p>
+          <p class="font-semibold text-white group-hover:text-green-400 transition-colors">Manual Entry</p>
           <p class="text-xs text-slate-500">Type holdings</p>
         </div>
       </div>
@@ -220,18 +220,18 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <h2 class="text-xl font-semibold text-white">Upload Your File</h2>
           <p class="text-slate-400 text-sm mt-1" id="sourceHint">Upload your exported file</p>
         </div>
-        <div class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-          <span class="text-amber-400 text-xs font-medium">Step 2 of 4</span>
+        <div class="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+          <span class="text-green-400 text-xs font-medium">Step 2 of 4</span>
         </div>
       </div>
 
       <!-- Dropzone -->
-      <div id="dropzone" class="relative border-2 border-dashed border-slate-600 rounded-2xl p-12 text-center cursor-pointer hover:border-amber-500/50 hover:bg-amber-500/5 transition-all duration-300 group">
+      <div id="dropzone" class="relative border-2 border-dashed border-slate-600 rounded-2xl p-12 text-center cursor-pointer hover:border-green-500/50 hover:bg-green-500/5 transition-all duration-300 group">
         <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".csv,.xlsx,.xls" onchange="handleFile(event)">
 
         <div class="dropzone-content">
-          <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center group-hover:from-amber-500/20 group-hover:to-orange-500/20 transition-all">
-            <svg class="w-10 h-10 text-slate-400 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center group-hover:from-green-500/20 group-hover:to-orange-500/20 transition-all">
+            <svg class="w-10 h-10 text-slate-400 group-hover:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
             </svg>
           </div>
@@ -261,7 +261,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
         <div class="bg-slate-900 rounded-lg p-3 font-mono text-xs text-slate-400 overflow-x-auto">
           <table class="w-full">
             <thead>
-              <tr class="text-amber-400">
+              <tr class="text-green-400">
                 <th class="text-left pr-4">Symbol</th>
                 <th class="text-left pr-4">Quantity</th>
                 <th class="text-left pr-4">Cost Basis</th>
@@ -291,7 +291,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
         <button onclick="goToStep(1)" class="flex-1 px-6 py-3 rounded-xl border border-slate-600 text-slate-300 font-medium hover:bg-slate-700/50 transition-colors">
           Back
         </button>
-        <button onclick="goToStep(3)" id="continueBtn" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+        <button onclick="goToStep(3)" id="continueBtn" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-orange-500 text-white font-semibold hover:from-green-600 hover:to-orange-600 transition-all shadow-lg shadow-green-500/25 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
           Continue
         </button>
       </div>
@@ -306,8 +306,8 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <h2 class="text-xl font-semibold text-white">Map Your Columns</h2>
           <p class="text-slate-400 text-sm mt-1">Match your file columns to WealthPilot fields</p>
         </div>
-        <div class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
-          <span class="text-amber-400 text-xs font-medium">Step 3 of 4</span>
+        <div class="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+          <span class="text-green-400 text-xs font-medium">Step 3 of 4</span>
         </div>
       </div>
 
@@ -361,8 +361,8 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
         <div class="column-mapping-row">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
-              <span class="text-amber-400 font-bold">D</span>
+            <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <span class="text-green-400 font-bold">D</span>
             </div>
             <div>
               <p class="text-white font-medium">Purchase Date</p>
@@ -408,8 +408,8 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
       </div>
 
       <!-- Tip -->
-      <div class="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-        <p class="text-sm text-amber-400">
+      <div class="mt-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+        <p class="text-sm text-green-400">
           <strong>Tip:</strong> Current prices will be fetched automatically. Cost basis is optional but helps track gains/losses accurately.
         </p>
       </div>
@@ -419,7 +419,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
         <button onclick="goToStep(2)" class="flex-1 px-6 py-3 rounded-xl border border-slate-600 text-slate-300 font-medium hover:bg-slate-700/50 transition-colors">
           Back
         </button>
-        <button onclick="goToStep(4)" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25">
+        <button onclick="goToStep(4)" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-orange-500 text-white font-semibold hover:from-green-600 hover:to-orange-600 transition-all shadow-lg shadow-green-500/25">
           Preview Import
         </button>
       </div>
@@ -445,7 +445,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <p class="text-emerald-400 text-2xl font-bold" id="importCount">12</p>
           <p class="text-slate-400 text-sm">Holdings</p>
         </div>
-        <div class="bg-gradient-to-br from-sky-500/10 to-blue-600/10 rounded-xl p-4 border border-sky-500/20">
+        <div class="bg-gradient-to-br from-sky-500/10 to-green-600/10 rounded-xl p-4 border border-sky-500/20">
           <p class="text-sky-400 text-2xl font-bold" id="importValue">$48,247</p>
           <p class="text-slate-400 text-sm">Est. Value</p>
         </div>
@@ -453,8 +453,8 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
           <p class="text-purple-400 text-2xl font-bold" id="importGain">+$8,420</p>
           <p class="text-slate-400 text-sm">Est. Gain</p>
         </div>
-        <div class="bg-gradient-to-br from-amber-500/10 to-orange-600/10 rounded-xl p-4 border border-amber-500/20">
-          <p class="text-amber-400 text-2xl font-bold" id="importWarnings">0</p>
+        <div class="bg-gradient-to-br from-green-500/10 to-orange-600/10 rounded-xl p-4 border border-green-500/20">
+          <p class="text-green-400 text-2xl font-bold" id="importWarnings">0</p>
           <p class="text-slate-400 text-sm">Warnings</p>
         </div>
       </div>
@@ -483,11 +483,11 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
       <div class="mt-6 p-4 rounded-xl bg-slate-700/30 border border-slate-600/30">
         <label class="block text-sm font-medium text-slate-300 mb-2">Import to Portfolio</label>
         <div class="flex gap-3">
-          <select id="targetPortfolio" class="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none">
+          <select id="targetPortfolio" class="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white focus:border-green-500 focus:ring-1 focus:ring-amber-500 focus:outline-none">
             <option value="new">+ Create New Portfolio</option>
             <option value="main">Main Portfolio</option>
           </select>
-          <input type="text" id="newPortfolioName" placeholder="Portfolio name..." class="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none">
+          <input type="text" id="newPortfolioName" placeholder="Portfolio name..." class="flex-1 px-4 py-3 rounded-xl bg-slate-800 border border-slate-600 text-white placeholder-slate-500 focus:border-green-500 focus:ring-1 focus:ring-amber-500 focus:outline-none">
         </div>
       </div>
 
@@ -517,7 +517,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
       <h3 class="text-2xl font-bold text-white mb-2">Import Complete!</h3>
       <p class="text-slate-400 mb-6">Your holdings have been successfully imported to your portfolio.</p>
       <div class="flex gap-3">
-        <a href="/portfolios" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-semibold hover:from-amber-600 hover:to-orange-600 transition-all">
+        <a href="/portfolios" class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-green-500 to-orange-500 text-white font-semibold hover:from-green-600 hover:to-orange-600 transition-all">
           View Portfolio
         </a>
         <button onclick="closeSuccessModal()" class="flex-1 px-6 py-3 rounded-xl border border-slate-600 text-slate-300 font-medium hover:bg-slate-700/50 transition-colors">
@@ -534,7 +534,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
   @apply bg-slate-700 text-slate-400 border-2 border-slate-600;
 }
 .step-indicator.active {
-  @apply bg-gradient-to-br from-amber-500 to-orange-500 text-white border-amber-400 shadow-lg shadow-amber-500/25;
+  @apply bg-gradient-to-br from-green-500 to-orange-500 text-white border-green-400 shadow-lg shadow-green-500/25;
 }
 .step-indicator.completed {
   @apply bg-gradient-to-br from-emerald-500 to-green-500 text-white border-emerald-400;
@@ -542,10 +542,10 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 
 .source-card {
   @apply p-5 rounded-xl border-2 border-slate-700 bg-slate-800/50 cursor-pointer transition-all duration-300 text-center;
-  @apply hover:border-amber-500/50 hover:bg-amber-500/5 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-1;
+  @apply hover:border-green-500/50 hover:bg-green-500/5 hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-1;
 }
 .source-card.selected {
-  @apply border-amber-500 bg-amber-500/10;
+  @apply border-green-500 bg-green-500/10;
 }
 .source-icon {
   @apply w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-3;
@@ -555,7 +555,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
   @apply flex items-center justify-between p-4 rounded-xl bg-slate-800/50 border border-slate-700/50;
 }
 .mapping-select {
-  @apply px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none min-w-[180px];
+  @apply px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:border-green-500 focus:ring-1 focus:ring-amber-500 focus:outline-none min-w-[180px];
 }
 
 @keyframes bounce-once {
@@ -582,10 +582,10 @@ document.addEventListener('DOMContentLoaded', () => {
       dropzone.addEventListener(eventName, preventDefaults, false);
     });
     ['dragenter', 'dragover'].forEach(eventName => {
-      dropzone.addEventListener(eventName, () => dropzone.classList.add('border-amber-500', 'bg-amber-500/5'), false);
+      dropzone.addEventListener(eventName, () => dropzone.classList.add('border-green-500', 'bg-green-500/5'), false);
     });
     ['dragleave', 'drop'].forEach(eventName => {
-      dropzone.addEventListener(eventName, () => dropzone.classList.remove('border-amber-500', 'bg-amber-500/5'), false);
+      dropzone.addEventListener(eventName, () => dropzone.classList.remove('border-green-500', 'bg-green-500/5'), false);
     });
     dropzone.addEventListener('drop', handleDrop, false);
   }
@@ -746,9 +746,9 @@ function goToStep(step) {
   document.querySelectorAll('.step-indicator').forEach((el, idx) => {
     const label = el.parentElement.querySelector('span:last-child');
     if (label) {
-      label.classList.remove('text-amber-400', 'text-emerald-400', 'text-slate-500');
+      label.classList.remove('text-green-400', 'text-emerald-400', 'text-slate-500');
       if (idx + 1 < step) label.classList.add('text-emerald-400');
-      else if (idx + 1 === step) label.classList.add('text-amber-400');
+      else if (idx + 1 === step) label.classList.add('text-green-400');
       else label.classList.add('text-slate-500');
     }
   });
@@ -828,7 +828,7 @@ async function populateImportTable() {
         ${h.gain >= 0 ? '+' : ''}$${h.gain.toFixed(0)} (${h.gainPct >= 0 ? '+' : ''}${h.gainPct.toFixed(1)}%)
       </td>
       <td class="px-4 py-3 text-center">
-        ${h.error ? '<span class="text-amber-400">⚠️</span>' : '<span class="text-emerald-400">✓</span>'}
+        ${h.error ? '<span class="text-green-400">⚠️</span>' : '<span class="text-emerald-400">✓</span>'}
       </td>
     </tr>
   `).join('');

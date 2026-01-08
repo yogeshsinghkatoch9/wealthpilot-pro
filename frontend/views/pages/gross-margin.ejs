@@ -258,7 +258,7 @@ const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
         <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Avg Operating Margin</p>
         <p id="avgOperatingMargin" class="text-3xl font-bold text-sky-400 tabular-nums">--%</p>
         <div class="margin-bar">
-          <div id="operatingMarginBar" class="margin-fill bg-gradient-to-r from-sky-500 to-blue-500" style="width: 0%"></div>
+          <div id="operatingMarginBar" class="margin-fill bg-gradient-to-r from-sky-500 to-green-500" style="width: 0%"></div>
         </div>
       </div>
 
@@ -381,7 +381,7 @@ const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
           <span id="legend-gross" class="text-xs text-emerald-400 font-bold">--%</span>
         </div>
         <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onclick="toggleDataset(1)">
-          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-sky-400 to-blue-500"></span>
+          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-sky-400 to-green-500"></span>
           <span class="text-xs text-slate-300 font-medium">Operating Margin</span>
           <span id="legend-operating" class="text-xs text-sky-400 font-bold">--%</span>
         </div>
@@ -391,9 +391,9 @@ const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
           <span id="legend-net" class="text-xs text-violet-400 font-bold">--%</span>
         </div>
         <div id="sectorLegend" class="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity hidden" onclick="toggleDataset(3)">
-          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 opacity-50" style="border: 1px dashed #fbbf24;"></span>
+          <span class="w-4 h-1 rounded-full bg-gradient-to-r from-green-400 to-orange-500 opacity-50" style="border: 1px dashed #fbbf24;"></span>
           <span class="text-xs text-slate-300 font-medium">Sector Avg</span>
-          <span id="legend-sector" class="text-xs text-amber-400 font-bold">--%</span>
+          <span id="legend-sector" class="text-xs text-green-400 font-bold">--%</span>
         </div>
       </div>
 
@@ -421,7 +421,7 @@ const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
               </div>
               <div id="tooltipSectorRow" class="flex items-center justify-between hidden pt-2 border-t border-slate-700/50">
                 <span class="text-xs text-slate-400">Sector Avg</span>
-                <span id="tooltipSector" class="text-sm font-bold text-amber-400">40.0%</span>
+                <span id="tooltipSector" class="text-sm font-bold text-green-400">40.0%</span>
               </div>
             </div>
             <div id="tooltipChange" class="mt-3 pt-2 border-t border-slate-700/50 text-center">
@@ -505,7 +505,7 @@ const safePortfolios = typeof portfolios !== 'undefined' ? portfolios : [];
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
               <span class="text-xs text-slate-400 font-medium">Margin Volatility</span>
             </div>
-            <p id="statVolatility" class="text-xl font-bold text-amber-400">Low</p>
+            <p id="statVolatility" class="text-xl font-bold text-green-400">Low</p>
             <p id="statVolatilityDesc" class="text-xs text-slate-500 mt-1">±1.2% std deviation</p>
           </div>
 
@@ -799,10 +799,10 @@ function updateHoldingsTable(holdings) {
   }
 
   tbody.innerHTML = holdings.map(h => {
-    const grossColor = h.grossMargin >= 50 ? 'text-emerald-400' : h.grossMargin >= 30 ? 'text-sky-400' : h.grossMargin >= 15 ? 'text-amber-400' : 'text-red-400';
-    const opColor = h.operatingMargin >= 25 ? 'text-emerald-400' : h.operatingMargin >= 15 ? 'text-sky-400' : h.operatingMargin >= 5 ? 'text-amber-400' : 'text-red-400';
-    const netColor = h.netMargin >= 20 ? 'text-emerald-400' : h.netMargin >= 10 ? 'text-sky-400' : h.netMargin >= 0 ? 'text-amber-400' : 'text-red-400';
-    const peerColor = h.vsPeers >= 10 ? 'text-emerald-400' : h.vsPeers >= 0 ? 'text-sky-400' : h.vsPeers >= -10 ? 'text-amber-400' : 'text-red-400';
+    const grossColor = h.grossMargin >= 50 ? 'text-emerald-400' : h.grossMargin >= 30 ? 'text-sky-400' : h.grossMargin >= 15 ? 'text-green-400' : 'text-red-400';
+    const opColor = h.operatingMargin >= 25 ? 'text-emerald-400' : h.operatingMargin >= 15 ? 'text-sky-400' : h.operatingMargin >= 5 ? 'text-green-400' : 'text-red-400';
+    const netColor = h.netMargin >= 20 ? 'text-emerald-400' : h.netMargin >= 10 ? 'text-sky-400' : h.netMargin >= 0 ? 'text-green-400' : 'text-red-400';
+    const peerColor = h.vsPeers >= 10 ? 'text-emerald-400' : h.vsPeers >= 0 ? 'text-sky-400' : h.vsPeers >= -10 ? 'text-green-400' : 'text-red-400';
     const trendClass = h.trend === 'Expanding' ? 'trend-expanding' : h.trend === 'Contracting' ? 'trend-contracting' : 'trend-stable';
 
     return `
@@ -1123,7 +1123,7 @@ function updateChartStats(trendData, symbol) {
     volatility.className = 'text-xl font-bold text-emerald-400';
   } else if (stdDev < 5) {
     volatility.textContent = 'Medium';
-    volatility.className = 'text-xl font-bold text-amber-400';
+    volatility.className = 'text-xl font-bold text-green-400';
   } else {
     volatility.textContent = 'High';
     volatility.className = 'text-xl font-bold text-red-400';

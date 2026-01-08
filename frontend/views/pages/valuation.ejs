@@ -66,7 +66,7 @@ function getMetricColor(value, sectorAvg, lowerIsBetter = true) {
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">VALUATION METRICS</h1>
+      <h1 class="text-2xl font-bold text-green-400">VALUATION METRICS</h1>
       <p class="text-slate-400">P/E, P/B, P/S, EV/EBITDA analysis</p>
     </div>
     <form method="GET" action="/valuation" class="flex gap-2">
@@ -78,7 +78,7 @@ function getMetricColor(value, sectorAvg, lowerIsBetter = true) {
 
 <% if (!financials) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No valuation data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No valuation data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol.</p>
 </div>
 <% } else { %>
@@ -242,17 +242,17 @@ function getMetricColor(value, sectorAvg, lowerIsBetter = true) {
     </div>
   </div>
   <div class="bloomberg-card p-5 border-l-4 border-<%= pe > sectorPe * 1.3 || peg > 2 ? 'amber' : 'slate' %>-500">
-    <h4 class="font-bold text-amber-400 mb-2">Premium Signals</h4>
+    <h4 class="font-bold text-green-400 mb-2">Premium Signals</h4>
     <p class="text-sm text-slate-400 mb-3">Metrics suggesting overvaluation</p>
     <div class="space-y-2 text-sm">
       <% if (pe > sectorPe * 1.3) { %>
-      <div class="flex justify-between"><span>High P/E</span><span class="text-amber-400"><%= formatNum(pe) %> vs <%= formatNum(sectorPe) %></span></div>
+      <div class="flex justify-between"><span>High P/E</span><span class="text-green-400"><%= formatNum(pe) %> vs <%= formatNum(sectorPe) %></span></div>
       <% } %>
       <% if (peg > 2) { %>
-      <div class="flex justify-between"><span>High PEG</span><span class="text-amber-400"><%= formatNum(peg, 2) %></span></div>
+      <div class="flex justify-between"><span>High PEG</span><span class="text-green-400"><%= formatNum(peg, 2) %></span></div>
       <% } %>
       <% if (ps > sectorPs * 2) { %>
-      <div class="flex justify-between"><span>High P/S</span><span class="text-amber-400"><%= formatNum(ps) %> vs <%= formatNum(sectorPs) %></span></div>
+      <div class="flex justify-between"><span>High P/S</span><span class="text-green-400"><%= formatNum(ps) %> vs <%= formatNum(sectorPs) %></span></div>
       <% } %>
       <% if (pe <= sectorPe * 1.3 && peg <= 2 && ps <= sectorPs * 2) { %>
       <div class="text-slate-500">No strong premium signals</div>

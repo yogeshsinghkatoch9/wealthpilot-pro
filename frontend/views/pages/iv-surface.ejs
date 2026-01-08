@@ -45,7 +45,7 @@ const termColor = iv30d > iv90d ? 'amber' : 'red';
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">IV SURFACE</h1>
+      <h1 class="text-2xl font-bold text-green-400">IV SURFACE</h1>
       <p class="text-slate-400">Implied volatility across strikes & expirations</p>
     </div>
     <form method="GET" action="/iv-surface" class="flex gap-2">
@@ -57,7 +57,7 @@ const termColor = iv30d > iv90d ? 'amber' : 'red';
 
 <% if (!ivSurface) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No IV surface data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No IV surface data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol or check if options are available.</p>
 </div>
 <% } else { %>
@@ -188,7 +188,7 @@ const termColor = iv30d > iv90d ? 'amber' : 'red';
     <p class="text-xs text-slate-400"><%= ivHvSpread > 0 ? 'IV premium over HV' : 'IV discount to HV' %></p>
   </div>
   <div class="bloomberg-card p-4 text-center">
-    <h4 class="font-bold text-amber-400 mb-2">Trading Signal</h4>
+    <h4 class="font-bold text-green-400 mb-2">Trading Signal</h4>
     <%
       let ivSignal = 'Neutral';
       let ivSignalColor = 'sky';
@@ -210,26 +210,26 @@ const termColor = iv30d > iv90d ? 'amber' : 'red';
   <h3 class="font-semibold text-white mb-4">IV Analysis</h3>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div class="p-4 rounded-lg bg-slate-800">
-      <h4 class="font-bold text-amber-400 mb-2">IV Rank Interpretation</h4>
+      <h4 class="font-bold text-green-400 mb-2">IV Rank Interpretation</h4>
       <p class="text-sm text-slate-300">
         <% if (ivRank > 70) { %>
           <strong class="text-red-400">High IV Environment:</strong> Current IV is in the upper range of its 52-week range. Options are relatively expensive. Consider selling premium strategies.
         <% } else if (ivRank > 40) { %>
-          <strong class="text-amber-400">Normal IV Environment:</strong> Current IV is in the middle of its range. Both buying and selling strategies may be appropriate depending on outlook.
+          <strong class="text-green-400">Normal IV Environment:</strong> Current IV is in the middle of its range. Both buying and selling strategies may be appropriate depending on outlook.
         <% } else { %>
           <strong class="text-emerald-400">Low IV Environment:</strong> Current IV is in the lower range. Options are relatively cheap. Consider buying premium strategies.
         <% } %>
       </p>
     </div>
     <div class="p-4 rounded-lg bg-slate-800">
-      <h4 class="font-bold text-amber-400 mb-2">Volatility Skew Analysis</h4>
+      <h4 class="font-bold text-green-400 mb-2">Volatility Skew Analysis</h4>
       <p class="text-sm text-slate-300">
         <% if (putSkew > 5) { %>
           <strong class="text-purple-400">Steep Put Skew:</strong> Downside protection is expensive. Market is pricing in significant downside risk. Consider put spreads instead of outright puts.
         <% } else if (putSkew > 0) { %>
           <strong class="text-sky-400">Normal Put Skew:</strong> Typical market conditions with slight premium for downside protection. Standard options strategies apply.
         <% } else { %>
-          <strong class="text-amber-400">Flat/Inverted Skew:</strong> Unusual market conditions. Calls may be expensive relative to puts. Could indicate strong bullish sentiment.
+          <strong class="text-green-400">Flat/Inverted Skew:</strong> Unusual market conditions. Calls may be expensive relative to puts. Could indicate strong bullish sentiment.
         <% } %>
       </p>
     </div>

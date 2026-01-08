@@ -159,13 +159,13 @@
               badgeClass = 'bg-gradient-to-r from-emerald-500 to-green-500';
               icon = '📈';
             } else if (sentiment.includes('BULLISH')) {
-              badgeClass = 'bg-gradient-to-r from-blue-500 to-cyan-500';
+              badgeClass = 'bg-gradient-to-r from-green-500 to-cyan-500';
               icon = '↗️';
             } else if (sentiment.includes('BEARISH') && !sentiment.includes('SLIGHTLY')) {
               badgeClass = 'bg-gradient-to-r from-red-500 to-pink-500';
               icon = '📉';
             } else if (sentiment.includes('BEARISH')) {
-              badgeClass = 'bg-gradient-to-r from-orange-500 to-amber-500';
+              badgeClass = 'bg-gradient-to-r from-orange-500 to-green-500';
               icon = '↘️';
             }
           %>
@@ -443,11 +443,11 @@
             </div>
           </div>
 
-          <div class="bg-gradient-to-r from-blue-500 to-cyan-500 bg-opacity-10 rounded-xl p-4 border border-blue-500 border-opacity-20">
+          <div class="bg-gradient-to-r from-green-500 to-cyan-500 bg-opacity-10 rounded-xl p-4 border border-green-500 border-opacity-20">
             <div class="<%= theme === 'light' ? 'text-gray-700' : 'text-gray-300' %> text-sm font-medium">
-              <strong class="text-blue-400">Calculation:</strong> Overall sentiment = 50% News + 50% Analyst Ratings
+              <strong class="text-green-400">Calculation:</strong> Overall sentiment = 50% News + 50% Analyst Ratings
             </div>
-            <div class="text-blue-400 text-xs mt-2 font-semibold">Cache TTL: 5 minutes</div>
+            <div class="text-green-400 text-xs mt-2 font-semibold">Cache TTL: 5 minutes</div>
           </div>
         </div>
       </div>

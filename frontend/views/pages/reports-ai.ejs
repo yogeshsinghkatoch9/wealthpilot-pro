@@ -12,7 +12,7 @@ const safeToken = typeof token !== 'undefined' ? token : '';
 <div class="bloomberg-header mb-6">
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 <div>
-<h1 class="text-2xl font-bold text-amber-400">AI-Generated Reports</h1>
+<h1 class="text-2xl font-bold text-green-400">AI-Generated Reports</h1>
 <p class="text-slate-400">Comprehensive portfolio analysis powered by Claude AI</p>
 </div>
 <div class="flex gap-2 items-center">
@@ -32,22 +32,22 @@ Generate Report
 
 <!-- Report Type Selector -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-<button onclick="selectReportType('comprehensive')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-amber-400" data-type="comprehensive">
+<button onclick="selectReportType('comprehensive')" class="bloomberg-card p-4 text-center hover:border-green-400 transition-colors border-2 border-green-400" data-type="comprehensive">
 <div class="text-2xl mb-2">📊</div>
 <p class="font-medium text-white">Comprehensive</p>
 <p class="text-xs text-slate-400">Full analysis</p>
 </button>
-<button onclick="selectReportType('performance')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="performance">
+<button onclick="selectReportType('performance')" class="bloomberg-card p-4 text-center hover:border-green-400 transition-colors border-2 border-transparent" data-type="performance">
 <div class="text-2xl mb-2">📈</div>
 <p class="font-medium text-white">Performance</p>
 <p class="text-xs text-slate-400">Returns & gains</p>
 </button>
-<button onclick="selectReportType('risk')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="risk">
+<button onclick="selectReportType('risk')" class="bloomberg-card p-4 text-center hover:border-green-400 transition-colors border-2 border-transparent" data-type="risk">
 <div class="text-2xl mb-2">⚠️</div>
 <p class="font-medium text-white">Risk Analysis</p>
 <p class="text-xs text-slate-400">Portfolio risks</p>
 </button>
-<button onclick="selectReportType('recommendations')" class="bloomberg-card p-4 text-center hover:border-amber-400 transition-colors border-2 border-transparent" data-type="recommendations">
+<button onclick="selectReportType('recommendations')" class="bloomberg-card p-4 text-center hover:border-green-400 transition-colors border-2 border-transparent" data-type="recommendations">
 <div class="text-2xl mb-2">💡</div>
 <p class="font-medium text-white">Recommendations</p>
 <p class="text-xs text-slate-400">AI suggestions</p>
@@ -65,7 +65,7 @@ Generate Report
 <!-- Loading State -->
 <div id="loadingState" class="hidden">
 <div class="bloomberg-card p-8 text-center">
-<svg class="w-12 h-12 animate-spin mx-auto text-amber-400 mb-4" fill="none" viewBox="0 0 24 24">
+<svg class="w-12 h-12 animate-spin mx-auto text-green-400 mb-4" fill="none" viewBox="0 0 24 24">
 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
 </svg>
@@ -200,7 +200,7 @@ async function loadReportHistory() {
               <p class="text-xs text-slate-400">${new Date(r.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
-          <a href="${r.downloadUrl}" class="text-amber-400 hover:text-amber-300 text-sm" onclick="event.stopPropagation()">Download</a>
+          <a href="${r.downloadUrl}" class="text-green-400 hover:text-amber-300 text-sm" onclick="event.stopPropagation()">Download</a>
         </div>
       `).join('');
     } else {
@@ -214,11 +214,11 @@ async function loadReportHistory() {
 function selectReportType(type) {
   selectedType = type;
   document.querySelectorAll('[data-type]').forEach(btn => {
-    btn.classList.remove('border-amber-400');
+    btn.classList.remove('border-green-400');
     btn.classList.add('border-transparent');
   });
   document.querySelector(`[data-type="${type}"]`).classList.remove('border-transparent');
-  document.querySelector(`[data-type="${type}"]`).classList.add('border-amber-400');
+  document.querySelector(`[data-type="${type}"]`).classList.add('border-green-400');
 }
 
 async function generateReport() {
@@ -363,8 +363,8 @@ function convertMarkdownToHTML(markdown) {
   return markdown
     // Headers
     .replace(/^### (.*$)/gim, '<h3 class="text-white mt-6 mb-2">$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2 class="text-amber-400 text-xl font-bold mt-8 mb-3">$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1 class="text-amber-400 text-2xl font-bold mt-8 mb-4">$1</h1>')
+    .replace(/^## (.*$)/gim, '<h2 class="text-green-400 text-xl font-bold mt-8 mb-3">$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1 class="text-green-400 text-2xl font-bold mt-8 mb-4">$1</h1>')
     // Bold
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
     // Lists

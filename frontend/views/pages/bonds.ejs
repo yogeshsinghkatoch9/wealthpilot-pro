@@ -15,7 +15,7 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
 <div class="bloomberg-header mb-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-xl font-bold text-amber-400 tracking-wide">BOND PORTFOLIO</h1>
+      <h1 class="text-xl font-bold text-green-400 tracking-wide">BOND PORTFOLIO</h1>
       <p class="text-slate-400 text-sm mt-1">FIXED INCOME INVESTMENTS</p>
     </div>
     <button onclick="openAddModal()" class="bloomberg-btn bloomberg-btn-primary">
@@ -72,7 +72,7 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
 <!-- Holdings Table -->
 <div class="bloomberg-card overflow-hidden">
   <div class="px-4 py-3 border-b border-slate-700">
-    <h3 class="font-semibold text-amber-400 uppercase tracking-wider text-sm">Holdings</h3>
+    <h3 class="font-semibold text-green-400 uppercase tracking-wider text-sm">Holdings</h3>
   </div>
 
   <% if (safeBonds.length === 0) { %>
@@ -120,7 +120,7 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
             bondType === 'treasury' ? 'bg-emerald-500/20 text-emerald-400' :
             bondType === 'corporate' ? 'bg-sky-500/20 text-sky-400' :
             bondType === 'municipal' ? 'bg-purple-500/20 text-purple-400' :
-            'bg-amber-500/20 text-amber-400'
+            'bg-green-500/20 text-green-400'
           %>">
             <%= bondType.charAt(0).toUpperCase() + bondType.slice(1) %>
           </span>
@@ -164,25 +164,25 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
 <!-- Add Bond Modal -->
 <div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
   <div class="bloomberg-card p-6 w-full max-w-lg mx-4">
-    <div class="border-b border-amber-400/30 pb-3 mb-5">
-      <h3 class="text-xl font-bold text-amber-400 uppercase tracking-wide">Add Bond</h3>
+    <div class="border-b border-green-400/30 pb-3 mb-5">
+      <h3 class="text-xl font-bold text-green-400 uppercase tracking-wide">Add Bond</h3>
     </div>
 
     <form id="addForm" class="space-y-4">
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Bond Name</label>
-          <input type="text" name="name" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400" placeholder="US Treasury 10Y" required>
+          <input type="text" name="name" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-green-400" placeholder="US Treasury 10Y" required>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Issuer</label>
-          <input type="text" name="issuer" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400" placeholder="US Government">
+          <input type="text" name="issuer" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-green-400" placeholder="US Government">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Type</label>
-          <select name="bondType" class="form-input bg-slate-800/50 border-slate-600 text-white focus:border-amber-400">
+          <select name="bondType" class="form-input bg-slate-800/50 border-slate-600 text-white focus:border-green-400">
             <option value="treasury">Treasury</option>
             <option value="corporate">Corporate</option>
             <option value="municipal">Municipal</option>
@@ -192,22 +192,22 @@ const totalAnnualIncome = safeTotals.totalAnnualIncome || 0;
 
         <div>
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Face Value</label>
-          <input type="number" name="faceValue" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400 font-mono" placeholder="10000" required>
+          <input type="number" name="faceValue" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-green-400 font-mono" placeholder="10000" required>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Purchase Price</label>
-          <input type="number" name="purchasePrice" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400 font-mono" placeholder="9800" required>
+          <input type="number" name="purchasePrice" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-green-400 font-mono" placeholder="9800" required>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Coupon Rate (%)</label>
-          <input type="number" step="0.01" name="couponRate" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-amber-400 font-mono" placeholder="4.5" required>
+          <input type="number" step="0.01" name="couponRate" class="form-input bg-slate-800/50 border-slate-600 text-white placeholder-slate-500 focus:border-green-400 font-mono" placeholder="4.5" required>
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Maturity Date</label>
-          <input type="date" name="maturityDate" class="form-input bg-slate-800/50 border-slate-600 text-white focus:border-amber-400 font-mono" required>
+          <input type="date" name="maturityDate" class="form-input bg-slate-800/50 border-slate-600 text-white focus:border-green-400 font-mono" required>
         </div>
       </div>
     </form>

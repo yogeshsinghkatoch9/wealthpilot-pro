@@ -30,7 +30,7 @@ const successRate = total > 0 ? ((profitable / total) * 100).toFixed(0) : 0;
 <div class="card p-4">
 <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">Triggered Today</p>
 <p class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= triggeredToday %></p>
-<p class="text-sm text-amber-400">alerts fired</p>
+<p class="text-sm text-green-400">alerts fired</p>
 </div>
 <div class="card p-4">
 <p class="<%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %> text-sm">This Month</p>
@@ -128,7 +128,7 @@ if (activeAlertsTab.length === 0) { %>
 <td class="px-4 py-3"><span class="px-2 py-1 rounded bg-<%= typeColor %>-500/20 text-<%= typeColor %>-400 text-xs"><%= alert.alert_type %></span></td>
 <td class="px-4 py-3">$<%= (alert.target_value || 0).toFixed(2) %></td>
 <td class="px-4 py-3">$<%= (alert.current_price || 0).toFixed(2) %></td>
-<td class="px-4 py-3 <%= Math.abs(parseFloat(distance)) < 5 ? 'text-amber-400' : 'text-sky-400' %>"><%= distance %>% away</td>
+<td class="px-4 py-3 <%= Math.abs(parseFloat(distance)) < 5 ? 'text-green-400' : 'text-sky-400' %>"><%= distance %>% away</td>
 <td class="px-4 py-3"><%= new Date(alert.created_at).toLocaleDateString() %></td>
 <td class="px-4 py-3">
 <button onclick="editAlert('<%= alert.id %>')" class="btn-ghost btn-sm">Edit</button>
@@ -172,7 +172,7 @@ if (expiredAlerts.length === 0) { %>
 <style>
 .alert-tab { @apply px-4 py-2 rounded-lg text-sm font-medium transition-colors; }
 .alert-tab:not(.active) { @apply text-slate-400 hover:bg-slate-800; }
-.alert-tab.active { @apply bg-amber-500 text-white; }
+.alert-tab.active { @apply bg-green-500 text-white; }
 </style>
 
 <script>

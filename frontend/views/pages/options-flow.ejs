@@ -5,10 +5,10 @@ const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 <%- include('../partials/header', { pageTitle: 'Options Flow' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-black border-b-2 border-amber-400 px-6 py-3 -mx-6 -mt-6 mb-6">
+<div class="bg-black border-b-2 border-green-400 px-6 py-3 -mx-6 -mt-6 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400 tracking-wider">OPTIONS FLOW</h1>
+      <h1 class="text-2xl font-bold text-green-400 tracking-wider">OPTIONS FLOW</h1>
       <p class="text-slate-400 text-sm mt-1">Unusual options activity tracker</p>
     </div>
     <div class="flex gap-2">
@@ -57,8 +57,8 @@ const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 
 <!-- Unusual Flow Table -->
 <div class="bloomberg-card overflow-hidden">
-  <div class="p-4 border-b border-amber-400/30">
-    <h3 class="font-semibold text-amber-400 uppercase tracking-wider">Unusual Options Activity</h3>
+  <div class="p-4 border-b border-green-400/30">
+    <h3 class="font-semibold text-green-400 uppercase tracking-wider">Unusual Options Activity</h3>
   </div>
   <table class="bloomberg-table w-full text-sm">
     <thead>
@@ -143,18 +143,18 @@ const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 <!-- Flow Charts -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 uppercase tracking-wider mb-4">Premium Flow by Ticker</h3>
+    <h3 class="font-semibold text-green-400 uppercase tracking-wider mb-4">Premium Flow by Ticker</h3>
     <div class="h-48"><canvas id="flowChart"></canvas></div>
   </div>
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 uppercase tracking-wider mb-4">Call vs Put Premium</h3>
+    <h3 class="font-semibold text-green-400 uppercase tracking-wider mb-4">Call vs Put Premium</h3>
     <div class="h-48"><canvas id="cpChart"></canvas></div>
   </div>
 </div>
 
 <!-- Hot Tickers -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 uppercase tracking-wider mb-4">Most Active Option Tickers</h3>
+  <h3 class="font-semibold text-green-400 uppercase tracking-wider mb-4">Most Active Option Tickers</h3>
   <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
     <div class="p-4 rounded text-center bg-emerald-500/10 border border-emerald-500/20">
       <p class="font-bold text-lg text-white">NVDA</p>

@@ -6,12 +6,12 @@
     <div class="glass-card-elevated overflow-hidden">
       <div class="relative p-6 lg:p-8">
         <!-- Gradient Orbs -->
-        <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute top-0 right-0 w-64 h-64 bg-green-500/20 rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/20 rounded-full blur-3xl"></div>
 
         <div class="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-orange-600 flex items-center justify-center shadow-lg shadow-green-500/25">
               <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
@@ -29,7 +29,7 @@
           <!-- Quick Stats -->
           <div class="flex items-center gap-4">
             <div class="glass-card px-4 py-3 text-center">
-              <p class="text-2xl font-bold text-amber-400"><%= templates ? templates.length : 0 %></p>
+              <p class="text-2xl font-bold text-green-400"><%= templates ? templates.length : 0 %></p>
               <p class="text-xs <%= theme === 'light' ? 'text-gray-500' : 'text-slate-400' %>">Templates</p>
             </div>
             <div class="glass-card px-4 py-3 text-center">
@@ -44,7 +44,7 @@
     <!-- Report Templates Grid -->
     <div>
       <h2 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4 flex items-center gap-2">
-        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
         </svg>
         Report Templates
@@ -53,21 +53,21 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <% if (templates && templates.length > 0) { %>
           <% templates.forEach((template, index) => { %>
-            <div class="glass-card group cursor-pointer hover:border-amber-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10 hover:-translate-y-1"
+            <div class="glass-card group cursor-pointer hover:border-green-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/10 hover:-translate-y-1"
                  onclick="openReportModal('<%= template.id %>')">
               <div class="p-6">
                 <!-- Icon with gradient background -->
                 <div class="flex items-start justify-between mb-4">
-                  <div class="w-14 h-14 rounded-xl bg-gradient-to-br <%= index % 4 === 0 ? 'from-amber-500 to-orange-600' : index % 4 === 1 ? 'from-emerald-500 to-teal-600' : index % 4 === 2 ? 'from-blue-500 to-indigo-600' : 'from-purple-500 to-pink-600' %> flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <div class="w-14 h-14 rounded-xl bg-gradient-to-br <%= index % 4 === 0 ? 'from-green-500 to-orange-600' : index % 4 === 1 ? 'from-emerald-500 to-teal-600' : index % 4 === 2 ? 'from-green-500 to-indigo-600' : 'from-purple-500 to-pink-600' %> flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <span class="text-2xl"><%= template.icon %></span>
                   </div>
-                  <span class="px-3 py-1 text-xs font-medium bg-amber-500/20 text-amber-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span class="px-3 py-1 text-xs font-medium bg-green-500/20 text-green-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     Generate
                   </span>
                 </div>
 
                 <!-- Template Info -->
-                <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2 group-hover:text-amber-400 transition-colors">
+                <h3 class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2 group-hover:text-green-400 transition-colors">
                   <%= template.name %>
                 </h3>
                 <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> line-clamp-2">
@@ -75,7 +75,7 @@
                 </p>
 
                 <!-- Hover Arrow -->
-                <div class="mt-4 flex items-center gap-2 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div class="mt-4 flex items-center gap-2 text-green-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <span class="text-sm font-medium">Create Report</span>
                   <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
@@ -100,9 +100,9 @@
 
     <!-- Features Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="glass-card p-6 group hover:border-amber-500/30 transition-all">
-        <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="glass-card p-6 group hover:border-green-500/30 transition-all">
+        <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
         </div>
@@ -124,9 +124,9 @@
         </p>
       </div>
 
-      <div class="glass-card p-6 group hover:border-blue-500/30 transition-all">
-        <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="glass-card p-6 group hover:border-green-500/30 transition-all">
+        <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
         </div>
@@ -138,15 +138,15 @@
     </div>
 
     <!-- Info Banner -->
-    <div class="glass-card border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+    <div class="glass-card border-green-500/30 bg-gradient-to-r from-green-500/10 to-orange-500/10">
       <div class="p-5 flex items-start gap-4">
-        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+          <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
         </div>
         <div>
-          <p class="font-semibold text-amber-400 mb-1">
+          <p class="font-semibold text-green-400 mb-1">
             Professional PDF Reports
           </p>
           <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-300' %>">
@@ -164,7 +164,7 @@
     <!-- Modal Header -->
     <div class="p-6 border-b border-white/10">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-orange-600 flex items-center justify-center">
           <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
@@ -220,9 +220,9 @@
     <div id="report-loading" class="hidden p-12 text-center">
       <div class="relative w-20 h-20 mx-auto mb-6">
         <div class="absolute inset-0 rounded-full border-4 border-slate-700"></div>
-        <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-        <div class="absolute inset-3 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-          <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin"></div>
+        <div class="absolute inset-3 rounded-full bg-gradient-to-br from-green-500/20 to-orange-500/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
         </div>
@@ -230,9 +230,9 @@
       <p class="text-lg font-semibold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %>">Generating your report...</p>
       <p class="text-sm <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-2">This may take a few moments</p>
       <div class="mt-4 flex justify-center gap-1">
-        <div class="w-2 h-2 rounded-full bg-amber-400 animate-bounce" style="animation-delay: 0ms"></div>
-        <div class="w-2 h-2 rounded-full bg-amber-400 animate-bounce" style="animation-delay: 150ms"></div>
-        <div class="w-2 h-2 rounded-full bg-amber-400 animate-bounce" style="animation-delay: 300ms"></div>
+        <div class="w-2 h-2 rounded-full bg-green-400 animate-bounce" style="animation-delay: 0ms"></div>
+        <div class="w-2 h-2 rounded-full bg-green-400 animate-bounce" style="animation-delay: 150ms"></div>
+        <div class="w-2 h-2 rounded-full bg-green-400 animate-bounce" style="animation-delay: 300ms"></div>
       </div>
     </div>
   </div>
@@ -290,7 +290,7 @@ function buildOptionField(option) {
             </div>
             <div class="relative">
               <input type="checkbox" name="${option.name}" id="${id}" ${option.default ? 'checked' : ''} class="toggle-checkbox sr-only peer">
-              <div class="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-amber-500 transition-colors"></div>
+              <div class="w-11 h-6 bg-slate-700 rounded-full peer peer-checked:bg-green-500 transition-colors"></div>
               <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
             </div>
           </label>

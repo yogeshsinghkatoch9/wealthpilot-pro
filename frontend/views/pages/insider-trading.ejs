@@ -41,7 +41,7 @@ function formatDate(d) {
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">INSIDER TRADING MONITOR</h1>
+      <h1 class="text-2xl font-bold text-green-400">INSIDER TRADING MONITOR</h1>
       <p class="text-slate-400">Track Form 4 filings and insider transactions</p>
     </div>
     <form method="GET" action="/insider-trading" class="flex gap-2">
@@ -53,7 +53,7 @@ function formatDate(d) {
 
 <% if (!insider) { %>
 <div class="tufte-stat-card text-center py-12">
-  <p class="text-amber-400 text-lg">No insider trading data available<%= symbol ? ' for ' + symbol : '' %></p>
+  <p class="text-green-400 text-lg">No insider trading data available<%= symbol ? ' for ' + symbol : '' %></p>
   <p class="text-slate-400 mt-2">Try a different symbol or check back later.</p>
 </div>
 <% } else { %>
@@ -70,7 +70,7 @@ function formatDate(d) {
     <p class="text-2xl font-bold text-red-400 font-mono"><%= sells7d %></p>
     <p class="text-sm text-slate-400 mt-1 font-mono"><%= formatMoney(sellsValue) %> total value</p>
   </div>
-  <div class="tufte-stat-card p-4 border-l-4 border-amber-400">
+  <div class="tufte-stat-card p-4 border-l-4 border-green-400">
     <p class="text-slate-400 text-xs uppercase tracking-wider mb-2">Buy/Sell Ratio</p>
     <p class="text-2xl font-bold text-white font-mono"><%= buySellRatio %></p>
     <%
@@ -268,7 +268,7 @@ function formatDate(d) {
 
 <!-- Insider Sentiment Analysis -->
 <div class="tufte-stat-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4 uppercase tracking-wide">INSIDER SENTIMENT ANALYSIS</h3>
+  <h3 class="font-semibold text-green-400 mb-4 uppercase tracking-wide">INSIDER SENTIMENT ANALYSIS</h3>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <%
       const totalTxns = buys7d + sells7d;

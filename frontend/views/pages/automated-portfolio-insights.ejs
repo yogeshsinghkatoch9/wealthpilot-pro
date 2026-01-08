@@ -239,20 +239,20 @@
       <div class="insights-card p-4 lg:p-6 flex flex-col gap-4">
         <div class="flex justify-between items-start">
           <div class="flex items-center gap-2">
-            <span class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+            <span class="p-2 rounded-lg bg-green-500/10 text-green-400">
               <span class="material-symbols-outlined">lightbulb</span>
             </span>
             <h3 class="text-white font-semibold text-base lg:text-lg">Opportunities</h3>
           </div>
           <% const newOpportunities = opportunitiesData.filter(o => o.isNew !== false).length; %>
           <% if (newOpportunities > 0) { %>
-          <span class="bg-blue-500/20 text-blue-400 text-xs font-bold px-2 py-1 rounded"><%= newOpportunities %> New</span>
+          <span class="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-1 rounded"><%= newOpportunities %> New</span>
           <% } %>
         </div>
         <div class="flex flex-col gap-3 mt-2">
           <% opportunitiesData.slice(0, 2).forEach(opp => { %>
           <!-- Opportunity Item -->
-          <div class="p-3 rounded-lg bg-[#242530] border border-border-dark hover:border-blue-500/30 transition-colors group cursor-pointer opportunity-item">
+          <div class="p-3 rounded-lg bg-[#242530] border border-border-dark hover:border-green-500/30 transition-colors group cursor-pointer opportunity-item">
             <div class="flex justify-between mb-2">
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded <%= opp.symbol === 'XLV' ? 'bg-white text-black' : 'bg-gray-700 text-white' %> flex items-center justify-center font-bold text-xs"><%= opp.symbol.substring(0, 4) %></div>

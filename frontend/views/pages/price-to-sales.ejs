@@ -1486,8 +1486,8 @@ function showToast(message, type = 'info') {
   const colors = {
     success: 'bg-emerald-600 text-white',
     error: 'bg-red-600 text-white',
-    warning: 'bg-amber-600 text-white',
-    info: 'bg-blue-600 text-white'
+    warning: 'bg-green-600 text-white',
+    info: 'bg-green-600 text-white'
   };
 
   toast.className += ` ${colors[type] || colors.info}`;
@@ -1778,7 +1778,7 @@ function updateDataQualityBadge(data) {
     statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
   } else if (estimated < total / 2) {
     sourceText.textContent = `${live} Live, ${estimated} Estimated`;
-    statusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+    statusDot.className = 'w-2 h-2 rounded-full bg-green-400';
   } else {
     sourceText.textContent = `${estimated} Estimated Values`;
     statusDot.className = 'w-2 h-2 rounded-full bg-blue-400';

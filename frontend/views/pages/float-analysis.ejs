@@ -21,28 +21,28 @@ function getShortColor(pct) {
 <%- include('../partials/header', { pageTitle: 'Float Analysis' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-black border-b border-amber-400/30 px-6 py-3 mb-6">
+<div class="bg-black border-b border-green-400/30 px-6 py-3 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400 font-mono">FLOAT ANALYSIS</h1>
+      <h1 class="text-2xl font-bold text-green-400 font-mono">FLOAT ANALYSIS</h1>
       <p class="text-gray-400 text-sm">Shares outstanding, float & ownership breakdown</p>
     </div>
     <form method="GET" action="/float-analysis" class="flex gap-2">
       <input type="text" name="symbol" value="<%= symbol || 'AAPL' %>" class="bloomberg-btn w-24 font-mono uppercase text-center">
-      <button type="submit" class="bloomberg-btn bg-amber-400 text-black">Analyze</button>
+      <button type="submit" class="bloomberg-btn bg-green-400 text-black">Analyze</button>
     </form>
   </div>
 </div>
 
 <% if (!floatData) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No float data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No float data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol.</p>
 </div>
 <% } else { %>
 
 <!-- Float Summary -->
-<div class="bloomberg-card p-5 border-l-4 border-amber-400">
+<div class="bloomberg-card p-5 border-l-4 border-green-400">
   <div class="flex items-center gap-4 mb-4">
     <div>
       <h2 class="text-xl font-bold text-white"><%= symbol %> Float Analysis</h2>
@@ -81,7 +81,7 @@ function getShortColor(pct) {
 <!-- Ownership Breakdown -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4 font-mono">OWNERSHIP STRUCTURE</h3>
+    <h3 class="font-semibold text-green-400 mb-4 font-mono">OWNERSHIP STRUCTURE</h3>
     <div class="space-y-4">
       <div>
         <div class="flex justify-between text-sm mb-1">
@@ -125,7 +125,7 @@ function getShortColor(pct) {
   </div>
 
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4 font-mono">SHARE STATISTICS</h3>
+    <h3 class="font-semibold text-green-400 mb-4 font-mono">SHARE STATISTICS</h3>
     <div class="space-y-3">
       <div class="flex justify-between p-3 bg-black border border-slate-700 rounded">
         <span class="text-slate-400">Shares Outstanding</span>

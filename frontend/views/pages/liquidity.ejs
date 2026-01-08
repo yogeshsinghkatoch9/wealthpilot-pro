@@ -7,13 +7,13 @@ const safePageTitle = 'Liquidity Analysis';
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
 <!-- Bloomberg-style Header Bar -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-amber-400 px-6 py-4 -mx-6 -mt-6 mb-6">
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-b-2 border-green-400 px-6 py-4 -mx-6 -mt-6 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400 font-mono tracking-tight">LIQUIDITY ANALYSIS</h1>
+      <h1 class="text-2xl font-bold text-green-400 font-mono tracking-tight">LIQUIDITY ANALYSIS</h1>
       <p class="text-slate-300 text-sm mt-1">Volume, spreads & market depth analysis</p>
     </div>
-    <select class="bloomberg-btn bg-slate-800 text-amber-400 border-amber-400 px-4 py-2 rounded font-mono text-sm">
+    <select class="bloomberg-btn bg-slate-800 text-green-400 border-green-400 px-4 py-2 rounded font-mono text-sm">
       <option selected>My Holdings</option>
       <option>Watchlist</option>
     </select>
@@ -21,8 +21,8 @@ const safePageTitle = 'Liquidity Analysis';
 </div>
 
 <!-- Portfolio Liquidity Overview -->
-<div class="bloomberg-card p-5 bg-gradient-to-r from-slate-900/40 to-slate-800/40 border border-amber-400/30">
-<h3 class="font-semibold text-amber-400 mb-4 font-mono tracking-wide">PORTFOLIO LIQUIDITY SUMMARY</h3>
+<div class="bloomberg-card p-5 bg-gradient-to-r from-slate-900/40 to-slate-800/40 border border-green-400/30">
+<h3 class="font-semibold text-green-400 mb-4 font-mono tracking-wide">PORTFOLIO LIQUIDITY SUMMARY</h3>
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
 <div class="text-center">
 <p class="text-sm text-slate-400 font-mono">Liquidity Score</p>
@@ -53,13 +53,13 @@ const safePageTitle = 'Liquidity Analysis';
 </div>
 
 <!-- Holdings Liquidity Table -->
-<div class="bloomberg-card overflow-hidden border border-amber-400/30">
-<div class="p-4 border-b border-amber-400/30 bg-slate-900/40">
-<h3 class="font-semibold text-amber-400 font-mono tracking-wide">HOLDINGS LIQUIDITY METRICS</h3>
+<div class="bloomberg-card overflow-hidden border border-green-400/30">
+<div class="p-4 border-b border-green-400/30 bg-slate-900/40">
+<h3 class="font-semibold text-green-400 font-mono tracking-wide">HOLDINGS LIQUIDITY METRICS</h3>
 </div>
 <table class="w-full text-sm">
 <thead>
-<tr class="bg-slate-800/60 text-amber-400 text-left font-mono">
+<tr class="bg-slate-800/60 text-green-400 text-left font-mono">
 <th class="px-4 py-3">Stock</th>
 <th class="px-4 py-3 text-center">Avg Volume</th>
 <th class="px-4 py-3 text-center">$ Volume</th>
@@ -75,7 +75,7 @@ const safePageTitle = 'Liquidity Analysis';
 <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">AAPL</div><span class="font-medium">Apple</span></div></td>
 <td class="px-4 py-3 text-center font-mono">48.2M</td>
 <td class="px-4 py-3 text-center font-mono">$9.1B</td>
-<td class="px-4 py-3 text-center font-mono text-amber-400">189.64/189.66</td>
+<td class="px-4 py-3 text-center font-mono text-green-400">189.64/189.66</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">0.01%</td>
 <td class="px-4 py-3 text-center font-mono">200</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-mono">0.0004%</td>
@@ -85,7 +85,7 @@ const safePageTitle = 'Liquidity Analysis';
 <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">NVDA</div><span class="font-medium">NVIDIA</span></div></td>
 <td class="px-4 py-3 text-center font-mono">42.8M</td>
 <td class="px-4 py-3 text-center font-mono">$20.8B</td>
-<td class="px-4 py-3 text-center font-mono text-amber-400">485.20/485.24</td>
+<td class="px-4 py-3 text-center font-mono text-green-400">485.20/485.24</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">0.01%</td>
 <td class="px-4 py-3 text-center font-mono">50</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-mono">0.0001%</td>
@@ -95,7 +95,7 @@ const safePageTitle = 'Liquidity Analysis';
 <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center text-white text-xs font-bold">MSFT</div><span class="font-medium">Microsoft</span></div></td>
 <td class="px-4 py-3 text-center font-mono">18.4M</td>
 <td class="px-4 py-3 text-center font-mono">$7.6B</td>
-<td class="px-4 py-3 text-center font-mono text-amber-400">414.80/414.84</td>
+<td class="px-4 py-3 text-center font-mono text-green-400">414.80/414.84</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">0.01%</td>
 <td class="px-4 py-3 text-center font-mono">100</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-mono">0.0005%</td>
@@ -105,17 +105,17 @@ const safePageTitle = 'Liquidity Analysis';
 <td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white text-xs font-bold">TSLA</div><span class="font-medium">Tesla</span></div></td>
 <td class="px-4 py-3 text-center font-mono">82.4M</td>
 <td class="px-4 py-3 text-center font-mono">$29.3B</td>
-<td class="px-4 py-3 text-center font-mono text-amber-400">355.80/355.86</td>
+<td class="px-4 py-3 text-center font-mono text-green-400">355.80/355.86</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">0.02%</td>
 <td class="px-4 py-3 text-center font-mono">25</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-mono">0.00003%</td>
 <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold font-mono">A+</span></td>
 </tr>
 <tr class="border-b border-slate-700/50 hover:bg-slate-800/40">
-<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div><span class="font-medium">J&J</span></div></td>
+<td class="px-4 py-3"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div><span class="font-medium">J&J</span></div></td>
 <td class="px-4 py-3 text-center font-mono">6.2M</td>
 <td class="px-4 py-3 text-center font-mono">$984M</td>
-<td class="px-4 py-3 text-center font-mono text-amber-400">158.42/158.48</td>
+<td class="px-4 py-3 text-center font-mono text-green-400">158.42/158.48</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-bold font-mono">0.04%</td>
 <td class="px-4 py-3 text-center font-mono">150</td>
 <td class="px-4 py-3 text-center text-emerald-400 font-mono">0.002%</td>
@@ -127,26 +127,26 @@ const safePageTitle = 'Liquidity Analysis';
 
 <!-- Charts -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-<div class="bloomberg-card p-5 border border-amber-400/30 bg-slate-900/40">
-<h3 class="font-semibold text-amber-400 mb-4 font-mono tracking-wide">VOLUME COMPARISON (30-DAY AVG)</h3>
+<div class="bloomberg-card p-5 border border-green-400/30 bg-slate-900/40">
+<h3 class="font-semibold text-green-400 mb-4 font-mono tracking-wide">VOLUME COMPARISON (30-DAY AVG)</h3>
 <div class="h-64"><canvas id="volumeChart"></canvas></div>
 </div>
-<div class="bloomberg-card p-5 border border-amber-400/30 bg-slate-900/40">
-<h3 class="font-semibold text-amber-400 mb-4 font-mono tracking-wide">SPREAD COMPARISON</h3>
+<div class="bloomberg-card p-5 border border-green-400/30 bg-slate-900/40">
+<h3 class="font-semibold text-green-400 mb-4 font-mono tracking-wide">SPREAD COMPARISON</h3>
 <div class="h-64"><canvas id="spreadChart"></canvas></div>
 </div>
 </div>
 
 <!-- Market Depth -->
-<div class="bloomberg-card p-5 border border-amber-400/30 bg-slate-900/40">
-<h3 class="font-semibold text-amber-400 mb-4 font-mono tracking-wide">MARKET DEPTH - AAPL</h3>
+<div class="bloomberg-card p-5 border border-green-400/30 bg-slate-900/40">
+<h3 class="font-semibold text-green-400 mb-4 font-mono tracking-wide">MARKET DEPTH - AAPL</h3>
 <div class="grid grid-cols-2 gap-4">
 <div>
 <h4 class="font-medium text-emerald-400 mb-2 font-mono">Bids (Buy Orders)</h4>
 <div class="space-y-1">
 <% [[189.64,12400],[189.62,8200],[189.60,15800],[189.58,22400],[189.56,18600]].forEach(([p,s]) => { %>
 <div class="flex items-center gap-2">
-<span class="w-20 font-mono text-sm text-amber-400">$<%= p.toFixed(2) %></span>
+<span class="w-20 font-mono text-sm text-green-400">$<%= p.toFixed(2) %></span>
 <div class="flex-1 h-4 rounded bg-slate-700"><div class="h-4 rounded bg-emerald-500" style="width:<%= Math.min(s/300,100) %>%"></div></div>
 <span class="w-20 text-right text-sm font-mono"><%= s.toLocaleString() %></span>
 </div>
@@ -158,7 +158,7 @@ const safePageTitle = 'Liquidity Analysis';
 <div class="space-y-1">
 <% [[189.66,10200],[189.68,14800],[189.70,8400],[189.72,19200],[189.74,11600]].forEach(([p,s]) => { %>
 <div class="flex items-center gap-2">
-<span class="w-20 font-mono text-sm text-amber-400">$<%= p.toFixed(2) %></span>
+<span class="w-20 font-mono text-sm text-green-400">$<%= p.toFixed(2) %></span>
 <div class="flex-1 h-4 rounded bg-slate-700"><div class="h-4 rounded bg-red-500" style="width:<%= Math.min(s/300,100) %>%"></div></div>
 <span class="w-20 text-right text-sm font-mono"><%= s.toLocaleString() %></span>
 </div>

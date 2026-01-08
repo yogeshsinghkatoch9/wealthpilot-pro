@@ -7,7 +7,7 @@ const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 <main class="p-4 lg:p-6">
 <!-- Bloomberg Header Bar -->
 <div class="bloomberg-header-bar mb-6">
-<h1 class="text-2xl font-bold text-amber-400">IMPORT & EXPORT</h1>
+<h1 class="text-2xl font-bold text-green-400">IMPORT & EXPORT</h1>
 <p class="text-slate-400 mt-1">Bulk import holdings from CSV or export your portfolio</p>
 </div>
 
@@ -15,7 +15,7 @@ const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 
 <!-- Quick Actions -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-<a href="/api/export/template" download class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors group">
+<a href="/api/export/template" download class="bloomberg-card p-5 hover:border-green-400/50 transition-colors group">
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,7 +28,7 @@ const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 </div>
 </div>
 </a>
-<div class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors cursor-pointer group" onclick="document.getElementById('csvFile').click()">
+<div class="bloomberg-card p-5 hover:border-green-400/50 transition-colors cursor-pointer group" onclick="document.getElementById('csvFile').click()">
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,7 +41,7 @@ const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 </div>
 </div>
 </div>
-<div class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors cursor-pointer group" onclick="document.getElementById('excelFile').click()">
+<div class="bloomberg-card p-5 hover:border-green-400/50 transition-colors cursor-pointer group" onclick="document.getElementById('excelFile').click()">
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center text-green-400 group-hover:scale-110 transition-transform">
 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,7 +55,7 @@ const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 </div>
 </div>
 <% if (portfolios.length > 0) { %>
-<a href="/api/export/holdings/<%= portfolios[0].id %>" download class="bloomberg-card p-5 hover:border-amber-400/50 transition-colors group">
+<a href="/api/export/holdings/<%= portfolios[0].id %>" download class="bloomberg-card p-5 hover:border-green-400/50 transition-colors group">
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +77,7 @@ const portfolios = typeof portfolios !== 'undefined' ? portfolios : [];
 
 <!-- Import Form -->
 <div class="bloomberg-card p-6">
-<h3 class="text-lg font-semibold text-amber-400 mb-4">Import Holdings</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4">Import Holdings</h3>
 
 <div class="mb-4">
 <label class="block text-sm font-medium text-slate-300 mb-2">Target Portfolio</label>
@@ -120,7 +120,7 @@ Import Holdings
 <!-- Preview Results -->
 <div id="previewResults" class="bloomberg-card p-6" style="display:none;">
 <div class="flex items-center justify-between mb-4">
-<h3 class="text-lg font-semibold text-amber-400">Preview</h3>
+<h3 class="text-lg font-semibold text-green-400">Preview</h3>
 <div id="previewStats" class="flex gap-3"></div>
 </div>
 <div id="previewErrors" class="mb-4"></div>
@@ -153,7 +153,7 @@ Import Holdings
 
 <!-- Supported Formats -->
 <div class="bloomberg-card p-6">
-<h3 class="text-lg font-semibold text-amber-400 mb-4">Supported Formats</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4">Supported Formats</h3>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 <% ['Fidelity', 'Schwab', 'Vanguard', 'Robinhood', 'E*TRADE', 'TD Ameritrade', 'Generic CSV', 'Excel Export'].forEach(b => { %>
 <div class="p-3 bg-slate-800/50 rounded-lg text-center border border-slate-700/50">

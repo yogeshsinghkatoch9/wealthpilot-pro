@@ -743,8 +743,8 @@
 
   <!-- Warning Banner for Partial Data -->
   <div id="dataWarning" class="hidden mb-4">
-    <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3">
-      <svg class="w-5 h-5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-green-500/10 border border-green-500/20 rounded-xl p-4 flex items-center gap-3">
+      <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
       </svg>
       <span class="text-amber-200 text-sm" id="warningText"></span>
@@ -770,7 +770,7 @@
           <p><strong class="text-slate-300">Employee Count Estimates:</strong> When official employee data is unavailable from financial APIs, we estimate employee counts using industry-average ratios (employees per $1B revenue). These estimates are marked with an asterisk (*).</p>
           <p><strong class="text-slate-300">Accuracy Limitations:</strong> Estimated values are approximations and may differ significantly from actual figures. Highly efficient companies (e.g., Apple, Google) typically have fewer employees per dollar of revenue than industry averages suggest.</p>
           <p><strong class="text-slate-300">Data Sources:</strong> Employee and financial data sourced from Yahoo Finance. For verified employee counts, refer to company 10-K filings or official investor relations.</p>
-          <p class="text-amber-400/80 italic">Use estimated metrics for directional guidance only, not for critical investment decisions.</p>
+          <p class="text-green-400/80 italic">Use estimated metrics for directional guidance only, not for critical investment decisions.</p>
         </div>
       </div>
     </div>
@@ -1078,7 +1078,7 @@ function updateHoldingsTable(holdings) {
     const vsClass = hasData ? (parseFloat(h.vsSector) >= 0 ? 'positive' : 'negative') : 'neutral';
 
     // Estimated employees indicator
-    const employeesDisplay = h.employeesFormatted + (h.estimatedEmployees ? '<span class="text-xs text-amber-400 ml-1" title="Estimated based on industry average">*</span>' : '');
+    const employeesDisplay = h.employeesFormatted + (h.estimatedEmployees ? '<span class="text-xs text-green-400 ml-1" title="Estimated based on industry average">*</span>' : '');
 
     return `
       <tr class="${rankClass} ${!hasData ? 'opacity-60' : ''}">
@@ -1098,7 +1098,7 @@ function updateHoldingsTable(holdings) {
         <td class="text-right text-slate-400">${employeesDisplay}</td>
         <td class="text-right">
           ${hasData
-            ? `<span class="font-bold ${h.isAboveAvg ? 'text-emerald-400' : 'text-amber-400'}">${h.revPerEmployeeFormatted}</span>`
+            ? `<span class="font-bold ${h.isAboveAvg ? 'text-emerald-400' : 'text-green-400'}">${h.revPerEmployeeFormatted}</span>`
             : '<span class="text-slate-500" title="Employee data not available">N/A</span>'
           }
         </td>

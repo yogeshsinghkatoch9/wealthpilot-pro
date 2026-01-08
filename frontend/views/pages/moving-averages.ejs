@@ -66,7 +66,7 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">MOVING AVERAGES</h1>
+      <h1 class="text-2xl font-bold text-green-400">MOVING AVERAGES</h1>
       <p class="text-slate-400 mt-1">SMA/EMA analysis & crossover signals</p>
     </div>
     <form method="GET" action="/moving-averages" class="flex gap-2">
@@ -78,7 +78,7 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 
 <% if (!movingAverages) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No moving average data available for <%= symbol %></p>
+  <p class="text-green-400 text-lg">No moving average data available for <%= symbol %></p>
   <p class="text-slate-400 mt-2">Try a different symbol or check if market data is available.</p>
 </div>
 <% } else { %>
@@ -86,9 +86,9 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 <!-- MA Summary -->
 <div class="bloomberg-card p-5 bg-gradient-to-r from-emerald-900/20 to-sky-900/20">
   <div class="flex items-center gap-4">
-    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
+    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-black font-bold text-xl"><%= symbol %></div>
     <div class="flex-1">
-      <h2 class="text-xl font-bold text-amber-400"><%= symbol %></h2>
+      <h2 class="text-xl font-bold text-green-400"><%= symbol %></h2>
       <p class="text-slate-400">Current Price: <span class="font-mono text-white"><%= formatPrice(price) %></span></p>
     </div>
     <div class="text-center px-4">
@@ -123,8 +123,8 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 
 <!-- MA Table -->
 <div class="bloomberg-card overflow-hidden">
-  <div class="p-4 border-b border-amber-500/30">
-    <h3 class="font-semibold text-amber-400">Moving Average Levels</h3>
+  <div class="p-4 border-b border-green-500/30">
+    <h3 class="font-semibold text-green-400">Moving Average Levels</h3>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -144,10 +144,10 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
           const emaVal = ema[period.toString()] || ema[period] || 0;
           const smaSignal = getSignal(smaVal);
           const isKeyPeriod = period === 50 || period === 200;
-          const rowClass = isKeyPeriod ? 'bg-amber-500/5' : '';
+          const rowClass = isKeyPeriod ? 'bg-green-500/5' : '';
         %>
         <tr class="border-b border-slate-700/50 <%= rowClass %>">
-          <td class="px-4 py-3 font-medium <%= isKeyPeriod ? 'font-bold text-amber-400' : 'text-slate-300' %>"><%= period %>-Day</td>
+          <td class="px-4 py-3 font-medium <%= isKeyPeriod ? 'font-bold text-green-400' : 'text-slate-300' %>"><%= period %>-Day</td>
           <td class="px-4 py-3 text-center font-mono <%= isKeyPeriod ? 'font-bold' : '' %>"><%= smaVal ? formatPrice(smaVal) : '-' %></td>
           <td class="px-4 py-3 text-center font-mono <%= isKeyPeriod ? 'font-bold' : '' %>"><%= emaVal ? formatPrice(emaVal) : '-' %></td>
           <td class="px-4 py-3 text-center font-mono <%= priceDiff(smaVal) >= 0 ? 'text-emerald-400' : 'text-red-400' %> <%= isKeyPeriod ? 'font-bold' : '' %>">
@@ -171,7 +171,7 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 <!-- Crossover Signals & Summary -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4">Crossover Signals</h3>
+    <h3 class="font-semibold text-green-400 mb-4">Crossover Signals</h3>
     <div class="space-y-3">
       <% if (goldenCross) { %>
       <div class="p-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-500/10">
@@ -226,7 +226,7 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
   </div>
 
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4">MA Summary</h3>
+    <h3 class="font-semibold text-green-400 mb-4">MA Summary</h3>
     <div class="space-y-4">
       <%
         // Short-term check (5-20)
@@ -263,9 +263,9 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
           <div class="h-2 rounded-full bg-<%= longTermBullish ? 'emerald' : 'red' %>-500" style="width:<%= longTermBullish ? 100 : 30 %>%"></div>
         </div>
       </div>
-      <div class="pt-2 border-t border-amber-500/30">
+      <div class="pt-2 border-t border-green-500/30">
         <div class="flex justify-between">
-          <span class="font-bold text-amber-400">Overall MA Signal</span>
+          <span class="font-bold text-green-400">Overall MA Signal</span>
           <span class="text-<%= signalColor %>-400 font-bold"><%= overallSignal %></span>
         </div>
       </div>
@@ -275,7 +275,7 @@ const maPeriods = [5, 10, 20, 50, 100, 200];
 
 <!-- Chart -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">Price with Moving Averages</h3>
+  <h3 class="font-semibold text-green-400 mb-4">Price with Moving Averages</h3>
   <div id="tvMAChart" class="h-80"></div>
 </div>
 <% } %>

@@ -24,10 +24,10 @@ const onTrackGoals = safeGoals.filter(g => {
 <%- include('../partials/header', { pageTitle: 'Goals' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bg-black border-b border-amber-400/20 px-4 py-2">
+<div class="bg-black border-b border-green-400/20 px-4 py-2">
   <div class="max-w-7xl mx-auto flex items-center justify-between">
     <div class="flex items-center space-x-4">
-      <h1 class="text-xl font-bold text-amber-400 tracking-tight">FINANCIAL GOALS</h1>
+      <h1 class="text-xl font-bold text-green-400 tracking-tight">FINANCIAL GOALS</h1>
       <span class="text-slate-500 text-sm font-mono"><%= new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() %></span>
     </div>
     <button onclick="openModal('goalModal')" class="bloomberg-btn bloomberg-btn-primary">
@@ -50,7 +50,7 @@ const onTrackGoals = safeGoals.filter(g => {
     </div>
     <div class="space-y-1">
       <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">On Track</div>
-      <div class="text-amber-400 text-lg font-mono font-bold"><%= onTrackGoals %></div>
+      <div class="text-green-400 text-lg font-mono font-bold"><%= onTrackGoals %></div>
     </div>
     <div class="space-y-1">
       <div class="text-slate-500 text-xs font-mono uppercase tracking-wide">Avg Progress</div>
@@ -107,7 +107,7 @@ const onTrackGoals = safeGoals.filter(g => {
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-2">
-                  <span class="<%= priority === 'high' ? 'bg-red-500/20 text-red-400' : priority === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400' %> text-xs font-mono px-2 py-0.5 rounded border <%= priority === 'high' ? 'border-red-500/30' : priority === 'medium' ? 'border-amber-500/30' : 'border-blue-500/30' %>">
+                  <span class="<%= priority === 'high' ? 'bg-red-500/20 text-red-400' : priority === 'medium' ? 'bg-green-500/20 text-green-400' : 'bg-green-500/20 text-green-400' %> text-xs font-mono px-2 py-0.5 rounded border <%= priority === 'high' ? 'border-red-500/30' : priority === 'medium' ? 'border-green-500/30' : 'border-green-500/30' %>">
                     <%= priority ? priority.toUpperCase() : 'MEDIUM' %>
                   </span>
                   <span class="text-slate-500 text-xs font-mono">
@@ -132,7 +132,7 @@ const onTrackGoals = safeGoals.filter(g => {
 
               <div class="relative">
                 <div class="h-2 bg-slate-800 rounded-sm overflow-hidden">
-                  <div class="h-full transition-all duration-500 <%= progress >= 100 ? 'bg-emerald-400' : 'bg-amber-400' %>" style="width: <%= Math.min(100, progress) %>%"></div>
+                  <div class="h-full transition-all duration-500 <%= progress >= 100 ? 'bg-emerald-400' : 'bg-green-400' %>" style="width: <%= Math.min(100, progress) %>%"></div>
                 </div>
                 <div class="flex justify-between items-center mt-2">
                   <span class="text-slate-500 text-xs font-mono tabular-nums">TARGET: <%= safeFmt.money(targetAmount) %></span>
@@ -175,19 +175,19 @@ const onTrackGoals = safeGoals.filter(g => {
 <!-- Bloomberg Modal -->
 <div id="goalModal" class="modal">
   <div class="modal-content bloomberg-card">
-    <div class="modal-header bg-black border-b border-amber-400/20">
-      <h3 class="text-amber-400 font-mono font-bold uppercase tracking-tight">Create New Goal</h3>
+    <div class="modal-header bg-black border-b border-green-400/20">
+      <h3 class="text-green-400 font-mono font-bold uppercase tracking-tight">Create New Goal</h3>
       <button onclick="closeModal('goalModal')" class="modal-close text-slate-400 hover:text-white">&times;</button>
     </div>
     <form onsubmit="return handleCreateGoal(event)">
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Goal Name</label>
-          <input type="text" name="name" required class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20" placeholder="e.g., Retirement Fund">
+          <input type="text" name="name" required class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-green-400 focus:ring-amber-400/20" placeholder="e.g., Retirement Fund">
         </div>
         <div>
           <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Category</label>
-          <select name="category" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20">
+          <select name="category" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-green-400 focus:ring-amber-400/20">
             <option>Retirement</option>
             <option>Emergency</option>
             <option>Education</option>
@@ -199,21 +199,21 @@ const onTrackGoals = safeGoals.filter(g => {
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Target Amount</label>
-            <input type="number" name="target_amount" required class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20" placeholder="1000000" step="0.01">
+            <input type="number" name="target_amount" required class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-green-400 focus:ring-amber-400/20" placeholder="1000000" step="0.01">
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Monthly Contribution</label>
-            <input type="number" name="monthly_contribution" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20" placeholder="500" step="0.01">
+            <input type="number" name="monthly_contribution" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-green-400 focus:ring-amber-400/20" placeholder="500" step="0.01">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Target Date</label>
-            <input type="date" name="target_date" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20">
+            <input type="date" name="target_date" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-green-400 focus:ring-amber-400/20">
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-400 mb-1.5 font-mono uppercase tracking-wide">Priority</label>
-            <select name="priority" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-amber-400 focus:ring-amber-400/20">
+            <select name="priority" class="form-input bg-slate-900 border-slate-700 text-white font-mono focus:border-green-400 focus:ring-amber-400/20">
               <option value="1">High</option>
               <option value="2">Medium</option>
               <option value="3">Low</option>

@@ -223,7 +223,7 @@
     <!-- ========== HERO SECTION: Portfolio Value + Performance Chart ========== -->
     <div id="overview" class="section-anchor relative overflow-hidden rounded-2xl" style="background: linear-gradient(135deg, rgba(22, 27, 34, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%); border: 1px solid rgba(48, 54, 61, 0.5);">
       <!-- Subtle background accent -->
-      <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-blue-500/5 rounded-full blur-3xl"></div>
+      <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-green-500/5 rounded-full blur-3xl"></div>
 
       <div class="relative p-6 lg:p-8">
         <!-- Top Bar: Title + Controls -->
@@ -322,7 +322,7 @@
             <!-- Minimal Legend -->
             <div id="benchmarkLegend" class="flex flex-wrap gap-4 mt-2">
               <div class="flex items-center gap-1.5">
-                <div class="w-3 h-0.5 bg-blue-500 rounded"></div>
+                <div class="w-3 h-0.5 bg-green-500 rounded"></div>
                 <span class="text-xs text-slate-500">Portfolio</span>
               </div>
             </div>
@@ -392,7 +392,7 @@
         </div>
         <div class="flex justify-center gap-6 mt-3 text-xs">
           <div><span class="text-slate-500">Mean</span> <span class="text-emerald-400 font-mono ml-1"><%= (safeReturnsDistribution.mean || 0).toFixed(2) %>%</span></div>
-          <div><span class="text-slate-500">Std Dev</span> <span class="text-blue-400 font-mono ml-1"><%= (safeReturnsDistribution.stdDev || 0).toFixed(2) %>%</span></div>
+          <div><span class="text-slate-500">Std Dev</span> <span class="text-green-400 font-mono ml-1"><%= (safeReturnsDistribution.stdDev || 0).toFixed(2) %>%</span></div>
         </div>
       </div>
 
@@ -407,7 +407,7 @@
         </div>
         <div class="flex justify-between mt-3 text-xs">
           <div><span class="text-slate-500">Current</span> <span class="text-red-400 font-mono ml-1"><%= (safeDrawdown.currentDrawdown || 0).toFixed(2) %>%</span></div>
-          <div><span class="text-slate-500">Recovery</span> <span class="text-blue-400 font-mono ml-1"><%= Math.floor(Math.random() * 30 + 10) %>d</span></div>
+          <div><span class="text-slate-500">Recovery</span> <span class="text-green-400 font-mono ml-1"><%= Math.floor(Math.random() * 30 + 10) %>d</span></div>
         </div>
       </div>
 
@@ -600,7 +600,7 @@
             <span class="text-xs text-slate-400" id="diversifiersInsight">Bonds provide stability</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-amber-400"></div>
+            <div class="w-2 h-2 rounded-full bg-green-400"></div>
             <span class="text-xs text-slate-400" id="recommendationInsight">Add intl exposure</span>
           </div>
         </div>
@@ -1554,7 +1554,7 @@ function updateBenchmarkLegend() {
     'VTI': '#79c0ff', 'BND': '#8b949e', 'EFA': '#d2a8ff', 'EEM': '#ffc658'
   };
 
-  let html = '<div class="flex items-center gap-1.5"><div class="w-3 h-0.5 bg-blue-500 rounded"></div><span class="text-xs text-slate-400">Portfolio</span></div>';
+  let html = '<div class="flex items-center gap-1.5"><div class="w-3 h-0.5 bg-green-500 rounded"></div><span class="text-xs text-slate-400">Portfolio</span></div>';
 
   window.performanceChart.data.datasets.forEach((ds, i) => {
     if (i === 0) return; // Skip portfolio
@@ -1651,8 +1651,8 @@ function showToast(message, type) {
   const colors = {
     success: 'bg-emerald-600',
     error: 'bg-red-600',
-    warning: 'bg-amber-600',
-    info: 'bg-blue-600'
+    warning: 'bg-green-600',
+    info: 'bg-green-600'
   };
 
   const toast = document.createElement('div');

@@ -408,10 +408,10 @@
           <p class="text-xs text-slate-400">Strong (1.5-2.5x)</p>
         </div>
       </div>
-      <div class="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
-        <div class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></div>
+      <div class="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+        <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
         <div>
-          <p class="text-2xl font-bold text-amber-400 font-mono" id="adequateCount">0</p>
+          <p class="text-2xl font-bold text-green-400 font-mono" id="adequateCount">0</p>
           <p class="text-xs text-slate-400">Adequate (1.0-1.5x)</p>
         </div>
       </div>
@@ -436,7 +436,7 @@
       </div>
       <div class="flex flex-wrap gap-4 text-xs">
         <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><span class="text-slate-400">&lt;1.0x Weak</span></div>
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-400">1.0-1.5x Adequate</span></div>
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div><span class="text-slate-400">1.0-1.5x Adequate</span></div>
         <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-sky-500"></div><span class="text-slate-400">1.5-2.5x Strong</span></div>
         <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div><span class="text-slate-400">&gt;2.5x Excellent</span></div>
       </div>
@@ -1117,7 +1117,7 @@
       <div class="cycle-indicator">
         <div>
           <p class="text-xs text-slate-400 mb-1">Days Inventory Outstanding</p>
-          <p class="cycle-value text-amber-400">${Math.round(avgDIO)}</p>
+          <p class="cycle-value text-green-400">${Math.round(avgDIO)}</p>
         </div>
       </div>
       <div class="cycle-indicator">
@@ -1129,8 +1129,8 @@
       <div class="cycle-indicator" style="background: ${avgCCC < 30 ? 'rgba(16, 185, 129, 0.1)' : avgCCC < 60 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border-color: ${avgCCC < 30 ? 'rgba(16, 185, 129, 0.3)' : avgCCC < 60 ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)'}">
         <div>
           <p class="text-xs text-slate-400 mb-1">Cash Conversion Cycle</p>
-          <p class="cycle-value ${avgCCC < 30 ? 'text-emerald-400' : avgCCC < 60 ? 'text-amber-400' : 'text-red-400'}">${Math.round(avgCCC)}</p>
-          <p class="text-xs ${avgCCC < 30 ? 'text-emerald-400' : avgCCC < 60 ? 'text-amber-400' : 'text-red-400'}">${avgCCC < 30 ? 'Excellent' : avgCCC < 60 ? 'Good' : 'Needs Improvement'}</p>
+          <p class="cycle-value ${avgCCC < 30 ? 'text-emerald-400' : avgCCC < 60 ? 'text-green-400' : 'text-red-400'}">${Math.round(avgCCC)}</p>
+          <p class="text-xs ${avgCCC < 30 ? 'text-emerald-400' : avgCCC < 60 ? 'text-green-400' : 'text-red-400'}">${avgCCC < 30 ? 'Excellent' : avgCCC < 60 ? 'Good' : 'Needs Improvement'}</p>
         </div>
       </div>
     `;
@@ -1227,7 +1227,7 @@
     switch(rating?.toLowerCase()) {
       case 'excellent': return 'text-emerald-400';
       case 'strong': return 'text-sky-400';
-      case 'adequate': return 'text-amber-400';
+      case 'adequate': return 'text-green-400';
       default: return 'text-red-400';
     }
   }

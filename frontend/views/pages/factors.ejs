@@ -102,7 +102,7 @@ const factorETFs = [
 <div class="bloomberg-header mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400">FACTOR INVESTING</h1>
+      <h1 class="text-2xl font-bold text-green-400">FACTOR INVESTING</h1>
       <p class="text-slate-400">Smart beta factor exposure analysis</p>
     </div>
     <button class="bloomberg-btn bloomberg-btn-primary" onclick="window.location.reload()">REFRESH</button>
@@ -111,14 +111,14 @@ const factorETFs = [
 
 <% if (!factors) { %>
 <div class="bloomberg-card text-center py-12">
-  <p class="text-amber-400 text-lg">No factor data available</p>
+  <p class="text-green-400 text-lg">No factor data available</p>
   <p class="text-slate-400 mt-2">Add holdings to your portfolio to see factor analysis.</p>
 </div>
 <% } else { %>
 
 <!-- Factor Exposure Summary -->
 <div class="bloomberg-card p-5 bg-gradient-to-r from-purple-900/20 to-sky-900/20">
-  <h3 class="font-semibold text-amber-400 mb-4">PORTFOLIO FACTOR EXPOSURES</h3>
+  <h3 class="font-semibold text-green-400 mb-4">PORTFOLIO FACTOR EXPOSURES</h3>
   <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
     <div class="text-center">
       <p class="text-sm text-slate-400">Market</p>
@@ -147,7 +147,7 @@ const factorETFs = [
     </div>
     <div class="text-center">
       <p class="text-sm text-slate-400">Volatility</p>
-      <p class="text-2xl font-bold font-mono text-amber-400"><%= formatNum(lowVol.exposure) %></p>
+      <p class="text-2xl font-bold font-mono text-green-400"><%= formatNum(lowVol.exposure) %></p>
       <p class="text-xs text-<%= volLabel.color %>-400"><%= volLabel.text %></p>
     </div>
   </div>
@@ -156,18 +156,18 @@ const factorETFs = [
 <!-- Factor Charts -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4">FACTOR RADAR</h3>
+    <h3 class="font-semibold text-green-400 mb-4">FACTOR RADAR</h3>
     <div class="h-64"><canvas id="radarChart"></canvas></div>
   </div>
   <div class="bloomberg-card p-5">
-    <h3 class="font-semibold text-amber-400 mb-4">FACTOR CONTRIBUTION (YTD)</h3>
+    <h3 class="font-semibold text-green-400 mb-4">FACTOR CONTRIBUTION (YTD)</h3>
     <div class="h-64"><canvas id="factorPerfChart"></canvas></div>
   </div>
 </div>
 
 <!-- Factor Breakdown -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">FACTOR BREAKDOWN</h3>
+  <h3 class="font-semibold text-green-400 mb-4">FACTOR BREAKDOWN</h3>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <div class="p-4 rounded-lg bg-sky-500/10">
       <div class="flex items-center justify-between mb-2">
@@ -214,13 +214,13 @@ const factorETFs = [
       <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-emerald-500" style="width:<%= Math.min(100, quality.exposure * 80 + 20) %>%"></div></div>
       <p class="text-xs text-slate-400 mt-1"><%= quality.exposure > 0.6 ? 'High-quality companies with strong fundamentals' : 'Mixed quality exposure' %></p>
     </div>
-    <div class="p-4 rounded-lg bg-amber-500/10">
+    <div class="p-4 rounded-lg bg-green-500/10">
       <div class="flex items-center justify-between mb-2">
-        <h4 class="font-bold text-amber-400">Low Vol (BAB)</h4>
+        <h4 class="font-bold text-green-400">Low Vol (BAB)</h4>
         <span class="text-xl font-bold font-mono"><%= formatNum(lowVol.exposure) %></span>
       </div>
       <p class="text-sm text-slate-400 mb-2">Low volatility stock exposure</p>
-      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-amber-500" style="width:<%= Math.min(100, lowVol.exposure * 100 + 30) %>%"></div></div>
+      <div class="h-2 rounded-full bg-slate-700"><div class="h-2 rounded-full bg-green-500" style="width:<%= Math.min(100, lowVol.exposure * 100 + 30) %>%"></div></div>
       <p class="text-xs text-slate-400 mt-1"><%= lowVol.exposure > 0.5 ? 'High volatility exposure' : 'Moderate to low volatility' %></p>
     </div>
   </div>
@@ -228,7 +228,7 @@ const factorETFs = [
 
 <!-- Factor ETF Recommendations -->
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">FACTOR ETF RECOMMENDATIONS</h3>
+  <h3 class="font-semibold text-green-400 mb-4">FACTOR ETF RECOMMENDATIONS</h3>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
@@ -260,7 +260,7 @@ const factorETFs = [
 <!-- Sector Attribution (if available) -->
 <% if (sectorAttribution.length > 0) { %>
 <div class="bloomberg-card p-5">
-  <h3 class="font-semibold text-amber-400 mb-4">SECTOR ATTRIBUTION</h3>
+  <h3 class="font-semibold text-green-400 mb-4">SECTOR ATTRIBUTION</h3>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>

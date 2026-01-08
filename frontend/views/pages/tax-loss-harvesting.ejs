@@ -423,9 +423,9 @@ function getWashSaleStatus(symbol) {
     <!-- Wash Sale Risk Indicator -->
     <% if (washSaleWindows && washSaleWindows.length > 0) { %>
     <div class="wash-sale-banner flex items-center gap-3">
-      <span class="material-symbols-outlined text-amber-500">warning</span>
+      <span class="material-symbols-outlined text-green-500">warning</span>
       <div>
-        <p class="text-amber-500 font-medium text-sm">Wash Sale Risk Active</p>
+        <p class="text-green-500 font-medium text-sm">Wash Sale Risk Active</p>
         <p class="text-[#9e9fb7] text-xs mt-0.5"><%= washSaleWindows.length %> asset(s) currently in wash sale window - harvesting restricted</p>
       </div>
     </div>
@@ -790,7 +790,7 @@ function getWashSaleStatus(symbol) {
       <!-- Wash Sale Windows Info -->
       <div class="replacement-card">
         <div class="flex items-center gap-2 mb-4">
-          <span class="material-symbols-outlined text-amber-500">schedule</span>
+          <span class="material-symbols-outlined text-green-500">schedule</span>
           <h3 class="text-white font-bold">Active Wash Sale Windows</h3>
         </div>
         <p class="text-[#9e9fb7] text-sm mb-4">
@@ -799,42 +799,42 @@ function getWashSaleStatus(symbol) {
         <div class="space-y-3">
           <% if (washSaleWindows && washSaleWindows.length > 0) { %>
             <% washSaleWindows.slice(0, 3).forEach(ws => { %>
-            <div class="replacement-item border-l-2 border-amber-500">
+            <div class="replacement-item border-l-2 border-green-500">
               <div class="flex items-center gap-3">
                 <span class="text-white font-mono font-bold"><%= ws.symbol %></span>
                 <span class="text-xs text-[#9e9fb7]">Sold <%= formatDate(ws.sale_date) %></span>
               </div>
               <div class="text-right">
                 <p class="text-xs text-[#9e9fb7]">Window ends</p>
-                <p class="text-amber-500 font-mono text-sm"><%= formatDate(ws.wash_sale_window_end) %></p>
+                <p class="text-green-500 font-mono text-sm"><%= formatDate(ws.wash_sale_window_end) %></p>
               </div>
             </div>
             <% }); %>
           <% } else { %>
-            <div class="replacement-item border-l-2 border-amber-500">
+            <div class="replacement-item border-l-2 border-green-500">
               <div class="flex items-center gap-3">
                 <span class="text-white font-mono font-bold">ZM</span>
                 <span class="text-xs text-[#9e9fb7]">Sold Dec 15, 2025</span>
               </div>
               <div class="text-right">
                 <p class="text-xs text-[#9e9fb7]">Window ends</p>
-                <p class="text-amber-500 font-mono text-sm">Jan 14, 2026</p>
+                <p class="text-green-500 font-mono text-sm">Jan 14, 2026</p>
               </div>
             </div>
-            <div class="replacement-item border-l-2 border-amber-500">
+            <div class="replacement-item border-l-2 border-green-500">
               <div class="flex items-center gap-3">
                 <span class="text-white font-mono font-bold">META</span>
                 <span class="text-xs text-[#9e9fb7]">Sold Dec 20, 2025</span>
               </div>
               <div class="text-right">
                 <p class="text-xs text-[#9e9fb7]">Window ends</p>
-                <p class="text-amber-500 font-mono text-sm">Jan 19, 2026</p>
+                <p class="text-green-500 font-mono text-sm">Jan 19, 2026</p>
               </div>
             </div>
           <% } %>
         </div>
-        <div class="mt-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-          <p class="text-amber-400 text-xs">
+        <div class="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+          <p class="text-green-400 text-xs">
             <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
             The wash sale rule prevents claiming a loss if you buy a "substantially identical" security within 30 days before or after the sale.
           </p>
@@ -942,7 +942,7 @@ async function previewHarvest(symbol, replacement) {
           <div class="p-4 bg-black/30 rounded-lg">
             <div class="flex justify-between items-center mb-3">
               <span class="text-lg font-bold text-white font-mono">${symbol}</span>
-              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-[#0bda65]/15 text-[#0bda65]' : 'bg-amber-500/15 text-amber-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
+              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-[#0bda65]/15 text-[#0bda65]' : 'bg-green-500/15 text-green-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
             </div>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div><span class="text-[#9e9fb7]">Shares:</span> <span class="text-white font-mono">${data.holding?.shares?.toFixed(2) || '0'}</span></div>
@@ -976,8 +976,8 @@ async function previewHarvest(symbol, replacement) {
           ` : ''}
 
           ${data.warnings?.length ? `
-          <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <p class="text-amber-400 text-sm">${data.warnings.join(', ')}</p>
+          <div class="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+            <p class="text-green-400 text-sm">${data.warnings.join(', ')}</p>
           </div>
           ` : ''}
 
@@ -1047,9 +1047,9 @@ function viewWashSaleDetails(symbol) {
 
   document.getElementById('washSaleContent').innerHTML = `
     <div class="space-y-4">
-      <div class="p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+      <div class="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
         <div class="flex items-center gap-3 mb-3">
-          <span class="material-symbols-outlined text-amber-500">warning</span>
+          <span class="material-symbols-outlined text-green-500">warning</span>
           <span class="text-white font-bold font-mono text-lg">${symbol}</span>
         </div>
         <p class="text-[#9e9fb7] text-sm">

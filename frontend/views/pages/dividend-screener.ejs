@@ -7,10 +7,10 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
 <%- include('../partials/header', { pageTitle: safePageTitle }) %>
 
 <!-- Bloomberg-style header bar -->
-<div class="bg-slate-900 border-b-2 border-amber-400 px-6 py-4 -mx-6 -mt-6 mb-6">
+<div class="bg-slate-900 border-b-2 border-green-400 px-6 py-4 -mx-6 -mt-6 mb-6">
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-bold text-amber-400 font-mono tracking-tight">DIVIDEND SCREENER</h1>
+      <h1 class="text-2xl font-bold text-green-400 font-mono tracking-tight">DIVIDEND SCREENER</h1>
       <p class="text-slate-400 text-sm mt-1">Find the best dividend stocks for your portfolio</p>
     </div>
     <div class="flex gap-2">
@@ -22,7 +22,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
 
 <!-- Quick Filters -->
 <div class="bloomberg-card">
-  <h3 class="text-amber-400 font-mono font-semibold mb-4 text-sm tracking-wide">QUICK FILTERS</h3>
+  <h3 class="text-green-400 font-mono font-semibold mb-4 text-sm tracking-wide">QUICK FILTERS</h3>
   <div class="flex flex-wrap gap-2 mb-4">
     <button onclick="applyPreset('aristocrats')" class="bloomberg-btn bloomberg-btn-filter">DIVIDEND ARISTOCRATS</button>
     <button onclick="applyPreset('high-yield')" class="bloomberg-btn bloomberg-btn-filter">HIGH YIELD (>4%)</button>
@@ -33,23 +33,23 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
   <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
     <div>
       <label class="text-xs text-slate-400 uppercase font-mono tracking-wide block mb-1">Min Yield</label>
-      <input type="text" value="2%" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400">
+      <input type="text" value="2%" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-green-400">
     </div>
     <div>
       <label class="text-xs text-slate-400 uppercase font-mono tracking-wide block mb-1">Max Yield</label>
-      <input type="text" value="10%" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400">
+      <input type="text" value="10%" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-green-400">
     </div>
     <div>
       <label class="text-xs text-slate-400 uppercase font-mono tracking-wide block mb-1">Min Years Inc.</label>
-      <input type="text" value="5" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400">
+      <input type="text" value="5" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-green-400">
     </div>
     <div>
       <label class="text-xs text-slate-400 uppercase font-mono tracking-wide block mb-1">Max Payout</label>
-      <input type="text" value="75%" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400">
+      <input type="text" value="75%" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-green-400">
     </div>
     <div>
       <label class="text-xs text-slate-400 uppercase font-mono tracking-wide block mb-1">Min Market Cap</label>
-      <select class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400">
+      <select class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-green-400">
         <option>Any</option>
         <option selected>$1B+</option>
         <option>$10B+</option>
@@ -58,7 +58,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
     </div>
     <div>
       <label class="text-xs text-slate-400 uppercase font-mono tracking-wide block mb-1">Sector</label>
-      <select class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-400">
+      <select class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono focus:outline-none focus:border-green-400">
         <option selected>All Sectors</option>
         <option>Utilities</option>
         <option>REITs</option>
@@ -96,9 +96,9 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
 
 <!-- Results Table -->
 <div class="bloomberg-card overflow-hidden">
-  <div class="p-4 border-b border-amber-400/30 flex justify-between items-center">
-    <h3 class="font-semibold text-amber-400 font-mono text-sm tracking-wide">SCREENER RESULTS</h3>
-    <select class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-amber-400">
+  <div class="p-4 border-b border-green-400/30 flex justify-between items-center">
+    <h3 class="font-semibold text-green-400 font-mono text-sm tracking-wide">SCREENER RESULTS</h3>
+    <select class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-green-400">
       <option>Sort: Yield ↓</option>
       <option>Sort: Growth ↓</option>
       <option>Sort: Years ↓</option>
@@ -142,7 +142,7 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
 <tr>
         <td>
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div>
+            <div class="w-10 h-10 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xs font-bold">JNJ</div>
             <div>
               <p class="font-bold text-white">Johnson & Johnson</p>
               <p class="text-xs text-slate-400">Healthcare • <span class="font-mono">$158.40</span></p>
@@ -206,10 +206,10 @@ const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Dividend S
 <td class="px-4 py-4 font-bold text-emerald-400">6.32%</td>
 <td class="px-4 py-4">$1.10</td>
 <td class="px-4 py-4 text-red-400">-46%</td>
-<td class="px-4 py-4"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 text-xs font-bold">2</span></td>
+<td class="px-4 py-4"><span class="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-bold">2</span></td>
 <td class="px-4 py-4">52%</td>
 <td class="px-4 py-4">Jan 9</td>
-<td class="px-4 py-4"><span class="px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">62</span></td>
+<td class="px-4 py-4"><span class="px-2 py-1 rounded bg-green-500/20 text-green-400 font-bold">62</span></td>
 <td class="px-4 py-4"><button class="btn-ghost btn-sm">Add</button></td>
 </tr>
 </tbody>

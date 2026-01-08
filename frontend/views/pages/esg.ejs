@@ -94,11 +94,11 @@ const sdgAlignment = [
         </div>
         <div>
           <div class="flex justify-between text-sm mb-1">
-            <span class="flex items-center gap-1 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="text-blue-400">S</span> Social</span>
+            <span class="flex items-center gap-1 <%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><span class="text-green-400">S</span> Social</span>
             <span class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.social %></span>
           </div>
           <div class="h-2 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>">
-            <div class="h-2 rounded-full bg-blue-500" style="width: <%= portfolioESG.social %>%"></div>
+            <div class="h-2 rounded-full bg-green-500" style="width: <%= portfolioESG.social %>%"></div>
           </div>
         </div>
         <div>
@@ -132,7 +132,7 @@ const sdgAlignment = [
             <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.carbonIntensity %> tCO2e/$M</p>
           </div>
         </div>
-        <span class="px-2 py-1 text-xs rounded bg-amber-500/20 text-amber-400">Medium</span>
+        <span class="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400">Medium</span>
       </div>
       <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
         <div class="flex items-center gap-3">
@@ -152,7 +152,7 @@ const sdgAlignment = [
             <p class="font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= portfolioESG.controversies %> issues</p>
           </div>
         </div>
-        <span class="px-2 py-1 text-xs rounded bg-amber-500/20 text-amber-400">Moderate</span>
+        <span class="px-2 py-1 text-xs rounded bg-green-500/20 text-green-400">Moderate</span>
       </div>
     </div>
   </div>
@@ -250,13 +250,13 @@ const sdgAlignment = [
         </thead>
         <tbody id="esgTableBody">
           <% holdings.forEach(h => {
-            const scoreColor = h.overall >= 70 ? 'text-emerald-400' : h.overall >= 50 ? 'text-amber-400' : 'text-red-400';
-            const ratingColor = h.rating.startsWith('A') ? 'bg-emerald-500/20 text-emerald-400' : h.rating.startsWith('B') ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400';
+            const scoreColor = h.overall >= 70 ? 'text-emerald-400' : h.overall >= 50 ? 'text-green-400' : 'text-red-400';
+            const ratingColor = h.rating.startsWith('A') ? 'bg-emerald-500/20 text-emerald-400' : h.rating.startsWith('B') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
           %>
           <tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100 hover:bg-gray-50' : 'border-slate-700/50 hover:bg-slate-800/50' %> cursor-pointer" onclick="showStockDetail('<%= h.symbol %>')">
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold"><%= h.symbol.substring(0, 3) %></div>
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-xs font-bold"><%= h.symbol.substring(0, 3) %></div>
                 <div>
                   <p class="font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>"><%= h.name %></p>
                   <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %>"><%= h.symbol %></p>
@@ -267,9 +267,9 @@ const sdgAlignment = [
             <td class="px-4 py-3 text-center <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= h.e %></td>
             <td class="px-4 py-3 text-center <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= h.s %></td>
             <td class="px-4 py-3 text-center <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>"><%= h.g %></td>
-            <td class="px-4 py-3 text-center <%= h.carbonIntensity > 100 ? 'text-red-400' : h.carbonIntensity > 50 ? 'text-amber-400' : 'text-emerald-400' %>"><%= h.carbonIntensity %></td>
+            <td class="px-4 py-3 text-center <%= h.carbonIntensity > 100 ? 'text-red-400' : h.carbonIntensity > 50 ? 'text-green-400' : 'text-emerald-400' %>"><%= h.carbonIntensity %></td>
             <td class="px-4 py-3 text-center">
-              <span class="px-2 py-1 text-xs rounded <%= h.controversies === 0 ? 'bg-emerald-500/20 text-emerald-400' : h.controversies <= 2 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400' %>">
+              <span class="px-2 py-1 text-xs rounded <%= h.controversies === 0 ? 'bg-emerald-500/20 text-emerald-400' : h.controversies <= 2 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' %>">
                 <%= h.controversies === 0 ? 'None' : h.controversies %>
               </span>
             </td>
@@ -412,10 +412,10 @@ const sdgAlignment = [
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <% sdgAlignment.forEach(sdg => {
-        const bgColor = sdg.score >= 70 ? 'from-emerald-500/20 to-emerald-600/20' : sdg.score >= 50 ? 'from-amber-500/20 to-amber-600/20' : 'from-red-500/20 to-red-600/20';
-        const textColor = sdg.score >= 70 ? 'text-emerald-400' : sdg.score >= 50 ? 'text-amber-400' : 'text-red-400';
+        const bgColor = sdg.score >= 70 ? 'from-emerald-500/20 to-emerald-600/20' : sdg.score >= 50 ? 'from-green-500/20 to-green-600/20' : 'from-red-500/20 to-red-600/20';
+        const textColor = sdg.score >= 70 ? 'text-emerald-400' : sdg.score >= 50 ? 'text-green-400' : 'text-red-400';
       %>
-      <div class="p-4 rounded-lg bg-gradient-to-br <%= bgColor %> border <%= sdg.score >= 70 ? 'border-emerald-500/30' : sdg.score >= 50 ? 'border-amber-500/30' : 'border-red-500/30' %>">
+      <div class="p-4 rounded-lg bg-gradient-to-br <%= bgColor %> border <%= sdg.score >= 70 ? 'border-emerald-500/30' : sdg.score >= 50 ? 'border-green-500/30' : 'border-red-500/30' %>">
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center gap-2">
             <span class="text-2xl"><%= sdg.icon %></span>
@@ -427,7 +427,7 @@ const sdgAlignment = [
           <span class="text-2xl font-bold <%= textColor %>"><%= sdg.score %></span>
         </div>
         <div class="h-2 rounded-full <%= safeTheme === 'light' ? 'bg-gray-200' : 'bg-slate-700' %>">
-          <div class="h-2 rounded-full <%= sdg.score >= 70 ? 'bg-emerald-500' : sdg.score >= 50 ? 'bg-amber-500' : 'bg-red-500' %>" style="width: <%= sdg.score %>%"></div>
+          <div class="h-2 rounded-full <%= sdg.score >= 70 ? 'bg-emerald-500' : sdg.score >= 50 ? 'bg-green-500' : 'bg-red-500' %>" style="width: <%= sdg.score %>%"></div>
         </div>
       </div>
       <% }) %>
@@ -449,7 +449,7 @@ const sdgAlignment = [
         </div>
         <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
           <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Neutral Impact Areas</span>
-          <span class="font-bold text-amber-400">1 SDG</span>
+          <span class="font-bold text-green-400">1 SDG</span>
         </div>
         <div class="flex items-center justify-between p-3 rounded-lg <%= safeTheme === 'light' ? 'bg-gray-50' : 'bg-slate-800' %>">
           <span class="<%= safeTheme === 'light' ? 'text-gray-600' : 'text-slate-400' %>">Needs Improvement</span>
@@ -538,7 +538,7 @@ const sdgAlignment = [
   @apply px-4 py-2 -mb-px text-sm font-medium border-b-2 border-transparent transition-colors;
 }
 .tab-btn:hover { @apply <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %>; }
-.tab-btn.active { @apply border-blue-500 text-blue-500; }
+.tab-btn.active { @apply border-green-500 text-green-500; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -676,8 +676,8 @@ function runScreener() {
   }
 
   tbody.innerHTML = results.map(h => {
-    const scoreColor = h.overall >= 70 ? 'text-emerald-400' : h.overall >= 50 ? 'text-amber-400' : 'text-red-400';
-    const ratingColor = h.rating.startsWith('A') ? 'bg-emerald-500/20 text-emerald-400' : h.rating.startsWith('B') ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400';
+    const scoreColor = h.overall >= 70 ? 'text-emerald-400' : h.overall >= 50 ? 'text-green-400' : 'text-red-400';
+    const ratingColor = h.rating.startsWith('A') ? 'bg-emerald-500/20 text-emerald-400' : h.rating.startsWith('B') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
     return `
       <tr class="border-b <%= safeTheme === 'light' ? 'border-gray-100' : 'border-slate-700/50' %>">
         <td class="px-4 py-3 font-medium <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">${h.symbol}</td>

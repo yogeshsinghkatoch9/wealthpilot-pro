@@ -14,7 +14,7 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 <div class="bloomberg-header mb-6">
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <h1 class="text-2xl font-bold text-amber-400 tracking-tight">CRYPTO TRACKER</h1>
+      <h1 class="text-2xl font-bold text-green-400 tracking-tight">CRYPTO TRACKER</h1>
       <div class="flex items-center gap-2">
         <span class="live-indicator"></span>
         <span class="text-xs text-slate-400 uppercase tracking-wider">LIVE</span>
@@ -56,7 +56,7 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
   </div>
   <div class="bloomberg-kpi">
     <div class="bloomberg-kpi-label">FEAR & GREED</div>
-    <div class="bloomberg-kpi-value font-mono text-amber-400">65 (GREED)</div>
+    <div class="bloomberg-kpi-value font-mono text-green-400">65 (GREED)</div>
   </div>
 </div>
 
@@ -106,11 +106,11 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 <!-- Portfolio Summary -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 <div class="lg:col-span-2 bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Your Crypto Holdings</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Your Crypto Holdings</h3>
 <div class="overflow-x-auto">
 <table class="bloomberg-table w-full">
 <thead>
-<tr class="border-b border-amber-400/30 text-slate-400 text-xs uppercase tracking-wider text-left">
+<tr class="border-b border-green-400/30 text-slate-400 text-xs uppercase tracking-wider text-left">
   <th class="pb-3">ASSET</th>
   <th class="pb-3 text-right">PRICE</th>
   <th class="pb-3 text-right">24H</th>
@@ -173,8 +173,8 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 </tr>
 </tbody>
 <tfoot>
-<tr class="bg-slate-800/50 border-t border-amber-400/30">
-  <td colspan="4" class="py-3 font-semibold text-amber-400 uppercase tracking-wider">Total Crypto Value</td>
+<tr class="bg-slate-800/50 border-t border-green-400/30">
+  <td colspan="4" class="py-3 font-semibold text-green-400 uppercase tracking-wider">Total Crypto Value</td>
   <td class="py-3 text-right font-bold text-lg text-white font-mono">$35,969</td>
   <td class="py-3 text-right text-emerald-400 font-bold font-mono">+$6,219 (+20.9%)</td>
   <td></td>
@@ -185,11 +185,11 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 </div>
 
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Allocation</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Allocation</h3>
 <div class="h-48"><canvas id="cryptoAllocationChart"></canvas></div>
 <div class="space-y-2 mt-4">
   <div class="flex items-center justify-between">
-    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-amber-500"></div><span class="text-slate-300 text-sm">Bitcoin</span></div>
+    <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-green-500"></div><span class="text-slate-300 text-sm">Bitcoin</span></div>
     <span class="text-white font-medium font-mono">60.1%</span>
   </div>
   <div class="flex items-center justify-between">
@@ -206,7 +206,7 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 
 <!-- Market Movers -->
 <div class="bloomberg-card p-5 mb-6">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Market Movers (24h)</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Market Movers (24h)</h3>
 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
 <% const movers = [
   { symbol: 'PEPE', name: 'Pepe', price: '0.0000012', change: 45.2, color: 'emerald' },
@@ -231,7 +231,7 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 <!-- Fear & Greed -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Fear & Greed Index</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Fear & Greed Index</h3>
 <div class="flex items-center justify-center">
   <div class="relative w-40 h-40">
     <svg viewBox="0 0 100 50" class="w-full">
@@ -249,7 +249,7 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
     </svg>
     <div class="absolute inset-0 flex items-end justify-center pb-2">
       <div class="text-center">
-        <p class="text-3xl font-bold text-amber-400 font-mono">65</p>
+        <p class="text-3xl font-bold text-green-400 font-mono">65</p>
         <p class="text-sm text-slate-400 uppercase tracking-wider">Greed</p>
       </div>
     </div>
@@ -261,13 +261,13 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 </div>
 
 <div class="bloomberg-card p-5">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">BTC Dominance</h3>
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">BTC Dominance</h3>
 <div class="text-center mb-4">
   <p class="text-4xl font-bold text-white font-mono">52.4%</p>
   <p class="text-sm text-emerald-400 font-mono">+0.8% this week</p>
 </div>
 <div class="h-4 bg-slate-700 rounded-full overflow-hidden flex">
-  <div class="bg-amber-500 h-full" style="width: 52.4%"></div>
+  <div class="bg-green-500 h-full" style="width: 52.4%"></div>
   <div class="bg-indigo-500 h-full" style="width: 17.8%"></div>
   <div class="bg-slate-400 h-full" style="width: 29.8%"></div>
 </div>
@@ -280,8 +280,8 @@ const safeBtcDominance = typeof btcDominance !== 'undefined' ? btcDominance : 52
 
 <!-- Add Crypto Modal -->
 <div id="addCryptoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
-<div class="bg-slate-900 border border-amber-400/30 rounded-lg p-6 max-w-md w-full mx-4">
-<h3 class="text-lg font-semibold text-amber-400 mb-4 uppercase tracking-wide">Add Crypto Holding</h3>
+<div class="bg-slate-900 border border-green-400/30 rounded-lg p-6 max-w-md w-full mx-4">
+<h3 class="text-lg font-semibold text-green-400 mb-4 uppercase tracking-wide">Add Crypto Holding</h3>
 <div class="space-y-4">
   <div>
     <label class="block text-sm font-medium text-slate-300 mb-1 uppercase tracking-wider">Cryptocurrency</label>

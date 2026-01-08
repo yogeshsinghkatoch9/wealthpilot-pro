@@ -217,7 +217,7 @@ function formatDate(date) {
     <div class="flex items-center gap-3">
       <form method="GET" class="flex items-center gap-2">
         <select name="portfolio" id="portfolioSelect" onchange="this.form.submit()"
-                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-amber-400">
+                class="px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:border-green-400">
           <% if (typeof portfolios !== 'undefined' && portfolios) { %>
           <% portfolios.forEach(p => { %>
           <option value="<%= p.id %>" <%= selectedPid == p.id ? 'selected' : '' %>><%= p.name %></option>
@@ -281,7 +281,7 @@ function formatDate(date) {
       <div class="stat-mini-label">Safe Opportunities</div>
     </div>
     <div class="stat-mini">
-      <div class="stat-mini-value text-amber-400"><%= formatMoney(carryforward.totalBalance || 0) %></div>
+      <div class="stat-mini-value text-green-400"><%= formatMoney(carryforward.totalBalance || 0) %></div>
       <div class="stat-mini-label">Loss Carryforward</div>
     </div>
     <div class="stat-mini">
@@ -304,7 +304,7 @@ function formatDate(date) {
     <!-- Top Opportunities with ETF Alternatives -->
     <div class="lg:col-span-2 tax-card">
       <div class="tax-card-header">
-        <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Top Opportunities with ETF Alternatives</h3>
+        <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Top Opportunities with ETF Alternatives</h3>
         <a href="/tax-opportunities<%= selectedPid ? '?portfolio=' + selectedPid : '' %>" class="text-xs text-slate-400 hover:text-white">View All</a>
       </div>
       <div class="p-4 space-y-3">
@@ -318,7 +318,7 @@ function formatDate(date) {
             <div>
               <div class="flex items-center gap-2">
                 <span class="text-white font-bold font-mono"><%= opp.symbol %></span>
-                <span class="text-xs px-2 py-0.5 rounded <%= opp.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400' %>">
+                <span class="text-xs px-2 py-0.5 rounded <%= opp.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-green-500/15 text-green-400' %>">
                   <%= opp.holdingPeriod || 'short-term' %>
                 </span>
               </div>
@@ -388,14 +388,14 @@ function formatDate(date) {
       <!-- Recommendations -->
       <div class="tax-card">
         <div class="tax-card-header">
-          <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wide">Recommendations</h3>
+          <h3 class="text-sm font-bold text-green-400 uppercase tracking-wide">Recommendations</h3>
         </div>
         <div class="p-4 space-y-3">
           <% if (recommendations.length > 0) { %>
           <% recommendations.slice(0, 3).forEach(rec => { %>
           <div class="recommendation-card <%= rec.priority === 'high' ? 'high' : '' %>">
             <div class="flex items-start gap-3">
-              <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 <%= rec.priority === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400' %>">
+              <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 <%= rec.priority === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400' %>">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                 </svg>
@@ -540,11 +540,11 @@ function formatDate(date) {
         <div>
           <label class="block text-sm text-slate-400 mb-1">Federal Tax Bracket (%)</label>
           <input type="number" name="federal_tax_bracket" value="<%= preferences.federal_tax_bracket || 32 %>"
-                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400" min="0" max="50" step="1">
+                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-green-400" min="0" max="50" step="1">
         </div>
         <div>
           <label class="block text-sm text-slate-400 mb-1">State</label>
-          <select name="state" class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400">
+          <select name="state" class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-green-400">
             <option value="">Select State</option>
             <option value="CA" <%= preferences.state === 'CA' ? 'selected' : '' %>>California</option>
             <option value="NY" <%= preferences.state === 'NY' ? 'selected' : '' %>>New York</option>
@@ -556,16 +556,16 @@ function formatDate(date) {
         <div>
           <label class="block text-sm text-slate-400 mb-1">State Tax Rate (%)</label>
           <input type="number" name="state_tax_rate" value="<%= preferences.state_tax_rate || 0 %>"
-                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400" min="0" max="15" step="0.1">
+                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-green-400" min="0" max="15" step="0.1">
         </div>
         <div>
           <label class="block text-sm text-slate-400 mb-1">Min Harvest Threshold ($)</label>
           <input type="number" name="min_harvest_threshold" value="<%= preferences.min_harvest_threshold || 100 %>"
-                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400" min="0" step="50">
+                 class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-green-400" min="0" step="50">
         </div>
         <div>
           <label class="block text-sm text-slate-400 mb-1">Default Lot Selection</label>
-          <select name="default_lot_method" class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-400">
+          <select name="default_lot_method" class="w-full px-4 py-2 bg-black/40 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-green-400">
             <option value="tax_efficient" <%= preferences.default_lot_method === 'tax_efficient' ? 'selected' : '' %>>Tax Efficient (Recommended)</option>
             <option value="fifo" <%= preferences.default_lot_method === 'fifo' ? 'selected' : '' %>>FIFO (First In, First Out)</option>
             <option value="lifo" <%= preferences.default_lot_method === 'lifo' ? 'selected' : '' %>>LIFO (Last In, First Out)</option>
@@ -575,7 +575,7 @@ function formatDate(date) {
       </div>
       <div class="flex gap-3 mt-6">
         <button type="button" onclick="closePreferences()" class="flex-1 px-4 py-2 bg-slate-700 text-white font-medium rounded-lg hover:bg-slate-600 transition-colors">Cancel</button>
-        <button type="submit" class="flex-1 px-4 py-2 bg-amber-500 text-black font-bold rounded-lg hover:bg-amber-400 transition-colors">Save</button>
+        <button type="submit" class="flex-1 px-4 py-2 bg-green-500 text-black font-bold rounded-lg hover:bg-green-400 transition-colors">Save</button>
       </div>
     </form>
   </div>
@@ -594,7 +594,7 @@ function formatDate(date) {
     </div>
     <div id="harvestPreviewContent">
       <div class="flex items-center justify-center py-8">
-        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
       </div>
     </div>
   </div>
@@ -643,7 +643,7 @@ async function previewHarvest(symbol, replacement) {
   document.getElementById('harvestModal').classList.add('flex');
   document.getElementById('harvestPreviewContent').innerHTML = `
     <div class="flex items-center justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400"></div>
     </div>
   `;
 
@@ -663,7 +663,7 @@ async function previewHarvest(symbol, replacement) {
           <div class="p-4 bg-black/30 rounded-lg">
             <div class="flex justify-between items-center mb-3">
               <span class="text-lg font-bold text-white font-mono">${symbol}</span>
-              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
+              <span class="text-xs px-2 py-1 rounded ${data.holding?.holdingPeriod === 'long-term' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-green-500/15 text-green-400'}">${data.holding?.holdingPeriod || 'short-term'}</span>
             </div>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div><span class="text-slate-400">Shares:</span> <span class="text-white font-mono">${data.holding?.shares?.toFixed(2) || '0'}</span></div>
@@ -697,8 +697,8 @@ async function previewHarvest(symbol, replacement) {
           ` : ''}
 
           ${data.warnings?.length ? `
-          <div class="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-            <p class="text-amber-400 text-sm">${data.warnings.join(', ')}</p>
+          <div class="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+            <p class="text-green-400 text-sm">${data.warnings.join(', ')}</p>
           </div>
           ` : ''}
 

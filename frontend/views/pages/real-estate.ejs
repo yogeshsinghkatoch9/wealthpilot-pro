@@ -14,9 +14,9 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <%- include('../partials/header', { pageTitle: 'Real Estate' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-amber-400">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-green-400">
 <div>
-<h1 class="text-2xl font-bold text-amber-400 font-mono tracking-tight">REAL ESTATE PORTFOLIO</h1>
+<h1 class="text-2xl font-bold text-green-400 font-mono tracking-tight">REAL ESTATE PORTFOLIO</h1>
 <p class="text-slate-400 text-sm mt-1">Track properties and rental income</p>
 </div>
 <button onclick="openAddModal()" class="bloomberg-btn bloomberg-btn-primary">+ ADD PROPERTY</button>
@@ -43,15 +43,15 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <div class="bloomberg-card p-4">
 <p class="text-slate-400 text-sm uppercase tracking-wider mb-2">Avg Cap Rate</p>
 <% const avgCapRate = safeTotals.totalValue > 0 ? ((safeTotals.totalIncome || 0) * 12 / safeTotals.totalValue * 100) : 0; %>
-<p class="text-3xl font-bold text-amber-400 font-mono"><%= avgCapRate.toFixed(2) %>%</p>
+<p class="text-3xl font-bold text-green-400 font-mono"><%= avgCapRate.toFixed(2) %>%</p>
 <p class="text-sm text-slate-400 mt-1">Net operating income</p>
 </div>
 </div>
 
 <!-- Properties -->
 <div class="bloomberg-card overflow-hidden">
-<div class="p-4 border-b border-amber-400/30 bg-black/20">
-<h3 class="font-semibold text-amber-400 uppercase tracking-wider font-mono">Properties</h3>
+<div class="p-4 border-b border-green-400/30 bg-black/20">
+<h3 class="font-semibold text-green-400 uppercase tracking-wider font-mono">Properties</h3>
 </div>
 <% if (safeProperties.length === 0) { %>
 <div class="p-12 text-center">
@@ -65,7 +65,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <% } else { %>
 <table class="w-full text-sm">
 <thead>
-<tr class="bg-black/40 text-slate-400 text-left border-b border-amber-400/30">
+<tr class="bg-black/40 text-slate-400 text-left border-b border-green-400/30">
 <th class="px-4 py-3 uppercase tracking-wider text-xs font-mono">Property</th>
 <th class="px-4 py-3 uppercase tracking-wider text-xs font-mono">Type</th>
 <th class="px-4 py-3 text-right uppercase tracking-wider text-xs font-mono">Value</th>
@@ -89,7 +89,7 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 </div>
 </td>
 <td class="px-4 py-4">
-<span class="px-2 py-1 rounded text-xs font-mono <%= p.property_type === 'residential' ? 'bg-sky-500/20 text-sky-400' : p.property_type === 'commercial' ? 'bg-purple-500/20 text-purple-400' : 'bg-amber-500/20 text-amber-400' %>">
+<span class="px-2 py-1 rounded text-xs font-mono <%= p.property_type === 'residential' ? 'bg-sky-500/20 text-sky-400' : p.property_type === 'commercial' ? 'bg-purple-500/20 text-purple-400' : 'bg-green-500/20 text-green-400' %>">
 <%= (p.property_type || 'Other').charAt(0).toUpperCase() + (p.property_type || 'other').slice(1) %>
 </span>
 </td>
@@ -115,8 +115,8 @@ const safeFmt = typeof fmt !== 'undefined' ? fmt : {
 <!-- Add Property Modal -->
 <div id="addModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
 <div class="bloomberg-card p-6 w-full max-w-lg mx-4">
-<div class="border-b border-amber-400/30 pb-3 mb-4">
-<h3 class="text-xl font-bold text-amber-400 font-mono uppercase tracking-wide">Add Property</h3>
+<div class="border-b border-green-400/30 pb-3 mb-4">
+<h3 class="text-xl font-bold text-green-400 font-mono uppercase tracking-wide">Add Property</h3>
 </div>
 <form id="addForm" class="space-y-4">
 <div class="grid grid-cols-2 gap-4">

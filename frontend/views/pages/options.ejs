@@ -8,7 +8,7 @@ const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
 <div class="bloomberg-header">
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 <div>
-<h1 class="text-2xl font-bold text-amber-400">OPTIONS TRACKER</h1>
+<h1 class="text-2xl font-bold text-green-400">OPTIONS TRACKER</h1>
 <p class="text-slate-400">Track options positions and calculate Greeks</p>
 </div>
 <div class="flex gap-2">
@@ -60,7 +60,7 @@ Add Position
 <!-- Open Positions -->
 <div class="bloomberg-card p-5">
 <div class="flex items-center justify-between mb-4">
-<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wider">Open Positions</h3>
+<h3 class="text-lg font-semibold text-green-400 uppercase tracking-wider">Open Positions</h3>
 <button onclick="loadPositions()" class="bloomberg-btn-secondary btn-sm">
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -71,7 +71,7 @@ Add Position
 <div class="overflow-x-auto">
 <table class="w-full" id="positions-table">
 <thead>
-<tr class="border-b border-amber-400/30 text-slate-400 text-sm text-left">
+<tr class="border-b border-green-400/30 text-slate-400 text-sm text-left">
   <th class="pb-3 uppercase tracking-wider">Symbol</th>
   <th class="pb-3 uppercase tracking-wider">Type</th>
   <th class="pb-3 text-right uppercase tracking-wider">Strike</th>
@@ -105,7 +105,7 @@ Add Position
 <!-- Options Chain Section -->
 <div class="bloomberg-card p-5">
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-<h3 class="text-lg font-semibold text-amber-400 uppercase tracking-wider">Options Chain</h3>
+<h3 class="text-lg font-semibold text-green-400 uppercase tracking-wider">Options Chain</h3>
 <div class="flex gap-3">
   <div class="flex items-center gap-2">
     <label class="text-slate-400 text-sm">Symbol:</label>
@@ -284,7 +284,7 @@ Add Position
 </form>
 
 <div id="calculator-results" class="p-4 border-t border-slate-700 hidden">
-  <h4 class="text-sm font-medium text-amber-400 mb-3 uppercase">Results</h4>
+  <h4 class="text-sm font-medium text-green-400 mb-3 uppercase">Results</h4>
   <div class="grid grid-cols-2 gap-4 text-sm">
     <div class="bg-slate-700/50 rounded-lg p-3">
       <p class="text-slate-400">Option Price</p>
@@ -318,7 +318,7 @@ Add Position
     </div>
   </div>
   <div class="mt-4 p-3 bg-slate-700/30 rounded-lg">
-    <h5 class="text-xs text-amber-400 mb-2 uppercase">Probabilities</h5>
+    <h5 class="text-xs text-green-400 mb-2 uppercase">Probabilities</h5>
     <div class="grid grid-cols-2 gap-4 text-sm">
       <div>
         <p class="text-slate-400">Prob ITM (Call)</p>
@@ -395,7 +395,7 @@ function renderPositions(data) {
         <td class="py-3 font-semibold text-white">${pos.symbol}</td>
         <td class="py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${typeClass}">${(pos.optionType || 'call').toUpperCase()}</span></td>
         <td class="py-3 text-right text-slate-300 font-mono">$${pos.strikePrice}</td>
-        <td class="py-3 text-right ${isNearExpiry ? 'text-amber-400' : 'text-slate-300'} font-mono">${expiryDate}</td>
+        <td class="py-3 text-right ${isNearExpiry ? 'text-green-400' : 'text-slate-300'} font-mono">${expiryDate}</td>
         <td class="py-3 text-right text-white font-medium font-mono">${pos.contracts > 0 ? '+' : ''}${pos.contracts}</td>
         <td class="py-3 text-right text-slate-300 font-mono">$${pos.premium?.toFixed(2)}</td>
         <td class="py-3 text-right text-white font-medium font-mono">$${pos.currentOptionPrice?.toFixed(2) || '--'}</td>
@@ -499,7 +499,7 @@ function renderOptionsChain(data) {
 
   document.getElementById('chain-dte').textContent = data.daysToExpiry + ' days';
   document.getElementById('chain-source').textContent = data.source === 'yahoo_finance' ? 'Live Data' : 'Calculated';
-  document.getElementById('chain-source').className = `font-medium ${data.source === 'yahoo_finance' ? 'text-emerald-400' : 'text-amber-400'}`;
+  document.getElementById('chain-source').className = `font-medium ${data.source === 'yahoo_finance' ? 'text-emerald-400' : 'text-green-400'}`;
 
   currentStockPrice = data.stockPrice;
 
