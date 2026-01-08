@@ -9,7 +9,7 @@
 <%- include('../partials/header', { pageTitle: 'Sector Analysis' }) %>
 
 <!-- Bloomberg Header Bar -->
-<div class="bloomberg-header-bar">
+<div class="bloomberg-header-bar page-header">
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
       <div class="bloomberg-header-title">SECTOR ANALYSIS</div>
@@ -24,7 +24,7 @@
   </div>
 </div>
 
-<main class="p-4 lg:p-6">
+<main class="page-container p-4 lg:p-6">
   <div class="max-w-7xl mx-auto space-y-6">
     <% if (sectorsList.length > 0) { %>
       <%
@@ -38,37 +38,37 @@
 
       <!-- KPI Summary Bar -->
       <div class="bloomberg-kpi-bar">
-        <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-item stat-card">
           <div class="bloomberg-kpi-label">TOTAL SECTORS</div>
           <div class="bloomberg-kpi-value"><%= totalSectors %></div>
         </div>
 
-        <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-item stat-card">
           <div class="bloomberg-kpi-label">LARGEST SECTOR</div>
           <div class="bloomberg-kpi-value text-sky-400"><%= largestSector.sector %></div>
           <div class="bloomberg-kpi-sublabel font-mono"><%= (largestSector.weight || 0).toFixed(1) %>%</div>
         </div>
 
-        <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-item stat-card">
           <div class="bloomberg-kpi-label">BEST PERFORMER</div>
           <div class="bloomberg-kpi-value text-emerald-400"><%= bestPerformer.sector %></div>
           <div class="bloomberg-kpi-sublabel font-mono text-emerald-400">+<%= (bestPerformer.performance || 0).toFixed(2) %>%</div>
         </div>
 
-        <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-item stat-card">
           <div class="bloomberg-kpi-label">WORST PERFORMER</div>
           <div class="bloomberg-kpi-value text-red-400"><%= worstPerformer.sector %></div>
           <div class="bloomberg-kpi-sublabel font-mono text-red-400"><%= (worstPerformer.performance || 0) >= 0 ? '+' : '' %><%= (worstPerformer.performance || 0).toFixed(2) %>%</div>
         </div>
 
-        <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-item stat-card">
           <div class="bloomberg-kpi-label">AVG PERFORMANCE</div>
           <div class="bloomberg-kpi-value font-mono <%= avgPerformance >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
             <%= avgPerformance >= 0 ? '+' : '' %><%= avgPerformance.toFixed(2) %>%
           </div>
         </div>
 
-        <div class="bloomberg-kpi-item">
+        <div class="bloomberg-kpi-item stat-card">
           <div class="bloomberg-kpi-label">CONCENTRATION</div>
           <div class="bloomberg-kpi-value font-mono <%= hhiScore > 2500 ? 'text-red-400' : hhiScore > 1500 ? 'text-green-400' : 'text-emerald-400' %>">
             <%= hhiScore ? hhiScore.toFixed(0) : 'N/A' %>
@@ -82,7 +82,7 @@
       <!-- Charts Section -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Sector Allocation Chart -->
-        <div class="bloomberg-card">
+        <div class="bloomberg-card premium-card">
           <div class="bloomberg-card-header">
             <h3 class="bloomberg-card-title">SECTOR ALLOCATION</h3>
           </div>
@@ -94,7 +94,7 @@
         </div>
 
         <!-- Sector Performance Chart -->
-        <div class="bloomberg-card">
+        <div class="bloomberg-card premium-card">
           <div class="bloomberg-card-header">
             <h3 class="bloomberg-card-title">SECTOR PERFORMANCE</h3>
           </div>
@@ -107,13 +107,13 @@
       </div>
 
       <!-- Detailed Sector Table -->
-      <div class="bloomberg-card">
+      <div class="bloomberg-card premium-card">
         <div class="bloomberg-card-header">
           <h3 class="bloomberg-card-title">SECTOR BREAKDOWN</h3>
         </div>
         <div class="bloomberg-card-body p-0">
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm premium-table">
               <thead>
                 <tr class="border-b border-slate-700 text-slate-400 text-left">
                   <th class="px-6 py-3 font-semibold uppercase text-xs">Sector</th>
@@ -177,7 +177,7 @@
       </div>
 
       <!-- Top Holdings by Sector -->
-      <div class="bloomberg-card">
+      <div class="bloomberg-card premium-card">
         <div class="bloomberg-card-header">
           <h3 class="bloomberg-card-title">TOP HOLDINGS BY SECTOR</h3>
         </div>
@@ -219,7 +219,7 @@
 
     <% } else { %>
       <!-- No Data State -->
-      <div class="bloomberg-card">
+      <div class="bloomberg-card premium-card">
         <div class="bloomberg-card-body p-12 text-center">
           <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-800 flex items-center justify-center">
             <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

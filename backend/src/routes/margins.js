@@ -9,6 +9,7 @@ const axios = require('axios');
 const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'WTV2HVV9OLJ76NEV';
 const FINNHUB_KEY = process.env.FINNHUB_API_KEY;
 const POLYGON_KEY = process.env.POLYGON_API_KEY;
+const FMP_KEY = process.env.FMP_API_KEY;
 
 // Cache for margin data (4 hour TTL - margin data doesn't change frequently)
 const marginCache = new Map();
@@ -232,22 +233,14 @@ async function fetchMarginData(symbol) {
       })
     );
   } catch (aggregateError) {
-    // All providers failed - use sector average fallback
-    logger.warn(`[Margins] All APIs failed for ${symbol}, using sector fallback`);
-    const sectorAvg = SECTOR_AVERAGES['Technology']; // Default to tech
-    data = {
-      symbol: symbol.toUpperCase(),
-      name: symbol,
-      grossMargin: sectorAvg.gross + (Math.random() * 10 - 5), // Add variance
-      operatingMargin: sectorAvg.operating + (Math.random() * 6 - 3),
-      netMargin: sectorAvg.net + (Math.random() * 4 - 2),
-      price: 0,
-      marketCap: 0,
-      sector: 'Technology',
-      industry: 'Unknown',
-      provider: 'Sector Average (Est.)',
-      estimated: true
-    };
+    // All providers failed - return null to indicate no data available
+    logger.warn(`[Margins] All APIs failed for ${symbol}, no margin data available`);
+    return null;
+  }
+
+  // If no data was retrieved, return null
+  if (!data) {
+    return null;
   }
 
   // Calculate additional metrics
@@ -414,7 +407,19 @@ router.get('/stock/:symbol', authenticate, async (req, res) => {
   try {
     const { symbol } = req.params;
     const data = await fetchMarginData(symbol);
-    res.json(data);
+
+    if (!data) {
+      return res.json({
+        symbol: symbol.toUpperCase(),
+        grossMargin: null,
+        operatingMargin: null,
+        netMargin: null,
+        message: 'Margin data not available for this symbol',
+        dataAvailable: false
+      });
+    }
+
+    res.json({ ...data, dataAvailable: true });
   } catch (error) {
     logger.error(`Error fetching margin for ${req.params.symbol}:`, error);
     res.status(500).json({ error: 'Failed to fetch margin data' });
@@ -469,22 +474,50 @@ router.get('/trend/:symbol', authenticate, async (req, res) => {
       logger.debug(`Alpha Vantage trend failed for ${symbol}: ${e.message}`);
     }
 
-    // Fallback: generate estimated trend based on current margins
-    const currentData = await fetchMarginData(symbol);
-    const currentYear = new Date().getFullYear();
-    const trendData = [];
+    // Try FMP income statement as secondary source
+    if (FMP_KEY) {
+      try {
+        const fmpResponse = await axios.get(
+          `https://financialmodelingprep.com/api/v3/income-statement/${symbol.toUpperCase()}`,
+          {
+            params: { limit: years, apikey: FMP_KEY },
+            timeout: 10000
+          }
+        );
 
-    for (let i = years - 1; i >= 0; i--) {
-      const variance = (Math.random() - 0.5) * 6; // +/- 3% variation
-      trendData.push({
-        year: currentYear - i,
-        grossMargin: Math.max(0, Math.round((currentData.grossMargin + variance) * 10) / 10),
-        operatingMargin: Math.max(0, Math.round((currentData.operatingMargin + variance * 0.5) * 10) / 10),
-        netMargin: Math.max(0, Math.round((currentData.netMargin + variance * 0.4) * 10) / 10)
-      });
+        const fmpData = fmpResponse.data || [];
+        if (fmpData.length > 0) {
+          const trendData = fmpData
+            .slice(0, years)
+            .reverse()
+            .map(report => {
+              const year = new Date(report.date).getFullYear();
+              const revenue = report.revenue || 0;
+              const grossProfit = report.grossProfit || 0;
+              const operatingIncome = report.operatingIncome || 0;
+              const netIncome = report.netIncome || 0;
+
+              return {
+                year,
+                grossMargin: revenue > 0 ? Math.round((grossProfit / revenue) * 1000) / 10 : 0,
+                operatingMargin: revenue > 0 ? Math.round((operatingIncome / revenue) * 1000) / 10 : 0,
+                netMargin: revenue > 0 ? Math.round((netIncome / revenue) * 1000) / 10 : 0
+              };
+            });
+
+          return res.json({ symbol: symbol.toUpperCase(), trendData, provider: 'FMP' });
+        }
+      } catch (fmpError) {
+        logger.debug(`FMP trend failed for ${symbol}: ${fmpError.message}`);
+      }
     }
 
-    res.json({ symbol: symbol.toUpperCase(), trendData, estimated: true });
+    // No historical data available from any source - return empty state
+    res.json({
+      symbol: symbol.toUpperCase(),
+      trendData: [],
+      message: 'Historical margin data not available for this symbol'
+    });
 
   } catch (error) {
     logger.error('Error fetching margin trend:', error);

@@ -6,8 +6,14 @@
 const express = require('express');
 const router = express.Router();
 const CalendarService = require('../services/calendar');
+const DividendDataFetcher = require('../services/dividendDataFetcher');
+const EarningsDataFetcher = require('../services/earningsDataFetcher');
 const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+// Initialize data fetchers for real API data
+const dividendFetcher = new DividendDataFetcher();
+const earningsFetcher = new EarningsDataFetcher();
 
 // Apply authentication middleware to all routes
 router.use(authenticate);
@@ -61,57 +67,40 @@ router.get('/dividend-calendar', async (req, res) => {
       return res.json([]);
     }
 
-    // Dividend data for common stocks
-    const dividendData = {
-      'AAPL': { amount: 0.25, yield: 0.5, freq: 'Quarterly' },
-      'MSFT': { amount: 0.75, yield: 0.8, freq: 'Quarterly' },
-      'GOOGL': { amount: 0, yield: 0, freq: 'None' },
-      'NVDA': { amount: 0.04, yield: 0.03, freq: 'Quarterly' },
-      'JPM': { amount: 1.15, yield: 2.1, freq: 'Quarterly' },
-      'JNJ': { amount: 1.24, yield: 2.9, freq: 'Quarterly' },
-      'PG': { amount: 1.01, yield: 2.4, freq: 'Quarterly' },
-      'KO': { amount: 0.485, yield: 2.8, freq: 'Quarterly' },
-      'XOM': { amount: 0.95, yield: 3.4, freq: 'Quarterly' },
-      'VZ': { amount: 0.665, yield: 6.3, freq: 'Quarterly' },
-      'T': { amount: 0.2775, yield: 4.8, freq: 'Quarterly' },
-      'PFE': { amount: 0.42, yield: 5.8, freq: 'Quarterly' },
-      'CVX': { amount: 1.63, yield: 4.0, freq: 'Quarterly' },
-      'MRK': { amount: 0.77, yield: 2.8, freq: 'Quarterly' },
-      'BAC': { amount: 0.26, yield: 2.4, freq: 'Quarterly' },
-      'WFC': { amount: 0.40, yield: 2.5, freq: 'Quarterly' },
-      'HD': { amount: 2.25, yield: 2.3, freq: 'Quarterly' },
-      'MCD': { amount: 1.67, yield: 2.2, freq: 'Quarterly' }
-    };
-
-    // Generate upcoming dividend events for user's holdings
+    // Fetch real dividend data from API for each holding
     const upcomingDividends = [];
-    const today = new Date();
+    const symbols = holdings.map(h => h.symbol);
 
-    holdings.forEach((holding, idx) => {
-      const divInfo = dividendData[holding.symbol];
-      if (divInfo && divInfo.amount > 0) {
-        // Generate next 2 dividend dates for each holding
-        for (let i = 0; i < 2; i++) {
-          const exDate = new Date(today);
-          exDate.setDate(exDate.getDate() + (idx * 7) + (i * 90) + 5);
+    // Fetch dividends for all symbols (with rate limiting handled by the fetcher)
+    for (const holding of holdings) {
+      try {
+        const dividends = await dividendFetcher.fetchSymbolDividends(holding.symbol);
 
-          const payDate = new Date(exDate);
-          payDate.setDate(payDate.getDate() + 14);
+        // Filter for upcoming dividends only
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-          upcomingDividends.push({
-            id: `${holding.symbol}-${i}`,
-            symbol: holding.symbol,
-            exDate: exDate.toISOString().split('T')[0],
-            payDate: payDate.toISOString().split('T')[0],
-            amount: divInfo.amount,
-            shares: holding.shares,
-            estimatedPayout: parseFloat((divInfo.amount * holding.shares).toFixed(2)),
-            frequency: divInfo.freq,
-            yield: divInfo.yield
+        dividends
+          .filter(div => new Date(div.ex_dividend_date) >= today)
+          .slice(0, 2) // Next 2 upcoming dividends
+          .forEach((div, idx) => {
+            upcomingDividends.push({
+              id: `${holding.symbol}-${idx}`,
+              symbol: holding.symbol,
+              exDate: div.ex_dividend_date,
+              payDate: div.payment_date || null,
+              amount: div.dividend_amount,
+              shares: holding.shares,
+              estimatedPayout: parseFloat((div.dividend_amount * holding.shares).toFixed(2)),
+              frequency: div.frequency || 'quarterly',
+              yield: div.dividend_yield || null
+            });
           });
-        }
+      } catch (err) {
+        logger.warn(`Failed to fetch dividends for ${holding.symbol}: ${err.message}`);
+        // Continue with other holdings even if one fails
       }
-    });
+    }
 
     // Sort by ex-date
     upcomingDividends.sort((a, b) => new Date(a.exDate) - new Date(b.exDate));
@@ -147,69 +136,47 @@ router.get('/earnings-calendar', async (req, res) => {
       return res.json([]);
     }
 
-    // Earnings data for common stocks (company names, typical reporting times)
-    const earningsData = {
-      'AAPL': { name: 'Apple Inc.', time: 'AMC', quarter: 'Q1 FY25' },
-      'MSFT': { name: 'Microsoft Corp', time: 'AMC', quarter: 'Q2 FY25' },
-      'GOOGL': { name: 'Alphabet Inc.', time: 'AMC', quarter: 'Q4 2024' },
-      'NVDA': { name: 'NVIDIA Corp', time: 'AMC', quarter: 'Q4 FY25' },
-      'AMZN': { name: 'Amazon.com Inc.', time: 'AMC', quarter: 'Q4 2024' },
-      'META': { name: 'Meta Platforms', time: 'AMC', quarter: 'Q4 2024' },
-      'TSLA': { name: 'Tesla Inc.', time: 'AMC', quarter: 'Q4 2024' },
-      'JPM': { name: 'JPMorgan Chase', time: 'BMO', quarter: 'Q4 2024' },
-      'JNJ': { name: 'Johnson & Johnson', time: 'BMO', quarter: 'Q4 2024' },
-      'V': { name: 'Visa Inc.', time: 'AMC', quarter: 'Q1 FY25' },
-      'PG': { name: 'Procter & Gamble', time: 'BMO', quarter: 'Q2 FY25' },
-      'UNH': { name: 'UnitedHealth Group', time: 'BMO', quarter: 'Q4 2024' },
-      'HD': { name: 'Home Depot', time: 'BMO', quarter: 'Q4 FY24' },
-      'MA': { name: 'Mastercard', time: 'BMO', quarter: 'Q4 2024' },
-      'DIS': { name: 'Walt Disney Co', time: 'AMC', quarter: 'Q1 FY25' },
-      'BAC': { name: 'Bank of America', time: 'BMO', quarter: 'Q4 2024' },
-      'XOM': { name: 'Exxon Mobil', time: 'BMO', quarter: 'Q4 2024' },
-      'KO': { name: 'Coca-Cola Co', time: 'BMO', quarter: 'Q4 2024' },
-      'PFE': { name: 'Pfizer Inc.', time: 'BMO', quarter: 'Q4 2024' },
-      'NFLX': { name: 'Netflix Inc.', time: 'AMC', quarter: 'Q4 2024' },
-      'INTC': { name: 'Intel Corp', time: 'AMC', quarter: 'Q4 2024' },
-      'AMD': { name: 'AMD Inc.', time: 'AMC', quarter: 'Q4 2024' },
-      'CRM': { name: 'Salesforce', time: 'AMC', quarter: 'Q4 FY25' },
-      'ORCL': { name: 'Oracle Corp', time: 'AMC', quarter: 'Q2 FY25' },
-      'WMT': { name: 'Walmart Inc.', time: 'BMO', quarter: 'Q4 FY25' },
-      'CVX': { name: 'Chevron Corp', time: 'BMO', quarter: 'Q4 2024' },
-      'MRK': { name: 'Merck & Co', time: 'BMO', quarter: 'Q4 2024' },
-      'ABBV': { name: 'AbbVie Inc.', time: 'BMO', quarter: 'Q4 2024' },
-      'T': { name: 'AT&T Inc.', time: 'BMO', quarter: 'Q4 2024' },
-      'VZ': { name: 'Verizon', time: 'BMO', quarter: 'Q4 2024' }
-    };
-
-    // Generate upcoming earnings events for user's holdings
+    // Fetch real earnings data from API
     const upcomingEarnings = [];
-    const today = new Date();
+    const symbols = holdings.map(h => h.symbol);
 
-    holdings.forEach((holding, idx) => {
-      const earningsInfo = earningsData[holding.symbol];
-      if (earningsInfo) {
-        // Generate next earnings date (spread out over next 60 days)
-        const reportDate = new Date(today);
-        reportDate.setDate(reportDate.getDate() + (idx * 5) + 7);
+    // Fetch earnings for all user's symbols
+    try {
+      const allEarnings = await earningsFetcher.fetchMultipleSymbols(symbols);
 
-        // Random EPS estimate based on typical values
-        const epsEstimate = parseFloat((Math.random() * 3 + 0.5).toFixed(2));
-        const revenueEstimate = parseFloat((Math.random() * 50 + 10).toFixed(1));
+      // Filter for upcoming earnings only
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-        upcomingEarnings.push({
-          id: `${holding.symbol}-earnings`,
-          symbol: holding.symbol,
-          companyName: earningsInfo.name,
-          reportDate: reportDate.toISOString().split('T')[0],
-          timeOfDay: earningsInfo.time, // BMO = Before Market Open, AMC = After Market Close
-          fiscalQuarter: earningsInfo.quarter,
-          epsEstimate: epsEstimate,
-          revenueEstimate: `$${revenueEstimate}B`,
-          shares: holding.shares,
-          status: 'scheduled'
+      // Map holdings by symbol for easy lookup
+      const holdingsMap = {};
+      holdings.forEach(h => {
+        holdingsMap[h.symbol] = h.shares;
+      });
+
+      allEarnings
+        .filter(earning => new Date(earning.earnings_date) >= today)
+        .forEach(earning => {
+          const shares = holdingsMap[earning.symbol];
+          if (shares !== undefined) {
+            upcomingEarnings.push({
+              id: `${earning.symbol}-earnings`,
+              symbol: earning.symbol,
+              companyName: earning.company_name || earning.symbol,
+              reportDate: earning.earnings_date,
+              timeOfDay: earning.time_of_day || null,
+              fiscalQuarter: earning.fiscal_quarter || null,
+              epsEstimate: earning.eps_estimate || null,
+              revenueEstimate: earning.revenue_estimate || null,
+              shares: shares,
+              status: earning.status || 'scheduled'
+            });
+          }
         });
-      }
-    });
+    } catch (err) {
+      logger.warn(`Failed to fetch earnings data: ${err.message}`);
+      // Return empty array if API fails - no mock fallback
+    }
 
     // Sort by report date
     upcomingEarnings.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate));

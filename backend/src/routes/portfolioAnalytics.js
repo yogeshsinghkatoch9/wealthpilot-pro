@@ -820,63 +820,115 @@ async function calculateSectorAttribution(sectorMap, totalValue, historicalData,
 }
 
 async function calculateFactorAttribution(holdings, historicalData, metrics) {
-  // Calculate factor exposures based on holdings
+  // Calculate factor exposures based on actual holdings data
   let weightedBeta = 0;
   let weightedMomentum = 0;
   let totalWeight = 0;
+  let weightedMarketCap = 0;
+  let totalMarketCapWeight = 0;
+  let weightedVolatility = 0;
+  let totalVolWeight = 0;
 
+  // Collect holding-level metrics for factor calculations
   for (const h of holdings) {
     const weight = h.weight || 0;
     totalWeight += weight;
     weightedBeta += (h.beta || 1) * weight;
 
-    // Calculate 6-month momentum
+    // Calculate 6-month momentum from historical data
     const history = historicalData[h.symbol];
     if (history && history.length > 126) {
       const momentum = ((history[history.length - 1].close / history[history.length - 126].close) - 1) * 100;
       weightedMomentum += momentum * weight;
     }
+
+    // Calculate volatility from historical returns for each holding
+    if (history && history.length > 20) {
+      const returns = [];
+      for (let i = 1; i < history.length; i++) {
+        const prev = Number(history[i - 1].close);
+        const curr = Number(history[i].close);
+        if (prev > 0) {
+          returns.push((curr - prev) / prev);
+        }
+      }
+      if (returns.length > 0) {
+        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+        const annualizedVol = Math.sqrt(variance) * Math.sqrt(252) * 100;
+        weightedVolatility += annualizedVol * weight;
+        totalVolWeight += weight;
+      }
+    }
   }
 
   const avgBeta = totalWeight > 0 ? weightedBeta / totalWeight : 1;
   const avgMomentum = totalWeight > 0 ? weightedMomentum / totalWeight : 0;
+  const avgVolatility = totalVolWeight > 0 ? weightedVolatility / totalVolWeight : metrics.volatility;
+
+  // Calculate size factor exposure based on portfolio composition
+  // Negative exposure = large cap tilt, Positive exposure = small cap tilt
+  // Use beta as a proxy - higher beta stocks tend to be smaller/riskier
+  const sizeExposure = (avgBeta - 1) * 0.5; // Centered around market beta of 1
+
+  // Calculate value factor exposure using price momentum as inverse proxy
+  // High momentum stocks tend to be growth stocks (negative value exposure)
+  // Low momentum stocks tend to be value stocks (positive value exposure)
+  const valueExposure = -avgMomentum * 0.02; // Inverse relationship with momentum
+
+  // Quality factor: inverse relationship with volatility
+  // Lower volatility portfolios have higher quality exposure
+  const qualityExposure = avgVolatility > 0 ? Math.max(0, (20 - avgVolatility) / 20) : 0.5;
+
+  // Low volatility factor exposure
+  // Benchmark volatility is typically around 15-20% annualized
+  const benchmarkVol = 16; // S&P 500 long-term average
+  const lowVolExposure = avgVolatility > 0 ? (benchmarkVol - avgVolatility) / benchmarkVol : 0;
+
+  // Calculate contributions based on factor exposures and returns
+  const marketContribution = metrics.beta * metrics.benchmarkReturn * 0.01;
+  const sizeContribution = sizeExposure * 2; // Historical SMB premium ~2%
+  const valueContribution = valueExposure * 3; // Historical HML premium ~3%
+  const momentumContribution = avgMomentum * 0.03; // Momentum factor premium
+  const qualityContribution = qualityExposure * 2.5; // Quality premium
+  const lowVolContribution = lowVolExposure * 1.5; // Low vol premium
 
   return [
     {
       name: 'Market Beta',
       factor: 'Market',
       exposure: Math.round(avgBeta * 100) / 100,
-      contribution: Math.round(metrics.beta * metrics.benchmarkReturn * 0.01 * 100) / 100
+      contribution: Math.round(marketContribution * 100) / 100
     },
     {
       name: 'Size (SMB)',
       factor: 'Size',
-      exposure: Math.round((Math.random() * 0.4 - 0.1) * 100) / 100,
-      contribution: Math.round((Math.random() * 2 - 0.5) * 100) / 100
+      exposure: Math.round(sizeExposure * 100) / 100,
+      contribution: Math.round(sizeContribution * 100) / 100
     },
     {
       name: 'Value (HML)',
       factor: 'Value',
-      exposure: Math.round((Math.random() * 0.3 - 0.1) * 100) / 100,
-      contribution: Math.round((Math.random() * 1.5 - 0.5) * 100) / 100
+      exposure: Math.round(valueExposure * 100) / 100,
+      contribution: Math.round(valueContribution * 100) / 100
     },
     {
       name: 'Momentum',
       factor: 'Momentum',
       exposure: Math.round((avgMomentum / 20) * 100) / 100,
-      contribution: Math.round((avgMomentum * 0.05) * 100) / 100
+      contribution: Math.round(momentumContribution * 100) / 100
     },
     {
       name: 'Quality',
       factor: 'Quality',
-      exposure: Math.round((Math.random() * 0.5 + 0.2) * 100) / 100,
-      contribution: Math.round((Math.random() * 2 + 0.5) * 100) / 100
+      exposure: Math.round(qualityExposure * 100) / 100,
+      contribution: Math.round(qualityContribution * 100) / 100
     },
     {
       name: 'Low Volatility',
       factor: 'Low Vol',
-      exposure: Math.round((1 - metrics.volatility / 20) * 100) / 100,
-      contribution: Math.round((Math.random() * 1) * 100) / 100
+      exposure: Math.round(lowVolExposure * 100) / 100,
+      contribution: Math.round(lowVolContribution * 100) / 100
     }
   ];
 }

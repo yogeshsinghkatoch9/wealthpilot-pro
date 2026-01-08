@@ -204,13 +204,13 @@ router.get('/metrics', authenticate, adminOnly, async (req, res) => {
   try {
     const status = ddos.getProtectionStatus();
 
-    // In production, fetch from database/metrics store
+    // Security metrics - set to 0 when no monitoring data available
     const metrics = {
       current: status,
       history: {
-        blockedRequestsToday: Math.floor(Math.random() * 1000), // Placeholder
-        suspiciousIPsToday: Math.floor(Math.random() * 50),
-        attacksDetected: Math.floor(Math.random() * 5)
+        blockedRequestsToday: 0,
+        suspiciousIPsToday: 0,
+        attacksDetected: 0
       },
       topThreats: [], // Would come from logging aggregation
       rateLimitStats: {

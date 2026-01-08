@@ -1,0 +1,249 @@
+<%- include('../partials/header', { pageTitle: 'Monte Carlo Simulation' }) %>
+
+<main class="page-container px-4 lg:px-6 py-6 max-w-7xl mx-auto">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="page-title">Monte Carlo Simulation</h1>
+        <p class="page-subtitle">Portfolio forecasting with probability analysis</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="live-indicator">
+          <span>CLIENT-SIDE</span>
+        </div>
+        <button onclick="monteCarloSimulator.runSimulation()" class="premium-btn premium-btn-forest" id="runSimulationBtn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Run Simulation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Input Parameters Panel -->
+    <div class="lg:col-span-1 space-y-6">
+      <!-- Simulation Parameters Card -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Simulation Parameters</h3>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Initial Investment -->
+          <div>
+            <label class="stat-label">Initial Investment ($)</label>
+            <input type="number" id="initialInvestment" class="premium-input premium-select" value="100000" min="1000" step="1000">
+          </div>
+
+          <!-- Monthly Contribution -->
+          <div>
+            <label class="stat-label">Monthly Contribution ($)</label>
+            <input type="number" id="monthlyContribution" class="premium-input premium-select" value="1000" min="0" step="100">
+          </div>
+
+          <!-- Time Horizon -->
+          <div>
+            <label class="stat-label">Time Horizon (Years)</label>
+            <input type="number" id="timeHorizon" class="premium-input premium-select" value="20" min="1" max="50">
+          </div>
+
+          <!-- Expected Return -->
+          <div>
+            <label class="stat-label">Expected Annual Return (%)</label>
+            <input type="number" id="expectedReturn" class="premium-input premium-select" value="8" min="-20" max="30" step="0.5">
+          </div>
+
+          <!-- Volatility -->
+          <div>
+            <label class="stat-label">Annual Volatility (%)</label>
+            <input type="number" id="volatility" class="premium-input premium-select" value="15" min="1" max="60" step="0.5">
+          </div>
+
+          <!-- Number of Simulations -->
+          <div>
+            <label class="stat-label">Number of Simulations</label>
+            <select id="numSimulations" class="premium-input premium-select">
+              <option value="500">500 (Fast)</option>
+              <option value="1000" selected>1,000 (Standard)</option>
+              <option value="5000">5,000 (Precise)</option>
+              <option value="10000">10,000 (High Precision)</option>
+            </select>
+          </div>
+
+          <!-- Goal Amount (optional) -->
+          <div>
+            <label class="stat-label">Goal Amount ($) <span class="text-muted">(Optional)</span></label>
+            <input type="number" id="goalAmount" class="premium-input premium-select" value="1000000" min="0" step="10000">
+          </div>
+        </div>
+      </div>
+
+      <!-- Preset Scenarios Card -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Preset Scenarios</h3>
+        </div>
+
+        <div class="space-y-3">
+          <button onclick="monteCarloSimulator.applyPreset('conservative')" class="quick-action w-full">
+            <div class="stat-icon stat-icon-emerald">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="font-semibold text-primary">Conservative</div>
+              <div class="text-xs text-tertiary">5% Return, 10% Vol</div>
+            </div>
+          </button>
+
+          <button onclick="monteCarloSimulator.applyPreset('moderate')" class="quick-action w-full">
+            <div class="stat-icon stat-icon-blue">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+              </svg>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="font-semibold text-primary">Moderate</div>
+              <div class="text-xs text-tertiary">8% Return, 15% Vol</div>
+            </div>
+          </button>
+
+          <button onclick="monteCarloSimulator.applyPreset('aggressive')" class="quick-action w-full">
+            <div class="stat-icon stat-icon-red">
+              <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+            </div>
+            <div class="flex-1 text-left">
+              <div class="font-semibold text-primary">Aggressive</div>
+              <div class="text-xs text-tertiary">12% Return, 22% Vol</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Key Statistics Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="statsContainer">
+        <!-- Median Outcome -->
+        <div class="stat-card-forest">
+          <div class="stat-label">Median Outcome</div>
+          <div class="stat-value gradient-text-gain" id="medianOutcome">--</div>
+          <div class="stat-change value-positive" id="medianGrowth">--</div>
+        </div>
+
+        <!-- Best Case (95th) -->
+        <div class="stat-card">
+          <div class="stat-label">Best Case (95th)</div>
+          <div class="stat-value value-positive" id="bestCase">--</div>
+          <div class="stat-change text-tertiary" id="bestCaseMultiple">--</div>
+        </div>
+
+        <!-- Worst Case (5th) -->
+        <div class="stat-card">
+          <div class="stat-label">Worst Case (5th)</div>
+          <div class="stat-value value-warning" id="worstCase">--</div>
+          <div class="stat-change text-tertiary" id="worstCaseMultiple">--</div>
+        </div>
+
+        <!-- Goal Probability -->
+        <div class="stat-card">
+          <div class="stat-label">Goal Probability</div>
+          <div class="stat-value" id="goalProbability">--%</div>
+          <div class="stat-change text-tertiary" id="goalInfo">--</div>
+        </div>
+      </div>
+
+      <!-- Probability Cone Chart -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Portfolio Projection Cone</h3>
+            <p class="chart-subtitle">5th, 25th, 50th, 75th, and 95th percentile outcomes</p>
+          </div>
+          <div class="premium-tabs">
+            <button class="premium-tab active" onclick="monteCarloSimulator.setChartScale('linear')">Linear</button>
+            <button class="premium-tab" onclick="monteCarloSimulator.setChartScale('logarithmic')">Log</button>
+          </div>
+        </div>
+        <div class="h-80" id="projectionChartContainer">
+          <canvas id="projectionChart"></canvas>
+          <div id="chartPlaceholder" class="flex items-center justify-center h-full">
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <p class="empty-state-title">Run Simulation</p>
+              <p class="empty-state-description">Configure parameters and click "Run Simulation" to see projections</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distribution Histogram -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Final Value Distribution</h3>
+            <p class="chart-subtitle">Histogram of simulated portfolio outcomes</p>
+          </div>
+        </div>
+        <div class="h-64" id="histogramChartContainer">
+          <canvas id="histogramChart"></canvas>
+          <div id="histogramPlaceholder" class="flex items-center justify-center h-full">
+            <p class="text-tertiary text-sm">Run simulation to see distribution</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Statistics Table -->
+      <div class="premium-card" id="detailedStatsCard" style="display: none;">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Detailed Statistics</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="premium-table premium-table-compact">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th class="text-right">Value</th>
+                <th class="text-right">Growth</th>
+              </tr>
+            </thead>
+            <tbody id="detailedStatsBody">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Simulation Progress -->
+      <div id="simulationProgress" class="premium-card" style="display: none;">
+        <div class="flex items-center gap-4">
+          <div class="loading-spinner"></div>
+          <div>
+            <p class="font-semibold text-primary">Running Simulations...</p>
+            <p class="text-sm text-tertiary" id="progressText">0 / 1000 complete</p>
+          </div>
+        </div>
+        <div class="progress-bar mt-4">
+          <div class="progress-bar-fill progress-bar-forest" id="progressBar" style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Include Monte Carlo Simulator -->
+<script src="/js/monte-carlo.js"></script>
+
+<%- include('../partials/footer') %>

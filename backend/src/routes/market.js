@@ -3,6 +3,7 @@ const { query, param, validationResult } = require('express-validator');
 const MarketDataService = require('../services/marketData');
 const MarketDataServiceInstance = require('../services/marketDataService');
 const UnifiedMarketDataService = require('../services/unifiedMarketData');
+const yahooMovers = require('../services/yahooMovers');
 const stockDataManager = require('../services/stockDataManager');
 const jobQueue = require('../services/jobQueue');
 const { optionalAuth, authenticate } = require('../middleware/auth');
@@ -484,112 +485,106 @@ const MOVERS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
 /**
  * GET /api/market/movers
- * Returns LIVE market movers using Finnhub API
+ * Returns LIVE market movers from Yahoo Finance - Stocks, Crypto, ETFs, Mutual Funds
  */
 router.get('/movers', async (req, res) => {
   try {
-    // Return cached data if fresh
-    if (moversCache && moversCacheTime && (Date.now() - moversCacheTime < MOVERS_CACHE_TTL)) {
-      return res.json(moversCache);
-    }
-
-    const axios = require('axios');
-    const FINNHUB_KEY = process.env.FINNHUB_API_KEY;
-
-    // Key stocks to track for market movers
-    const symbols = [
-      'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'AMD', 'INTC',
-      'JPM', 'BAC', 'GS', 'V', 'MA', 'JNJ', 'UNH', 'PFE', 'LLY',
-      'WMT', 'COST', 'HD', 'XOM', 'CVX', 'F', 'GM', 'PLTR', 'COIN',
-      'NET', 'CRWD', 'SNOW', 'DDOG', 'CRM', 'NFLX', 'DIS', 'UBER'
-    ];
-
-    const quotesArray = [];
-
-    // Fetch quotes using Finnhub (which we know works)
-    for (const symbol of symbols) {
-      try {
-        const response = await axios.get('https://finnhub.io/api/v1/quote', {
-          params: { symbol, token: FINNHUB_KEY },
-          timeout: 3000
-        });
-
-        const data = response.data;
-        if (data && data.c > 0) {
-          quotesArray.push({
-            symbol,
-            name: symbol, // Finnhub quote doesn't include name
-            price: data.c, // Current price
-            previousClose: data.pc, // Previous close
-            change: data.d, // Change
-            changePercent: data.dp, // Change percent
-            high: data.h,
-            low: data.l,
-            open: data.o
-          });
-        }
-      } catch (err) {
-        logger.debug(`Movers: Failed to fetch ${symbol} from Finnhub`);
-      }
-
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-
-    // Sort for gainers
-    const gainers = quotesArray
-      .filter(q => q.changePercent > 0)
-      .sort((a, b) => b.changePercent - a.changePercent)
-      .slice(0, 15)
-      .map(q => ({
-        symbol: q.symbol,
-        name: q.name,
-        price: Number(q.price.toFixed(2)),
-        change: Number(q.change.toFixed(2)),
-        changePercent: Number(q.changePercent.toFixed(2))
-      }));
-
-    // Sort for losers
-    const losers = quotesArray
-      .filter(q => q.changePercent < 0)
-      .sort((a, b) => a.changePercent - b.changePercent)
-      .slice(0, 15)
-      .map(q => ({
-        symbol: q.symbol,
-        name: q.name,
-        price: Number(q.price.toFixed(2)),
-        change: Number(q.change.toFixed(2)),
-        changePercent: Number(q.changePercent.toFixed(2))
-      }));
-
-    // Sort for most active by absolute change
-    const active = quotesArray
-      .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-      .slice(0, 15)
-      .map(q => ({
-        symbol: q.symbol,
-        name: q.name,
-        price: Number(q.price.toFixed(2)),
-        change: Number(q.change.toFixed(2)),
-        changePercent: Number(q.changePercent.toFixed(2))
-      }));
-
-    const result = {
-      gainers,
-      losers,
-      active,
-      count: quotesArray.length,
-      lastUpdated: new Date().toISOString()
-    };
-
-    // Cache the result
-    moversCache = result;
-    moversCacheTime = Date.now();
-
-    res.json(result);
+    logger.info('[API] Fetching all market movers from Yahoo Finance');
+    const movers = await yahooMovers.getAllMovers();
+    res.json(movers);
   } catch (err) {
     logger.error('Get movers error:', err);
     res.status(500).json({ error: 'Failed to get movers' });
+  }
+});
+
+/**
+ * GET /api/market/movers/gainers
+ * Top gaining stocks
+ */
+router.get('/movers/gainers', async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 10;
+    const gainers = await yahooMovers.getTopGainers(count);
+    res.json({ gainers, lastUpdated: new Date().toISOString() });
+  } catch (err) {
+    logger.error('Get gainers error:', err);
+    res.status(500).json({ error: 'Failed to get gainers' });
+  }
+});
+
+/**
+ * GET /api/market/movers/losers
+ * Top losing stocks
+ */
+router.get('/movers/losers', async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 10;
+    const losers = await yahooMovers.getTopLosers(count);
+    res.json({ losers, lastUpdated: new Date().toISOString() });
+  } catch (err) {
+    logger.error('Get losers error:', err);
+    res.status(500).json({ error: 'Failed to get losers' });
+  }
+});
+
+/**
+ * GET /api/market/movers/active
+ * Most active stocks by volume
+ */
+router.get('/movers/active', async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 10;
+    const active = await yahooMovers.getMostActive(count);
+    res.json({ active, lastUpdated: new Date().toISOString() });
+  } catch (err) {
+    logger.error('Get most active error:', err);
+    res.status(500).json({ error: 'Failed to get most active' });
+  }
+});
+
+/**
+ * GET /api/market/movers/crypto
+ * Top cryptocurrencies
+ */
+router.get('/movers/crypto', async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 10;
+    const crypto = await yahooMovers.getTopCrypto(count);
+    res.json({ crypto, lastUpdated: new Date().toISOString() });
+  } catch (err) {
+    logger.error('Get crypto error:', err);
+    res.status(500).json({ error: 'Failed to get crypto' });
+  }
+});
+
+/**
+ * GET /api/market/movers/etfs
+ * Top ETFs
+ */
+router.get('/movers/etfs', async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 10;
+    const etfs = await yahooMovers.getTopETFs(count);
+    res.json({ etfs, lastUpdated: new Date().toISOString() });
+  } catch (err) {
+    logger.error('Get ETFs error:', err);
+    res.status(500).json({ error: 'Failed to get ETFs' });
+  }
+});
+
+/**
+ * GET /api/market/movers/mutualfunds
+ * Top Mutual Funds
+ */
+router.get('/movers/mutualfunds', async (req, res) => {
+  try {
+    const count = parseInt(req.query.count) || 10;
+    const mutualFunds = await yahooMovers.getTopMutualFunds(count);
+    res.json({ mutualFunds, lastUpdated: new Date().toISOString() });
+  } catch (err) {
+    logger.error('Get mutual funds error:', err);
+    res.status(500).json({ error: 'Failed to get mutual funds' });
   }
 });
 

@@ -584,8 +584,8 @@ router.get('/portfolio/:portfolioId', async (req, res) => {
         ? ((d.revPerEmployee - sectorAvg.revPerEmployee) / sectorAvg.revPerEmployee * 100)
         : 0;
 
-      // Calculate YoY change (would use historical data in production)
-      const yoyChange = d.revPerEmployee ? (Math.random() * 40 - 10).toFixed(1) : '0';
+      // YoY change not available without historical efficiency data
+      const yoyChange = 0;
 
       return {
         rank: d.revPerEmployee ? idx + 1 : null,
@@ -685,26 +685,9 @@ router.get('/trend/:symbol', async (req, res) => {
       take: parseInt(years)
     });
 
-    // If no historical data, generate estimates based on current data
+    // If no historical data, return empty trend with current value only
     if (historicalData.length === 0) {
       const currentYear = new Date().getFullYear();
-      const history = [];
-
-      for (let i = parseInt(years) - 1; i >= 0; i--) {
-        const year = currentYear - i;
-        const growthFactor = Math.pow(0.88 + Math.random() * 0.08, i);
-        const revPerEmp = currentData.revPerEmployee * growthFactor;
-
-        history.push({
-          year,
-          revPerEmployee: revPerEmp,
-          formatted: formatNumber(revPerEmp)
-        });
-      }
-
-      const startVal = history[0].revPerEmployee;
-      const endVal = history[history.length - 1].revPerEmployee;
-      const cagr = startVal > 0 ? ((Math.pow(endVal / startVal, 1 / years) - 1) * 100).toFixed(1) : '0';
 
       return res.json({
         symbol,
@@ -713,8 +696,13 @@ router.get('/trend/:symbol', async (req, res) => {
           revPerEmployee: currentData.revPerEmployee,
           formatted: formatNumber(currentData.revPerEmployee)
         },
-        trend: history,
-        cagr
+        trend: [{
+          year: currentYear,
+          revPerEmployee: currentData.revPerEmployee,
+          formatted: formatNumber(currentData.revPerEmployee)
+        }],
+        cagr: null,
+        message: 'Historical efficiency data not available'
       });
     }
 

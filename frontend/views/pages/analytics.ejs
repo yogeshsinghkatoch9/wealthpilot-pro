@@ -22,7 +22,19 @@
   const safeAnnualReturns = typeof annualReturns !== 'undefined' && annualReturns ? annualReturns : [];
 %>
 
-<main class="p-4 lg:p-6 min-h-screen">
+<main class="page-container p-4 lg:p-6 min-h-screen">
+  <div class="page-header mb-6">
+    <div class="flex items-center justify-between relative z-10">
+      <div>
+        <h1 class="page-title">Portfolio Analytics</h1>
+        <p class="page-subtitle">Performance metrics and insights</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="live-indicator">Live Data</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Quick Navigation Sidebar -->
   <div class="fixed right-4 top-1/2 transform -translate-y-1/2 z-40 hidden xl:flex flex-col gap-2">
     <a href="#overview" class="nav-dot group" title="Overview">
@@ -333,27 +345,27 @@
 
     <!-- ========== METRICS BAR: Key Risk Metrics (Phase 2) ========== -->
     <div id="risk" class="section-anchor metrics-bar">
-      <div class="metric-item">
+      <div class="metric-item stat-card">
         <div class="metric-label">Sharpe Ratio</div>
         <div class="metric-value text-white"><%= (safeMetrics.sharpeRatio || safePerformance.sharpeRatio || 0).toFixed(2) %></div>
       </div>
-      <div class="metric-item">
+      <div class="metric-item stat-card">
         <div class="metric-label">Sortino</div>
         <div class="metric-value text-white"><%= (safeMetrics.sortinoRatio || 0).toFixed(2) %></div>
       </div>
-      <div class="metric-item">
+      <div class="metric-item stat-card">
         <div class="metric-label">Beta</div>
         <div class="metric-value text-white"><%= (safeMetrics.beta || 1.0).toFixed(2) %></div>
       </div>
-      <div class="metric-item">
+      <div class="metric-item stat-card">
         <div class="metric-label">Alpha</div>
         <div class="metric-value <%= (safeMetrics.alpha || 0) >= 0 ? 'text-emerald-400' : 'text-red-400' %>"><%= (safeMetrics.alpha || 0) >= 0 ? '+' : '' %><%= (safeMetrics.alpha || 0).toFixed(2) %>%</div>
       </div>
-      <div class="metric-item">
+      <div class="metric-item stat-card">
         <div class="metric-label">Volatility</div>
         <div class="metric-value text-white"><%= (safeMetrics.volatility || safePerformance.volatility || 0).toFixed(1) %>%</div>
       </div>
-      <div class="metric-item">
+      <div class="metric-item stat-card">
         <div class="metric-label">Max Drawdown</div>
         <div class="metric-value text-red-400">-<%= Math.abs(safeMetrics.maxDrawdown || safePerformance.maxDrawdown || 0).toFixed(1) %>%</div>
       </div>
@@ -362,7 +374,7 @@
     <!-- ========== ANALYSIS GRID: 2x2 Chart Layout (Phase 3) ========== -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Rolling Returns Chart -->
-      <div class="chart-card">
+      <div class="chart-card premium-card">
         <div class="chart-card-header">
           <span class="chart-card-title">Rolling Returns</span>
           <select id="rollingWindow" onchange="updateRollingReturns(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
@@ -378,7 +390,7 @@
       </div>
 
       <!-- Returns Distribution -->
-      <div id="returns" class="section-anchor chart-card">
+      <div id="returns" class="section-anchor chart-card premium-card">
         <div class="chart-card-header">
           <span class="chart-card-title">Returns Distribution</span>
           <select id="returnsType" onchange="updateReturnsChart(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
@@ -397,7 +409,7 @@
       </div>
 
       <!-- Drawdown Analysis -->
-      <div class="chart-card">
+      <div class="chart-card premium-card">
         <div class="chart-card-header">
           <span class="chart-card-title">Drawdown Analysis</span>
           <span class="text-xs text-red-400 font-mono">Max: <%= (safeDrawdown.maxDrawdown || 0).toFixed(1) %>%</span>
@@ -412,7 +424,7 @@
       </div>
 
       <!-- Risk/Return Scatter -->
-      <div class="chart-card">
+      <div class="chart-card premium-card">
         <div class="chart-card-header">
           <span class="chart-card-title">Risk vs Return</span>
           <span class="text-xs text-slate-500">Holdings Efficiency</span>
@@ -424,7 +436,7 @@
     </div>
 
     <!-- Monthly Returns Heatmap -->
-    <div class="chart-card">
+    <div class="chart-card premium-card">
       <div class="chart-card-header">
         <span class="chart-card-title">Monthly Returns Heatmap</span>
         <span class="text-xs text-slate-500">5-Year Calendar View</span>
@@ -437,7 +449,7 @@
     </div>
 
     <!-- ========== HOLDINGS TABLE (Phase 4) ========== -->
-    <div id="holdings" class="section-anchor chart-card">
+    <div id="holdings" class="section-anchor chart-card premium-card">
       <div class="chart-card-header">
         <span class="chart-card-title">Holdings Performance</span>
         <select id="sortBy" onchange="sortHoldings(this.value)" class="bg-slate-700/50 border-0 text-white rounded px-2 py-1 text-xs">
@@ -447,7 +459,7 @@
         </select>
       </div>
       <div class="overflow-x-auto" style="max-height: 400px;">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm premium-table">
           <thead class="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
             <tr class="border-b border-slate-700/50">
               <th class="text-left py-3 px-3 text-xs font-medium text-slate-400 uppercase tracking-wider">Symbol</th>
@@ -498,7 +510,7 @@
     </div>
 
     <!-- ========== FACTOR ANALYSIS: Collapsible Section (Phase 5) ========== -->
-    <div id="factors" class="section-anchor chart-card">
+    <div id="factors" class="section-anchor chart-card premium-card">
       <div class="collapsible-header flex justify-between items-center py-2" onclick="toggleSection('factorsContent')">
         <div class="flex items-center gap-3">
           <svg class="w-4 h-4 text-slate-400 collapse-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -536,7 +548,7 @@
     </div>
 
     <!-- ========== CORRELATION MATRIX: Collapsible Section (Phase 5) ========== -->
-    <div id="correlation" class="section-anchor chart-card">
+    <div id="correlation" class="section-anchor chart-card premium-card">
       <div class="collapsible-header flex justify-between items-center py-2" onclick="toggleSection('correlationContent')">
         <div class="flex items-center gap-3">
           <svg class="w-4 h-4 text-slate-400 collapse-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -608,7 +620,7 @@
     </div>
 
     <!-- ========== EXPORT BAR (Phase 6) ========== -->
-    <div class="chart-card py-3 px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+    <div class="chart-card premium-card py-3 px-4 flex flex-col sm:flex-row justify-between items-center gap-3">
       <span class="text-xs text-slate-500">Period: <span class="text-white font-mono"><%= safePeriod %></span></span>
       <div class="flex gap-2">
         <button onclick="exportPDF()" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded hover:bg-slate-700/50 flex items-center gap-1.5">

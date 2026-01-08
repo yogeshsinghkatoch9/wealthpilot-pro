@@ -1,188 +1,248 @@
 /**
  * Stock Scanner Routes
  * Provides market scanning capabilities with presets and custom filters
+ * Uses real data from Yahoo Finance movers and FMP stock screener
  */
 
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const logger = require('../utils/logger');
 const { authenticate } = require('../middleware/auth');
+const yahooMovers = require('../services/yahooMovers');
 
-// Popular stocks for scanning (when FMP API not available)
-const POPULAR_STOCKS = [
-  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'AMD', 'INTC', 'CRM',
-  'NFLX', 'ADBE', 'PYPL', 'SQ', 'SHOP', 'COIN', 'PLTR', 'SNOW', 'NET', 'DDOG',
-  'ZM', 'DOCU', 'TWLO', 'OKTA', 'CRWD', 'ZS', 'MDB', 'TEAM', 'NOW', 'WDAY',
-  'JPM', 'BAC', 'GS', 'MS', 'C', 'WFC', 'V', 'MA', 'AXP', 'BLK',
-  'JNJ', 'UNH', 'PFE', 'MRK', 'ABBV', 'LLY', 'BMY', 'AMGN', 'GILD', 'MRNA',
-  'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'MPC', 'VLO', 'PSX', 'OXY', 'HAL'
-];
+// FMP API Key
+const FMP_KEY = process.env.FMP_API_KEY;
+
+// Cache for scanner results (1 minute TTL)
+const scannerCache = new Map();
+const CACHE_TTL = 60 * 1000; // 1 minute
+
+function getCached(key) {
+  const cached = scannerCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    logger.debug(`[Scanner] Cache HIT: ${key}`);
+    return cached.data;
+  }
+  return null;
+}
+
+function setCache(key, data) {
+  scannerCache.set(key, { data, timestamp: Date.now() });
+}
 
 // Scanner presets
 const PRESETS = {
   gainers: {
     name: 'Top Gainers',
     description: 'Stocks with highest daily gains',
-    minChange: 5,
+    useYahooMovers: 'gainers',
     sortBy: 'changePercent',
     sortOrder: 'desc'
   },
   losers: {
     name: 'Top Losers',
     description: 'Stocks with highest daily losses',
-    maxChange: -5,
+    useYahooMovers: 'losers',
     sortBy: 'changePercent',
     sortOrder: 'asc'
   },
   volume: {
-    name: 'High Volume',
-    description: 'Unusual volume activity',
-    minVolumeRatio: 2,
-    sortBy: 'volumeRatio',
+    name: 'Most Active',
+    description: 'Most actively traded stocks by volume',
+    useYahooMovers: 'active',
+    sortBy: 'volume',
     sortOrder: 'desc'
   },
   breakout: {
     name: 'Breakouts',
-    description: 'Stocks breaking 52-week highs',
-    near52WeekHigh: true,
-    sortBy: 'distanceFrom52High',
+    description: 'Stocks near 52-week highs with strong momentum',
+    useFMPScreener: true,
+    fmpParams: {
+      priceMoreThan: 5,
+      volumeMoreThan: 500000,
+      betaMoreThan: 1.2
+    },
+    sortBy: 'changePercent',
     sortOrder: 'desc'
   },
   oversold: {
-    name: 'Oversold RSI',
-    description: 'RSI below 30 (potential bounce)',
-    maxRsi: 30,
-    sortBy: 'rsi',
+    name: 'Oversold',
+    description: 'Potentially oversold stocks (value plays)',
+    useFMPScreener: true,
+    fmpParams: {
+      priceMoreThan: 5,
+      volumeMoreThan: 100000,
+      betaLowerThan: 1.5
+    },
+    sortBy: 'changePercent',
     sortOrder: 'asc'
   },
   overbought: {
-    name: 'Overbought RSI',
-    description: 'RSI above 70 (potential pullback)',
-    minRsi: 70,
-    sortBy: 'rsi',
+    name: 'Overbought',
+    description: 'Stocks with strong recent gains (potential pullback)',
+    useYahooMovers: 'gainers',
+    sortBy: 'changePercent',
     sortOrder: 'desc'
   },
   earnings: {
-    name: 'Earnings Soon',
-    description: 'Reporting earnings within 7 days',
-    earningsWithin: 7,
-    sortBy: 'earningsDate',
-    sortOrder: 'asc'
+    name: 'Earnings Movers',
+    description: 'High volume stocks (potential earnings plays)',
+    useYahooMovers: 'active',
+    sortBy: 'volume',
+    sortOrder: 'desc'
   },
   dividend: {
     name: 'High Dividend',
-    description: 'Dividend yield above 4%',
-    minDividendYield: 4,
+    description: 'Dividend yield above 3%',
+    useFMPScreener: true,
+    fmpParams: {
+      dividendMoreThan: 3,
+      marketCapMoreThan: 1000000000,
+      volumeMoreThan: 100000
+    },
     sortBy: 'dividendYield',
+    sortOrder: 'desc'
+  },
+  undervalued: {
+    name: 'Undervalued',
+    description: 'Low P/E ratio stocks (potential value)',
+    useFMPScreener: true,
+    fmpParams: {
+      peRatioLowerThan: 15,
+      peRatioMoreThan: 0,
+      marketCapMoreThan: 500000000,
+      volumeMoreThan: 100000
+    },
+    sortBy: 'pe',
+    sortOrder: 'asc'
+  },
+  growth: {
+    name: 'Growth Stocks',
+    description: 'Technology sector growth stocks',
+    useFMPScreener: true,
+    fmpParams: {
+      sector: 'Technology',
+      marketCapMoreThan: 1000000000,
+      volumeMoreThan: 500000
+    },
+    sortBy: 'marketCap',
     sortOrder: 'desc'
   }
 };
 
 /**
- * Generate mock scanner data (fallback when APIs unavailable)
+ * Fetch stocks from FMP screener API
  */
-function generateMockScannerData(filters = {}, preset = null) {
-  const mockStocks = [
-    { symbol: 'SMCI', name: 'Super Micro Computer', sector: 'Technology', price: 42.85, change: 7.89, changePercent: 18.4, volume: 45200000, avgVolume: 15000000, marketCap: 25000000000, rsi: 58, pe: 22.5, dividendYield: 0 },
-    { symbol: 'PLTR', name: 'Palantir Technologies', sector: 'Technology', price: 71.24, change: 8.09, changePercent: 12.8, volume: 89400000, avgVolume: 45000000, marketCap: 158000000000, rsi: 78, pe: 180, dividendYield: 0 },
-    { symbol: 'RIVN', name: 'Rivian Automotive', sector: 'Consumer Cyclical', price: 14.87, change: 1.25, changePercent: 9.2, volume: 67800000, avgVolume: 25000000, marketCap: 15000000000, rsi: 42, pe: -5, dividendYield: 0 },
-    { symbol: 'MARA', name: 'Marathon Digital', sector: 'Financial Services', price: 24.56, change: 1.96, changePercent: 8.7, volume: 52100000, avgVolume: 20000000, marketCap: 7800000000, rsi: 55, pe: -10, dividendYield: 0 },
-    { symbol: 'SOUN', name: 'SoundHound AI', sector: 'Technology', price: 8.42, change: 0.59, changePercent: 7.5, volume: 38900000, avgVolume: 18000000, marketCap: 2800000000, rsi: 62, pe: -15, dividendYield: 0 },
-    { symbol: 'IONQ', name: 'IonQ Inc', sector: 'Technology', price: 42.18, change: 2.72, changePercent: 6.9, volume: 24500000, avgVolume: 12000000, marketCap: 9200000000, rsi: 72, pe: -25, dividendYield: 0 },
-    { symbol: 'NVDA', name: 'NVIDIA Corporation', sector: 'Technology', price: 138.85, change: 6.42, changePercent: 4.8, volume: 312000000, avgVolume: 280000000, marketCap: 3400000000000, rsi: 65, pe: 65, dividendYield: 0.03 },
-    { symbol: 'AMD', name: 'Advanced Micro Devices', sector: 'Technology', price: 125.50, change: 5.25, changePercent: 4.4, volume: 58000000, avgVolume: 45000000, marketCap: 203000000000, rsi: 58, pe: 120, dividendYield: 0 },
-    { symbol: 'COIN', name: 'Coinbase Global', sector: 'Financial Services', price: 278.90, change: 10.50, changePercent: 3.9, volume: 8500000, avgVolume: 6000000, marketCap: 70000000000, rsi: 68, pe: 45, dividendYield: 0 },
-    { symbol: 'TSLA', name: 'Tesla Inc', sector: 'Consumer Cyclical', price: 421.06, change: 14.23, changePercent: 3.5, volume: 95000000, avgVolume: 85000000, marketCap: 1350000000000, rsi: 61, pe: 115, dividendYield: 0 },
-    { symbol: 'AAPL', name: 'Apple Inc', sector: 'Technology', price: 254.49, change: 4.12, changePercent: 1.6, volume: 42000000, avgVolume: 55000000, marketCap: 3900000000000, rsi: 52, pe: 32, dividendYield: 0.44 },
-    { symbol: 'MSFT', name: 'Microsoft Corporation', sector: 'Technology', price: 438.23, change: 5.87, changePercent: 1.4, volume: 18000000, avgVolume: 22000000, marketCap: 3260000000000, rsi: 55, pe: 37, dividendYield: 0.72 },
-    { symbol: 'JPM', name: 'JPMorgan Chase', sector: 'Financial Services', price: 242.50, change: 2.10, changePercent: 0.9, volume: 8500000, avgVolume: 9000000, marketCap: 698000000000, rsi: 58, pe: 13, dividendYield: 2.1 },
-    { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', price: 145.80, change: -1.20, changePercent: -0.8, volume: 6200000, avgVolume: 7500000, marketCap: 350000000000, rsi: 45, pe: 15, dividendYield: 3.2 },
-    { symbol: 'XOM', name: 'Exxon Mobil', sector: 'Energy', price: 108.45, change: -2.35, changePercent: -2.1, volume: 15000000, avgVolume: 18000000, marketCap: 480000000000, rsi: 38, pe: 14, dividendYield: 3.5 },
-    { symbol: 'VZ', name: 'Verizon Communications', sector: 'Communication Services', price: 40.12, change: -1.88, changePercent: -4.5, volume: 22000000, avgVolume: 18000000, marketCap: 169000000000, rsi: 28, pe: 9, dividendYield: 6.5 },
-    { symbol: 'T', name: 'AT&T Inc', sector: 'Communication Services', price: 22.45, change: -1.15, changePercent: -4.9, volume: 35000000, avgVolume: 28000000, marketCap: 161000000000, rsi: 25, pe: 11, dividendYield: 5.0 },
-    { symbol: 'INTC', name: 'Intel Corporation', sector: 'Technology', price: 19.85, change: -1.45, changePercent: -6.8, volume: 68000000, avgVolume: 45000000, marketCap: 85000000000, rsi: 22, pe: -8, dividendYield: 2.5 }
-  ];
-
-  let results = [...mockStocks];
-
-  // Pre-compute volumeRatio for all stocks
-  results = results.map(stock => ({
-    ...stock,
-    volumeRatio: stock.avgVolume > 0 ? stock.volume / stock.avgVolume : 0
-  }));
-
-  // Apply filters
-  if (filters.minChange !== undefined) {
-    results = results.filter(s => s.changePercent >= filters.minChange);
-  }
-  if (filters.maxChange !== undefined) {
-    results = results.filter(s => s.changePercent <= filters.maxChange);
-  }
-  if (filters.minRsi !== undefined) {
-    results = results.filter(s => s.rsi >= filters.minRsi);
-  }
-  if (filters.maxRsi !== undefined) {
-    results = results.filter(s => s.rsi <= filters.maxRsi);
-  }
-  if (filters.minDividendYield !== undefined) {
-    results = results.filter(s => s.dividendYield >= filters.minDividendYield);
-  }
-  if (filters.maxDividendYield !== undefined) {
-    results = results.filter(s => s.dividendYield <= filters.maxDividendYield);
-  }
-  if (filters.sector && filters.sector !== 'All') {
-    results = results.filter(s => s.sector === filters.sector);
-  }
-  if (filters.minPrice !== undefined) {
-    results = results.filter(s => s.price >= filters.minPrice);
-  }
-  if (filters.maxPrice !== undefined) {
-    results = results.filter(s => s.price <= filters.maxPrice);
-  }
-  if (filters.minMarketCap !== undefined) {
-    results = results.filter(s => s.marketCap >= filters.minMarketCap);
-  }
-  if (filters.maxMarketCap !== undefined) {
-    results = results.filter(s => s.marketCap <= filters.maxMarketCap);
-  }
-  if (filters.minVolume !== undefined) {
-    results = results.filter(s => s.volume >= filters.minVolume);
-  }
-  if (filters.maxVolume !== undefined) {
-    results = results.filter(s => s.volume <= filters.maxVolume);
-  }
-  if (filters.minPe !== undefined) {
-    results = results.filter(s => s.pe >= filters.minPe);
-  }
-  if (filters.maxPe !== undefined) {
-    results = results.filter(s => s.pe <= filters.maxPe);
-  }
-  if (filters.minVolumeRatio !== undefined) {
-    results = results.filter(s => s.volumeRatio >= filters.minVolumeRatio);
-  }
-  if (filters.maxVolumeRatio !== undefined) {
-    results = results.filter(s => s.volumeRatio <= filters.maxVolumeRatio);
+async function fetchFMPScreener(params = {}) {
+  if (!FMP_KEY) {
+    logger.warn('[Scanner] FMP API key not configured');
+    return [];
   }
 
-  // Calculate additional fields (volumeRatio already computed above)
-  results = results.map(stock => ({
-    ...stock,
-    volumeRatioDisplay: stock.volumeRatio.toFixed(2) + 'x',
-    week52High: stock.price * (1 + Math.random() * 0.1),
-    week52Low: stock.price * (1 - Math.random() * 0.3),
-    signal: determineSignal(stock)
-  }));
+  const cacheKey = `fmp_screener_${JSON.stringify(params)}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
 
-  // Sort
-  const sortBy = filters.sortBy || 'changePercent';
-  const sortOrder = filters.sortOrder || 'desc';
-  results.sort((a, b) => {
-    const aVal = a[sortBy] || 0;
-    const bVal = b[sortBy] || 0;
-    return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
-  });
+  try {
+    const queryParams = {
+      apikey: FMP_KEY,
+      limit: 50,
+      ...params
+    };
 
-  return results;
+    const url = 'https://financialmodelingprep.com/api/v3/stock-screener';
+    const response = await axios.get(url, {
+      params: queryParams,
+      timeout: 10000
+    });
+
+    if (!response.data || !Array.isArray(response.data)) {
+      logger.warn('[Scanner] FMP screener returned no data');
+      return [];
+    }
+
+    const results = response.data.map(stock => formatFMPStock(stock));
+    setCache(cacheKey, results);
+    return results;
+  } catch (err) {
+    logger.error(`[Scanner] FMP screener error: ${err.message}`);
+    return [];
+  }
+}
+
+/**
+ * Format FMP stock data to standard format
+ */
+function formatFMPStock(stock) {
+  const avgVolume = stock.volume || 1;
+  const volumeRatio = avgVolume > 0 ? stock.volume / avgVolume : 1;
+
+  return {
+    symbol: stock.symbol,
+    name: stock.companyName || stock.symbol,
+    sector: stock.sector || 'Unknown',
+    price: stock.price || 0,
+    change: stock.price && stock.lastAnnualDividend
+      ? (stock.price * (stock.changesPercentage || 0) / 100)
+      : 0,
+    changePercent: stock.changesPercentage || 0,
+    volume: stock.volume || 0,
+    avgVolume: avgVolume,
+    marketCap: stock.marketCap || 0,
+    pe: stock.peRatio || null,
+    dividendYield: stock.lastAnnualDividend && stock.price
+      ? (stock.lastAnnualDividend / stock.price * 100)
+      : 0,
+    beta: stock.beta || 1,
+    volumeRatio: volumeRatio,
+    volumeRatioDisplay: volumeRatio.toFixed(2) + 'x',
+    exchange: stock.exchange || 'Unknown',
+    country: stock.country || 'US',
+    signal: determineSignal({
+      changePercent: stock.changesPercentage || 0,
+      rsi: null,
+      volume: stock.volume || 0,
+      avgVolume: avgVolume,
+      dividendYield: stock.lastAnnualDividend && stock.price
+        ? (stock.lastAnnualDividend / stock.price * 100)
+        : 0
+    })
+  };
+}
+
+/**
+ * Format Yahoo movers data to standard format
+ */
+function formatYahooStock(stock) {
+  const avgVolume = stock.avgVolume || stock.volume || 1;
+  const volumeRatio = avgVolume > 0 ? (stock.volume || 0) / avgVolume : 1;
+
+  return {
+    symbol: stock.symbol,
+    name: stock.name || stock.symbol,
+    sector: stock.sector || 'Unknown',
+    price: stock.price || 0,
+    change: stock.change || 0,
+    changePercent: stock.changePercent || 0,
+    volume: stock.volume || 0,
+    avgVolume: avgVolume,
+    marketCap: stock.marketCap || 0,
+    pe: stock.pe || null,
+    dividendYield: stock.dividendYield || 0,
+    rsi: stock.rsi || null,
+    volumeRatio: volumeRatio,
+    volumeRatioDisplay: volumeRatio.toFixed(2) + 'x',
+    week52High: stock.fiftyTwoWeekHigh || stock.price * 1.1,
+    week52Low: stock.fiftyTwoWeekLow || stock.price * 0.7,
+    signal: determineSignal({
+      changePercent: stock.changePercent || 0,
+      rsi: stock.rsi,
+      volume: stock.volume || 0,
+      avgVolume: avgVolume,
+      dividendYield: stock.dividendYield || 0
+    })
+  };
 }
 
 /**
@@ -190,13 +250,155 @@ function generateMockScannerData(filters = {}, preset = null) {
  */
 function determineSignal(stock) {
   if (stock.changePercent > 10) return { type: 'BREAKOUT', color: 'emerald' };
-  if (stock.changePercent > 5) return { type: '52W HIGH', color: 'emerald' };
-  if (stock.rsi < 30) return { type: 'OVERSOLD', color: 'amber' };
-  if (stock.rsi > 70) return { type: 'OVERBOUGHT', color: 'red' };
-  if (stock.volume / stock.avgVolume > 2) return { type: 'VOLUME', color: 'sky' };
+  if (stock.changePercent > 5) return { type: 'STRONG BUY', color: 'emerald' };
+  if (stock.rsi && stock.rsi < 30) return { type: 'OVERSOLD', color: 'amber' };
+  if (stock.rsi && stock.rsi > 70) return { type: 'OVERBOUGHT', color: 'red' };
+  if (stock.avgVolume && stock.volume / stock.avgVolume > 2) return { type: 'VOLUME', color: 'sky' };
   if (stock.dividendYield > 4) return { type: 'DIVIDEND', color: 'purple' };
   if (stock.changePercent < -5) return { type: 'SELLOFF', color: 'red' };
+  if (stock.changePercent < -2) return { type: 'WEAK', color: 'orange' };
+  if (stock.changePercent > 2) return { type: 'BULLISH', color: 'green' };
   return { type: 'NEUTRAL', color: 'slate' };
+}
+
+/**
+ * Apply custom filters to results
+ */
+function applyFilters(results, filters) {
+  let filtered = [...results];
+
+  if (filters.minChange !== undefined) {
+    filtered = filtered.filter(s => s.changePercent >= filters.minChange);
+  }
+  if (filters.maxChange !== undefined) {
+    filtered = filtered.filter(s => s.changePercent <= filters.maxChange);
+  }
+  if (filters.minRsi !== undefined) {
+    filtered = filtered.filter(s => s.rsi !== null && s.rsi >= filters.minRsi);
+  }
+  if (filters.maxRsi !== undefined) {
+    filtered = filtered.filter(s => s.rsi !== null && s.rsi <= filters.maxRsi);
+  }
+  if (filters.minDividendYield !== undefined) {
+    filtered = filtered.filter(s => s.dividendYield >= filters.minDividendYield);
+  }
+  if (filters.maxDividendYield !== undefined) {
+    filtered = filtered.filter(s => s.dividendYield <= filters.maxDividendYield);
+  }
+  if (filters.sector && filters.sector !== 'All') {
+    filtered = filtered.filter(s => s.sector === filters.sector);
+  }
+  if (filters.minPrice !== undefined) {
+    filtered = filtered.filter(s => s.price >= filters.minPrice);
+  }
+  if (filters.maxPrice !== undefined) {
+    filtered = filtered.filter(s => s.price <= filters.maxPrice);
+  }
+  if (filters.minMarketCap !== undefined) {
+    filtered = filtered.filter(s => s.marketCap >= filters.minMarketCap);
+  }
+  if (filters.maxMarketCap !== undefined) {
+    filtered = filtered.filter(s => s.marketCap <= filters.maxMarketCap);
+  }
+  if (filters.minVolume !== undefined) {
+    filtered = filtered.filter(s => s.volume >= filters.minVolume);
+  }
+  if (filters.maxVolume !== undefined) {
+    filtered = filtered.filter(s => s.volume <= filters.maxVolume);
+  }
+  if (filters.minPe !== undefined) {
+    filtered = filtered.filter(s => s.pe !== null && s.pe >= filters.minPe);
+  }
+  if (filters.maxPe !== undefined) {
+    filtered = filtered.filter(s => s.pe !== null && s.pe <= filters.maxPe);
+  }
+  if (filters.minVolumeRatio !== undefined) {
+    filtered = filtered.filter(s => s.volumeRatio >= filters.minVolumeRatio);
+  }
+  if (filters.maxVolumeRatio !== undefined) {
+    filtered = filtered.filter(s => s.volumeRatio <= filters.maxVolumeRatio);
+  }
+
+  return filtered;
+}
+
+/**
+ * Sort results by specified field
+ */
+function sortResults(results, sortBy, sortOrder) {
+  return results.sort((a, b) => {
+    const aVal = a[sortBy] || 0;
+    const bVal = b[sortBy] || 0;
+    return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
+  });
+}
+
+/**
+ * Fetch scanner data based on preset or custom filters
+ */
+async function fetchScannerData(filters = {}, presetKey = null) {
+  const cacheKey = `scanner_${presetKey || 'custom'}_${JSON.stringify(filters)}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  let results = [];
+  const preset = presetKey ? PRESETS[presetKey] : null;
+
+  try {
+    // Use Yahoo Movers for gainers, losers, active presets
+    if (preset?.useYahooMovers) {
+      logger.info(`[Scanner] Using Yahoo Movers: ${preset.useYahooMovers}`);
+
+      switch (preset.useYahooMovers) {
+        case 'gainers':
+          results = await yahooMovers.getTopGainers(50);
+          break;
+        case 'losers':
+          results = await yahooMovers.getTopLosers(50);
+          break;
+        case 'active':
+          results = await yahooMovers.getMostActive(50);
+          break;
+        default:
+          results = await yahooMovers.getTopGainers(50);
+      }
+
+      results = results.map(formatYahooStock);
+    }
+    // Use FMP screener for custom filters and other presets
+    else if (preset?.useFMPScreener || !preset) {
+      const fmpParams = preset?.fmpParams || {};
+
+      // Build FMP params from filters
+      if (filters.minPrice) fmpParams.priceMoreThan = filters.minPrice;
+      if (filters.maxPrice) fmpParams.priceLowerThan = filters.maxPrice;
+      if (filters.minMarketCap) fmpParams.marketCapMoreThan = filters.minMarketCap;
+      if (filters.maxMarketCap) fmpParams.marketCapLowerThan = filters.maxMarketCap;
+      if (filters.minVolume) fmpParams.volumeMoreThan = filters.minVolume;
+      if (filters.minDividendYield) fmpParams.dividendMoreThan = filters.minDividendYield;
+      if (filters.maxPe) fmpParams.peRatioLowerThan = filters.maxPe;
+      if (filters.minPe) fmpParams.peRatioMoreThan = filters.minPe;
+      if (filters.sector && filters.sector !== 'All') fmpParams.sector = filters.sector;
+
+      logger.info(`[Scanner] Using FMP Screener with params: ${JSON.stringify(fmpParams)}`);
+      results = await fetchFMPScreener(fmpParams);
+    }
+
+    // Apply additional client-side filters
+    results = applyFilters(results, filters);
+
+    // Sort results
+    const sortBy = filters.sortBy || preset?.sortBy || 'changePercent';
+    const sortOrder = filters.sortOrder || preset?.sortOrder || 'desc';
+    results = sortResults(results, sortBy, sortOrder);
+
+    setCache(cacheKey, results);
+    return results;
+
+  } catch (err) {
+    logger.error(`[Scanner] Error fetching data: ${err.message}`);
+    return [];
+  }
 }
 
 /**
@@ -244,11 +446,17 @@ router.get('/scan', async (req, res) => {
       limit
     } = req.query;
 
-    // Build filters from query params or preset
+    // Build filters from query params
     let filters = {};
 
+    // If preset exists, get its default filters
     if (preset && PRESETS[preset]) {
-      filters = { ...PRESETS[preset] };
+      const presetConfig = PRESETS[preset];
+      if (presetConfig.fmpParams) {
+        filters = { ...presetConfig.fmpParams };
+      }
+      filters.sortBy = presetConfig.sortBy;
+      filters.sortOrder = presetConfig.sortOrder;
     }
 
     // Override with explicit filters
@@ -272,12 +480,14 @@ router.get('/scan', async (req, res) => {
     if (sortBy) filters.sortBy = sortBy;
     if (sortOrder) filters.sortOrder = sortOrder;
 
-    // Get scanner results (mock data for now)
-    let results = generateMockScannerData(filters, preset);
+    // Fetch scanner results with real data
+    let results = await fetchScannerData(filters, preset);
 
     // Apply limit
     const resultLimit = parseInt(limit) || 50;
     results = results.slice(0, resultLimit);
+
+    logger.info(`[Scanner] Returning ${results.length} results for preset: ${preset || 'custom'}`);
 
     res.json({
       success: true,
@@ -304,25 +514,38 @@ router.get('/scan', async (req, res) => {
 
 /**
  * GET /api/scanner/movers
- * Get top market movers (gainers and losers)
+ * Get top market movers (gainers, losers, most active)
  */
 router.get('/movers', async (req, res) => {
   try {
-    const allStocks = generateMockScannerData({});
+    const cacheKey = 'movers_all';
+    const cached = getCached(cacheKey);
 
-    const gainers = allStocks
-      .filter(s => s.changePercent > 0)
-      .sort((a, b) => b.changePercent - a.changePercent)
-      .slice(0, 10);
+    if (cached) {
+      return res.json({
+        success: true,
+        ...cached
+      });
+    }
 
-    const losers = allStocks
-      .filter(s => s.changePercent < 0)
-      .sort((a, b) => a.changePercent - b.changePercent)
-      .slice(0, 10);
+    logger.info('[Scanner] Fetching real market movers from Yahoo Finance');
 
-    const mostActive = allStocks
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 10);
+    // Fetch all movers in parallel
+    const [gainersRaw, losersRaw, activeRaw] = await Promise.all([
+      yahooMovers.getTopGainers(10),
+      yahooMovers.getTopLosers(10),
+      yahooMovers.getMostActive(10)
+    ]);
+
+    // Format results
+    const gainers = gainersRaw.map(formatYahooStock);
+    const losers = losersRaw.map(formatYahooStock);
+    const mostActive = activeRaw.map(formatYahooStock);
+
+    const result = { gainers, losers, mostActive };
+    setCache(cacheKey, result);
+
+    logger.info(`[Scanner] Movers fetched - Gainers: ${gainers.length}, Losers: ${losers.length}, Active: ${mostActive.length}`);
 
     res.json({
       success: true,
@@ -332,7 +555,13 @@ router.get('/movers', async (req, res) => {
     });
   } catch (error) {
     logger.error('Movers error:', error);
-    res.status(500).json({ success: false, error: 'Failed to get movers' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get movers',
+      gainers: [],
+      losers: [],
+      mostActive: []
+    });
   }
 });
 
@@ -362,12 +591,12 @@ router.post('/save', authenticate, async (req, res) => {
  */
 router.get('/saved', authenticate, async (req, res) => {
   try {
-    // Mock saved scanners
+    // Mock saved scanners - in production, fetch from database
     const savedScanners = [
-      { id: 'momentum', name: 'Momentum Plays', description: 'RSI > 60, Vol > 2x', filters: { minRsi: 60, minVolumeRatio: 2 } },
+      { id: 'momentum', name: 'Momentum Plays', description: 'High volume gainers', filters: { minChange: 3, minVolumeRatio: 2 } },
       { id: 'value', name: 'Value Stocks', description: 'P/E < 15, Div > 2%', filters: { maxPe: 15, minDividendYield: 2 } },
-      { id: 'smallcap', name: 'Small Cap Growth', description: '$300M-$2B, +50% YoY', filters: { minMarketCap: 300000000, maxMarketCap: 2000000000 } },
-      { id: 'squeeze', name: 'Short Squeeze', description: 'SI > 20%, Days < 5', filters: { minShortInterest: 20 } }
+      { id: 'smallcap', name: 'Small Cap Growth', description: '$300M-$2B market cap', filters: { minMarketCap: 300000000, maxMarketCap: 2000000000 } },
+      { id: 'highdiv', name: 'Dividend Champions', description: 'Yield > 4%', filters: { minDividendYield: 4 } }
     ];
 
     res.json({

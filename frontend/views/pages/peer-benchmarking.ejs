@@ -1,0 +1,875 @@
+<%
+// Safe defaults for undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+
+// Sample peer data
+const yourMetrics = {
+  totalReturn: 24.7,
+  sharpeRatio: 1.42,
+  maxDrawdown: -8.3,
+  volatility: 14.2,
+  beta: 1.05,
+  alpha: 3.2,
+  percentileRank: 85,
+  diversificationScore: 78
+};
+
+const peerGroups = {
+  ageRanges: ['20-30', '30-40', '40-50', '50-60', '60+'],
+  portfolioSizes: ['$10K-50K', '$50K-100K', '$100K-250K', '$250K-500K', '$500K+'],
+  riskProfiles: ['Conservative', 'Moderate', 'Aggressive'],
+  investmentStyles: ['Growth', 'Value', 'Income', 'Index', 'Balanced']
+};
+
+// Sample peer comparison data
+const peerStats = {
+  avgReturn: 18.4,
+  avgSharpe: 1.15,
+  avgDrawdown: -12.1,
+  avgVolatility: 16.8,
+  medianReturn: 16.2,
+  topQuartileReturn: 28.5,
+  bottomQuartileReturn: 8.2
+};
+
+// Sample leaderboard data
+const leaderboard = [
+  { rank: 1, username: 'AlphaTrader', return: 42.3, sharpe: 2.15, strategy: 'Growth', winRate: 68 },
+  { rank: 2, username: 'ValueHunter', return: 38.7, sharpe: 1.98, strategy: 'Value', winRate: 72 },
+  { rank: 3, username: 'SteadyGains', return: 35.2, sharpe: 1.85, strategy: 'Balanced', winRate: 65 },
+  { rank: 4, username: 'MomentumPro', return: 32.8, sharpe: 1.72, strategy: 'Growth', winRate: 61 },
+  { rank: 5, username: 'DividendKing', return: 29.4, sharpe: 1.68, strategy: 'Income', winRate: 74 },
+  { rank: 6, username: 'TechBull', return: 28.1, sharpe: 1.55, strategy: 'Growth', winRate: 58 },
+  { rank: 7, username: 'IndexFan', return: 26.8, sharpe: 1.52, strategy: 'Index', winRate: 82 },
+  { rank: 8, username: 'RiskManager', return: 25.9, sharpe: 1.62, strategy: 'Balanced', winRate: 69 },
+  { rank: 9, username: 'OptionsWiz', return: 25.1, sharpe: 1.45, strategy: 'Growth', winRate: 55 },
+  { rank: 10, username: 'PatientCap', return: 24.2, sharpe: 1.58, strategy: 'Value', winRate: 71 }
+];
+
+// Common holdings among peers
+const commonHoldings = [
+  { symbol: 'AAPL', name: 'Apple Inc', peerHoldingPct: 78, avgAllocation: 8.5 },
+  { symbol: 'MSFT', name: 'Microsoft', peerHoldingPct: 72, avgAllocation: 7.2 },
+  { symbol: 'NVDA', name: 'NVIDIA', peerHoldingPct: 65, avgAllocation: 6.8 },
+  { symbol: 'GOOGL', name: 'Alphabet', peerHoldingPct: 58, avgAllocation: 5.4 },
+  { symbol: 'AMZN', name: 'Amazon', peerHoldingPct: 55, avgAllocation: 5.1 },
+  { symbol: 'VOO', name: 'Vanguard S&P 500', peerHoldingPct: 48, avgAllocation: 12.5 }
+];
+
+// Sector comparison data
+const sectorComparison = {
+  technology: { you: 35, peers: 28 },
+  healthcare: { you: 12, peers: 15 },
+  financials: { you: 10, peers: 14 },
+  consumer: { you: 15, peers: 12 },
+  industrials: { you: 8, peers: 11 },
+  energy: { you: 5, peers: 8 },
+  utilities: { you: 3, peers: 5 },
+  realEstate: { you: 7, peers: 4 },
+  materials: { you: 3, peers: 2 },
+  communications: { you: 2, peers: 1 }
+};
+
+// Areas for improvement
+const improvements = [
+  { area: 'Healthcare Allocation', current: 12, peerAvg: 15, recommendation: 'Consider increasing healthcare exposure by 3% for better sector balance' },
+  { area: 'Risk-Adjusted Returns', current: yourMetrics.sharpeRatio, peerAvg: 1.65, recommendation: 'Top performers maintain higher Sharpe ratios through better position sizing' },
+  { area: 'Drawdown Control', current: Math.abs(yourMetrics.maxDrawdown), peerAvg: 6.5, recommendation: 'Implement stop-losses or trailing stops to reduce maximum drawdown' },
+  { area: 'International Exposure', current: 8, peerAvg: 18, recommendation: 'Top performers allocate 15-20% to international equities for diversification' }
+];
+
+// What outperformers do differently
+const outperformerInsights = [
+  { insight: 'Maintain 15-20% cash for opportunities', icon: 'savings' },
+  { insight: 'Rebalance quarterly, not monthly', icon: 'autorenew' },
+  { insight: 'Average position size of 3-5%', icon: 'pie_chart' },
+  { insight: 'Hold winners longer (avg 18 months)', icon: 'schedule' },
+  { insight: 'Use limit orders 85% of the time', icon: 'shopping_cart' }
+];
+%>
+<%- include('../partials/header', { pageTitle: 'Peer Benchmarking' }) %>
+
+<main class="page-container max-w-[1600px] mx-auto px-4 sm:px-6 py-6">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <h1 class="page-title flex items-center gap-3">
+          <span class="material-symbols-outlined text-3xl text-indigo-400">leaderboard</span>
+          Peer Benchmarking Dashboard
+        </h1>
+        <p class="page-subtitle mt-1">Compare your portfolio performance against similar investors</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="premium-badge premium-badge-forest">
+          <span class="material-symbols-outlined text-sm">trending_up</span>
+          Top <%= 100 - yourMetrics.percentileRank %>%
+        </span>
+        <span class="live-indicator">Live Data</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Your Performance Summary -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-indigo-400">analytics</span>
+      Your Performance Summary
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <!-- Total Return -->
+      <div class="stat-card-forest">
+        <div class="stat-icon stat-icon-forest mb-3">
+          <span class="material-symbols-outlined text-xl" style="color: var(--positive-green)">trending_up</span>
+        </div>
+        <p class="stat-label">Total Return (YTD)</p>
+        <p class="stat-value value-gain">+<%= yourMetrics.totalReturn %>%</p>
+        <div class="stat-change value-positive">
+          <span class="material-symbols-outlined text-sm">arrow_upward</span>
+          +<%= (yourMetrics.totalReturn - peerStats.avgReturn).toFixed(1) %>% vs peers
+        </div>
+      </div>
+
+      <!-- Sharpe Ratio -->
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-indigo mb-3">
+          <span class="material-symbols-outlined text-xl text-indigo-400">speed</span>
+        </div>
+        <p class="stat-label">Sharpe Ratio</p>
+        <p class="stat-value"><%= yourMetrics.sharpeRatio %></p>
+        <div class="stat-change value-positive">
+          <span class="material-symbols-outlined text-sm">arrow_upward</span>
+          +<%= (yourMetrics.sharpeRatio - peerStats.avgSharpe).toFixed(2) %> vs peers
+        </div>
+      </div>
+
+      <!-- Max Drawdown -->
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-amber mb-3">
+          <span class="material-symbols-outlined text-xl text-amber-400">trending_down</span>
+        </div>
+        <p class="stat-label">Max Drawdown</p>
+        <p class="stat-value"><%= yourMetrics.maxDrawdown %>%</p>
+        <div class="stat-change value-positive">
+          <span class="material-symbols-outlined text-sm">check_circle</span>
+          <%= (Math.abs(peerStats.avgDrawdown) - Math.abs(yourMetrics.maxDrawdown)).toFixed(1) %>% better
+        </div>
+      </div>
+
+      <!-- Percentile Rank -->
+      <div class="stat-card-forest glow-forest">
+        <div class="stat-icon stat-icon-gain mb-3">
+          <span class="material-symbols-outlined text-xl" style="color: var(--positive-green)">emoji_events</span>
+        </div>
+        <p class="stat-label">Percentile Rank</p>
+        <p class="stat-value gradient-text-gain"><%= yourMetrics.percentileRank %>th</p>
+        <div class="stat-change value-positive">
+          <span class="material-symbols-outlined text-sm">star</span>
+          Top <%= 100 - yourMetrics.percentileRank %>% of peers
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Peer Group Selection -->
+  <section class="mb-8">
+    <div class="premium-card">
+      <div class="premium-card-header">
+        <h3 class="premium-card-title flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-400">group</span>
+          Peer Group Selection
+        </h3>
+        <button class="premium-btn premium-btn-secondary premium-btn-sm" onclick="updatePeerGroup()">
+          <span class="material-symbols-outlined text-sm">refresh</span>
+          Update Comparison
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Age Range -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Age Range</label>
+          <select id="ageRange" class="premium-input premium-select">
+            <% peerGroups.ageRanges.forEach((range, i) => { %>
+            <option value="<%= range %>" <%= i === 1 ? 'selected' : '' %>><%= range %> years</option>
+            <% }); %>
+          </select>
+        </div>
+
+        <!-- Portfolio Size -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Portfolio Size</label>
+          <select id="portfolioSize" class="premium-input premium-select">
+            <% peerGroups.portfolioSizes.forEach((size, i) => { %>
+            <option value="<%= size %>" <%= i === 2 ? 'selected' : '' %>><%= size %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <!-- Risk Profile -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Risk Profile</label>
+          <select id="riskProfile" class="premium-input premium-select">
+            <% peerGroups.riskProfiles.forEach((profile, i) => { %>
+            <option value="<%= profile %>" <%= i === 1 ? 'selected' : '' %>><%= profile %></option>
+            <% }); %>
+          </select>
+        </div>
+
+        <!-- Investment Style -->
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Investment Style</label>
+          <select id="investmentStyle" class="premium-input premium-select">
+            <% peerGroups.investmentStyles.forEach((style, i) => { %>
+            <option value="<%= style %>" <%= i === 0 ? 'selected' : '' %>><%= style %></option>
+            <% }); %>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+        <p class="text-sm text-indigo-300">
+          <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+          Comparing against <strong>847 peers</strong> with similar characteristics. Data updated every 24 hours.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Charts -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-indigo-400">insights</span>
+      Comparison Charts
+    </h2>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Return Distribution Histogram -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Return Distribution</h3>
+            <p class="chart-subtitle">Your position among 847 peers</p>
+          </div>
+          <div class="premium-badge premium-badge-forest">Your: +<%= yourMetrics.totalReturn %>%</div>
+        </div>
+        <div class="h-64">
+          <canvas id="returnDistributionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Risk vs Return Scatter -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Risk vs Return</h3>
+            <p class="chart-subtitle">Volatility vs performance scatter plot</p>
+          </div>
+          <div class="flex gap-2">
+            <span class="premium-badge premium-badge-indigo">You</span>
+            <span class="premium-badge premium-badge-neutral">Peers</span>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="riskReturnChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Sector Allocation Radar -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Sector Allocation Comparison</h3>
+            <p class="chart-subtitle">Your allocation vs peer average</p>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="sectorRadarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Performance Over Time -->
+      <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Performance Over Time</h3>
+            <p class="chart-subtitle">Your returns vs peer average (YTD)</p>
+          </div>
+          <div class="timeframe-buttons">
+            <button class="timeframe-btn active" data-period="ytd">YTD</button>
+            <button class="timeframe-btn" data-period="1y">1Y</button>
+            <button class="timeframe-btn" data-period="3y">3Y</button>
+          </div>
+        </div>
+        <div class="h-64">
+          <canvas id="performanceTimeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Peer Insights Grid -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-indigo-400">lightbulb</span>
+      Peer Insights
+    </h2>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Most Common Holdings -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Most Common Holdings</h3>
+          <span class="premium-badge premium-badge-info">Top 6</span>
+        </div>
+        <div class="space-y-3">
+          <% commonHoldings.forEach(holding => { %>
+          <div class="flex items-center gap-4 p-3 rounded-lg bg-white/2 hover:bg-white/4 transition-colors">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center text-xs font-bold text-indigo-400">
+              <%= holding.symbol.substring(0, 3) %>
+            </div>
+            <div class="flex-1">
+              <p class="font-semibold text-white"><%= holding.symbol %></p>
+              <p class="text-xs text-zinc-500"><%= holding.name %></p>
+            </div>
+            <div class="text-right">
+              <p class="font-mono text-sm text-white"><%= holding.peerHoldingPct %>%</p>
+              <p class="text-xs text-zinc-500">hold this</p>
+            </div>
+            <div class="w-20">
+              <div class="progress-bar h-2">
+                <div class="progress-bar-fill progress-bar-indigo" style="width: <%= holding.peerHoldingPct %>%"></div>
+              </div>
+              <p class="text-xs text-zinc-500 mt-1 text-center">Avg <%= holding.avgAllocation %>%</p>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+
+      <!-- What Outperformers Do Differently -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">What Top Performers Do Differently</h3>
+          <span class="premium-badge premium-badge-success">Insights</span>
+        </div>
+        <div class="space-y-3">
+          <% outperformerInsights.forEach(item => { %>
+          <div class="flex items-center gap-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10 hover:border-emerald-500/20 transition-colors">
+            <div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <span class="material-symbols-outlined text-emerald-400"><%= item.icon %></span>
+            </div>
+            <p class="text-sm text-zinc-300"><%= item.insight %></p>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Leaderboard -->
+  <section class="mb-8">
+    <div class="premium-card">
+      <div class="premium-card-header">
+        <h3 class="premium-card-title flex items-center gap-2">
+          <span class="material-symbols-outlined text-amber-400">emoji_events</span>
+          Peer Group Leaderboard
+        </h3>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-zinc-400">Your Rank: <strong class="text-emerald-400">#12</strong></span>
+          <button class="premium-btn premium-btn-forest premium-btn-sm" onclick="learnFromTop()">
+            <span class="material-symbols-outlined text-sm">school</span>
+            Learn Strategies
+          </button>
+        </div>
+      </div>
+
+      <!-- Podium (Top 3) -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <% [1, 0, 2].forEach((idx, pos) => {
+          const trader = leaderboard[idx];
+          const isFirst = idx === 0;
+          const colors = ['from-amber-500 to-yellow-600', 'from-zinc-300 to-zinc-400', 'from-amber-700 to-orange-800'];
+          const bgColors = ['bg-amber-500/10 border-amber-500/30', 'bg-zinc-500/10 border-zinc-500/30', 'bg-amber-700/10 border-amber-700/30'];
+        %>
+        <div class="premium-card text-center <%= bgColors[idx] %> <%= isFirst ? 'transform -translate-y-2' : '' %>">
+          <div class="relative inline-block mb-3">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br <%= colors[idx] %> flex items-center justify-center text-white text-xl font-bold mx-auto">
+              <%= trader.username.charAt(0) %>
+            </div>
+            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-gradient-to-br <%= colors[idx] %> flex items-center justify-center text-xs font-bold text-white">
+              <%= trader.rank %>
+            </div>
+          </div>
+          <p class="font-semibold text-white"><%= trader.username %></p>
+          <p class="text-2xl font-bold font-mono value-gain my-2">+<%= trader.return %>%</p>
+          <div class="flex justify-center gap-3 text-xs text-zinc-400">
+            <span>Sharpe <%= trader.sharpe %></span>
+            <span><%= trader.strategy %></span>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+
+      <!-- Full Table -->
+      <div class="overflow-x-auto">
+        <table class="premium-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Trader</th>
+              <th class="text-right">Return</th>
+              <th class="text-right">Sharpe Ratio</th>
+              <th class="text-center">Strategy</th>
+              <th class="text-right">Win Rate</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% leaderboard.forEach(trader => { %>
+            <tr class="<%= trader.rank <= 3 ? 'row-positive' : '' %>">
+              <td>
+                <% if (trader.rank === 1) { %>
+                <span class="text-amber-400 font-bold">#<%= trader.rank %></span>
+                <% } else if (trader.rank === 2) { %>
+                <span class="text-zinc-300 font-bold">#<%= trader.rank %></span>
+                <% } else if (trader.rank === 3) { %>
+                <span class="text-amber-600 font-bold">#<%= trader.rank %></span>
+                <% } else { %>
+                <span class="text-zinc-500">#<%= trader.rank %></span>
+                <% } %>
+              </td>
+              <td>
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    <%= trader.username.charAt(0) %>
+                  </div>
+                  <span class="font-medium text-white"><%= trader.username %></span>
+                </div>
+              </td>
+              <td class="text-right font-mono font-semibold value-positive">+<%= trader.return %>%</td>
+              <td class="text-right font-mono text-zinc-300"><%= trader.sharpe %></td>
+              <td class="text-center">
+                <span class="premium-badge <%= trader.strategy === 'Growth' ? 'premium-badge-info' : trader.strategy === 'Value' ? 'premium-badge-warning' : trader.strategy === 'Income' ? 'premium-badge-success' : 'premium-badge-neutral' %>">
+                  <%= trader.strategy %>
+                </span>
+              </td>
+              <td class="text-right font-mono text-zinc-300"><%= trader.winRate %>%</td>
+              <td class="text-center">
+                <button class="premium-btn premium-btn-ghost premium-btn-sm" onclick="viewStrategy('<%= trader.username %>')">
+                  <span class="material-symbols-outlined text-sm">visibility</span>
+                </button>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Areas for Improvement -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+      <span class="material-symbols-outlined text-amber-400">tips_and_updates</span>
+      Areas for Improvement
+    </h2>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <% improvements.forEach(item => {
+        const isDeficit = item.current < item.peerAvg;
+        const diff = Math.abs(item.current - item.peerAvg);
+      %>
+      <div class="premium-card border-l-4 <%= isDeficit ? 'border-l-amber-500' : 'border-l-red-500' %>">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-amber-400">trending_flat</span>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-white"><%= item.area %></h4>
+              <span class="premium-badge <%= isDeficit ? 'premium-badge-warning' : 'premium-badge-danger' %>">
+                <%= isDeficit ? 'Below Avg' : 'Needs Work' %>
+              </span>
+            </div>
+            <div class="flex items-center gap-6 mb-3">
+              <div>
+                <p class="text-xs text-zinc-500 uppercase">Your Value</p>
+                <p class="font-mono font-semibold text-white"><%= typeof item.current === 'number' ? item.current.toFixed(1) : item.current %><%= item.area.includes('%') || item.area.includes('Allocation') ? '%' : '' %></p>
+              </div>
+              <div class="text-center">
+                <span class="material-symbols-outlined text-zinc-600">arrow_forward</span>
+              </div>
+              <div>
+                <p class="text-xs text-zinc-500 uppercase">Peer Top Quartile</p>
+                <p class="font-mono font-semibold text-emerald-400"><%= typeof item.peerAvg === 'number' ? item.peerAvg.toFixed(1) : item.peerAvg %><%= item.area.includes('%') || item.area.includes('Allocation') ? '%' : '' %></p>
+              </div>
+            </div>
+            <p class="text-sm text-zinc-400"><%= item.recommendation %></p>
+          </div>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+
+    <!-- Diversification Score Comparison -->
+    <div class="premium-card mt-6">
+      <div class="premium-card-header">
+        <h3 class="premium-card-title">Diversification Score Comparison</h3>
+        <span class="premium-badge premium-badge-info"><%= yourMetrics.diversificationScore %>/100</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="text-center p-4 rounded-lg bg-white/3">
+          <p class="text-sm text-zinc-500 mb-2">Your Score</p>
+          <p class="text-4xl font-bold text-indigo-400"><%= yourMetrics.diversificationScore %></p>
+          <div class="progress-bar mt-3">
+            <div class="progress-bar-fill progress-bar-indigo" style="width: <%= yourMetrics.diversificationScore %>%"></div>
+          </div>
+        </div>
+        <div class="text-center p-4 rounded-lg bg-white/3">
+          <p class="text-sm text-zinc-500 mb-2">Peer Average</p>
+          <p class="text-4xl font-bold text-zinc-400">72</p>
+          <div class="progress-bar mt-3">
+            <div class="progress-bar-fill" style="width: 72%; background: #71717a"></div>
+          </div>
+        </div>
+        <div class="text-center p-4 rounded-lg bg-white/3">
+          <p class="text-sm text-zinc-500 mb-2">Top Quartile</p>
+          <p class="text-4xl font-bold text-emerald-400">89</p>
+          <div class="progress-bar mt-3">
+            <div class="progress-bar-fill progress-bar-emerald" style="width: 89%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Actionable Recommendations -->
+  <section class="mb-8">
+    <div class="notice-forest">
+      <div class="flex items-start gap-4">
+        <span class="material-symbols-outlined text-2xl" style="color: var(--positive-green)">rocket_launch</span>
+        <div>
+          <h4 class="font-semibold text-white mb-2">Your Path to Top 10%</h4>
+          <p class="text-sm text-zinc-300 mb-3">Based on your current performance and peer comparison, here are your personalized recommendations:</p>
+          <ol class="list-decimal list-inside space-y-2 text-sm text-zinc-400">
+            <li>Increase healthcare allocation by 3% to match peer average sector balance</li>
+            <li>Implement trailing stop-losses at 12% to reduce max drawdown</li>
+            <li>Consider adding 2-3 international ETFs (VEA, VWO) for geographic diversification</li>
+            <li>Review position sizing - aim for 3-5% per position like top performers</li>
+          </ol>
+          <button class="premium-btn premium-btn-forest mt-4">
+            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+            Generate Optimization Plan
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Chart.js default configuration
+  Chart.defaults.color = '#71717a';
+  Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.06)';
+
+  // 1. Return Distribution Histogram
+  const returnDistCtx = document.getElementById('returnDistributionChart').getContext('2d');
+  const yourReturn = <%= yourMetrics.totalReturn %>;
+
+  // Generate histogram data
+  const bins = [-20, -10, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50];
+  const frequencies = [12, 28, 85, 142, 186, 168, 112, 62, 32, 14, 6];
+  const yourBin = bins.findIndex((b, i) => yourReturn >= b && yourReturn < (bins[i+1] || Infinity));
+
+  new Chart(returnDistCtx, {
+    type: 'bar',
+    data: {
+      labels: bins.slice(0, -1).map((b, i) => `${b}% - ${bins[i+1]}%`),
+      datasets: [{
+        label: 'Number of Peers',
+        data: frequencies,
+        backgroundColor: frequencies.map((_, i) => i === yourBin ? 'rgba(52, 211, 153, 0.8)' : 'rgba(99, 102, 241, 0.4)'),
+        borderColor: frequencies.map((_, i) => i === yourBin ? '#34d399' : 'rgba(99, 102, 241, 0.6)'),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            afterLabel: function(context) {
+              if (context.dataIndex === yourBin) {
+                return 'Your position';
+              }
+              return '';
+            }
+          }
+        },
+        annotation: {
+          annotations: {
+            yourPosition: {
+              type: 'line',
+              xMin: yourBin,
+              xMax: yourBin,
+              borderColor: '#34d399',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: 'You',
+                position: 'start',
+                backgroundColor: 'rgba(52, 211, 153, 0.8)'
+              }
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { maxRotation: 45, minRotation: 45 }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Number of Investors' }
+        }
+      }
+    }
+  });
+
+  // 2. Risk vs Return Scatter Plot
+  const riskReturnCtx = document.getElementById('riskReturnChart').getContext('2d');
+
+  // Generate peer scatter data
+  const peerData = [];
+  for (let i = 0; i < 100; i++) {
+    peerData.push({
+      x: 8 + Math.random() * 20, // Volatility
+      y: -5 + Math.random() * 45  // Return
+    });
+  }
+
+  new Chart(riskReturnCtx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Peers',
+          data: peerData,
+          backgroundColor: 'rgba(99, 102, 241, 0.3)',
+          borderColor: 'rgba(99, 102, 241, 0.5)',
+          pointRadius: 4
+        },
+        {
+          label: 'You',
+          data: [{ x: <%= yourMetrics.volatility %>, y: <%= yourMetrics.totalReturn %> }],
+          backgroundColor: '#34d399',
+          borderColor: '#34d399',
+          pointRadius: 10,
+          pointStyle: 'star'
+        },
+        {
+          label: 'Efficient Frontier',
+          data: [
+            { x: 8, y: 12 },
+            { x: 12, y: 22 },
+            { x: 16, y: 28 },
+            { x: 20, y: 32 },
+            { x: 24, y: 35 }
+          ],
+          type: 'line',
+          borderColor: 'rgba(245, 158, 11, 0.6)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { usePointStyle: true }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Volatility (%)' },
+          min: 5,
+          max: 30
+        },
+        y: {
+          title: { display: true, text: 'Return (%)' },
+          min: -10,
+          max: 50
+        }
+      }
+    }
+  });
+
+  // 3. Sector Allocation Radar Chart
+  const sectorRadarCtx = document.getElementById('sectorRadarChart').getContext('2d');
+
+  new Chart(sectorRadarCtx, {
+    type: 'radar',
+    data: {
+      labels: ['Technology', 'Healthcare', 'Financials', 'Consumer', 'Industrials', 'Energy', 'Utilities', 'Real Estate', 'Materials', 'Communications'],
+      datasets: [
+        {
+          label: 'Your Allocation',
+          data: [<%= sectorComparison.technology.you %>, <%= sectorComparison.healthcare.you %>, <%= sectorComparison.financials.you %>, <%= sectorComparison.consumer.you %>, <%= sectorComparison.industrials.you %>, <%= sectorComparison.energy.you %>, <%= sectorComparison.utilities.you %>, <%= sectorComparison.realEstate.you %>, <%= sectorComparison.materials.you %>, <%= sectorComparison.communications.you %>],
+          borderColor: '#34d399',
+          backgroundColor: 'rgba(52, 211, 153, 0.2)',
+          borderWidth: 2,
+          pointBackgroundColor: '#34d399'
+        },
+        {
+          label: 'Peer Average',
+          data: [<%= sectorComparison.technology.peers %>, <%= sectorComparison.healthcare.peers %>, <%= sectorComparison.financials.peers %>, <%= sectorComparison.consumer.peers %>, <%= sectorComparison.industrials.peers %>, <%= sectorComparison.energy.peers %>, <%= sectorComparison.utilities.peers %>, <%= sectorComparison.realEstate.peers %>, <%= sectorComparison.materials.peers %>, <%= sectorComparison.communications.peers %>],
+          borderColor: '#6366f1',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointBackgroundColor: '#6366f1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          max: 40,
+          ticks: { stepSize: 10 },
+          pointLabels: { font: { size: 10 } }
+        }
+      }
+    }
+  });
+
+  // 4. Performance Over Time
+  const perfTimeCtx = document.getElementById('performanceTimeChart').getContext('2d');
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const yourPerformance = [2.1, 5.4, 3.2, 8.5, 12.3, 10.8, 15.2, 18.6, 16.9, 21.4, 23.1, 24.7];
+  const peerAvgPerformance = [1.8, 4.2, 2.1, 6.8, 9.5, 8.2, 11.4, 14.2, 13.5, 16.1, 17.5, 18.4];
+  const topQuartilePerf = [3.2, 7.5, 5.8, 12.4, 16.8, 15.2, 20.5, 24.8, 23.1, 27.6, 29.8, 28.5];
+
+  new Chart(perfTimeCtx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Your Portfolio',
+          data: yourPerformance,
+          borderColor: '#34d399',
+          backgroundColor: 'rgba(52, 211, 153, 0.1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Peer Average',
+          data: peerAvgPerformance,
+          borderColor: '#6366f1',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.4
+        },
+        {
+          label: 'Top Quartile',
+          data: topQuartilePerf,
+          borderColor: 'rgba(245, 158, 11, 0.6)',
+          borderWidth: 1,
+          borderDash: [2, 2],
+          fill: false,
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: { position: 'bottom' }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          title: { display: true, text: 'Cumulative Return (%)' },
+          ticks: {
+            callback: function(value) {
+              return value + '%';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Timeframe button handlers
+  document.querySelectorAll('.timeframe-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      // In a real app, this would reload chart data for the selected timeframe
+    });
+  });
+});
+
+// Helper functions
+function updatePeerGroup() {
+  const ageRange = document.getElementById('ageRange').value;
+  const portfolioSize = document.getElementById('portfolioSize').value;
+  const riskProfile = document.getElementById('riskProfile').value;
+  const investmentStyle = document.getElementById('investmentStyle').value;
+
+  // Show loading state
+  if (typeof showToast === 'function') {
+    showToast('Updating peer comparison...', 'info');
+  }
+
+  // In a real app, this would make an API call
+  setTimeout(() => {
+    if (typeof showToast === 'function') {
+      showToast('Peer group updated successfully', 'success');
+    }
+  }, 1000);
+}
+
+function learnFromTop() {
+  if (typeof showToast === 'function') {
+    showToast('Loading top performer strategies...', 'info');
+  }
+  // Would open a modal or navigate to learning content
+}
+
+function viewStrategy(username) {
+  if (typeof showToast === 'function') {
+    showToast(`Loading ${username}'s strategy breakdown...`, 'info');
+  }
+  // Would open a modal with strategy details
+}
+</script>
+
+<%- include('../partials/footer') %>

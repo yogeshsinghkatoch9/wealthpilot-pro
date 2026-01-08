@@ -8,9 +8,12 @@ const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const dividendAnalysis = require('../services/dividendAnalysis');
 const MarketDataService = require('../services/marketDataService');
+const DividendDataFetcher = require('../services/dividendDataFetcher');
+const PortfolioDataHelper = require('../services/portfolioDataHelper');
 const logger = require('../utils/logger');
 
 const marketData = new MarketDataService(process.env.ALPHA_VANTAGE_API_KEY);
+const dividendFetcher = new DividendDataFetcher();
 
 // All routes require authentication
 router.use(authenticate);
@@ -88,7 +91,7 @@ router.get('/:symbol/payout-ratio', async (req, res) => {
 
 /**
  * GET /api/dividend-analysis/:symbol/growth
- * Get dividend growth analysis
+ * Get dividend growth analysis using real dividend history from Alpha Vantage API
  */
 router.get('/:symbol/growth', async (req, res) => {
   try {
@@ -99,24 +102,27 @@ router.get('/:symbol/growth', async (req, res) => {
       return res.status(404).json({ error: 'Symbol not found' });
     }
 
-    // Generate simulated dividend history (in production, this would come from a financial data API)
-    const baseDiv = quote.price * (quote.dividendYield || 0.02) / 4; // Quarterly dividend
-    const dividendHistory = [];
-    const now = new Date();
+    // Fetch real dividend history from Alpha Vantage API
+    const dividendData = await dividendFetcher.fetchSymbolDividends(symbol.toUpperCase());
 
-    for (let i = 20; i >= 0; i--) {
-      const date = new Date(now);
-      date.setMonth(date.getMonth() - (i * 3));
-
-      // Add some growth pattern with variation
-      const growthFactor = Math.pow(1.05, (20 - i) / 4); // ~5% annual growth
-      const variation = 1 + (Math.random() - 0.5) * 0.1;
-
-      dividendHistory.push({
-        date: date.toISOString().slice(0, 10),
-        amount: Math.round(baseDiv * growthFactor * variation * 100) / 100
+    // Return empty state if no dividend data available
+    if (!dividendData || dividendData.length === 0) {
+      return res.json({
+        success: true,
+        symbol: symbol.toUpperCase(),
+        name: quote.name || symbol,
+        price: Math.round(quote.price * 100) / 100,
+        message: 'No dividend history available for this symbol',
+        dividendHistory: [],
+        growthAnalysis: null
       });
     }
+
+    // Transform API data to format expected by calculateDividendGrowth
+    const dividendHistory = dividendData.map(d => ({
+      date: d.ex_dividend_date,
+      amount: d.dividend_amount
+    }));
 
     const growthAnalysis = dividendAnalysis.calculateDividendGrowth(dividendHistory);
 
@@ -222,50 +228,67 @@ router.get('/drip/:symbol', async (req, res) => {
 
 /**
  * POST /api/dividend-analysis/income-projection
- * Project dividend income from holdings
+ * Project dividend income from user's holdings
  */
 router.post('/income-projection', async (req, res) => {
   try {
     const { holdings, years = 10, growthRate = 0.05 } = req.body;
 
-    if (!holdings || !Array.isArray(holdings) || holdings.length === 0) {
-      return res.status(400).json({ error: 'Holdings array required' });
-    }
+    // If holdings provided in request, use those
+    if (holdings && Array.isArray(holdings) && holdings.length > 0) {
+      // Enrich holdings with current dividend data
+      const enrichedHoldings = [];
 
-    // Enrich holdings with current dividend data
-    const enrichedHoldings = [];
+      for (const h of holdings) {
+        let dividend = h.dividend;
 
-    for (const h of holdings) {
-      let dividend = h.dividend;
-
-      if (!dividend && h.symbol) {
-        try {
-          const quote = await marketData.getQuote(h.symbol.toUpperCase());
-          if (quote) {
-            dividend = quote.price * (quote.dividendYield || 0.02);
+        if (!dividend && h.symbol) {
+          try {
+            const quote = await marketData.getQuote(h.symbol.toUpperCase());
+            if (quote) {
+              dividend = quote.price * (quote.dividendYield || 0);
+            }
+          } catch (err) {
+            dividend = 0; // No default - use real data only
           }
-        } catch (err) {
-          dividend = 2; // Default $2 annual dividend
         }
+
+        enrichedHoldings.push({
+          symbol: h.symbol || 'Unknown',
+          shares: h.shares || 0,
+          dividend: dividend || 0,
+          frequency: h.frequency || 'quarterly'
+        });
       }
 
-      enrichedHoldings.push({
-        symbol: h.symbol || 'Unknown',
-        shares: h.shares || 0,
-        dividend: dividend || 0,
-        frequency: h.frequency || 'quarterly'
+      const projection = dividendAnalysis.projectDividendIncome(
+        enrichedHoldings,
+        years,
+        growthRate
+      );
+
+      return res.json({
+        success: true,
+        ...projection
       });
     }
 
-    const projection = dividendAnalysis.projectDividendIncome(
-      enrichedHoldings,
-      years,
-      growthRate
-    );
-
-    res.json({
+    // No holdings provided - return empty state
+    return res.json({
       success: true,
-      ...projection
+      message: 'No holdings provided for income projection',
+      assumptions: {
+        growthRate: growthRate * 100,
+        years
+      },
+      summary: {
+        currentAnnualIncome: 0,
+        projectedFinalIncome: 0,
+        incomeGrowth: 0,
+        totalIncomeOverPeriod: 0
+      },
+      projections: [],
+      currentBreakdown: []
     });
   } catch (error) {
     logger.error('Income projection error:', error);
@@ -308,7 +331,18 @@ router.get('/yield-curve', async (req, res) => {
     }
 
     if (stocks.length === 0) {
-      return res.status(404).json({ error: 'No stock data available' });
+      return res.json({
+        success: true,
+        message: 'No stock data available',
+        summary: {
+          totalStocks: 0,
+          avgYield: 0,
+          medianYield: 0
+        },
+        distribution: {},
+        bySector: {},
+        rankedStocks: []
+      });
     }
 
     const yieldCurve = dividendAnalysis.calculateYieldCurve(stocks);
@@ -325,7 +359,7 @@ router.get('/yield-curve', async (req, res) => {
 
 /**
  * POST /api/dividend-analysis/screen
- * Screen dividend stocks by criteria
+ * Screen dividend stocks by criteria using real API data
  */
 router.post('/screen', async (req, res) => {
   try {
@@ -347,14 +381,34 @@ router.post('/screen', async (req, res) => {
         const quote = await marketData.getQuote(symbol.toUpperCase());
         if (quote) {
           const dividendYield = (quote.dividendYield || 0) * 100;
-          const peRatio = quote.peRatio || 20;
-          const eps = quote.price / peRatio;
+          const peRatio = quote.peRatio || 0;
+          const eps = peRatio > 0 ? quote.price / peRatio : 0;
           const dps = quote.price * (quote.dividendYield || 0);
           const payoutRatio = eps > 0 ? (dps / eps) * 100 : 0;
 
-          // Simulate growth rate and consecutive years (in production, from financial data API)
-          const dividendGrowth = 3 + Math.random() * 7; // 3-10% growth
-          const consecutiveYears = Math.floor(5 + Math.random() * 45); // 5-50 years
+          // Fetch real dividend history from API for growth rate calculation
+          let dividendGrowth = 0;
+          let consecutiveYears = 0;
+
+          try {
+            const dividendData = await dividendFetcher.fetchSymbolDividends(symbol.toUpperCase());
+            if (dividendData && dividendData.length >= 2) {
+              // Transform to expected format and calculate growth
+              const dividendHistory = dividendData.map(d => ({
+                date: d.ex_dividend_date,
+                amount: d.dividend_amount
+              }));
+
+              const growthAnalysis = dividendAnalysis.calculateDividendGrowth(dividendHistory);
+              if (growthAnalysis && !growthAnalysis.error) {
+                dividendGrowth = growthAnalysis.cagr || 0;
+                consecutiveYears = growthAnalysis.consecutiveGrowthPeriods || 0;
+              }
+            }
+          } catch (divErr) {
+            // If dividend fetch fails, use 0 for growth metrics
+            logger.debug(`Could not fetch dividend history for ${symbol}: ${divErr.message}`);
+          }
 
           stocks.push({
             symbol,
@@ -370,6 +424,18 @@ router.post('/screen', async (req, res) => {
       } catch (err) {
         logger.debug(`Could not fetch ${symbol}`);
       }
+    }
+
+    // Return empty state if no stocks fetched
+    if (stocks.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No stock data available for screening',
+        criteria,
+        totalScanned: 0,
+        matchingStocks: 0,
+        stocks: []
+      });
     }
 
     const screened = dividendAnalysis.screenDividendStocks(stocks, criteria);
@@ -389,7 +455,7 @@ router.post('/screen', async (req, res) => {
 
 /**
  * GET /api/dividend-analysis/:symbol/full
- * Get full dividend analysis for a symbol
+ * Get full dividend analysis for a symbol using real API data
  */
 router.get('/:symbol/full', async (req, res) => {
   try {
@@ -401,38 +467,40 @@ router.get('/:symbol/full', async (req, res) => {
     }
 
     const sharePrice = quote.price;
-    const dividendYield = quote.dividendYield || 0.02;
-    const peRatio = quote.peRatio || 20;
+    const dividendYield = quote.dividendYield || 0;
+    const peRatio = quote.peRatio || 0;
     const annualDividend = sharePrice * dividendYield;
-    const eps = sharePrice / peRatio;
+    const eps = peRatio > 0 ? sharePrice / peRatio : 0;
 
-    // Calculate all metrics
+    // Calculate yield and payout metrics
     const yieldAnalysis = dividendAnalysis.calculateDividendYield(annualDividend, sharePrice);
     const payoutAnalysis = dividendAnalysis.calculatePayoutRatio(annualDividend, eps);
 
-    // Generate dividend history for growth analysis
-    const baseDiv = annualDividend / 4;
-    const dividendHistory = [];
-    const now = new Date();
+    // Fetch real dividend history from Alpha Vantage API
+    let growthAnalysis = null;
+    let dividendHistory = [];
 
-    for (let i = 20; i >= 0; i--) {
-      const date = new Date(now);
-      date.setMonth(date.getMonth() - (i * 3));
-      const growthFactor = Math.pow(1.05, (20 - i) / 4);
-      const variation = 1 + (Math.random() - 0.5) * 0.1;
-
-      dividendHistory.push({
-        date: date.toISOString().slice(0, 10),
-        amount: Math.round(baseDiv * growthFactor * variation * 100) / 100
-      });
+    try {
+      const dividendData = await dividendFetcher.fetchSymbolDividends(symbol.toUpperCase());
+      if (dividendData && dividendData.length >= 2) {
+        // Transform API data to format expected by calculateDividendGrowth
+        dividendHistory = dividendData.map(d => ({
+          date: d.ex_dividend_date,
+          amount: d.dividend_amount
+        }));
+        growthAnalysis = dividendAnalysis.calculateDividendGrowth(dividendHistory);
+      }
+    } catch (divErr) {
+      logger.debug(`Could not fetch dividend history for ${symbol}: ${divErr.message}`);
     }
 
-    const growthAnalysis = dividendAnalysis.calculateDividendGrowth(dividendHistory);
+    // 10-year DRIP projection (uses real current data, projects forward)
+    const dripProjection = annualDividend > 0
+      ? dividendAnalysis.calculateDRIPProjection(100, sharePrice, annualDividend, 0.05, 0.07, 10)
+      : null;
 
-    // 10-year DRIP projection
-    const dripProjection = dividendAnalysis.calculateDRIPProjection(
-      100, sharePrice, annualDividend, 0.05, 0.07, 10
-    );
+    // Determine dividend status based on real data
+    const consecutiveGrowthPeriods = growthAnalysis?.consecutiveGrowthPeriods || 0;
 
     res.json({
       success: true,
@@ -443,14 +511,18 @@ router.get('/:symbol/full', async (req, res) => {
       sector: quote.sector || 'Unknown',
       yield: yieldAnalysis,
       payout: payoutAnalysis,
-      growth: growthAnalysis,
-      dripProjection: {
+      growth: growthAnalysis || {
+        message: 'Insufficient dividend history for growth analysis',
+        dividendHistory: []
+      },
+      dripProjection: dripProjection ? {
         summary: dripProjection.summary,
         assumptions: dripProjection.assumptions
-      },
+      } : null,
       status: {
-        isDividendAristocrat: growthAnalysis.consecutiveGrowthPeriods >= 25,
-        isDividendKing: growthAnalysis.consecutiveGrowthPeriods >= 50,
+        isDividendPayer: annualDividend > 0,
+        isDividendAristocrat: consecutiveGrowthPeriods >= 25,
+        isDividendKing: consecutiveGrowthPeriods >= 50,
         sustainability: payoutAnalysis.sustainability,
         yieldRating: yieldAnalysis.rating
       }
@@ -458,6 +530,110 @@ router.get('/:symbol/full', async (req, res) => {
   } catch (error) {
     logger.error('Full dividend analysis error:', error);
     res.status(500).json({ error: 'Failed to calculate dividend analysis' });
+  }
+});
+
+/**
+ * GET /api/dividend-analysis/portfolio/:portfolioId
+ * Get dividend analysis for user's portfolio holdings
+ */
+router.get('/portfolio/:portfolioId', async (req, res) => {
+  try {
+    const { portfolioId } = req.params;
+    const userId = req.user.id;
+
+    // Get user's portfolio holdings
+    const portfolios = PortfolioDataHelper.getPortfolios(userId, portfolioId);
+
+    if (!portfolios || portfolios.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No portfolio found',
+        holdings: [],
+        summary: {
+          totalAnnualDividends: 0,
+          portfolioYield: 0,
+          dividendPayingHoldings: 0,
+          totalHoldings: 0
+        }
+      });
+    }
+
+    const portfolio = portfolios[0];
+    const holdings = portfolio.holdings || [];
+
+    if (holdings.length === 0) {
+      return res.json({
+        success: true,
+        portfolioId,
+        portfolioName: portfolio.name,
+        message: 'No holdings in portfolio',
+        holdings: [],
+        summary: {
+          totalAnnualDividends: 0,
+          portfolioYield: 0,
+          dividendPayingHoldings: 0,
+          totalHoldings: 0
+        }
+      });
+    }
+
+    // Analyze dividends for each holding
+    const holdingAnalysis = [];
+    let totalAnnualDividends = 0;
+    let totalMarketValue = 0;
+
+    for (const holding of holdings) {
+      try {
+        const quote = await marketData.getQuote(holding.symbol);
+        if (quote) {
+          const dividendYield = quote.dividendYield || 0;
+          const annualDividendPerShare = quote.price * dividendYield;
+          const annualDividendIncome = annualDividendPerShare * holding.shares;
+          const marketValue = quote.price * holding.shares;
+
+          totalAnnualDividends += annualDividendIncome;
+          totalMarketValue += marketValue;
+
+          holdingAnalysis.push({
+            symbol: holding.symbol,
+            shares: holding.shares,
+            currentPrice: quote.price,
+            marketValue,
+            dividendYield: Math.round(dividendYield * 10000) / 100,
+            annualDividendPerShare: Math.round(annualDividendPerShare * 100) / 100,
+            annualDividendIncome: Math.round(annualDividendIncome * 100) / 100,
+            quarterlyIncome: Math.round((annualDividendIncome / 4) * 100) / 100,
+            monthlyIncome: Math.round((annualDividendIncome / 12) * 100) / 100
+          });
+        }
+      } catch (err) {
+        logger.debug(`Could not analyze ${holding.symbol}: ${err.message}`);
+      }
+    }
+
+    const portfolioYield = totalMarketValue > 0
+      ? (totalAnnualDividends / totalMarketValue) * 100
+      : 0;
+
+    res.json({
+      success: true,
+      portfolioId,
+      portfolioName: portfolio.name,
+      holdings: holdingAnalysis.sort((a, b) => b.annualDividendIncome - a.annualDividendIncome),
+      summary: {
+        totalAnnualDividends: Math.round(totalAnnualDividends * 100) / 100,
+        monthlyDividendIncome: Math.round((totalAnnualDividends / 12) * 100) / 100,
+        quarterlyDividendIncome: Math.round((totalAnnualDividends / 4) * 100) / 100,
+        portfolioYield: Math.round(portfolioYield * 100) / 100,
+        dividendPayingHoldings: holdingAnalysis.filter(h => h.annualDividendIncome > 0).length,
+        totalHoldings: holdingAnalysis.length,
+        totalMarketValue: Math.round(totalMarketValue * 100) / 100
+      }
+    });
+  } catch (error) {
+    logger.error('Portfolio dividend analysis error:', error);
+    res.status(500).json({ error: 'Failed to analyze portfolio dividends' });
   }
 });
 

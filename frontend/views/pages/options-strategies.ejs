@@ -1,0 +1,299 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+
+// Helper functions
+function formatPrice(v) { return '$' + (v || 0).toFixed(2); }
+function formatPct(v) { return (v || 0).toFixed(1) + '%'; }
+function formatPctSigned(v) { return (v >= 0 ? '+' : '') + (v || 0).toFixed(1) + '%'; }
+%>
+<%- include('../partials/header', { pageTitle: 'Options Strategy Recommender' }) %>
+
+<main class="p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="page-header mb-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 class="page-title">Options Strategy Recommender</h1>
+          <p class="page-subtitle">Find optimal options strategies based on market outlook and risk tolerance</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="live-indicator">Live Data</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategy Configuration Panel -->
+    <div class="premium-card mb-6">
+      <div class="premium-card-header">
+        <h3 class="premium-card-title">Strategy Configuration</h3>
+        <span class="premium-badge premium-badge-info">Configure Your Setup</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Symbol Input -->
+        <div>
+          <label class="block text-sm font-medium text-secondary mb-2">Symbol</label>
+          <div class="flex gap-2">
+            <input type="text" id="symbolInput" class="premium-input uppercase" placeholder="AAPL" value="AAPL">
+            <button id="fetchQuoteBtn" class="premium-btn premium-btn-primary">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Current Price Display -->
+        <div>
+          <label class="block text-sm font-medium text-secondary mb-2">Current Price</label>
+          <div class="premium-input bg-elevated flex items-center justify-between">
+            <span id="currentSymbol" class="font-bold text-primary">AAPL</span>
+            <span id="currentPrice" class="font-mono text-lg value-positive">$185.50</span>
+          </div>
+        </div>
+
+        <!-- Market Outlook -->
+        <div>
+          <label class="block text-sm font-medium text-secondary mb-2">Market Outlook</label>
+          <div class="premium-tabs" id="outlookTabs">
+            <button class="premium-tab active" data-outlook="bullish">Bullish</button>
+            <button class="premium-tab" data-outlook="bearish">Bearish</button>
+            <button class="premium-tab" data-outlook="neutral">Neutral</button>
+            <button class="premium-tab" data-outlook="highvol">High Vol</button>
+          </div>
+        </div>
+
+        <!-- Risk Tolerance -->
+        <div>
+          <label class="block text-sm font-medium text-secondary mb-2">Risk Tolerance</label>
+          <div class="premium-tabs" id="riskTabs">
+            <button class="premium-tab" data-risk="conservative">Conservative</button>
+            <button class="premium-tab active" data-risk="moderate">Moderate</button>
+            <button class="premium-tab" data-risk="aggressive">Aggressive</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Parameters -->
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6 pt-6 border-t border-subtle">
+        <div>
+          <label class="block text-xs font-medium text-tertiary mb-1">Days to Expiry</label>
+          <input type="number" id="dteInput" class="premium-input text-sm" value="30" min="1" max="365">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-tertiary mb-1">Implied Vol (%)</label>
+          <input type="number" id="ivInput" class="premium-input text-sm" value="25" min="1" max="200" step="0.5">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-tertiary mb-1">Interest Rate (%)</label>
+          <input type="number" id="rateInput" class="premium-input text-sm" value="5.25" min="0" max="20" step="0.25">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-tertiary mb-1">Position Size ($)</label>
+          <input type="number" id="positionSize" class="premium-input text-sm" value="10000" min="100" step="100">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-tertiary mb-1">Contracts</label>
+          <input type="number" id="contractsInput" class="premium-input text-sm" value="1" min="1" max="100">
+        </div>
+        <div class="flex items-end">
+          <button id="analyzeBtn" class="premium-btn premium-btn-forest w-full">
+            Analyze Strategies
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommended Strategies -->
+    <div class="premium-card mb-6">
+      <div class="premium-card-header">
+        <h3 class="premium-card-title">Recommended Strategies</h3>
+        <span id="strategyOutlookBadge" class="premium-badge premium-badge-success">Bullish</span>
+      </div>
+
+      <div id="strategiesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Strategy cards will be populated by JavaScript -->
+      </div>
+    </div>
+
+    <!-- Selected Strategy Analysis -->
+    <div id="strategyAnalysis" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Payoff Diagram -->
+      <div class="lg:col-span-2 premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h3 class="premium-card-title" id="selectedStrategyName">Call Spread (Bull Call)</h3>
+            <p class="premium-card-subtitle">Payoff at Expiration</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="timeframe-btn active" data-view="payoff">Payoff</button>
+            <button class="timeframe-btn" data-view="pnl">P&L</button>
+            <button class="timeframe-btn" data-view="probability">Probability</button>
+          </div>
+        </div>
+        <div class="chart-wrapper" style="height: 350px;">
+          <canvas id="payoffChart"></canvas>
+        </div>
+        <div class="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-subtle">
+          <div class="text-center">
+            <p class="text-xs text-tertiary uppercase tracking-wide">Max Profit</p>
+            <p id="maxProfit" class="text-lg font-bold value-positive">$450</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-tertiary uppercase tracking-wide">Max Loss</p>
+            <p id="maxLoss" class="text-lg font-bold value-negative">-$150</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-tertiary uppercase tracking-wide">Breakeven</p>
+            <p id="breakeven" class="text-lg font-bold text-primary font-mono">$188.50</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-tertiary uppercase tracking-wide">Risk/Reward</p>
+            <p id="riskReward" class="text-lg font-bold text-primary">1:3.0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy Details -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Strategy Details</h3>
+        </div>
+
+        <!-- Probability of Profit -->
+        <div class="stat-card-forest mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-tertiary">Probability of Profit</span>
+            <span class="premium-badge premium-badge-forest">PoP</span>
+          </div>
+          <p id="popValue" class="text-3xl font-bold value-gain font-mono">62.5%</p>
+          <div class="progress-bar mt-2">
+            <div id="popBar" class="progress-bar-fill progress-bar-forest" style="width: 62.5%"></div>
+          </div>
+        </div>
+
+        <!-- Greeks Summary -->
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-primary mb-3">Greeks Summary</h4>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-elevated rounded-lg">
+              <span class="text-sm text-secondary">Delta</span>
+              <span id="greekDelta" class="font-mono font-semibold text-primary">+0.42</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-elevated rounded-lg">
+              <span class="text-sm text-secondary">Gamma</span>
+              <span id="greekGamma" class="font-mono font-semibold text-primary">0.025</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-elevated rounded-lg">
+              <span class="text-sm text-secondary">Theta</span>
+              <span id="greekTheta" class="font-mono font-semibold value-negative">-$12.50</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-elevated rounded-lg">
+              <span class="text-sm text-secondary">Vega</span>
+              <span id="greekVega" class="font-mono font-semibold text-primary">$8.75</span>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-elevated rounded-lg">
+              <span class="text-sm text-secondary">Rho</span>
+              <span id="greekRho" class="font-mono font-semibold text-primary">$3.20</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Position Details -->
+        <div>
+          <h4 class="text-sm font-semibold text-primary mb-3">Position Legs</h4>
+          <div id="positionLegs" class="space-y-2">
+            <!-- Populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strategy Comparison Table -->
+    <div class="premium-card">
+      <div class="premium-card-header">
+        <h3 class="premium-card-title">Strategy Comparison</h3>
+        <button id="exportBtn" class="premium-btn premium-btn-secondary premium-btn-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          Export
+        </button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="premium-table">
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th class="text-right">Max Profit</th>
+              <th class="text-right">Max Loss</th>
+              <th class="text-right">Breakeven(s)</th>
+              <th class="text-right">PoP</th>
+              <th class="text-right">Risk/Reward</th>
+              <th class="text-center">Complexity</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="comparisonTableBody">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Educational Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+      <div class="premium-card premium-card-sm">
+        <div class="flex items-start gap-3">
+          <div class="stat-icon stat-icon-forest">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-semibold text-primary mb-1">Bullish Strategies</h4>
+            <p class="text-sm text-tertiary">Profit when the underlying stock price rises. Includes call spreads, covered calls, and synthetic longs.</p>
+          </div>
+        </div>
+      </div>
+      <div class="premium-card premium-card-sm">
+        <div class="flex items-start gap-3">
+          <div class="stat-icon stat-icon-red">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-semibold text-primary mb-1">Bearish Strategies</h4>
+            <p class="text-sm text-tertiary">Profit when the underlying stock price falls. Includes put spreads, protective puts, and bear call spreads.</p>
+          </div>
+        </div>
+      </div>
+      <div class="premium-card premium-card-sm">
+        <div class="flex items-start gap-3">
+          <div class="stat-icon stat-icon-amber">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+            </svg>
+          </div>
+          <div>
+            <h4 class="font-semibold text-primary mb-1">Neutral Strategies</h4>
+            <p class="text-sm text-tertiary">Profit when the stock stays within a range. Includes iron condors, butterflies, and calendar spreads.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/options-strategies.js"></script>
+<script>
+  // Initialize the Options Strategy Engine
+  document.addEventListener('DOMContentLoaded', () => {
+    window.optionsEngine = new OptionsStrategyEngine();
+  });
+</script>
+
+<%- include('../partials/footer') %>

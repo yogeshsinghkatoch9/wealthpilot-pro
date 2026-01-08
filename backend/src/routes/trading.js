@@ -651,11 +651,778 @@ async function fetchHistoricalData(symbol, period = '1y', startDate, endDate) {
 
 // ==================== PAPER TRADING ====================
 
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const UnifiedMarketDataService = require('../services/unifiedMarketData');
+const unifiedMarketData = new UnifiedMarketDataService();
+
+// Legacy service for backward compatibility
 const paperTradingService = require('../services/trading/paperTradingService');
 
 /**
+ * Helper: Get real-time market price for a symbol
+ */
+async function getRealMarketPrice(symbol) {
+  try {
+    // Try UnifiedMarketDataService first (most reliable)
+    const quote = await unifiedMarketData.fetchQuote(symbol);
+    if (quote && quote.price) {
+      return {
+        price: quote.price,
+        previousClose: quote.previousClose,
+        change: quote.change,
+        changePercent: quote.changePercent,
+        provider: quote.provider,
+        timestamp: quote.timestamp
+      };
+    }
+
+    // Fallback to MarketDataService
+    const fallbackQuote = await marketData.fetchQuote(symbol);
+    if (fallbackQuote && fallbackQuote.price) {
+      return {
+        price: fallbackQuote.price,
+        previousClose: fallbackQuote.previousClose,
+        change: fallbackQuote.change,
+        changePercent: fallbackQuote.changePercent,
+        provider: 'MarketDataService',
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    return null;
+  } catch (error) {
+    logger.error(`Failed to fetch market price for ${symbol}:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Helper: Calculate real P&L for positions using live market prices
+ */
+async function calculateRealPnL(positions) {
+  const enrichedPositions = await Promise.all(positions.map(async (position) => {
+    const marketQuote = await getRealMarketPrice(position.symbol);
+    const currentPrice = marketQuote?.price || position.avg_cost;
+    const marketValue = currentPrice * position.quantity;
+    const costBasis = position.avg_cost * position.quantity;
+    const unrealizedPnl = marketValue - costBasis;
+    const unrealizedPnlPercent = position.avg_cost > 0
+      ? ((currentPrice - position.avg_cost) / position.avg_cost) * 100
+      : 0;
+
+    return {
+      id: position.id,
+      accountId: position.account_id,
+      symbol: position.symbol,
+      quantity: position.quantity,
+      avgCost: position.avg_cost,
+      currentPrice,
+      marketValue,
+      costBasis,
+      unrealizedPnl,
+      unrealizedPnlPercent,
+      dayChange: marketQuote?.change || 0,
+      dayChangePercent: marketQuote?.changePercent || 0,
+      provider: marketQuote?.provider || 'cached',
+      priceTimestamp: marketQuote?.timestamp || new Date().toISOString(),
+      createdAt: position.created_at,
+      updatedAt: position.updated_at
+    };
+  }));
+
+  return enrichedPositions;
+}
+
+/**
+ * Helper: Generate unique ID for database records
+ */
+function generateId() {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// ==================== ACCOUNTS ENDPOINTS ====================
+
+/**
+ * GET /api/trading/accounts
+ * List all paper trading accounts for the authenticated user (from database)
+ */
+router.get('/accounts', authenticate, async (req, res) => {
+  try {
+    // Query real database for user's paper trading accounts
+    const accounts = await prisma.paper_trading_accounts.findMany({
+      where: { user_id: req.user.id },
+      include: {
+        paper_positions: true,
+        paper_orders: {
+          where: { status: { in: ['pending', 'partial'] } },
+          orderBy: { created_at: 'desc' },
+          take: 10
+        }
+      }
+    });
+
+    // If no accounts exist, return empty array with suggestion to create one
+    if (accounts.length === 0) {
+      return res.json({
+        success: true,
+        accounts: [],
+        message: 'No paper trading accounts found. Create one with POST /api/trading/accounts'
+      });
+    }
+
+    // Enrich each account with real market data P&L
+    const enrichedAccounts = await Promise.all(accounts.map(async (account) => {
+      const positionsWithPnL = await calculateRealPnL(account.paper_positions);
+      const totalPositionValue = positionsWithPnL.reduce((sum, p) => sum + p.marketValue, 0);
+      const totalUnrealizedPnl = positionsWithPnL.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+      const equity = account.cash_balance + totalPositionValue;
+      const totalReturn = account.initial_balance > 0
+        ? ((equity - account.initial_balance) / account.initial_balance) * 100
+        : 0;
+
+      return {
+        id: account.id,
+        userId: account.user_id,
+        cashBalance: account.cash_balance,
+        initialBalance: account.initial_balance,
+        equity,
+        totalPositionValue,
+        totalUnrealizedPnl,
+        totalRealizedPnl: account.total_pnl,
+        totalReturn,
+        totalTrades: account.total_trades,
+        winningTrades: account.winning_trades,
+        losingTrades: account.losing_trades,
+        winRate: account.total_trades > 0
+          ? (account.winning_trades / account.total_trades) * 100
+          : 0,
+        positionCount: account.paper_positions.length,
+        pendingOrderCount: account.paper_orders.length,
+        createdAt: account.created_at,
+        updatedAt: account.updated_at
+      };
+    }));
+
+    res.json({ success: true, accounts: enrichedAccounts });
+  } catch (error) {
+    logger.error('Error fetching paper trading accounts:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/trading/accounts
+ * Create a new paper trading account (save to database)
+ */
+router.post('/accounts', authenticate, async (req, res) => {
+  try {
+    const { initialBalance = 100000 } = req.body;
+
+    // Check if user already has an account (schema has unique constraint on user_id)
+    const existingAccount = await prisma.paper_trading_accounts.findUnique({
+      where: { user_id: req.user.id }
+    });
+
+    if (existingAccount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Paper trading account already exists. Use POST /api/trading/accounts/reset to reset it.',
+        existingAccountId: existingAccount.id
+      });
+    }
+
+    // Create new account in database
+    const account = await prisma.paper_trading_accounts.create({
+      data: {
+        id: generateId(),
+        user_id: req.user.id,
+        cash_balance: parseFloat(initialBalance),
+        initial_balance: parseFloat(initialBalance),
+        total_trades: 0,
+        winning_trades: 0,
+        losing_trades: 0,
+        total_pnl: 0
+      }
+    });
+
+    logger.info(`Created paper trading account ${account.id} for user ${req.user.id} with balance $${initialBalance}`);
+
+    res.json({
+      success: true,
+      account: {
+        id: account.id,
+        userId: account.user_id,
+        cashBalance: account.cash_balance,
+        initialBalance: account.initial_balance,
+        equity: account.cash_balance,
+        totalPositionValue: 0,
+        totalUnrealizedPnl: 0,
+        totalRealizedPnl: 0,
+        totalReturn: 0,
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        winRate: 0,
+        positionCount: 0,
+        pendingOrderCount: 0,
+        createdAt: account.created_at,
+        updatedAt: account.updated_at
+      },
+      message: 'Paper trading account created successfully'
+    });
+  } catch (error) {
+    logger.error('Error creating paper trading account:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/trading/accounts/:id
+ * Get account details with positions (from database with real P&L)
+ */
+router.get('/accounts/:id', authenticate, async (req, res) => {
+  try {
+    const account = await prisma.paper_trading_accounts.findUnique({
+      where: { id: req.params.id },
+      include: {
+        paper_positions: true,
+        paper_orders: {
+          orderBy: { created_at: 'desc' },
+          take: 50
+        }
+      }
+    });
+
+    if (!account) {
+      return res.status(404).json({ success: false, error: 'Account not found' });
+    }
+
+    // Verify ownership
+    if (account.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    // Calculate real P&L for all positions using live market prices
+    const positionsWithPnL = await calculateRealPnL(account.paper_positions);
+    const totalPositionValue = positionsWithPnL.reduce((sum, p) => sum + p.marketValue, 0);
+    const totalUnrealizedPnl = positionsWithPnL.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+    const equity = account.cash_balance + totalPositionValue;
+    const totalReturn = account.initial_balance > 0
+      ? ((equity - account.initial_balance) / account.initial_balance) * 100
+      : 0;
+
+    res.json({
+      success: true,
+      account: {
+        id: account.id,
+        userId: account.user_id,
+        cashBalance: account.cash_balance,
+        initialBalance: account.initial_balance,
+        equity,
+        totalPositionValue,
+        totalUnrealizedPnl,
+        totalRealizedPnl: account.total_pnl,
+        totalReturn,
+        totalTrades: account.total_trades,
+        winningTrades: account.winning_trades,
+        losingTrades: account.losing_trades,
+        winRate: account.total_trades > 0
+          ? (account.winning_trades / account.total_trades) * 100
+          : 0,
+        createdAt: account.created_at,
+        updatedAt: account.updated_at
+      },
+      positions: positionsWithPnL,
+      recentOrders: account.paper_orders.map(order => ({
+        id: order.id,
+        symbol: order.symbol,
+        side: order.side,
+        quantity: order.quantity,
+        orderType: order.order_type,
+        limitPrice: order.limit_price,
+        stopPrice: order.stop_price,
+        status: order.status,
+        submittedPrice: order.submitted_price,
+        filledPrice: order.filled_price,
+        filledQuantity: order.filled_quantity,
+        filledAt: order.filled_at,
+        commission: order.commission,
+        createdAt: order.created_at
+      }))
+    });
+  } catch (error) {
+    logger.error('Error fetching paper trading account:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== ORDERS ENDPOINTS ====================
+
+/**
+ * POST /api/trading/orders
+ * Place a paper trade order using real market prices
+ */
+router.post('/orders', authenticate, async (req, res) => {
+  try {
+    const { symbol, side, quantity, orderType = 'market', limitPrice, stopPrice, timeInForce = 'day' } = req.body;
+
+    // Validate required fields
+    if (!symbol || !side || !quantity) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: symbol, side, quantity'
+      });
+    }
+
+    if (!['buy', 'sell'].includes(side.toLowerCase())) {
+      return res.status(400).json({ success: false, error: 'Side must be "buy" or "sell"' });
+    }
+
+    const validOrderTypes = ['market', 'limit', 'stop', 'stop_limit'];
+    if (!validOrderTypes.includes(orderType.toLowerCase())) {
+      return res.status(400).json({ success: false, error: `Invalid order type. Must be one of: ${validOrderTypes.join(', ')}` });
+    }
+
+    // Get or create account
+    let account = await prisma.paper_trading_accounts.findUnique({
+      where: { user_id: req.user.id },
+      include: { paper_positions: true }
+    });
+
+    if (!account) {
+      // Auto-create account with default balance
+      account = await prisma.paper_trading_accounts.create({
+        data: {
+          id: generateId(),
+          user_id: req.user.id,
+          cash_balance: 100000,
+          initial_balance: 100000,
+          total_trades: 0,
+          winning_trades: 0,
+          losing_trades: 0,
+          total_pnl: 0
+        },
+        include: { paper_positions: true }
+      });
+    }
+
+    // Fetch REAL current market price
+    const marketQuote = await getRealMarketPrice(symbol.toUpperCase());
+    if (!marketQuote) {
+      return res.status(400).json({
+        success: false,
+        error: `Unable to fetch real-time market price for ${symbol}. Please try again.`
+      });
+    }
+
+    const currentPrice = marketQuote.price;
+    const orderQty = parseFloat(quantity);
+    const orderValue = currentPrice * orderQty;
+
+    // Validate buying power for buy orders
+    if (side.toLowerCase() === 'buy' && orderValue > account.cash_balance) {
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient buying power. Required: $${orderValue.toFixed(2)}, Available: $${account.cash_balance.toFixed(2)}`
+      });
+    }
+
+    // Validate position for sell orders
+    if (side.toLowerCase() === 'sell') {
+      const position = account.paper_positions.find(p => p.symbol === symbol.toUpperCase());
+      if (!position || position.quantity < orderQty) {
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient shares. You have ${position?.quantity || 0} shares of ${symbol}`
+        });
+      }
+    }
+
+    // Create order in database
+    const orderId = generateId();
+    const order = await prisma.paper_orders.create({
+      data: {
+        id: orderId,
+        account_id: account.id,
+        symbol: symbol.toUpperCase(),
+        side: side.toLowerCase(),
+        quantity: orderQty,
+        order_type: orderType.toLowerCase(),
+        limit_price: limitPrice ? parseFloat(limitPrice) : null,
+        stop_price: stopPrice ? parseFloat(stopPrice) : null,
+        time_in_force: timeInForce,
+        status: 'pending',
+        submitted_price: currentPrice
+      }
+    });
+
+    logger.info(`Created paper order ${orderId}: ${side} ${orderQty} ${symbol} @ $${currentPrice} (${marketQuote.provider})`);
+
+    // For market orders, execute immediately at real price
+    if (orderType.toLowerCase() === 'market') {
+      const executedOrder = await executeOrderAtRealPrice(order.id, currentPrice, account, side.toLowerCase(), orderQty, symbol.toUpperCase());
+      return res.json({
+        success: true,
+        order: executedOrder,
+        execution: {
+          price: currentPrice,
+          provider: marketQuote.provider,
+          timestamp: marketQuote.timestamp
+        }
+      });
+    }
+
+    // For limit/stop orders, return pending order
+    res.json({
+      success: true,
+      order: {
+        id: order.id,
+        symbol: order.symbol,
+        side: order.side,
+        quantity: order.quantity,
+        orderType: order.order_type,
+        limitPrice: order.limit_price,
+        stopPrice: order.stop_price,
+        status: order.status,
+        submittedPrice: order.submitted_price,
+        marketPrice: currentPrice,
+        provider: marketQuote.provider,
+        createdAt: order.created_at
+      },
+      message: `${orderType} order placed. Will execute when price conditions are met.`
+    });
+  } catch (error) {
+    logger.error('Error placing paper order:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Helper: Execute order at real market price
+ */
+async function executeOrderAtRealPrice(orderId, executionPrice, account, side, quantity, symbol) {
+  const totalValue = executionPrice * quantity;
+
+  // Update order to filled
+  await prisma.paper_orders.update({
+    where: { id: orderId },
+    data: {
+      status: 'filled',
+      filled_price: executionPrice,
+      filled_quantity: quantity,
+      filled_at: new Date(),
+      commission: 0
+    }
+  });
+
+  if (side === 'buy') {
+    // Check if position exists
+    const existingPosition = await prisma.paper_positions.findFirst({
+      where: { account_id: account.id, symbol }
+    });
+
+    if (existingPosition) {
+      // Average up/down the position
+      const totalShares = existingPosition.quantity + quantity;
+      const totalCost = (existingPosition.avg_cost * existingPosition.quantity) + (executionPrice * quantity);
+      const newAvgCost = totalCost / totalShares;
+
+      await prisma.paper_positions.update({
+        where: { id: existingPosition.id },
+        data: {
+          quantity: totalShares,
+          avg_cost: newAvgCost
+        }
+      });
+    } else {
+      // Create new position
+      await prisma.paper_positions.create({
+        data: {
+          id: generateId(),
+          account_id: account.id,
+          symbol,
+          quantity,
+          avg_cost: executionPrice
+        }
+      });
+    }
+
+    // Deduct cash
+    await prisma.paper_trading_accounts.update({
+      where: { id: account.id },
+      data: { cash_balance: { decrement: totalValue } }
+    });
+
+    logger.info(`Executed BUY: ${quantity} ${symbol} @ $${executionPrice} = $${totalValue}`);
+  } else {
+    // SELL - reduce position and calculate P&L
+    const position = await prisma.paper_positions.findFirst({
+      where: { account_id: account.id, symbol }
+    });
+
+    if (!position) {
+      throw new Error('Position not found');
+    }
+
+    const realizedPnl = (executionPrice - position.avg_cost) * quantity;
+    const isWin = realizedPnl > 0;
+
+    if (position.quantity === quantity) {
+      // Close entire position
+      await prisma.paper_positions.delete({ where: { id: position.id } });
+    } else {
+      // Partial close
+      await prisma.paper_positions.update({
+        where: { id: position.id },
+        data: { quantity: { decrement: quantity } }
+      });
+    }
+
+    // Add cash and update P&L stats
+    await prisma.paper_trading_accounts.update({
+      where: { id: account.id },
+      data: {
+        cash_balance: { increment: totalValue },
+        total_trades: { increment: 1 },
+        winning_trades: isWin ? { increment: 1 } : undefined,
+        losing_trades: !isWin ? { increment: 1 } : undefined,
+        total_pnl: { increment: realizedPnl }
+      }
+    });
+
+    logger.info(`Executed SELL: ${quantity} ${symbol} @ $${executionPrice} = $${totalValue} (P&L: $${realizedPnl.toFixed(2)})`);
+  }
+
+  // Return updated order
+  const updatedOrder = await prisma.paper_orders.findUnique({
+    where: { id: orderId }
+  });
+
+  return {
+    id: updatedOrder.id,
+    symbol: updatedOrder.symbol,
+    side: updatedOrder.side,
+    quantity: updatedOrder.quantity,
+    orderType: updatedOrder.order_type,
+    status: updatedOrder.status,
+    submittedPrice: updatedOrder.submitted_price,
+    filledPrice: updatedOrder.filled_price,
+    filledQuantity: updatedOrder.filled_quantity,
+    filledAt: updatedOrder.filled_at,
+    commission: updatedOrder.commission,
+    createdAt: updatedOrder.created_at
+  };
+}
+
+/**
+ * GET /api/trading/orders
+ * Get order history from database
+ */
+router.get('/orders', authenticate, async (req, res) => {
+  try {
+    const { status, symbol, limit = 50, offset = 0 } = req.query;
+
+    const account = await prisma.paper_trading_accounts.findUnique({
+      where: { user_id: req.user.id }
+    });
+
+    if (!account) {
+      return res.json({ success: true, orders: [], total: 0 });
+    }
+
+    // Build where clause
+    const where = { account_id: account.id };
+    if (status) where.status = status;
+    if (symbol) where.symbol = symbol.toUpperCase();
+
+    // Get orders with count
+    const [orders, total] = await Promise.all([
+      prisma.paper_orders.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      }),
+      prisma.paper_orders.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      orders: orders.map(order => ({
+        id: order.id,
+        symbol: order.symbol,
+        side: order.side,
+        quantity: order.quantity,
+        orderType: order.order_type,
+        limitPrice: order.limit_price,
+        stopPrice: order.stop_price,
+        timeInForce: order.time_in_force,
+        status: order.status,
+        submittedPrice: order.submitted_price,
+        filledPrice: order.filled_price,
+        filledQuantity: order.filled_quantity,
+        filledAt: order.filled_at,
+        commission: order.commission,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at
+      })),
+      total,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (error) {
+    logger.error('Error fetching paper orders:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== POSITIONS ENDPOINTS ====================
+
+/**
+ * GET /api/trading/positions
+ * Get current positions with real P&L using live market prices
+ */
+router.get('/positions', authenticate, async (req, res) => {
+  try {
+    const account = await prisma.paper_trading_accounts.findUnique({
+      where: { user_id: req.user.id },
+      include: { paper_positions: true }
+    });
+
+    if (!account) {
+      return res.json({ success: true, positions: [], summary: null });
+    }
+
+    // Calculate real P&L for all positions using live market prices
+    const positionsWithPnL = await calculateRealPnL(account.paper_positions);
+
+    // Calculate summary
+    const totalMarketValue = positionsWithPnL.reduce((sum, p) => sum + p.marketValue, 0);
+    const totalCostBasis = positionsWithPnL.reduce((sum, p) => sum + p.costBasis, 0);
+    const totalUnrealizedPnl = positionsWithPnL.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+    const totalDayChange = positionsWithPnL.reduce((sum, p) => sum + (p.dayChange * p.quantity), 0);
+
+    res.json({
+      success: true,
+      positions: positionsWithPnL,
+      summary: {
+        positionCount: positionsWithPnL.length,
+        totalMarketValue,
+        totalCostBasis,
+        totalUnrealizedPnl,
+        totalUnrealizedPnlPercent: totalCostBasis > 0
+          ? (totalUnrealizedPnl / totalCostBasis) * 100
+          : 0,
+        totalDayChange,
+        cashBalance: account.cash_balance,
+        equity: account.cash_balance + totalMarketValue
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching paper positions:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/trading/positions/:id
+ * Close position at real market price
+ */
+router.delete('/positions/:id', authenticate, async (req, res) => {
+  try {
+    const position = await prisma.paper_positions.findUnique({
+      where: { id: req.params.id },
+      include: { paper_trading_accounts: true }
+    });
+
+    if (!position) {
+      return res.status(404).json({ success: false, error: 'Position not found' });
+    }
+
+    // Verify ownership
+    if (position.paper_trading_accounts.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    // Get REAL current market price for closing
+    const marketQuote = await getRealMarketPrice(position.symbol);
+    if (!marketQuote) {
+      return res.status(400).json({
+        success: false,
+        error: `Unable to fetch real-time market price for ${position.symbol}. Cannot close position.`
+      });
+    }
+
+    const closePrice = marketQuote.price;
+    const totalValue = closePrice * position.quantity;
+    const realizedPnl = (closePrice - position.avg_cost) * position.quantity;
+    const isWin = realizedPnl > 0;
+
+    // Create a sell order record
+    const orderId = generateId();
+    await prisma.paper_orders.create({
+      data: {
+        id: orderId,
+        account_id: position.account_id,
+        symbol: position.symbol,
+        side: 'sell',
+        quantity: position.quantity,
+        order_type: 'market',
+        status: 'filled',
+        submitted_price: closePrice,
+        filled_price: closePrice,
+        filled_quantity: position.quantity,
+        filled_at: new Date(),
+        commission: 0
+      }
+    });
+
+    // Delete the position
+    await prisma.paper_positions.delete({ where: { id: position.id } });
+
+    // Update account: add cash, update stats
+    await prisma.paper_trading_accounts.update({
+      where: { id: position.account_id },
+      data: {
+        cash_balance: { increment: totalValue },
+        total_trades: { increment: 1 },
+        winning_trades: isWin ? { increment: 1 } : undefined,
+        losing_trades: !isWin ? { increment: 1 } : undefined,
+        total_pnl: { increment: realizedPnl }
+      }
+    });
+
+    logger.info(`Closed position ${position.id}: SELL ${position.quantity} ${position.symbol} @ $${closePrice} (P&L: $${realizedPnl.toFixed(2)})`);
+
+    res.json({
+      success: true,
+      closedPosition: {
+        id: position.id,
+        symbol: position.symbol,
+        quantity: position.quantity,
+        avgCost: position.avg_cost,
+        closePrice,
+        costBasis: position.avg_cost * position.quantity,
+        proceeds: totalValue,
+        realizedPnl,
+        realizedPnlPercent: ((closePrice - position.avg_cost) / position.avg_cost) * 100,
+        priceProvider: marketQuote.provider,
+        closedAt: new Date().toISOString()
+      },
+      message: `Position closed. Realized P&L: $${realizedPnl.toFixed(2)}`
+    });
+  } catch (error) {
+    logger.error('Error closing paper position:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== LEGACY PAPER TRADING ROUTES (backward compatibility) ====================
+
+/**
  * GET /api/trading/paper/account
- * Get paper trading account details
+ * Get paper trading account details (legacy endpoint)
  */
 router.get('/paper/account', authenticate, async (req, res) => {
   try {
@@ -682,8 +1449,65 @@ router.post('/paper/account/reset', authenticate, async (req, res) => {
 });
 
 /**
+ * POST /api/trading/accounts/reset
+ * Reset paper trading account (new endpoint)
+ */
+router.post('/accounts/reset', authenticate, async (req, res) => {
+  try {
+    const account = await prisma.paper_trading_accounts.findUnique({
+      where: { user_id: req.user.id }
+    });
+
+    if (!account) {
+      return res.status(404).json({ success: false, error: 'No account found to reset' });
+    }
+
+    // Delete all positions and orders
+    await prisma.paper_positions.deleteMany({ where: { account_id: account.id } });
+    await prisma.paper_orders.deleteMany({ where: { account_id: account.id } });
+
+    // Reset account to initial state
+    const resetAccount = await prisma.paper_trading_accounts.update({
+      where: { id: account.id },
+      data: {
+        cash_balance: account.initial_balance,
+        total_trades: 0,
+        winning_trades: 0,
+        losing_trades: 0,
+        total_pnl: 0
+      }
+    });
+
+    logger.info(`Reset paper trading account ${account.id} for user ${req.user.id}`);
+
+    res.json({
+      success: true,
+      account: {
+        id: resetAccount.id,
+        userId: resetAccount.user_id,
+        cashBalance: resetAccount.cash_balance,
+        initialBalance: resetAccount.initial_balance,
+        equity: resetAccount.cash_balance,
+        totalPositionValue: 0,
+        totalUnrealizedPnl: 0,
+        totalRealizedPnl: 0,
+        totalReturn: 0,
+        totalTrades: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        winRate: 0
+      },
+      message: 'Account reset successfully'
+    });
+  } catch (error) {
+    logger.error('Error resetting paper account:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/trading/paper/positions
- * Get all paper trading positions
+ * Get all paper trading positions (legacy endpoint)
  */
 router.get('/paper/positions', authenticate, async (req, res) => {
   try {
@@ -697,7 +1521,7 @@ router.get('/paper/positions', authenticate, async (req, res) => {
 
 /**
  * POST /api/trading/paper/orders
- * Place a paper trade order
+ * Place a paper trade order (legacy endpoint)
  */
 router.post('/paper/orders', authenticate, async (req, res) => {
   try {
@@ -729,7 +1553,7 @@ router.post('/paper/orders', authenticate, async (req, res) => {
 
 /**
  * GET /api/trading/paper/orders
- * Get paper trading order history
+ * Get paper trading order history (legacy endpoint)
  */
 router.get('/paper/orders', authenticate, async (req, res) => {
   try {
@@ -748,7 +1572,7 @@ router.get('/paper/orders', authenticate, async (req, res) => {
 
 /**
  * DELETE /api/trading/paper/orders/:orderId
- * Cancel a pending paper order
+ * Cancel a pending paper order (legacy endpoint)
  */
 router.delete('/paper/orders/:orderId', authenticate, async (req, res) => {
   try {
@@ -761,13 +1585,129 @@ router.delete('/paper/orders/:orderId', authenticate, async (req, res) => {
 });
 
 /**
+ * DELETE /api/trading/orders/:orderId
+ * Cancel a pending paper order (new endpoint)
+ */
+router.delete('/orders/:orderId', authenticate, async (req, res) => {
+  try {
+    const order = await prisma.paper_orders.findUnique({
+      where: { id: req.params.orderId },
+      include: { paper_trading_accounts: true }
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    if (order.paper_trading_accounts.user_id !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ success: false, error: 'Only pending orders can be cancelled' });
+    }
+
+    const cancelledOrder = await prisma.paper_orders.update({
+      where: { id: order.id },
+      data: { status: 'cancelled' }
+    });
+
+    logger.info(`Cancelled paper order ${order.id}`);
+
+    res.json({
+      success: true,
+      order: {
+        id: cancelledOrder.id,
+        symbol: cancelledOrder.symbol,
+        side: cancelledOrder.side,
+        quantity: cancelledOrder.quantity,
+        orderType: cancelledOrder.order_type,
+        status: cancelledOrder.status,
+        cancelledAt: new Date().toISOString()
+      },
+      message: 'Order cancelled'
+    });
+  } catch (error) {
+    logger.error('Error cancelling paper order:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/trading/paper/statistics
- * Get paper trading statistics and performance
+ * Get paper trading statistics and performance (legacy endpoint)
  */
 router.get('/paper/statistics', authenticate, async (req, res) => {
   try {
     const statistics = await paperTradingService.getStatistics(req.user.id);
     res.json({ success: true, statistics });
+  } catch (error) {
+    logger.error('Error fetching paper statistics:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/trading/statistics
+ * Get paper trading statistics with real P&L (new endpoint)
+ */
+router.get('/statistics', authenticate, async (req, res) => {
+  try {
+    const account = await prisma.paper_trading_accounts.findUnique({
+      where: { user_id: req.user.id },
+      include: {
+        paper_positions: true,
+        paper_orders: {
+          where: { status: 'filled' },
+          orderBy: { filled_at: 'desc' },
+          take: 20
+        }
+      }
+    });
+
+    if (!account) {
+      return res.json({ success: true, statistics: null, message: 'No paper trading account found' });
+    }
+
+    // Calculate real P&L for positions
+    const positionsWithPnL = await calculateRealPnL(account.paper_positions);
+    const totalMarketValue = positionsWithPnL.reduce((sum, p) => sum + p.marketValue, 0);
+    const totalUnrealizedPnl = positionsWithPnL.reduce((sum, p) => sum + p.unrealizedPnl, 0);
+    const equity = account.cash_balance + totalMarketValue;
+    const totalReturn = ((equity - account.initial_balance) / account.initial_balance) * 100;
+
+    res.json({
+      success: true,
+      statistics: {
+        account: {
+          id: account.id,
+          cashBalance: account.cash_balance,
+          initialBalance: account.initial_balance,
+          equity,
+          totalReturn,
+          totalReturnDollar: equity - account.initial_balance,
+          positionsValue: totalMarketValue,
+          unrealizedPnl: totalUnrealizedPnl,
+          realizedPnl: account.total_pnl,
+          totalTrades: account.total_trades,
+          winningTrades: account.winning_trades,
+          losingTrades: account.losing_trades,
+          winRate: account.total_trades > 0
+            ? (account.winning_trades / account.total_trades) * 100
+            : 0
+        },
+        positions: positionsWithPnL,
+        recentTrades: account.paper_orders.map(order => ({
+          id: order.id,
+          symbol: order.symbol,
+          side: order.side,
+          quantity: order.quantity,
+          filledPrice: order.filled_price,
+          filledAt: order.filled_at
+        })),
+        tradeCount: account.total_trades
+      }
+    });
   } catch (error) {
     logger.error('Error fetching paper statistics:', error);
     res.status(500).json({ success: false, error: error.message });

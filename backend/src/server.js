@@ -87,6 +87,7 @@ const dividendsRoutes = require('./routes/dividends');
 const rssNewsRoutes = require('./routes/rssNews');
 const twoFactorRoutes = require('./routes/twoFactor');
 const monitoringRoutes = require('./routes/monitoring');
+const esgRoutes = require('./routes/esg');
 const insightsRoutes = require('./routes/insights');
 const notificationsRoutes = require('./routes/notifications');
 const aiReportsRoutes = require('./routes/aiReports');
@@ -455,6 +456,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
 // ==================== TWO-FACTOR AUTHENTICATION ROUTES ====================
 app.use('/api/2fa', authenticate, twoFactorRoutes);
 app.use('/api/monitoring', monitoringRoutes);
+app.use('/api/esg', esgRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/webhooks', webhookRoutes);
 

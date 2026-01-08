@@ -1,0 +1,551 @@
+<%
+// Safe defaults
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Advanced Charts';
+const safeUser = typeof user !== 'undefined' ? user : null;
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<!-- Premium Global CSS -->
+<link rel="stylesheet" href="/css/premium-global.css">
+
+<!-- External Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
+<div class="page-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">Advanced Visualizations</h1>
+          <p class="page-subtitle">Professional-grade charts for portfolio analysis</p>
+        </div>
+      </div>
+
+      <!-- Chart Type Selector -->
+      <div class="premium-tabs">
+        <button class="premium-tab active" onclick="showChartSection('waterfall')">Waterfall</button>
+        <button class="premium-tab" onclick="showChartSection('bubble3d')">3D Bubble</button>
+        <button class="premium-tab" onclick="showChartSection('multitf')">Multi-TF</button>
+        <button class="premium-tab" onclick="showChartSection('heatmap')">Heatmap</button>
+        <button class="premium-tab" onclick="showChartSection('sankey')">Sankey</button>
+        <button class="premium-tab" onclick="showChartSection('volume')">Volume Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Sections -->
+  <div class="space-y-6">
+
+    <!-- 1. Waterfall Chart Section -->
+    <section id="section-waterfall" class="chart-section">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h2 class="premium-card-title">Return Attribution Waterfall</h2>
+            <p class="premium-card-subtitle">See how each holding contributed to your total return</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="exportWaterfallPNG()" class="premium-btn premium-btn-secondary premium-btn-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Export PNG
+            </button>
+            <select id="waterfallPeriod" onchange="updateWaterfallChart()" class="premium-input premium-select" style="width: auto;">
+              <option value="1M">1 Month</option>
+              <option value="3M" selected>3 Months</option>
+              <option value="YTD">Year to Date</option>
+              <option value="1Y">1 Year</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-6" style="height: 400px;">
+          <canvas id="waterfallChart"></canvas>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/5">
+          <div class="stat-card-forest p-4">
+            <div class="stat-label">Top Contributor</div>
+            <div class="stat-value text-lg" id="topContributor">NVDA</div>
+            <div class="stat-change value-positive">+3.42%</div>
+          </div>
+          <div class="stat-card p-4">
+            <div class="stat-label">Biggest Detractor</div>
+            <div class="stat-value text-lg" id="biggestDetractor">TSLA</div>
+            <div class="stat-change value-negative">-1.28%</div>
+          </div>
+          <div class="stat-card p-4">
+            <div class="stat-label">Total Return</div>
+            <div class="stat-value text-lg gradient-text-gain" id="totalReturn">+8.47%</div>
+          </div>
+          <div class="stat-card p-4">
+            <div class="stat-label">Holdings Analyzed</div>
+            <div class="stat-value text-lg" id="holdingsCount">12</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 3D Portfolio Bubble Chart Section -->
+    <section id="section-bubble3d" class="chart-section hidden">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h2 class="premium-card-title">3D Portfolio Visualization</h2>
+            <p class="premium-card-subtitle">Interactive 3D view: X=Sector, Y=Value, Z=Volatility, Size=Weight</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 text-sm text-slate-400">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Positive Return
+              <span class="w-3 h-3 rounded-full bg-red-500 ml-2"></span> Negative Return
+            </div>
+            <button onclick="reset3DView()" class="premium-btn premium-btn-secondary premium-btn-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              Reset View
+            </button>
+          </div>
+        </div>
+
+        <div id="bubble3dContainer" class="mt-6 rounded-xl overflow-hidden" style="height: 500px; background: #0a0a0c;"></div>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-white/5">
+          <span class="text-xs text-slate-500 mr-2">Sectors:</span>
+          <span class="chip-forest"><span class="w-2 h-2 rounded-full bg-indigo-500 mr-1"></span>Technology</span>
+          <span class="chip-forest"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1"></span>Healthcare</span>
+          <span class="chip-forest"><span class="w-2 h-2 rounded-full bg-amber-500 mr-1"></span>Financial</span>
+          <span class="chip-forest"><span class="w-2 h-2 rounded-full bg-pink-500 mr-1"></span>Consumer</span>
+          <span class="chip-forest"><span class="w-2 h-2 rounded-full bg-purple-500 mr-1"></span>Industrial</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Multi-Timeframe Charts Section -->
+    <section id="section-multitf" class="chart-section hidden">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h2 class="premium-card-title">Multi-Timeframe Analysis</h2>
+            <p class="premium-card-subtitle">Synchronized charts across different timeframes</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="mtfSymbol" value="AAPL" class="premium-input" style="width: 100px;" placeholder="Symbol">
+            <button onclick="loadMultiTimeframe()" class="premium-btn premium-btn-primary premium-btn-sm">Load</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div class="premium-card-sm" style="height: 250px;">
+            <div id="mtfChart1" style="height: 100%;"></div>
+          </div>
+          <div class="premium-card-sm" style="height: 250px;">
+            <div id="mtfChart2" style="height: 100%;"></div>
+          </div>
+          <div class="premium-card-sm" style="height: 250px;">
+            <div id="mtfChart3" style="height: 100%;"></div>
+          </div>
+          <div class="premium-card-sm" style="height: 250px;">
+            <div id="mtfChart4" style="height: 100%;"></div>
+          </div>
+        </div>
+
+        <div class="notice-forest mt-4">
+          <strong>Tip:</strong> Hover over any chart to see synchronized crosshairs across all timeframes. Use mouse wheel to zoom.
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Correlation Heatmap Section -->
+    <section id="section-heatmap" class="chart-section hidden">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h2 class="premium-card-title">Correlation Matrix</h2>
+            <p class="premium-card-subtitle">Click any cell to see detailed correlation analysis</p>
+          </div>
+          <select id="heatmapPeriod" onchange="updateHeatmap()" class="premium-input premium-select" style="width: auto;">
+            <option value="1M">1 Month</option>
+            <option value="3M" selected>3 Months</option>
+            <option value="1Y">1 Year</option>
+          </select>
+        </div>
+
+        <div id="correlationHeatmap" class="mt-6 overflow-x-auto" style="min-height: 400px;"></div>
+
+        <!-- Correlation Insights -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5">
+          <div class="premium-card-sm">
+            <h4 class="text-sm font-semibold text-slate-400 mb-2">Highest Correlation</h4>
+            <div class="flex items-center justify-between">
+              <span class="text-white font-medium">AAPL - MSFT</span>
+              <span class="premium-badge-forest">0.89</span>
+            </div>
+          </div>
+          <div class="premium-card-sm">
+            <h4 class="text-sm font-semibold text-slate-400 mb-2">Lowest Correlation</h4>
+            <div class="flex items-center justify-between">
+              <span class="text-white font-medium">NVDA - XOM</span>
+              <span class="premium-badge-danger">-0.34</span>
+            </div>
+          </div>
+          <div class="premium-card-sm">
+            <h4 class="text-sm font-semibold text-slate-400 mb-2">Portfolio Diversification</h4>
+            <div class="flex items-center justify-between">
+              <span class="text-white font-medium">Score</span>
+              <span class="premium-badge-success">Good (0.42 avg)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Sankey Diagram Section -->
+    <section id="section-sankey" class="chart-section hidden">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h2 class="premium-card-title">Capital Flow Analysis</h2>
+            <p class="premium-card-subtitle">Visualize money flow through your portfolio</p>
+          </div>
+          <div class="premium-tabs" style="padding: 2px;">
+            <button class="premium-tab active" onclick="loadSankeyView('allocation')">Allocation</button>
+            <button class="premium-tab" onclick="loadSankeyView('rebalance')">Rebalancing</button>
+            <button class="premium-tab" onclick="loadSankeyView('income')">Income</button>
+          </div>
+        </div>
+
+        <div id="sankeyContainer" class="mt-6" style="min-height: 500px;"></div>
+
+        <!-- Sankey Insights -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/5">
+          <div class="text-center">
+            <div class="text-2xl font-bold gradient-text-forest">$125,420</div>
+            <div class="text-xs text-slate-500 mt-1">Total Portfolio Value</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-emerald-400">$8,340</div>
+            <div class="text-xs text-slate-500 mt-1">Net Inflows (YTD)</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-amber-400">$2,150</div>
+            <div class="text-xs text-slate-500 mt-1">Dividend Income</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-red-400">-$420</div>
+            <div class="text-xs text-slate-500 mt-1">Realized Losses</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Volume Profile Section -->
+    <section id="section-volume" class="chart-section hidden">
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <div>
+            <h2 class="premium-card-title">Volume Profile Analysis</h2>
+            <p class="premium-card-subtitle">Price levels with highest trading activity</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="volumeSymbol" value="AAPL" class="premium-input" style="width: 100px;" placeholder="Symbol">
+            <select id="volumePeriod" class="premium-input premium-select" style="width: auto;">
+              <option value="1M">1 Month</option>
+              <option value="3M" selected>3 Months</option>
+              <option value="6M">6 Months</option>
+            </select>
+            <button onclick="loadVolumeProfile()" class="premium-btn premium-btn-primary premium-btn-sm">Analyze</button>
+          </div>
+        </div>
+
+        <div id="volumeProfileContainer" class="mt-6" style="height: 450px;"></div>
+
+        <!-- Volume Profile Legend -->
+        <div class="flex flex-wrap items-center gap-6 mt-4 pt-4 border-t border-white/5 text-sm">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-3 rounded" style="background: linear-gradient(90deg, #34D399, #10b981);"></div>
+            <span class="text-slate-400">Buying Volume</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-3 rounded" style="background: linear-gradient(90deg, #ef4444, #dc2626);"></div>
+            <span class="text-slate-400">Selling Volume</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-1 bg-amber-500"></div>
+            <span class="text-slate-400">POC (Point of Control)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-4 border border-dashed border-indigo-500 bg-indigo-500/10"></div>
+            <span class="text-slate-400">Value Area (70%)</span>
+          </div>
+        </div>
+
+        <!-- Key Levels -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <div class="stat-card p-4">
+            <div class="stat-label">Point of Control</div>
+            <div class="stat-value text-lg text-amber-400" id="pocPrice">$182.45</div>
+          </div>
+          <div class="stat-card p-4">
+            <div class="stat-label">Value Area High</div>
+            <div class="stat-value text-lg" id="vahPrice">$189.20</div>
+          </div>
+          <div class="stat-card p-4">
+            <div class="stat-label">Value Area Low</div>
+            <div class="stat-value text-lg" id="valPrice">$175.80</div>
+          </div>
+          <div class="stat-card p-4">
+            <div class="stat-label">Current Price</div>
+            <div class="stat-value text-lg text-indigo-400" id="currentPrice">$185.92</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Premium Charts Library -->
+<script src="/js/premium-charts.js"></script>
+
+<script>
+// Sample data
+const sampleWaterfallData = {
+  startValue: 0,
+  startLabel: 'Start',
+  endLabel: 'Total Return',
+  labels: ['NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'JPM', 'V', 'JNJ'],
+  values: [3.42, 1.85, 1.52, 1.24, 0.98, 0.76, -1.28, 0.54, 0.32, -0.12]
+};
+
+const samplePortfolioData = {
+  holdings: [
+    { symbol: 'NVDA', name: 'NVIDIA Corporation', sector: 'Technology', value: 28500, weight: 22.7, volatility: 35, return: 45.2 },
+    { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', value: 22000, weight: 17.5, volatility: 22, return: 12.5 },
+    { symbol: 'MSFT', name: 'Microsoft Corporation', sector: 'Technology', value: 18500, weight: 14.7, volatility: 20, return: 18.3 },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology', value: 12000, weight: 9.6, volatility: 25, return: 8.7 },
+    { symbol: 'JPM', name: 'JPMorgan Chase', sector: 'Financial', value: 10000, weight: 8.0, volatility: 18, return: 15.2 },
+    { symbol: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', value: 8500, weight: 6.8, volatility: 12, return: 5.4 },
+    { symbol: 'XOM', name: 'Exxon Mobil', sector: 'Energy', value: 7500, weight: 6.0, volatility: 28, return: -8.3 },
+    { symbol: 'PG', name: 'Procter & Gamble', sector: 'Consumer', value: 6500, weight: 5.2, volatility: 14, return: 3.2 },
+    { symbol: 'CAT', name: 'Caterpillar Inc.', sector: 'Industrial', value: 6000, weight: 4.8, volatility: 24, return: 22.1 },
+    { symbol: 'NEE', name: 'NextEra Energy', sector: 'Utilities', value: 5500, weight: 4.4, volatility: 16, return: -2.1 }
+  ]
+};
+
+const sampleCorrelationData = {
+  labels: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'JPM', 'JNJ', 'XOM'],
+  matrix: [
+    [1.00, 0.89, 0.72, 0.81, 0.45, 0.23, -0.12],
+    [0.89, 1.00, 0.68, 0.85, 0.48, 0.28, -0.08],
+    [0.72, 0.68, 1.00, 0.65, 0.32, 0.15, -0.34],
+    [0.81, 0.85, 0.65, 1.00, 0.42, 0.21, -0.15],
+    [0.45, 0.48, 0.32, 0.42, 1.00, 0.55, 0.38],
+    [0.23, 0.28, 0.15, 0.21, 0.55, 1.00, 0.42],
+    [-0.12, -0.08, -0.34, -0.15, 0.38, 0.42, 1.00]
+  ]
+};
+
+const sampleSankeyData = {
+  nodes: [
+    { name: 'Portfolio', category: 'Portfolio' },
+    { name: 'Technology', category: 'Technology' },
+    { name: 'Healthcare', category: 'Healthcare' },
+    { name: 'Financial', category: 'Financial' },
+    { name: 'Energy', category: 'Energy' },
+    { name: 'Consumer', category: 'Consumer' },
+    { name: 'NVDA', category: 'Technology' },
+    { name: 'AAPL', category: 'Technology' },
+    { name: 'MSFT', category: 'Technology' },
+    { name: 'JNJ', category: 'Healthcare' },
+    { name: 'JPM', category: 'Financial' },
+    { name: 'XOM', category: 'Energy' }
+  ],
+  links: [
+    { source: 0, target: 1, value: 81000 },
+    { source: 0, target: 2, value: 8500 },
+    { source: 0, target: 3, value: 10000 },
+    { source: 0, target: 4, value: 7500 },
+    { source: 0, target: 5, value: 6500 },
+    { source: 1, target: 6, value: 28500 },
+    { source: 1, target: 7, value: 22000 },
+    { source: 1, target: 8, value: 18500 },
+    { source: 2, target: 9, value: 8500 },
+    { source: 3, target: 10, value: 10000 },
+    { source: 4, target: 11, value: 7500 }
+  ]
+};
+
+// Initialize charts on page load
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize waterfall chart
+  premiumCharts.createWaterfallChart('waterfallChart', sampleWaterfallData, {
+    title: 'Portfolio Return Attribution (3M)'
+  });
+});
+
+// Section navigation
+function showChartSection(section) {
+  // Hide all sections
+  document.querySelectorAll('.chart-section').forEach(el => el.classList.add('hidden'));
+
+  // Show selected section
+  document.getElementById(`section-${section}`).classList.remove('hidden');
+
+  // Update tab states
+  document.querySelectorAll('.premium-tab').forEach(tab => tab.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // Initialize chart for section if needed
+  initializeSection(section);
+}
+
+function initializeSection(section) {
+  switch(section) {
+    case 'bubble3d':
+      if (!premiumCharts.threeScenes.has('bubble3dContainer')) {
+        premiumCharts.create3DBubbleChart('bubble3dContainer', samplePortfolioData);
+      }
+      break;
+    case 'multitf':
+      loadMultiTimeframe();
+      break;
+    case 'heatmap':
+      if (!document.querySelector('#correlationHeatmap svg')) {
+        premiumCharts.createCorrelationHeatmap('correlationHeatmap', sampleCorrelationData, {
+          onCellClick: (row, col, value) => {
+            showToast(`Correlation between ${row} and ${col}: ${value.toFixed(3)}`, 'info');
+          }
+        });
+      }
+      break;
+    case 'sankey':
+      loadSankeyView('allocation');
+      break;
+    case 'volume':
+      loadVolumeProfile();
+      break;
+  }
+}
+
+// Chart-specific functions
+function updateWaterfallChart() {
+  const period = document.getElementById('waterfallPeriod').value;
+  premiumCharts.destroyChart('waterfallChart');
+  premiumCharts.createWaterfallChart('waterfallChart', sampleWaterfallData, {
+    title: `Portfolio Return Attribution (${period})`
+  });
+}
+
+function exportWaterfallPNG() {
+  const canvas = document.getElementById('waterfallChart');
+  if (canvas) {
+    const link = document.createElement('a');
+    link.download = 'waterfall-chart.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Chart exported successfully', 'success');
+  }
+}
+
+function reset3DView() {
+  const sceneData = premiumCharts.threeScenes.get('bubble3dContainer');
+  if (sceneData) {
+    sceneData.camera.position.set(50, 50, 100);
+    sceneData.controls.reset();
+  }
+}
+
+function loadMultiTimeframe() {
+  const symbol = document.getElementById('mtfSymbol').value || 'AAPL';
+  premiumCharts.createMultiTimeframeCharts(
+    ['mtfChart1', 'mtfChart2', 'mtfChart3', 'mtfChart4'],
+    symbol,
+    { timeframes: ['1D', '1W', '1M', '3M'] }
+  );
+}
+
+function updateHeatmap() {
+  const period = document.getElementById('heatmapPeriod').value;
+  document.getElementById('correlationHeatmap').innerHTML = '';
+  premiumCharts.createCorrelationHeatmap('correlationHeatmap', sampleCorrelationData);
+}
+
+function loadSankeyView(view) {
+  // Update tab states
+  document.querySelectorAll('#section-sankey .premium-tab').forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.textContent.toLowerCase().includes(view)) {
+      tab.classList.add('active');
+    }
+  });
+
+  document.getElementById('sankeyContainer').innerHTML = '';
+  premiumCharts.createSankeyDiagram('sankeyContainer', sampleSankeyData, {
+    width: document.getElementById('sankeyContainer').clientWidth
+  });
+}
+
+function loadVolumeProfile() {
+  const symbol = document.getElementById('volumeSymbol').value || 'AAPL';
+
+  // Generate sample data
+  const days = 90;
+  const dates = [];
+  const prices = [];
+  const volumes = [];
+  let price = 175;
+
+  for (let i = days; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    dates.push(date.toLocaleDateString());
+
+    price += (Math.random() - 0.48) * 3;
+    prices.push(price);
+    volumes.push(Math.floor(Math.random() * 50000000) + 10000000);
+  }
+
+  const volumeProfile = premiumCharts.generateVolumeProfileData(prices, volumes);
+
+  premiumCharts.createVolumeProfile('volumeProfileContainer', {
+    dates,
+    prices,
+    volumes,
+    volumeProfile
+  });
+
+  // Update stats
+  const poc = volumeProfile.reduce((max, v) => v.volume > max.volume ? v : max, volumeProfile[0]);
+  document.getElementById('pocPrice').textContent = `$${poc.price.toFixed(2)}`;
+  document.getElementById('currentPrice').textContent = `$${prices[prices.length - 1].toFixed(2)}`;
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+  if (typeof window.showToast === 'function') {
+    window.showToast(message, type);
+  } else {
+    console.log(`[${type}] ${message}`);
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

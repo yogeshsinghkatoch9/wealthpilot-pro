@@ -1,33 +1,379 @@
 /**
  * ESG Analysis Routes
  * API endpoints for comprehensive ESG (Environmental, Social, Governance) analysis
- * Uses real API data with automatic caching and fallback to static data
+ * Uses FMP API for real ESG data with 1-week caching
  */
 
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const esgService = require('../services/advanced/esgAnalysis');
-const esgDataProvider = require('../services/esg/esgDataProvider');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+// FMP API configuration
+const FMP_API_KEY = process.env.FMP_API_KEY;
+const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v4';
+
+// ESG Cache - stores data for 1 week (ESG scores change infrequently)
+const ESG_CACHE = new Map();
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
+
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Get cached ESG data or null if expired/missing
+ */
+function getCachedESG(symbol) {
+  const cacheKey = symbol.toUpperCase();
+  const cached = ESG_CACHE.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  return null;
+}
+
+/**
+ * Set ESG data in cache
+ */
+function setCachedESG(symbol, data) {
+  const cacheKey = symbol.toUpperCase();
+  ESG_CACHE.set(cacheKey, {
+    data,
+    timestamp: Date.now()
+  });
+}
+
+/**
+ * Fetch ESG data from FMP API
+ */
+async function fetchFMPESGData(symbol) {
+  if (!FMP_API_KEY) {
+    logger.warn('FMP_API_KEY not configured');
+    return null;
+  }
+
+  const upperSymbol = symbol.toUpperCase();
+
+  try {
+    // Fetch both ESG score data and ESG ratings in parallel
+    const [scoreResponse, ratingResponse] = await Promise.all([
+      fetch(`${FMP_BASE_URL}/esg-environmental-social-governance-data?symbol=${upperSymbol}&apikey=${FMP_API_KEY}`),
+      fetch(`${FMP_BASE_URL}/esg-environmental-social-governance-data-ratings?symbol=${upperSymbol}&apikey=${FMP_API_KEY}`)
+    ]);
+
+    if (!scoreResponse.ok || !ratingResponse.ok) {
+      logger.warn(`FMP API error for ${upperSymbol}: Score=${scoreResponse.status}, Rating=${ratingResponse.status}`);
+      return null;
+    }
+
+    const scoreData = await scoreResponse.json();
+    const ratingData = await ratingResponse.json();
+
+    // FMP returns arrays, get the most recent data
+    const latestScore = Array.isArray(scoreData) && scoreData.length > 0 ? scoreData[0] : null;
+    const latestRating = Array.isArray(ratingData) && ratingData.length > 0 ? ratingData[0] : null;
+
+    if (!latestScore && !latestRating) {
+      logger.info(`No ESG data available for ${upperSymbol}`);
+      return null;
+    }
+
+    // Normalize the FMP data to our standard structure
+    return normalizeESGData(upperSymbol, latestScore, latestRating);
+  } catch (error) {
+    logger.error(`Error fetching FMP ESG data for ${upperSymbol}:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Normalize FMP ESG data to standard structure
+ */
+function normalizeESGData(symbol, scoreData, ratingData) {
+  // Default values
+  const result = {
+    symbol: symbol,
+    environmentalScore: null,
+    socialScore: null,
+    governanceScore: null,
+    totalESGScore: null,
+    ESGRiskRating: 'N/A',
+    controversyLevel: null,
+    dataAvailable: false,
+    source: 'FMP API',
+    lastUpdated: new Date().toISOString()
+  };
+
+  // Extract from score data if available
+  if (scoreData) {
+    result.environmentalScore = scoreData.environmentalScore ?? scoreData.environmentScore ?? null;
+    result.socialScore = scoreData.socialScore ?? null;
+    result.governanceScore = scoreData.governanceScore ?? null;
+
+    // Calculate total if we have component scores
+    if (result.environmentalScore !== null &&
+        result.socialScore !== null &&
+        result.governanceScore !== null) {
+      result.totalESGScore = Math.round(
+        (result.environmentalScore + result.socialScore + result.governanceScore) / 3 * 10
+      ) / 10;
+    } else if (scoreData.ESGScore || scoreData.esgScore) {
+      result.totalESGScore = scoreData.ESGScore ?? scoreData.esgScore;
+    }
+
+    result.dataAvailable = true;
+  }
+
+  // Extract from rating data if available
+  if (ratingData) {
+    // Override with rating data if score data was missing
+    if (result.environmentalScore === null) {
+      result.environmentalScore = ratingData.environmentalScore ?? null;
+    }
+    if (result.socialScore === null) {
+      result.socialScore = ratingData.socialScore ?? null;
+    }
+    if (result.governanceScore === null) {
+      result.governanceScore = ratingData.governanceScore ?? null;
+    }
+    if (result.totalESGScore === null) {
+      result.totalESGScore = ratingData.ESGScore ?? ratingData.esgScore ?? null;
+    }
+
+    // ESG Risk Rating from rating data
+    result.ESGRiskRating = ratingData.ESGRiskRating ?? ratingData.esgRiskRating ??
+                          calculateRiskRating(result.totalESGScore);
+
+    // Controversy level (0-5 scale)
+    result.controversyLevel = ratingData.controversyLevel ?? null;
+
+    result.dataAvailable = true;
+  }
+
+  // Calculate risk rating if not provided
+  if (result.ESGRiskRating === 'N/A' && result.totalESGScore !== null) {
+    result.ESGRiskRating = calculateRiskRating(result.totalESGScore);
+  }
+
+  return result;
+}
+
+/**
+ * Calculate ESG risk rating based on score
+ */
+function calculateRiskRating(score) {
+  if (score === null || score === undefined) return 'N/A';
+  if (score >= 70) return 'Low';
+  if (score >= 50) return 'Medium';
+  return 'High';
+}
+
+/**
+ * Get ESG data for a symbol (with caching)
+ */
+async function getESGData(symbol, forceRefresh = false) {
+  const upperSymbol = symbol.toUpperCase();
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    const cached = getCachedESG(upperSymbol);
+    if (cached) {
+      return { ...cached, fromCache: true };
+    }
+  }
+
+  // Fetch from FMP API
+  const data = await fetchFMPESGData(upperSymbol);
+
+  if (data) {
+    setCachedESG(upperSymbol, data);
+    return { ...data, fromCache: false };
+  }
+
+  // Return N/A structure if no data available
+  return {
+    symbol: upperSymbol,
+    environmentalScore: null,
+    socialScore: null,
+    governanceScore: null,
+    totalESGScore: null,
+    ESGRiskRating: 'N/A',
+    controversyLevel: null,
+    dataAvailable: false,
+    source: 'N/A',
+    lastUpdated: null,
+    fromCache: false
+  };
+}
+
+/**
+ * Calculate portfolio ESG scores (weighted average)
+ */
+async function calculatePortfolioESG(holdings) {
+  if (!holdings || holdings.length === 0) {
+    return {
+      portfolioScore: null,
+      environmentalScore: null,
+      socialScore: null,
+      governanceScore: null,
+      ESGRiskRating: 'N/A',
+      averageControversyLevel: null,
+      breakdown: {
+        environmental: null,
+        social: null,
+        governance: null
+      },
+      holdings: [],
+      dataQuality: {
+        holdingsWithData: 0,
+        totalHoldings: 0,
+        coveragePercent: 0
+      }
+    };
+  }
+
+  // Calculate total portfolio value
+  const totalValue = holdings.reduce((sum, h) => {
+    const price = h.currentPrice || h.avgCostBasis || 0;
+    return sum + (h.shares * price);
+  }, 0);
+
+  if (totalValue === 0) {
+    return {
+      portfolioScore: null,
+      environmentalScore: null,
+      socialScore: null,
+      governanceScore: null,
+      ESGRiskRating: 'N/A',
+      averageControversyLevel: null,
+      breakdown: {
+        environmental: null,
+        social: null,
+        governance: null
+      },
+      holdings: [],
+      dataQuality: {
+        holdingsWithData: 0,
+        totalHoldings: holdings.length,
+        coveragePercent: 0
+      }
+    };
+  }
+
+  // Fetch ESG data for all holdings
+  const holdingESGPromises = holdings.map(async (h) => {
+    const esgData = await getESGData(h.symbol);
+    const price = h.currentPrice || h.avgCostBasis || 0;
+    const value = h.shares * price;
+    const weight = value / totalValue;
+
+    return {
+      symbol: h.symbol,
+      shares: h.shares,
+      value: value,
+      weight: Math.round(weight * 10000) / 100, // as percentage
+      esg: esgData
+    };
+  });
+
+  const holdingESGData = await Promise.all(holdingESGPromises);
+
+  // Calculate weighted averages
+  let weightedEnv = 0;
+  let weightedSocial = 0;
+  let weightedGov = 0;
+  let weightedTotal = 0;
+  let controversySum = 0;
+  let controversyCount = 0;
+  let dataWeight = 0;
+  let holdingsWithData = 0;
+
+  holdingESGData.forEach(h => {
+    if (h.esg.dataAvailable) {
+      holdingsWithData++;
+      const weight = h.value / totalValue;
+
+      if (h.esg.environmentalScore !== null) {
+        weightedEnv += h.esg.environmentalScore * weight;
+      }
+      if (h.esg.socialScore !== null) {
+        weightedSocial += h.esg.socialScore * weight;
+      }
+      if (h.esg.governanceScore !== null) {
+        weightedGov += h.esg.governanceScore * weight;
+      }
+      if (h.esg.totalESGScore !== null) {
+        weightedTotal += h.esg.totalESGScore * weight;
+        dataWeight += weight;
+      }
+      if (h.esg.controversyLevel !== null) {
+        controversySum += h.esg.controversyLevel;
+        controversyCount++;
+      }
+    }
+  });
+
+  // Normalize weighted scores if we have partial data
+  const hasData = dataWeight > 0;
+
+  const portfolioScore = hasData ? Math.round((weightedTotal / dataWeight) * 10) / 10 : null;
+  const envScore = hasData ? Math.round((weightedEnv / dataWeight) * 10) / 10 : null;
+  const socialScore = hasData ? Math.round((weightedSocial / dataWeight) * 10) / 10 : null;
+  const govScore = hasData ? Math.round((weightedGov / dataWeight) * 10) / 10 : null;
+  const avgControversy = controversyCount > 0 ?
+    Math.round((controversySum / controversyCount) * 10) / 10 : null;
+
+  return {
+    portfolioScore: portfolioScore,
+    environmentalScore: envScore,
+    socialScore: socialScore,
+    governanceScore: govScore,
+    ESGRiskRating: calculateRiskRating(portfolioScore),
+    averageControversyLevel: avgControversy,
+    breakdown: {
+      environmental: envScore,
+      social: socialScore,
+      governance: govScore
+    },
+    holdings: holdingESGData.map(h => ({
+      symbol: h.symbol,
+      weight: h.weight,
+      environmentalScore: h.esg.environmentalScore,
+      socialScore: h.esg.socialScore,
+      governanceScore: h.esg.governanceScore,
+      totalESGScore: h.esg.totalESGScore,
+      ESGRiskRating: h.esg.ESGRiskRating,
+      controversyLevel: h.esg.controversyLevel,
+      dataAvailable: h.esg.dataAvailable
+    })).sort((a, b) => (b.totalESGScore || 0) - (a.totalESGScore || 0)),
+    dataQuality: {
+      holdingsWithData: holdingsWithData,
+      totalHoldings: holdings.length,
+      coveragePercent: Math.round((holdingsWithData / holdings.length) * 100)
+    }
+  };
+}
 
 // ==================== STOCK ESG DATA ====================
 
 /**
  * GET /api/esg/stock/:symbol
- * Get ESG data for a single stock (uses real API with caching)
+ * Get ESG data for a single stock (uses FMP API with caching)
  */
 router.get('/stock/:symbol', async (req, res) => {
   try {
-    const { forceRefresh, provider } = req.query;
+    const { forceRefresh } = req.query;
+    const symbol = req.params.symbol.toUpperCase();
 
-    // Use async API-based method
-    const esgData = await esgService.getStockESGAsync(req.params.symbol, {
-      forceRefresh: forceRefresh === 'true',
-      preferredProvider: provider
+    const esgData = await getESGData(symbol, forceRefresh === 'true');
+
+    res.json({
+      success: true,
+      data: esgData
     });
-
-    res.json({ success: true, data: esgData });
   } catch (error) {
     logger.error('Error fetching stock ESG:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -36,17 +382,37 @@ router.get('/stock/:symbol', async (req, res) => {
 
 /**
  * GET /api/esg/stock/:symbol/raw
- * Get raw ESG data directly from API provider
+ * Get raw ESG data directly from FMP API (bypasses cache)
  */
 router.get('/stock/:symbol/raw', async (req, res) => {
   try {
-    const { provider } = req.query;
-    const rawData = await esgDataProvider.getESGData(req.params.symbol, {
-      forceRefresh: true,
-      preferredProvider: provider
-    });
+    const symbol = req.params.symbol.toUpperCase();
 
-    res.json({ success: true, data: rawData });
+    if (!FMP_API_KEY) {
+      return res.status(503).json({
+        success: false,
+        error: 'FMP API key not configured'
+      });
+    }
+
+    // Fetch raw data from both endpoints
+    const [scoreResponse, ratingResponse] = await Promise.all([
+      fetch(`${FMP_BASE_URL}/esg-environmental-social-governance-data?symbol=${symbol}&apikey=${FMP_API_KEY}`),
+      fetch(`${FMP_BASE_URL}/esg-environmental-social-governance-data-ratings?symbol=${symbol}&apikey=${FMP_API_KEY}`)
+    ]);
+
+    const scoreData = await scoreResponse.json();
+    const ratingData = await ratingResponse.json();
+
+    res.json({
+      success: true,
+      data: {
+        symbol: symbol,
+        esgScoreData: scoreData,
+        esgRatingData: ratingData,
+        fetchedAt: new Date().toISOString()
+      }
+    });
   } catch (error) {
     logger.error('Error fetching raw ESG data:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -68,7 +434,21 @@ router.post('/stocks/bulk', async (req, res) => {
       });
     }
 
-    const { results, errors } = await esgService.getBulkStockESG(symbols.slice(0, 50));
+    // Limit to 50 symbols per request
+    const symbolsToFetch = symbols.slice(0, 50).map(s => s.toUpperCase());
+
+    const results = {};
+    const errors = {};
+
+    await Promise.all(
+      symbolsToFetch.map(async (symbol) => {
+        try {
+          results[symbol] = await getESGData(symbol);
+        } catch (error) {
+          errors[symbol] = error.message;
+        }
+      })
+    );
 
     res.json({
       success: true,
@@ -85,57 +465,46 @@ router.post('/stocks/bulk', async (req, res) => {
   }
 });
 
-/**
- * GET /api/esg/stock/:symbol/environmental
- * Get detailed environmental metrics for a stock
- */
-router.get('/stock/:symbol/environmental', async (req, res) => {
-  try {
-    const metrics = esgService.getEnvironmentalMetrics(req.params.symbol);
-    res.json({ success: true, data: metrics });
-  } catch (error) {
-    logger.error('Error fetching environmental metrics:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/stock/:symbol/sdg
- * Get UN SDG alignment for a stock
- */
-router.get('/stock/:symbol/sdg', async (req, res) => {
-  try {
-    const sdgData = esgService.getSDGAlignment(req.params.symbol);
-    res.json({ success: true, data: sdgData });
-  } catch (error) {
-    logger.error('Error fetching SDG alignment:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/stock/:symbol/controversies
- * Get controversy data for a stock
- */
-router.get('/stock/:symbol/controversies', async (req, res) => {
-  try {
-    const controversies = esgService.getControversies(req.params.symbol);
-    res.json({ success: true, data: controversies });
-  } catch (error) {
-    logger.error('Error fetching controversies:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // ==================== PORTFOLIO ESG ANALYSIS ====================
 
 /**
  * GET /api/esg/portfolio/:portfolioId
- * Get portfolio ESG analysis
+ * Get portfolio ESG analysis with weighted averages
  */
 router.get('/portfolio/:portfolioId', authenticate, async (req, res) => {
   try {
-    const esgData = await esgService.calculatePortfolioESG(req.params.portfolioId);
+    const portfolio = await prisma.portfolios.findUnique({
+      where: { id: req.params.portfolioId },
+      include: { holdings: true }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({
+        success: false,
+        error: 'Portfolio not found'
+      });
+    }
+
+    if (!portfolio.holdings || portfolio.holdings.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          portfolioScore: null,
+          environmentalScore: null,
+          socialScore: null,
+          governanceScore: null,
+          ESGRiskRating: 'N/A',
+          averageControversyLevel: null,
+          breakdown: { environmental: null, social: null, governance: null },
+          holdings: [],
+          dataQuality: { holdingsWithData: 0, totalHoldings: 0, coveragePercent: 0 },
+          message: 'No holdings in portfolio'
+        }
+      });
+    }
+
+    const esgData = await calculatePortfolioESG(portfolio.holdings);
+
     res.json({ success: true, data: esgData });
   } catch (error) {
     logger.error('Error calculating portfolio ESG:', error);
@@ -149,52 +518,65 @@ router.get('/portfolio/:portfolioId', authenticate, async (req, res) => {
  */
 router.get('/portfolio/:portfolioId/report', authenticate, async (req, res) => {
   try {
-    const report = await esgService.getComprehensiveReport(req.params.portfolioId);
+    const portfolio = await prisma.portfolios.findUnique({
+      where: { id: req.params.portfolioId },
+      include: { holdings: true }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({
+        success: false,
+        error: 'Portfolio not found'
+      });
+    }
+
+    const esgData = await calculatePortfolioESG(portfolio.holdings);
+
+    // Build radar chart data
+    const radarData = [
+      { axis: 'Environmental', value: esgData.environmentalScore || 0 },
+      { axis: 'Social', value: esgData.socialScore || 0 },
+      { axis: 'Governance', value: esgData.governanceScore || 0 }
+    ];
+
+    // Benchmark comparison (S&P 500 average)
+    const sp500Benchmark = {
+      portfolioScore: 55.2,
+      environmentalScore: 52.0,
+      socialScore: 56.5,
+      governanceScore: 57.1
+    };
+
+    const report = {
+      summary: {
+        portfolioScore: esgData.portfolioScore,
+        ESGRiskRating: esgData.ESGRiskRating,
+        averageControversyLevel: esgData.averageControversyLevel
+      },
+      breakdown: esgData.breakdown,
+      radarData: radarData,
+      holdings: esgData.holdings.slice(0, 10), // Top 10 holdings
+      dataQuality: esgData.dataQuality,
+      benchmark: {
+        name: 'S&P 500 Average',
+        ...sp500Benchmark,
+        comparison: {
+          portfolioVsBenchmark: esgData.portfolioScore !== null ?
+            Math.round((esgData.portfolioScore - sp500Benchmark.portfolioScore) * 10) / 10 : null,
+          environmentalVsBenchmark: esgData.environmentalScore !== null ?
+            Math.round((esgData.environmentalScore - sp500Benchmark.environmentalScore) * 10) / 10 : null,
+          socialVsBenchmark: esgData.socialScore !== null ?
+            Math.round((esgData.socialScore - sp500Benchmark.socialScore) * 10) / 10 : null,
+          governanceVsBenchmark: esgData.governanceScore !== null ?
+            Math.round((esgData.governanceScore - sp500Benchmark.governanceScore) * 10) / 10 : null
+        }
+      },
+      generatedAt: new Date().toISOString()
+    };
+
     res.json({ success: true, data: report });
   } catch (error) {
     logger.error('Error generating ESG report:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/portfolio/:portfolioId/sdg
- * Get portfolio UN SDG alignment
- */
-router.get('/portfolio/:portfolioId/sdg', authenticate, async (req, res) => {
-  try {
-    const sdgAlignment = await esgService.getPortfolioSDGAlignment(req.params.portfolioId);
-    res.json({ success: true, data: sdgAlignment });
-  } catch (error) {
-    logger.error('Error calculating portfolio SDG alignment:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/portfolio/:portfolioId/controversies
- * Get portfolio controversy exposure
- */
-router.get('/portfolio/:portfolioId/controversies', authenticate, async (req, res) => {
-  try {
-    const controversies = await esgService.getPortfolioControversies(req.params.portfolioId);
-    res.json({ success: true, data: controversies });
-  } catch (error) {
-    logger.error('Error calculating controversy exposure:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/portfolio/:portfolioId/benchmark
- * Compare portfolio ESG with benchmarks
- */
-router.get('/portfolio/:portfolioId/benchmark', authenticate, async (req, res) => {
-  try {
-    const comparison = await esgService.compareToBenchmarks(req.params.portfolioId);
-    res.json({ success: true, data: comparison });
-  } catch (error) {
-    logger.error('Error comparing to benchmarks:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -205,232 +587,100 @@ router.get('/portfolio/:portfolioId/benchmark', authenticate, async (req, res) =
  */
 router.get('/portfolio/:portfolioId/recommendations', authenticate, async (req, res) => {
   try {
-    const esgData = await esgService.calculatePortfolioESG(req.params.portfolioId);
-    const recommendations = esgService.getRecommendations(esgData);
-    res.json({ success: true, data: { recommendations, currentScores: esgData.componentScores } });
+    const portfolio = await prisma.portfolios.findUnique({
+      where: { id: req.params.portfolioId },
+      include: { holdings: true }
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({
+        success: false,
+        error: 'Portfolio not found'
+      });
+    }
+
+    const esgData = await calculatePortfolioESG(portfolio.holdings);
+    const recommendations = [];
+
+    // Generate recommendations based on scores
+    if (esgData.environmentalScore !== null && esgData.environmentalScore < 50) {
+      recommendations.push({
+        category: 'Environmental',
+        severity: 'high',
+        action: 'Consider reducing exposure to high-carbon companies',
+        impact: 'Could improve Environmental score by 10-15 points',
+        suggestions: ['Reduce fossil fuel holdings', 'Add renewable energy exposure']
+      });
+    } else if (esgData.environmentalScore !== null && esgData.environmentalScore < 65) {
+      recommendations.push({
+        category: 'Environmental',
+        severity: 'medium',
+        action: 'Review environmental impact of holdings',
+        impact: 'Could improve Environmental score by 5-10 points',
+        suggestions: ['Check company carbon commitments', 'Consider ESG-focused alternatives']
+      });
+    }
+
+    if (esgData.socialScore !== null && esgData.socialScore < 50) {
+      recommendations.push({
+        category: 'Social',
+        severity: 'high',
+        action: 'Address social responsibility concerns in portfolio',
+        impact: 'Could improve Social score by 10-15 points',
+        suggestions: ['Review labor practices of holdings', 'Consider companies with strong DEI programs']
+      });
+    }
+
+    if (esgData.governanceScore !== null && esgData.governanceScore < 50) {
+      recommendations.push({
+        category: 'Governance',
+        severity: 'high',
+        action: 'Improve governance quality of holdings',
+        impact: 'Could improve Governance score by 10-15 points',
+        suggestions: ['Favor companies with independent boards', 'Check executive compensation alignment']
+      });
+    }
+
+    if (esgData.averageControversyLevel !== null && esgData.averageControversyLevel > 3) {
+      recommendations.push({
+        category: 'Controversies',
+        severity: 'high',
+        action: 'Portfolio has high controversy exposure',
+        impact: 'Reducing exposure could lower risk',
+        suggestions: ['Review holdings with controversy scores > 3', 'Consider divesting from high-controversy companies']
+      });
+    }
+
+    // Identify worst ESG performers in portfolio
+    const worstPerformers = esgData.holdings
+      .filter(h => h.dataAvailable && h.totalESGScore !== null && h.totalESGScore < 40)
+      .slice(0, 5);
+
+    if (worstPerformers.length > 0) {
+      recommendations.push({
+        category: 'Portfolio Composition',
+        severity: 'medium',
+        action: 'Consider reviewing low-ESG holdings',
+        impact: 'Replacing could significantly improve portfolio ESG score',
+        holdingsToReview: worstPerformers.map(h => ({
+          symbol: h.symbol,
+          totalESGScore: h.totalESGScore,
+          weight: h.weight
+        }))
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        recommendations,
+        currentScores: esgData.breakdown,
+        overallScore: esgData.portfolioScore,
+        ESGRiskRating: esgData.ESGRiskRating
+      }
+    });
   } catch (error) {
     logger.error('Error generating recommendations:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== ESG SCREENING ====================
-
-/**
- * POST /api/esg/screen
- * Screen stocks by ESG criteria
- */
-router.post('/screen', async (req, res) => {
-  try {
-    const {
-      minESGScore,
-      minEnvironmental,
-      minSocial,
-      minGovernance,
-      maxCarbonIntensity,
-      excludeSectors,
-      excludeControversies,
-      requireSDGs
-    } = req.body;
-
-    const results = esgService.screenStocks({
-      minESGScore: minESGScore || 0,
-      minEnvironmental: minEnvironmental || 0,
-      minSocial: minSocial || 0,
-      minGovernance: minGovernance || 0,
-      maxCarbonIntensity: maxCarbonIntensity || Infinity,
-      excludeSectors: excludeSectors || [],
-      excludeControversies: excludeControversies || false,
-      requireSDGs: requireSDGs || []
-    });
-
-    res.json({
-      success: true,
-      data: {
-        results,
-        count: results.length,
-        criteria: req.body
-      }
-    });
-  } catch (error) {
-    logger.error('Error screening stocks:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/leaders
- * Get top ESG-rated stocks
- */
-router.get('/leaders', async (req, res) => {
-  try {
-    const { limit, sector } = req.query;
-    const criteria = {
-      minESGScore: 70,
-      excludeControversies: true
-    };
-
-    if (sector) {
-      // Only include specified sector
-      criteria.excludeSectors = ['Energy', 'Utilities', 'Materials', 'Industrials', 'Financials',
-        'Technology', 'Health Care', 'Consumer Staples', 'Consumer Discretionary',
-        'Communication Services', 'Real Estate'].filter(s => s !== sector);
-    }
-
-    let results = esgService.screenStocks(criteria);
-
-    if (limit) {
-      results = results.slice(0, parseInt(limit));
-    }
-
-    res.json({ success: true, data: results });
-  } catch (error) {
-    logger.error('Error fetching ESG leaders:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/laggards
- * Get lowest ESG-rated stocks (for exclusion screening)
- */
-router.get('/laggards', async (req, res) => {
-  try {
-    const { limit } = req.query;
-    const results = esgService.screenStocks({ minESGScore: 0 })
-      .sort((a, b) => a.overallScore - b.overallScore)
-      .slice(0, parseInt(limit) || 20);
-
-    res.json({ success: true, data: results });
-  } catch (error) {
-    logger.error('Error fetching ESG laggards:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/low-carbon
- * Get stocks with low carbon intensity
- */
-router.get('/low-carbon', async (req, res) => {
-  try {
-    const { maxIntensity, limit } = req.query;
-    const results = esgService.screenStocks({
-      maxCarbonIntensity: parseFloat(maxIntensity) || 15
-    }).slice(0, parseInt(limit) || 30);
-
-    res.json({ success: true, data: results });
-  } catch (error) {
-    logger.error('Error fetching low-carbon stocks:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== UN SDG ENDPOINTS ====================
-
-/**
- * GET /api/esg/sdg/goals
- * Get list of all UN SDG goals
- */
-router.get('/sdg/goals', (req, res) => {
-  const goals = Object.entries(esgService.constructor.SDG_NAMES).map(([id, name]) => ({
-    id: parseInt(id),
-    name,
-    icon: `sdg-${id}`
-  }));
-  res.json({ success: true, data: goals });
-});
-
-/**
- * GET /api/esg/sdg/coverage/:sdgId
- * Get stocks aligned with a specific SDG
- */
-router.get('/sdg/coverage/:sdgId', async (req, res) => {
-  try {
-    const sdgId = parseInt(req.params.sdgId);
-    const results = esgService.screenStocks({
-      requireSDGs: [sdgId]
-    });
-
-    res.json({
-      success: true,
-      data: {
-        sdg: {
-          id: sdgId,
-          name: esgService.constructor.SDG_NAMES[sdgId]
-        },
-        stocks: results,
-        count: results.length
-      }
-    });
-  } catch (error) {
-    logger.error('Error fetching SDG coverage:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== SECTOR ANALYSIS ====================
-
-/**
- * GET /api/esg/sectors
- * Get ESG breakdown by sector
- */
-router.get('/sectors', async (req, res) => {
-  try {
-    const sectors = {};
-    const allStocks = esgService.screenStocks({ minESGScore: 0 });
-
-    allStocks.forEach(stock => {
-      const sector = stock.sector || 'Other';
-      if (!sectors[sector]) {
-        sectors[sector] = {
-          name: sector,
-          stocks: [],
-          avgESG: 0,
-          avgEnvironmental: 0,
-          avgSocial: 0,
-          avgGovernance: 0,
-          avgCarbon: 0
-        };
-      }
-      sectors[sector].stocks.push(stock);
-    });
-
-    // Calculate averages
-    Object.values(sectors).forEach(sector => {
-      const count = sector.stocks.length;
-      sector.avgESG = Math.round(sector.stocks.reduce((sum, s) => sum + s.overallScore, 0) / count * 10) / 10;
-      sector.avgEnvironmental = Math.round(sector.stocks.reduce((sum, s) => sum + s.environmental, 0) / count * 10) / 10;
-      sector.avgSocial = Math.round(sector.stocks.reduce((sum, s) => sum + s.social, 0) / count * 10) / 10;
-      sector.avgGovernance = Math.round(sector.stocks.reduce((sum, s) => sum + s.governance, 0) / count * 10) / 10;
-      sector.avgCarbon = Math.round(sector.stocks.reduce((sum, s) => sum + s.carbonIntensity, 0) / count * 10) / 10;
-      sector.stockCount = count;
-      delete sector.stocks; // Remove individual stocks from summary
-    });
-
-    const sectorData = Object.values(sectors).sort((a, b) => b.avgESG - a.avgESG);
-
-    res.json({ success: true, data: sectorData });
-  } catch (error) {
-    logger.error('Error fetching sector ESG:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/sectors/:sector
- * Get ESG data for stocks in a specific sector
- */
-router.get('/sectors/:sector', async (req, res) => {
-  try {
-    const allStocks = esgService.screenStocks({ minESGScore: 0 });
-    const sectorStocks = allStocks.filter(s =>
-      s.sector?.toLowerCase() === req.params.sector.toLowerCase()
-    );
-
-    res.json({ success: true, data: sectorStocks });
-  } catch (error) {
-    logger.error('Error fetching sector stocks:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -452,91 +702,39 @@ router.post('/compare', async (req, res) => {
       });
     }
 
-    // Use async API-based comparison for real-time data
-    const comparisonPromises = symbols.slice(0, 10).map(async (symbol) => {
-      const esg = await esgService.getStockESGAsync(symbol);
-      const sdg = esgService.getSDGAlignment(symbol);
-      const controversies = esgService.getControversies(symbol);
+    const symbolsToCompare = symbols.slice(0, 10).map(s => s.toUpperCase());
 
-      return {
-        ...esg,
-        overallScore: Math.round((esg.environmental + esg.social + esg.governance) / 3 * 10) / 10,
-        sdgAlignment: sdg.alignmentScore,
-        controversyLevel: controversies.level
-      };
+    const comparisonPromises = symbolsToCompare.map(async (symbol) => {
+      return await getESGData(symbol);
     });
 
     const comparison = await Promise.all(comparisonPromises);
 
-    res.json({ success: true, data: comparison });
+    // Calculate ranking
+    const ranked = comparison
+      .filter(c => c.dataAvailable && c.totalESGScore !== null)
+      .sort((a, b) => (b.totalESGScore || 0) - (a.totalESGScore || 0));
+
+    res.json({
+      success: true,
+      data: {
+        stocks: comparison,
+        ranking: ranked.map((c, idx) => ({
+          rank: idx + 1,
+          symbol: c.symbol,
+          totalESGScore: c.totalESGScore,
+          ESGRiskRating: c.ESGRiskRating
+        })),
+        unavailable: comparison.filter(c => !c.dataAvailable).map(c => c.symbol)
+      }
+    });
   } catch (error) {
     logger.error('Error comparing stocks:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// ==================== PROVIDER MANAGEMENT ====================
-
-/**
- * GET /api/esg/providers
- * Get status of all ESG data providers
- */
-router.get('/providers', async (req, res) => {
-  try {
-    const providers = esgDataProvider.getProviderStatus();
-    res.json({
-      success: true,
-      data: {
-        providers,
-        primaryProvider: providers.find(p => p.enabled && p.priority === 1)?.name || 'none',
-        availableProviders: providers.filter(p => p.enabled).map(p => p.name)
-      }
-    });
-  } catch (error) {
-    logger.error('Error fetching provider status:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-/**
- * GET /api/esg/providers/:provider/test
- * Test a specific ESG provider with a sample symbol
- */
-router.get('/providers/:provider/test', authenticate, async (req, res) => {
-  try {
-    const testSymbol = req.query.symbol || 'AAPL';
-    const startTime = Date.now();
-
-    const data = await esgDataProvider.getESGData(testSymbol, {
-      forceRefresh: true,
-      preferredProvider: req.params.provider
-    });
-
-    const responseTime = Date.now() - startTime;
-
-    res.json({
-      success: true,
-      data: {
-        provider: req.params.provider,
-        testSymbol,
-        responseTimeMs: responseTime,
-        dataReceived: !!data,
-        sampleData: data ? {
-          scores: data.scores,
-          rating: data.rating,
-          provider: data.provider
-        } : null
-      }
-    });
-  } catch (error) {
-    logger.error('Error testing provider:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      provider: req.params.provider
-    });
-  }
-});
+// ==================== ESG RATINGS ====================
 
 /**
  * GET /api/esg/ratings/:symbol
@@ -544,28 +742,149 @@ router.get('/providers/:provider/test', authenticate, async (req, res) => {
  */
 router.get('/ratings/:symbol', async (req, res) => {
   try {
-    const esgData = await esgService.getStockESGAsync(req.params.symbol);
-    const overallScore = (esgData.environmental + esgData.social + esgData.governance) / 3;
-    const rating = esgDataProvider.getUnifiedRating(overallScore);
+    const symbol = req.params.symbol.toUpperCase();
+    const esgData = await getESGData(symbol);
+
+    if (!esgData.dataAvailable) {
+      return res.json({
+        success: true,
+        data: {
+          symbol: symbol,
+          available: false,
+          message: 'ESG data not available for this symbol'
+        }
+      });
+    }
+
+    // Map score to letter rating
+    const getLetterRating = (score) => {
+      if (score === null) return 'N/A';
+      if (score >= 80) return 'AAA';
+      if (score >= 70) return 'AA';
+      if (score >= 60) return 'A';
+      if (score >= 50) return 'BBB';
+      if (score >= 40) return 'BB';
+      if (score >= 30) return 'B';
+      return 'CCC';
+    };
+
+    const getRatingColor = (score) => {
+      if (score === null) return '#6b7280';
+      if (score >= 70) return '#22c55e';
+      if (score >= 50) return '#eab308';
+      return '#ef4444';
+    };
 
     res.json({
       success: true,
       data: {
-        symbol: req.params.symbol.toUpperCase(),
-        overallScore: Math.round(overallScore * 10) / 10,
-        rating: rating.label,
-        ratingColor: rating.color,
+        symbol: symbol,
+        available: true,
+        totalESGScore: esgData.totalESGScore,
+        letterRating: getLetterRating(esgData.totalESGScore),
+        ratingColor: getRatingColor(esgData.totalESGScore),
+        ESGRiskRating: esgData.ESGRiskRating,
         componentScores: {
-          environmental: esgData.environmental,
-          social: esgData.social,
-          governance: esgData.governance
+          environmental: esgData.environmentalScore,
+          social: esgData.socialScore,
+          governance: esgData.governanceScore
         },
+        componentRatings: {
+          environmental: getLetterRating(esgData.environmentalScore),
+          social: getLetterRating(esgData.socialScore),
+          governance: getLetterRating(esgData.governanceScore)
+        },
+        controversyLevel: esgData.controversyLevel,
         source: esgData.source,
-        dataQuality: esgData.dataQuality
+        lastUpdated: esgData.lastUpdated
       }
     });
   } catch (error) {
     logger.error('Error fetching ESG rating:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== CACHE MANAGEMENT ====================
+
+/**
+ * GET /api/esg/cache/stats
+ * Get cache statistics (admin only)
+ */
+router.get('/cache/stats', authenticate, async (req, res) => {
+  try {
+    const now = Date.now();
+    let validCount = 0;
+    let expiredCount = 0;
+
+    ESG_CACHE.forEach((value) => {
+      if (now - value.timestamp < CACHE_TTL) {
+        validCount++;
+      } else {
+        expiredCount++;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalEntries: ESG_CACHE.size,
+        validEntries: validCount,
+        expiredEntries: expiredCount,
+        cacheTTLDays: CACHE_TTL / (24 * 60 * 60 * 1000)
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting cache stats:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/esg/cache/clear
+ * Clear the ESG cache (admin only)
+ */
+router.delete('/cache/clear', authenticate, async (req, res) => {
+  try {
+    const previousSize = ESG_CACHE.size;
+    ESG_CACHE.clear();
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Cache cleared successfully',
+        entriesCleared: previousSize
+      }
+    });
+  } catch (error) {
+    logger.error('Error clearing cache:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== API STATUS ====================
+
+/**
+ * GET /api/esg/status
+ * Get ESG API status and configuration
+ */
+router.get('/status', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        apiConfigured: !!FMP_API_KEY,
+        provider: 'Financial Modeling Prep (FMP)',
+        cacheTTLDays: CACHE_TTL / (24 * 60 * 60 * 1000),
+        cacheEntries: ESG_CACHE.size,
+        endpoints: {
+          esgScore: `${FMP_BASE_URL}/esg-environmental-social-governance-data`,
+          esgRatings: `${FMP_BASE_URL}/esg-environmental-social-governance-data-ratings`
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting ESG status:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

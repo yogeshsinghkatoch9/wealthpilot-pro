@@ -10,19 +10,21 @@
     timezone: 'America/New_York'
   };
 %>
-<main class="p-4 lg:p-6">
+<main class="page-container p-4 lg:p-6">
   <div class="max-w-4xl mx-auto space-y-6">
 
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-bold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %>">Profile Settings</h1>
-        <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mt-1">Manage your account settings and preferences</p>
+    <div class="page-header">
+      <div class="flex items-center justify-between relative z-10">
+        <div>
+          <h1 class="page-title">Profile Settings</h1>
+          <p class="page-subtitle">Manage your account and preferences</p>
+        </div>
       </div>
     </div>
 
     <!-- Profile Overview Card -->
-    <div class="card p-6">
+    <div class="premium-card p-6">
       <div class="flex items-center gap-6">
         <div class="w-20 h-20 rounded-full bg-gradient-to-br from-sky-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
           <%= safeUser.firstName ? safeUser.firstName.charAt(0).toUpperCase() : safeUser.email.charAt(0).toUpperCase() %>
@@ -47,32 +49,32 @@
     <!-- Profile Form -->
     <form id="profile-form" class="space-y-6">
       <!-- Personal Information -->
-      <div class="card p-6">
+      <div class="premium-card p-6">
         <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Personal Information</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">First Name</label>
-            <input type="text" name="firstName" value="<%= safeUser.firstName || '' %>" class="form-input" placeholder="John">
+            <input type="text" name="firstName" value="<%= safeUser.firstName || '' %>" class="premium-input" placeholder="John">
           </div>
           <div>
             <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Last Name</label>
-            <input type="text" name="lastName" value="<%= safeUser.lastName || '' %>" class="form-input" placeholder="Doe">
+            <input type="text" name="lastName" value="<%= safeUser.lastName || '' %>" class="premium-input" placeholder="Doe">
           </div>
           <div class="md:col-span-2">
             <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Email</label>
-            <input type="email" name="email" value="<%= safeUser.email %>" class="form-input" disabled>
+            <input type="email" name="email" value="<%= safeUser.email %>" class="premium-input" disabled>
             <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-1">Contact support to change your email</p>
           </div>
         </div>
       </div>
 
       <!-- Preferences -->
-      <div class="card p-6">
+      <div class="premium-card p-6">
         <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Preferences</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Currency</label>
-            <select name="currency" class="form-input">
+            <select name="currency" class="premium-input">
               <option value="USD" <%= safeUser.currency === 'USD' ? 'selected' : '' %>>USD - US Dollar</option>
               <option value="EUR" <%= safeUser.currency === 'EUR' ? 'selected' : '' %>>EUR - Euro</option>
               <option value="GBP" <%= safeUser.currency === 'GBP' ? 'selected' : '' %>>GBP - British Pound</option>
@@ -84,7 +86,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Timezone</label>
-            <select name="timezone" class="form-input">
+            <select name="timezone" class="premium-input">
               <option value="America/New_York" <%= safeUser.timezone === 'America/New_York' ? 'selected' : '' %>>Eastern Time (ET)</option>
               <option value="America/Chicago" <%= safeUser.timezone === 'America/Chicago' ? 'selected' : '' %>>Central Time (CT)</option>
               <option value="America/Denver" <%= safeUser.timezone === 'America/Denver' ? 'selected' : '' %>>Mountain Time (MT)</option>
@@ -100,7 +102,7 @@
 
       <!-- Save Button -->
       <div class="flex justify-end">
-        <button type="submit" class="btn-primary">
+        <button type="submit" class="premium-btn premium-btn-primary">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
           </svg>
@@ -110,23 +112,23 @@
     </form>
 
     <!-- Change Password -->
-    <div class="card p-6">
+    <div class="premium-card p-6">
       <h3 class="text-lg font-semibold <%= safeTheme === 'light' ? 'text-gray-900' : 'text-white' %> mb-4">Change Password</h3>
       <form id="password-form" class="space-y-4">
         <div>
           <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Current Password</label>
-          <input type="password" name="currentPassword" class="form-input" placeholder="Enter current password" required>
+          <input type="password" name="currentPassword" class="premium-input" placeholder="Enter current password" required>
         </div>
         <div>
           <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">New Password</label>
-          <input type="password" name="newPassword" class="form-input" placeholder="Enter new password" required minlength="8">
+          <input type="password" name="newPassword" class="premium-input" placeholder="Enter new password" required minlength="8">
           <p class="text-xs <%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-500' %> mt-1">Minimum 8 characters</p>
         </div>
         <div>
           <label class="block text-sm font-medium <%= safeTheme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1">Confirm New Password</label>
-          <input type="password" name="confirmPassword" class="form-input" placeholder="Confirm new password" required>
+          <input type="password" name="confirmPassword" class="premium-input" placeholder="Confirm new password" required>
         </div>
-        <button type="submit" class="btn-secondary">
+        <button type="submit" class="premium-btn premium-btn-secondary">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
           </svg>
@@ -136,10 +138,10 @@
     </div>
 
     <!-- Danger Zone -->
-    <div class="card p-6 border-red-500/30">
+    <div class="premium-card p-6 border-red-500/30">
       <h3 class="text-lg font-semibold text-red-400 mb-2">Danger Zone</h3>
       <p class="<%= safeTheme === 'light' ? 'text-gray-500' : 'text-slate-400' %> mb-4">Once you delete your account, there is no going back. Please be certain.</p>
-      <button type="button" onclick="confirmDeleteAccount()" class="btn-danger">
+      <button type="button" onclick="confirmDeleteAccount()" class="premium-btn premium-btn-danger">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
         </svg>

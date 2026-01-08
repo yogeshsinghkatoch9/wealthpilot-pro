@@ -1,29 +1,280 @@
-<%- include('../partials/header', { pageTitle: mode === 'login' ? 'Sign In' : 'Create Account' }) %>
-<div class="min-h-screen flex">
-  <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-sky-600 via-blue-700 to-purple-800 p-12 flex-col justify-between relative overflow-hidden">
-    <div class="absolute inset-0 opacity-30"><div class="absolute top-20 left-20 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div><div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div></div>
-    <div class="relative">
-      <div class="flex items-center gap-3 mb-8"><svg class="w-10 h-10" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" fill="white"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg><h1 class="text-3xl font-bold text-white">WealthPilot Pro</h1></div>
-      <h2 class="text-4xl font-bold text-white mb-4">Professional Portfolio Intelligence</h2>
-      <p class="text-xl text-white/80">V4 with TypeScript, WebSockets, and real-time updates.</p>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= mode === 'login' ? 'Sign In' : 'Create Account' %> - WealthPilot Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/stitch-theme.css">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #09090b;
+    }
+    .auth-gradient {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    }
+    .auth-pattern {
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .form-input {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      font-size: 0.9375rem;
+      background: #09090b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      color: #fafafa;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+    .form-input::placeholder {
+      color: #52525b;
+    }
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    .glass-card {
+      background: rgba(17, 17, 19, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid #27272a;
+      border-radius: 24px;
+    }
+    .feature-check {
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .float-1 { animation: float 6s ease-in-out infinite; }
+    .float-2 { animation: float 8s ease-in-out infinite 1s; }
+    .float-3 { animation: float 7s ease-in-out infinite 2s; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="min-h-screen flex">
+    <!-- Left Panel - Branding -->
+    <div class="hidden lg:flex lg:w-1/2 auth-gradient auth-pattern p-12 flex-col justify-between relative overflow-hidden">
+      <!-- Floating Orbs -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl float-1"></div>
+        <div class="absolute bottom-20 right-20 w-80 h-80 bg-purple-300/20 rounded-full blur-3xl float-2"></div>
+        <div class="absolute top-1/2 left-1/3 w-48 h-48 bg-indigo-300/15 rounded-full blur-2xl float-3"></div>
+      </div>
+
+      <!-- Logo & Header -->
+      <div class="relative z-10">
+        <div class="flex items-center gap-4 mb-12">
+          <div class="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+            <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white"/>
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">WealthPilot Pro</h1>
+            <p class="text-white/60 text-sm">Professional Portfolio Intelligence</p>
+          </div>
+        </div>
+
+        <h2 class="text-5xl font-bold text-white mb-6 leading-tight">
+          Take control of<br/>your investments
+        </h2>
+        <p class="text-xl text-white/80 max-w-md">
+          Real-time analytics, AI-powered insights, and professional-grade tools for serious investors.
+        </p>
+      </div>
+
+      <!-- Features -->
+      <div class="relative z-10">
+        <div class="glass-card p-6 space-y-4">
+          <% const features = [
+            { icon: 'chart', text: 'Real-time market data & WebSocket updates' },
+            { icon: 'shield', text: 'Bank-level security & encryption' },
+            { icon: 'brain', text: 'AI-powered portfolio analysis' },
+            { icon: 'globe', text: 'Multi-asset tracking (Stocks, Crypto, ETFs)' },
+            { icon: 'target', text: 'Smart alerts & price notifications' }
+          ]; %>
+          <% features.forEach((f, i) => { %>
+          <div class="flex items-center gap-4 text-white/90">
+            <div class="feature-check">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <span class="text-sm font-medium"><%= f.text %></span>
+          </div>
+          <% }) %>
+        </div>
+
+        <p class="text-white/40 text-sm mt-6 text-center">
+          Trusted by 50,000+ investors worldwide
+        </p>
+      </div>
     </div>
-    <div class="relative space-y-3">
-      <% ['Real-time WebSocket updates', 'TypeScript backend', 'Dark/Light themes', '13 dashboard pages', 'Scenario simulator'].forEach(f => { %><div class="flex items-center gap-3 text-white/90"><div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div><span><%= f %></span></div><% }) %>
+
+    <!-- Right Panel - Auth Form -->
+    <div class="flex-1 flex items-center justify-center p-8 bg-[#09090b]">
+      <div class="w-full max-w-md">
+        <!-- Mobile Logo -->
+        <div class="lg:hidden flex items-center justify-center gap-3 mb-10">
+          <div class="w-12 h-12 auth-gradient rounded-xl flex items-center justify-center">
+            <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white"/>
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="text-2xl font-bold text-white">WealthPilot</span>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-bold text-white mb-3">
+            <%= mode === 'login' ? 'Welcome back' : 'Create your account' %>
+          </h2>
+          <p class="text-zinc-500">
+            <%= mode === 'login' ? 'Sign in to access your portfolio' : 'Start your investment journey today' %>
+          </p>
+        </div>
+
+        <!-- Error Message -->
+        <% if (typeof error !== 'undefined' && error) { %>
+        <div class="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
+          <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-red-400 text-sm"><%= error %></span>
+        </div>
+        <% } %>
+
+        <!-- Auth Form -->
+        <form action="/<%= mode %>" method="POST" class="space-y-5">
+          <% if (mode === 'register') { %>
+          <div>
+            <label class="block text-sm font-medium text-zinc-400 mb-2">Full Name</label>
+            <input type="text" name="full_name" required class="form-input" placeholder="John Doe" autocomplete="name">
+          </div>
+          <% } %>
+
+          <div>
+            <label class="block text-sm font-medium text-zinc-400 mb-2">Username</label>
+            <input type="text" name="username" required class="form-input" placeholder="johndoe" autocomplete="username">
+          </div>
+
+          <% if (mode === 'register') { %>
+          <div>
+            <label class="block text-sm font-medium text-zinc-400 mb-2">Email</label>
+            <input type="email" name="email" required class="form-input" placeholder="john@example.com" autocomplete="email">
+          </div>
+          <% } %>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-sm font-medium text-zinc-400">Password</label>
+              <% if (mode === 'login') { %>
+              <a href="/forgot-password" class="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">Forgot password?</a>
+              <% } %>
+            </div>
+            <input type="password" name="password" required class="form-input" placeholder="<%= mode === 'register' ? 'Minimum 8 characters' : 'Enter your password' %>" autocomplete="<%= mode === 'login' ? 'current-password' : 'new-password' %>">
+          </div>
+
+          <% if (mode === 'register') { %>
+          <div class="flex items-start gap-3">
+            <input type="checkbox" name="terms" required class="mt-1 w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-indigo-500">
+            <label class="text-sm text-zinc-500">
+              I agree to the <a href="/terms" class="text-indigo-400 hover:text-indigo-300">Terms of Service</a> and <a href="/privacy" class="text-indigo-400 hover:text-indigo-300">Privacy Policy</a>
+            </label>
+          </div>
+          <% } %>
+
+          <button type="submit" class="btn-primary mt-2">
+            <% if (mode === 'login') { %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+            </svg>
+            Sign In
+            <% } else { %>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Create Account
+            <% } %>
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="relative my-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-zinc-800"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-[#09090b] text-zinc-600">or continue with</span>
+          </div>
+        </div>
+
+        <!-- Social Login -->
+        <div class="grid grid-cols-2 gap-4">
+          <button type="button" class="flex items-center justify-center gap-3 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 font-medium hover:bg-zinc-800 hover:border-zinc-700 transition-all">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Google
+          </button>
+          <button type="button" class="flex items-center justify-center gap-3 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 font-medium hover:bg-zinc-800 hover:border-zinc-700 transition-all">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            GitHub
+          </button>
+        </div>
+
+        <!-- Switch Mode -->
+        <p class="text-center text-zinc-500 mt-8">
+          <%= mode === 'login' ? "Don't have an account?" : 'Already have an account?' %>
+          <a href="/<%= mode === 'login' ? 'register' : 'login' %>" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            <%= mode === 'login' ? 'Sign up free' : 'Sign in' %>
+          </a>
+        </p>
+      </div>
     </div>
   </div>
-  <div class="flex-1 flex items-center justify-center p-8 <%= theme === 'light' ? 'bg-gray-50' : '' %>">
-    <div class="w-full max-w-md">
-      <div class="mb-8"><h2 class="text-2xl font-bold <%= theme === 'light' ? 'text-gray-900' : 'text-white' %> mb-2"><%= mode === 'login' ? 'Welcome back' : 'Create account' %></h2><p class="<%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %>"><%= mode === 'login' ? 'Sign in to your portfolio' : 'Start investing smarter' %></p></div>
-      <% if (error) { %><div class="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"><%= error %></div><% } %>
-      <form action="/<%= mode %>" method="POST" class="space-y-4">
-        <% if (mode === 'register') { %><div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Full Name</label><input type="text" name="full_name" required class="form-input" placeholder="John Doe"></div><% } %>
-        <div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Username</label><input type="text" name="username" required class="form-input" placeholder="johndoe"></div>
-        <% if (mode === 'register') { %><div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Email</label><input type="email" name="email" required class="form-input" placeholder="john@example.com"></div><% } %>
-        <div><label class="block text-sm font-medium <%= theme === 'light' ? 'text-gray-700' : 'text-slate-300' %> mb-1.5">Password</label><input type="password" name="password" required class="form-input" placeholder="••••••••"></div>
-        <button type="submit" class="btn-primary w-full"><%= mode === 'login' ? 'Sign In' : 'Create Account' %></button>
-      </form>
-      <p class="text-center <%= theme === 'light' ? 'text-gray-600' : 'text-slate-400' %> mt-6"><%= mode === 'login' ? "Don't have an account?" : 'Have an account?' %> <a href="/<%= mode === 'login' ? 'register' : 'login' %>" class="text-sky-400 hover:text-sky-300 font-medium"><%= mode === 'login' ? 'Sign up' : 'Sign in' %></a></p>
-    </div>
-  </div>
-</div>
-<%- include('../partials/footer') %>
+</body>
+</html>

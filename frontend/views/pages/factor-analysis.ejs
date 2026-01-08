@@ -1,0 +1,926 @@
+<%
+// Factor Analysis Dashboard - WealthPilot Pro
+// Professional factor exposure and attribution analysis
+
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+
+// Sample Portfolio Factor Data
+const portfolioFactors = {
+  value: {
+    pe: 18.4,
+    pb: 3.2,
+    exposure: 0.42,
+    benchmarkExposure: 0.35,
+    contribution: 1.8,
+    description: 'Price-to-Earnings and Price-to-Book exposure'
+  },
+  growth: {
+    revenueGrowth: 22.5,
+    epsGrowth: 18.3,
+    exposure: 0.68,
+    benchmarkExposure: 0.45,
+    contribution: 3.2,
+    description: 'Revenue and Earnings growth rates'
+  },
+  momentum: {
+    priceMomentum: 12.8,
+    rsi: 58,
+    exposure: 0.55,
+    benchmarkExposure: 0.50,
+    contribution: 2.1,
+    description: '12-month price momentum and RSI'
+  },
+  quality: {
+    roe: 24.6,
+    debtEquity: 0.45,
+    exposure: 0.72,
+    benchmarkExposure: 0.55,
+    contribution: 2.8,
+    description: 'ROE and Debt-to-Equity metrics'
+  },
+  size: {
+    avgMarketCap: 285, // billions
+    exposure: -0.25,
+    benchmarkExposure: 0,
+    contribution: -0.4,
+    description: 'Market capitalization exposure (negative = large cap tilt)'
+  },
+  volatility: {
+    beta: 1.12,
+    stdDev: 18.5,
+    exposure: 0.35,
+    benchmarkExposure: 0.50,
+    contribution: 0.6,
+    description: 'Beta and standard deviation measures'
+  },
+  dividend: {
+    yield: 2.1,
+    exposure: 0.28,
+    benchmarkExposure: 0.40,
+    contribution: 0.5,
+    description: 'Dividend yield exposure'
+  }
+};
+
+// Factor Attribution Table Data
+const factorAttribution = [
+  { factor: 'Market (Beta)', exposure: 1.08, factorReturn: 12.5, contribution: 13.50, weight: '100%' },
+  { factor: 'Growth', exposure: 0.68, factorReturn: 4.7, contribution: 3.20, weight: '68%' },
+  { factor: 'Quality', exposure: 0.72, factorReturn: 3.9, contribution: 2.80, weight: '72%' },
+  { factor: 'Momentum', exposure: 0.55, factorReturn: 3.8, contribution: 2.10, weight: '55%' },
+  { factor: 'Value', exposure: 0.42, factorReturn: 4.3, contribution: 1.80, weight: '42%' },
+  { factor: 'Low Volatility', exposure: -0.35, factorReturn: -1.8, contribution: 0.63, weight: '-35%' },
+  { factor: 'Dividend Yield', exposure: 0.28, factorReturn: 1.8, contribution: 0.50, weight: '28%' },
+  { factor: 'Size (Small-Large)', exposure: -0.25, factorReturn: 1.6, contribution: -0.40, weight: '-25%' },
+  { factor: 'Selection (Alpha)', exposure: 1.00, factorReturn: 2.3, contribution: 2.30, weight: 'N/A' }
+];
+
+// Factor Rotation Signals
+const factorRotationSignals = [
+  { factor: 'Quality', signal: 'Overweight', momentum: 'Strong', economicPhase: 'Late Cycle', recommendation: 'Maintain or increase quality tilt', color: 'emerald' },
+  { factor: 'Value', signal: 'Overweight', momentum: 'Improving', economicPhase: 'Recovery', recommendation: 'Rotate into value as rates stabilize', color: 'emerald' },
+  { factor: 'Momentum', signal: 'Neutral', momentum: 'Stable', economicPhase: 'All Phases', recommendation: 'Maintain current exposure', color: 'amber' },
+  { factor: 'Growth', signal: 'Underweight', momentum: 'Weakening', economicPhase: 'Late Cycle', recommendation: 'Reduce growth exposure', color: 'red' },
+  { factor: 'Low Volatility', signal: 'Overweight', momentum: 'Strong', economicPhase: 'Late Cycle', recommendation: 'Increase defensive positioning', color: 'emerald' },
+  { factor: 'Size (Small Cap)', signal: 'Neutral', momentum: 'Stable', economicPhase: 'Early Cycle', recommendation: 'Wait for clearer signals', color: 'amber' },
+  { factor: 'Dividend', signal: 'Neutral', momentum: 'Stable', economicPhase: 'Recession', recommendation: 'Maintain income focus', color: 'amber' }
+];
+
+// Holdings by Factor - Top holdings for each factor category
+const holdingsByFactor = {
+  value: [
+    { symbol: 'BRK.B', name: 'Berkshire Hathaway', pe: 8.2, pb: 1.4, score: 92 },
+    { symbol: 'JPM', name: 'JPMorgan Chase', pe: 10.5, pb: 1.6, score: 88 },
+    { symbol: 'XOM', name: 'Exxon Mobil', pe: 11.2, pb: 2.1, score: 85 },
+    { symbol: 'CVX', name: 'Chevron', pe: 12.8, pb: 1.9, score: 82 },
+    { symbol: 'BAC', name: 'Bank of America', pe: 9.8, pb: 1.1, score: 80 }
+  ],
+  growth: [
+    { symbol: 'NVDA', name: 'NVIDIA', revenueGrowth: 122, epsGrowth: 168, score: 98 },
+    { symbol: 'META', name: 'Meta Platforms', revenueGrowth: 28, epsGrowth: 73, score: 91 },
+    { symbol: 'AMZN', name: 'Amazon', revenueGrowth: 12, epsGrowth: 240, score: 89 },
+    { symbol: 'GOOGL', name: 'Alphabet', revenueGrowth: 15, epsGrowth: 52, score: 86 },
+    { symbol: 'MSFT', name: 'Microsoft', revenueGrowth: 16, epsGrowth: 22, score: 84 }
+  ],
+  momentum: [
+    { symbol: 'NVDA', name: 'NVIDIA', momentum12m: 205, rsi: 68, score: 96 },
+    { symbol: 'META', name: 'Meta Platforms', momentum12m: 58, rsi: 62, score: 88 },
+    { symbol: 'LLY', name: 'Eli Lilly', momentum12m: 68, rsi: 64, score: 87 },
+    { symbol: 'AVGO', name: 'Broadcom', momentum12m: 95, rsi: 58, score: 85 },
+    { symbol: 'COST', name: 'Costco', momentum12m: 42, rsi: 55, score: 78 }
+  ],
+  quality: [
+    { symbol: 'MSFT', name: 'Microsoft', roe: 38.5, debtEquity: 0.35, score: 95 },
+    { symbol: 'AAPL', name: 'Apple', roe: 160, debtEquity: 1.52, score: 93 },
+    { symbol: 'V', name: 'Visa', roe: 47.8, debtEquity: 0.58, score: 91 },
+    { symbol: 'MA', name: 'Mastercard', roe: 185, debtEquity: 2.15, score: 89 },
+    { symbol: 'JNJ', name: 'Johnson & Johnson', roe: 22.5, debtEquity: 0.44, score: 87 }
+  ],
+  dividend: [
+    { symbol: 'VZ', name: 'Verizon', yield: 6.5, payoutRatio: 52, score: 88 },
+    { symbol: 'T', name: 'AT&T', yield: 6.2, payoutRatio: 60, score: 85 },
+    { symbol: 'MO', name: 'Altria', yield: 8.8, payoutRatio: 75, score: 84 },
+    { symbol: 'IBM', name: 'IBM', yield: 4.2, payoutRatio: 65, score: 80 },
+    { symbol: 'PFE', name: 'Pfizer', yield: 5.8, payoutRatio: 110, score: 76 }
+  ]
+};
+
+// Summary metrics
+const totalFactorContribution = factorAttribution.reduce((sum, f) => sum + f.contribution, 0);
+const alphaGenerated = 2.3;
+const informationRatio = 0.85;
+const trackingError = 4.2;
+
+// Helper functions
+function formatPct(value) {
+  return (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+}
+
+function formatExposure(value) {
+  return (value >= 0 ? '+' : '') + value.toFixed(2);
+}
+
+function getExposureStatus(portfolioExp, benchmarkExp) {
+  const diff = portfolioExp - benchmarkExp;
+  if (diff > 0.15) return { text: 'Overweight', class: 'premium-badge-success' };
+  if (diff < -0.15) return { text: 'Underweight', class: 'premium-badge-danger' };
+  return { text: 'Neutral', class: 'premium-badge-neutral' };
+}
+%>
+
+<%- include('../partials/header', { pageTitle: 'Factor Analysis' }) %>
+
+<main class="page-container px-4 lg:px-6 py-6">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <h1 class="page-title">Factor Analysis Dashboard</h1>
+        <p class="page-subtitle">Multi-factor exposure, attribution, and rotation signals</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="live-indicator">Live Data</div>
+        <select class="premium-input premium-select" style="width: auto; padding: 8px 40px 8px 12px;">
+          <option value="portfolio">My Portfolio</option>
+          <option value="tech">Tech Portfolio</option>
+          <option value="dividend">Dividend Portfolio</option>
+        </select>
+        <button class="premium-btn premium-btn-secondary" onclick="window.location.reload()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics Summary -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-stagger">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-forest">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <p class="stat-label">Total Return (YTD)</p>
+      <p class="stat-value value-gain"><%= formatPct(totalFactorContribution) %></p>
+      <p class="stat-change text-emerald-400">Factor + Alpha</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-emerald">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <p class="stat-label">Alpha Generated</p>
+      <p class="stat-value value-positive"><%= formatPct(alphaGenerated) %></p>
+      <p class="stat-change text-slate-400">Selection skill</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-indigo">
+        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <p class="stat-label">Information Ratio</p>
+      <p class="stat-value text-indigo-400"><%= informationRatio.toFixed(2) %></p>
+      <p class="stat-change text-slate-400">Risk-adjusted alpha</p>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-amber">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+        </svg>
+      </div>
+      <p class="stat-label">Tracking Error</p>
+      <p class="stat-value text-amber-400"><%= trackingError.toFixed(1) %>%</p>
+      <p class="stat-change text-slate-400">Active risk</p>
+    </div>
+  </div>
+
+  <!-- Factor Exposure Summary Cards -->
+  <div class="premium-card mb-6">
+    <div class="premium-card-header">
+      <div>
+        <h2 class="premium-card-title">Factor Exposure Summary</h2>
+        <p class="premium-card-subtitle">Portfolio factor tilts vs S&P 500 benchmark</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <!-- Value Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Value</div>
+        <div class="text-2xl font-bold font-mono text-emerald-400"><%= formatExposure(portfolioFactors.value.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">P/E: <%= portfolioFactors.value.pe.toFixed(1) %>x</div>
+        <% const valueStatus = getExposureStatus(portfolioFactors.value.exposure, portfolioFactors.value.benchmarkExposure); %>
+        <span class="premium-badge <%= valueStatus.class %> mt-2"><%= valueStatus.text %></span>
+      </div>
+      <!-- Growth Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Growth</div>
+        <div class="text-2xl font-bold font-mono text-emerald-400"><%= formatExposure(portfolioFactors.growth.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">Rev: +<%= portfolioFactors.growth.revenueGrowth.toFixed(0) %>%</div>
+        <% const growthStatus = getExposureStatus(portfolioFactors.growth.exposure, portfolioFactors.growth.benchmarkExposure); %>
+        <span class="premium-badge <%= growthStatus.class %> mt-2"><%= growthStatus.text %></span>
+      </div>
+      <!-- Momentum Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Momentum</div>
+        <div class="text-2xl font-bold font-mono text-amber-400"><%= formatExposure(portfolioFactors.momentum.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">RSI: <%= portfolioFactors.momentum.rsi %></div>
+        <% const momStatus = getExposureStatus(portfolioFactors.momentum.exposure, portfolioFactors.momentum.benchmarkExposure); %>
+        <span class="premium-badge <%= momStatus.class %> mt-2"><%= momStatus.text %></span>
+      </div>
+      <!-- Quality Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Quality</div>
+        <div class="text-2xl font-bold font-mono text-emerald-400"><%= formatExposure(portfolioFactors.quality.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">ROE: <%= portfolioFactors.quality.roe.toFixed(1) %>%</div>
+        <% const qualStatus = getExposureStatus(portfolioFactors.quality.exposure, portfolioFactors.quality.benchmarkExposure); %>
+        <span class="premium-badge <%= qualStatus.class %> mt-2"><%= qualStatus.text %></span>
+      </div>
+      <!-- Size Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Size</div>
+        <div class="text-2xl font-bold font-mono text-purple-400"><%= formatExposure(portfolioFactors.size.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">$<%= portfolioFactors.size.avgMarketCap %>B avg</div>
+        <span class="premium-badge premium-badge-info mt-2">Large Cap</span>
+      </div>
+      <!-- Volatility Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Volatility</div>
+        <div class="text-2xl font-bold font-mono text-amber-400"><%= formatExposure(portfolioFactors.volatility.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">Beta: <%= portfolioFactors.volatility.beta.toFixed(2) %></div>
+        <% const volStatus = getExposureStatus(portfolioFactors.volatility.exposure, portfolioFactors.volatility.benchmarkExposure); %>
+        <span class="premium-badge <%= volStatus.class %> mt-2"><%= volStatus.text %></span>
+      </div>
+      <!-- Dividend Factor -->
+      <div class="stat-card-forest text-center p-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Dividend</div>
+        <div class="text-2xl font-bold font-mono text-cyan-400"><%= formatExposure(portfolioFactors.dividend.exposure) %></div>
+        <div class="text-xs text-slate-500 mt-1">Yield: <%= portfolioFactors.dividend.yield.toFixed(1) %>%</div>
+        <% const divStatus = getExposureStatus(portfolioFactors.dividend.exposure, portfolioFactors.dividend.benchmarkExposure); %>
+        <span class="premium-badge <%= divStatus.class %> mt-2"><%= divStatus.text %></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Radar Chart - Factor Tilts -->
+    <div class="premium-card">
+      <div class="premium-card-header">
+        <div>
+          <h3 class="premium-card-title">Factor Tilt Radar</h3>
+          <p class="premium-card-subtitle">Portfolio vs S&P 500 factor exposures</p>
+        </div>
+      </div>
+      <div class="h-80">
+        <canvas id="factorRadarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Bar Chart - Portfolio vs Benchmark -->
+    <div class="premium-card">
+      <div class="premium-card-header">
+        <div>
+          <h3 class="premium-card-title">Portfolio vs Benchmark</h3>
+          <p class="premium-card-subtitle">Factor exposure comparison</p>
+        </div>
+      </div>
+      <div class="h-80">
+        <canvas id="factorComparisonChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Horizontal Factor Exposure Chart -->
+  <div class="premium-card mb-6">
+    <div class="premium-card-header">
+      <div>
+        <h3 class="premium-card-title">Factor Exposure Scale</h3>
+        <p class="premium-card-subtitle">Exposure intensity from -100 (underweight) to +100 (overweight)</p>
+      </div>
+    </div>
+    <div class="space-y-4 pt-2">
+      <%
+      const factorList = [
+        { name: 'Value', exposure: portfolioFactors.value.exposure, color: '#10b981' },
+        { name: 'Growth', exposure: portfolioFactors.growth.exposure, color: '#3b82f6' },
+        { name: 'Momentum', exposure: portfolioFactors.momentum.exposure, color: '#f59e0b' },
+        { name: 'Quality', exposure: portfolioFactors.quality.exposure, color: '#8b5cf6' },
+        { name: 'Size', exposure: portfolioFactors.size.exposure, color: '#ec4899' },
+        { name: 'Low Volatility', exposure: -portfolioFactors.volatility.exposure, color: '#06b6d4' },
+        { name: 'Dividend Yield', exposure: portfolioFactors.dividend.exposure, color: '#14b8a6' }
+      ];
+      %>
+      <% factorList.forEach(factor => {
+        const scaledExposure = factor.exposure * 100; // Convert to -100 to +100 scale
+        const position = 50 + (scaledExposure / 2); // Convert to 0-100% position
+        const isPositive = scaledExposure >= 0;
+      %>
+      <div class="flex items-center gap-4">
+        <div class="w-24 text-sm font-medium text-slate-300"><%= factor.name %></div>
+        <div class="flex-1 relative">
+          <div class="h-8 rounded-lg bg-slate-800/50 overflow-hidden relative">
+            <!-- Center line -->
+            <div class="absolute left-1/2 top-0 bottom-0 w-px bg-slate-600"></div>
+            <!-- Scale markers -->
+            <div class="absolute left-0 top-0 bottom-0 w-px bg-slate-700"></div>
+            <div class="absolute left-1/4 top-0 bottom-0 w-px bg-slate-700/50"></div>
+            <div class="absolute left-3/4 top-0 bottom-0 w-px bg-slate-700/50"></div>
+            <div class="absolute right-0 top-0 bottom-0 w-px bg-slate-700"></div>
+            <!-- Fill bar -->
+            <% if (isPositive) { %>
+            <div class="absolute top-1 bottom-1 left-1/2 rounded-r" style="width: <%= Math.min(scaledExposure, 100) / 2 %>%; background: <%= factor.color %>;"></div>
+            <% } else { %>
+            <div class="absolute top-1 bottom-1 rounded-l" style="left: <%= 50 + (scaledExposure / 2) %>%; width: <%= Math.abs(scaledExposure) / 2 %>%; background: <%= factor.color %>;"></div>
+            <% } %>
+            <!-- Value indicator -->
+            <div class="absolute top-1/2 transform -translate-y-1/2 text-xs font-bold text-white px-2 py-0.5 rounded"
+                 style="left: <%= position %>%; transform: translate(-50%, -50%); background: <%= factor.color %>;">
+              <%= scaledExposure >= 0 ? '+' : '' %><%= scaledExposure.toFixed(0) %>
+            </div>
+          </div>
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>-100</span>
+            <span>-50</span>
+            <span>0</span>
+            <span>+50</span>
+            <span>+100</span>
+          </div>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Factor Attribution Table -->
+  <div class="premium-card mb-6">
+    <div class="premium-card-header">
+      <div>
+        <h3 class="premium-card-title">Factor Attribution Analysis</h3>
+        <p class="premium-card-subtitle">Decomposition of portfolio returns by factor</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <select class="premium-input premium-select" style="width: auto; padding: 6px 36px 6px 10px; font-size: 12px;">
+          <option value="ytd">YTD</option>
+          <option value="1y">1 Year</option>
+          <option value="3y">3 Years</option>
+          <option value="5y">5 Years</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="premium-table w-full">
+        <thead>
+          <tr>
+            <th class="text-left">Factor</th>
+            <th class="text-right">Exposure</th>
+            <th class="text-right">Factor Return</th>
+            <th class="text-right">Contribution</th>
+            <th class="text-center">Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% factorAttribution.forEach(row => {
+            const isPositiveContribution = row.contribution >= 0;
+            const barWidth = Math.min(Math.abs(row.contribution) / 15 * 100, 100);
+          %>
+          <tr class="<%= isPositiveContribution ? 'row-positive' : '' %>">
+            <td class="font-medium"><%= row.factor %></td>
+            <td class="text-right font-mono"><%= row.exposure >= 0 ? '+' : '' %><%= row.exposure.toFixed(2) %></td>
+            <td class="text-right font-mono <%= row.factorReturn >= 0 ? 'text-emerald-400' : 'text-red-400' %>">
+              <%= row.factorReturn >= 0 ? '+' : '' %><%= row.factorReturn.toFixed(1) %>%
+            </td>
+            <td class="text-right font-mono font-bold <%= isPositiveContribution ? 'value-gain' : 'value-negative' %>">
+              <%= isPositiveContribution ? '+' : '' %><%= row.contribution.toFixed(2) %>%
+            </td>
+            <td>
+              <div class="flex items-center justify-center gap-2">
+                <div class="w-24 h-2 rounded-full bg-slate-700 overflow-hidden">
+                  <div class="h-full rounded-full <%= isPositiveContribution ? 'bg-emerald-500' : 'bg-red-500' %>"
+                       style="width: <%= barWidth %>%;"></div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <% }); %>
+          <tr class="bg-slate-800/50 font-bold">
+            <td>Total Portfolio Return</td>
+            <td></td>
+            <td></td>
+            <td class="text-right font-mono value-gain"><%= formatPct(totalFactorContribution) %></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Factor Rotation Signals -->
+  <div class="premium-card mb-6">
+    <div class="premium-card-header">
+      <div>
+        <h3 class="premium-card-title">Factor Rotation Signals</h3>
+        <p class="premium-card-subtitle">Current factor momentum and economic cycle recommendations</p>
+      </div>
+      <span class="premium-badge premium-badge-info">Updated Daily</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <% factorRotationSignals.forEach(signal => { %>
+      <div class="stat-card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-semibold text-white"><%= signal.factor %></span>
+          <span class="premium-badge <%= signal.signal === 'Overweight' ? 'premium-badge-success' : signal.signal === 'Underweight' ? 'premium-badge-danger' : 'premium-badge-neutral' %>">
+            <%= signal.signal %>
+          </span>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-slate-400">Momentum</span>
+            <span class="<%= signal.momentum === 'Strong' ? 'text-emerald-400' : signal.momentum === 'Weakening' ? 'text-red-400' : 'text-amber-400' %>">
+              <%= signal.momentum %>
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Best Phase</span>
+            <span class="text-slate-300"><%= signal.economicPhase %></span>
+          </div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-slate-700/50">
+          <p class="text-xs text-slate-400"><%= signal.recommendation %></p>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Holdings by Factor -->
+  <div class="premium-card mb-6">
+    <div class="premium-card-header">
+      <div>
+        <h3 class="premium-card-title">Holdings by Factor</h3>
+        <p class="premium-card-subtitle">Top holdings for each factor category</p>
+      </div>
+    </div>
+
+    <!-- Factor Tabs -->
+    <div class="premium-tabs mb-6">
+      <button class="premium-tab active" data-factor="value" onclick="showFactorHoldings('value')">Value</button>
+      <button class="premium-tab" data-factor="growth" onclick="showFactorHoldings('growth')">Growth</button>
+      <button class="premium-tab" data-factor="momentum" onclick="showFactorHoldings('momentum')">Momentum</button>
+      <button class="premium-tab" data-factor="quality" onclick="showFactorHoldings('quality')">Quality</button>
+      <button class="premium-tab" data-factor="dividend" onclick="showFactorHoldings('dividend')">Dividend</button>
+    </div>
+
+    <!-- Value Holdings -->
+    <div id="holdings-value" class="factor-holdings-panel">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <% holdingsByFactor.value.forEach((holding, idx) => { %>
+        <div class="stat-card p-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center">
+              <span class="text-emerald-400 font-bold text-xs"><%= idx + 1 %></span>
+            </div>
+            <div>
+              <div class="font-bold text-white"><%= holding.symbol %></div>
+              <div class="text-xs text-slate-400 truncate" style="max-width: 100px;"><%= holding.name %></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="text-slate-400">P/E</span>
+              <span class="font-mono text-white"><%= holding.pe.toFixed(1) %>x</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">P/B</span>
+              <span class="font-mono text-white"><%= holding.pb.toFixed(1) %>x</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Score</span>
+              <span class="font-mono text-emerald-400 font-bold"><%= holding.score %></span>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Growth Holdings -->
+    <div id="holdings-growth" class="factor-holdings-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <% holdingsByFactor.growth.forEach((holding, idx) => { %>
+        <div class="stat-card p-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center">
+              <span class="text-blue-400 font-bold text-xs"><%= idx + 1 %></span>
+            </div>
+            <div>
+              <div class="font-bold text-white"><%= holding.symbol %></div>
+              <div class="text-xs text-slate-400 truncate" style="max-width: 100px;"><%= holding.name %></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Rev Growth</span>
+              <span class="font-mono text-emerald-400">+<%= holding.revenueGrowth %>%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">EPS Growth</span>
+              <span class="font-mono text-emerald-400">+<%= holding.epsGrowth %>%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Score</span>
+              <span class="font-mono text-blue-400 font-bold"><%= holding.score %></span>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Momentum Holdings -->
+    <div id="holdings-momentum" class="factor-holdings-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <% holdingsByFactor.momentum.forEach((holding, idx) => { %>
+        <div class="stat-card p-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-600/10 flex items-center justify-center">
+              <span class="text-amber-400 font-bold text-xs"><%= idx + 1 %></span>
+            </div>
+            <div>
+              <div class="font-bold text-white"><%= holding.symbol %></div>
+              <div class="text-xs text-slate-400 truncate" style="max-width: 100px;"><%= holding.name %></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="text-slate-400">12M Return</span>
+              <span class="font-mono text-emerald-400">+<%= holding.momentum12m %>%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">RSI</span>
+              <span class="font-mono text-white"><%= holding.rsi %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Score</span>
+              <span class="font-mono text-amber-400 font-bold"><%= holding.score %></span>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Quality Holdings -->
+    <div id="holdings-quality" class="factor-holdings-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <% holdingsByFactor.quality.forEach((holding, idx) => { %>
+        <div class="stat-card p-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 flex items-center justify-center">
+              <span class="text-purple-400 font-bold text-xs"><%= idx + 1 %></span>
+            </div>
+            <div>
+              <div class="font-bold text-white"><%= holding.symbol %></div>
+              <div class="text-xs text-slate-400 truncate" style="max-width: 100px;"><%= holding.name %></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="text-slate-400">ROE</span>
+              <span class="font-mono text-emerald-400"><%= holding.roe.toFixed(1) %>%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">D/E Ratio</span>
+              <span class="font-mono text-white"><%= holding.debtEquity.toFixed(2) %></span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Score</span>
+              <span class="font-mono text-purple-400 font-bold"><%= holding.score %></span>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Dividend Holdings -->
+    <div id="holdings-dividend" class="factor-holdings-panel hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <% holdingsByFactor.dividend.forEach((holding, idx) => { %>
+        <div class="stat-card p-4">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500/20 to-teal-600/10 flex items-center justify-center">
+              <span class="text-teal-400 font-bold text-xs"><%= idx + 1 %></span>
+            </div>
+            <div>
+              <div class="font-bold text-white"><%= holding.symbol %></div>
+              <div class="text-xs text-slate-400 truncate" style="max-width: 100px;"><%= holding.name %></div>
+            </div>
+          </div>
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Yield</span>
+              <span class="font-mono text-emerald-400"><%= holding.yield.toFixed(1) %>%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Payout</span>
+              <span class="font-mono text-white"><%= holding.payoutRatio %>%</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Score</span>
+              <span class="font-mono text-teal-400 font-bold"><%= holding.score %></span>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Factor Contribution Waterfall Chart -->
+  <div class="premium-card">
+    <div class="premium-card-header">
+      <div>
+        <h3 class="premium-card-title">Return Attribution Waterfall</h3>
+        <p class="premium-card-subtitle">Cumulative factor contribution to total return</p>
+      </div>
+    </div>
+    <div class="h-96">
+      <canvas id="waterfallChart"></canvas>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Factor data for charts
+const factorLabels = ['Value', 'Growth', 'Momentum', 'Quality', 'Size', 'Low Vol', 'Dividend'];
+const portfolioExposures = [
+  <%= portfolioFactors.value.exposure %>,
+  <%= portfolioFactors.growth.exposure %>,
+  <%= portfolioFactors.momentum.exposure %>,
+  <%= portfolioFactors.quality.exposure %>,
+  <%= Math.abs(portfolioFactors.size.exposure) %>,
+  <%= portfolioFactors.volatility.exposure %>,
+  <%= portfolioFactors.dividend.exposure %>
+];
+const benchmarkExposures = [
+  <%= portfolioFactors.value.benchmarkExposure %>,
+  <%= portfolioFactors.growth.benchmarkExposure %>,
+  <%= portfolioFactors.momentum.benchmarkExposure %>,
+  <%= portfolioFactors.quality.benchmarkExposure %>,
+  0.5,
+  <%= portfolioFactors.volatility.benchmarkExposure %>,
+  <%= portfolioFactors.dividend.benchmarkExposure %>
+];
+
+// Chart.js default dark theme config
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+
+// Radar Chart - Factor Tilts
+const radarCtx = document.getElementById('factorRadarChart').getContext('2d');
+new Chart(radarCtx, {
+  type: 'radar',
+  data: {
+    labels: factorLabels,
+    datasets: [
+      {
+        label: 'Your Portfolio',
+        data: portfolioExposures,
+        backgroundColor: 'rgba(52, 211, 153, 0.2)',
+        borderColor: '#34d399',
+        borderWidth: 2,
+        pointBackgroundColor: '#34d399',
+        pointBorderColor: '#34d399',
+        pointRadius: 4
+      },
+      {
+        label: 'S&P 500 Benchmark',
+        data: benchmarkExposures,
+        backgroundColor: 'rgba(148, 163, 184, 0.1)',
+        borderColor: '#94a3b8',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointBackgroundColor: '#94a3b8',
+        pointBorderColor: '#94a3b8',
+        pointRadius: 3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      r: {
+        beginAtZero: true,
+        max: 1,
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        angleLines: { color: 'rgba(255,255,255,0.05)' },
+        pointLabels: {
+          color: '#e2e8f0',
+          font: { size: 11, weight: '600' }
+        },
+        ticks: {
+          color: '#64748b',
+          backdropColor: 'transparent',
+          stepSize: 0.25
+        }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#94a3b8',
+          usePointStyle: true,
+          padding: 20
+        }
+      }
+    }
+  }
+});
+
+// Bar Chart - Portfolio vs Benchmark Comparison
+const barCtx = document.getElementById('factorComparisonChart').getContext('2d');
+new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels: factorLabels,
+    datasets: [
+      {
+        label: 'Portfolio',
+        data: portfolioExposures,
+        backgroundColor: 'rgba(52, 211, 153, 0.8)',
+        borderColor: '#34d399',
+        borderWidth: 1,
+        borderRadius: 4
+      },
+      {
+        label: 'Benchmark',
+        data: benchmarkExposures,
+        backgroundColor: 'rgba(148, 163, 184, 0.5)',
+        borderColor: '#94a3b8',
+        borderWidth: 1,
+        borderRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 1,
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: {
+          color: '#64748b',
+          callback: value => value.toFixed(1)
+        }
+      },
+      x: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#94a3b8',
+          usePointStyle: true,
+          padding: 20
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#f1f5f9',
+        bodyColor: '#cbd5e1',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        displayColors: true,
+        callbacks: {
+          label: function(context) {
+            return context.dataset.label + ': ' + context.parsed.y.toFixed(2);
+          }
+        }
+      }
+    }
+  }
+});
+
+// Waterfall Chart - Return Attribution
+const waterfallCtx = document.getElementById('waterfallChart').getContext('2d');
+const attributionData = [
+  { factor: 'Market', value: 13.50 },
+  { factor: 'Growth', value: 3.20 },
+  { factor: 'Quality', value: 2.80 },
+  { factor: 'Momentum', value: 2.10 },
+  { factor: 'Value', value: 1.80 },
+  { factor: 'Alpha', value: 2.30 },
+  { factor: 'Low Vol', value: 0.63 },
+  { factor: 'Dividend', value: 0.50 },
+  { factor: 'Size', value: -0.40 }
+];
+
+// Calculate cumulative values for waterfall
+let cumulative = 0;
+const waterfallColors = attributionData.map(d => d.value >= 0 ? 'rgba(52, 211, 153, 0.8)' : 'rgba(239, 68, 68, 0.8)');
+
+new Chart(waterfallCtx, {
+  type: 'bar',
+  data: {
+    labels: attributionData.map(d => d.factor),
+    datasets: [{
+      label: 'Contribution',
+      data: attributionData.map(d => d.value),
+      backgroundColor: waterfallColors,
+      borderColor: attributionData.map(d => d.value >= 0 ? '#34d399' : '#ef4444'),
+      borderWidth: 1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: {
+          color: '#64748b',
+          callback: value => value.toFixed(1) + '%'
+        }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#94a3b8' }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+        titleColor: '#f1f5f9',
+        bodyColor: '#cbd5e1',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12,
+        callbacks: {
+          label: function(context) {
+            const value = context.parsed.x;
+            return 'Contribution: ' + (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Factor Holdings Tab Switching
+function showFactorHoldings(factor) {
+  // Hide all panels
+  document.querySelectorAll('.factor-holdings-panel').forEach(panel => {
+    panel.classList.add('hidden');
+  });
+
+  // Show selected panel
+  document.getElementById('holdings-' + factor).classList.remove('hidden');
+
+  // Update tab states
+  document.querySelectorAll('.premium-tab').forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.dataset.factor === factor) {
+      tab.classList.add('active');
+    }
+  });
+}
+</script>
+
+<%- include('../partials/footer') %>

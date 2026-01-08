@@ -1,0 +1,618 @@
+<%
+// Safe defaults for all potentially undefined variables
+const safeTheme = typeof theme !== 'undefined' ? theme : 'dark';
+const safeUser = typeof user !== 'undefined' ? user : {};
+const safePageTitle = typeof pageTitle !== 'undefined' ? pageTitle : 'Smart Notifications';
+%>
+<%- include('../partials/header', { pageTitle: safePageTitle }) %>
+
+<main class="page-container px-4 sm:px-6 lg:px-8 py-6">
+  <!-- Page Header -->
+  <div class="page-header mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="relative z-10">
+        <h1 class="page-title flex items-center gap-3">
+          <div class="stat-icon stat-icon-indigo">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+          Smart Notifications Center
+        </h1>
+        <p class="page-subtitle">Real-time alerts, opportunities, and portfolio updates</p>
+      </div>
+      <div class="flex items-center gap-3 relative z-10">
+        <button onclick="smartNotifications.markAllRead()" class="premium-btn premium-btn-ghost">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Mark All Read
+        </button>
+        <button onclick="smartNotifications.clearAll()" class="premium-btn premium-btn-secondary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          Clear All
+        </button>
+        <button onclick="openCreateAlertModal()" class="premium-btn premium-btn-primary">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Create Alert
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Overview -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-stagger">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-amber">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <div class="stat-label">Unread</div>
+      <div class="stat-value" id="stat-unread">12</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-forest">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <div class="stat-label">Active Alerts</div>
+      <div class="stat-value" id="stat-active">8</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-purple">
+        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+      </div>
+      <div class="stat-label">Opportunities</div>
+      <div class="stat-value" id="stat-opportunities">3</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-red">
+        <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="stat-label">Risk Warnings</div>
+      <div class="stat-value" id="stat-warnings">2</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Notifications Panel -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Notification Tabs -->
+      <div class="premium-card">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div class="premium-tabs" id="notification-tabs">
+            <button class="premium-tab active" data-tab="all">All</button>
+            <button class="premium-tab" data-tab="alerts">Alerts</button>
+            <button class="premium-tab" data-tab="opportunities">Opportunities</button>
+            <button class="premium-tab" data-tab="portfolio">Portfolio</button>
+            <button class="premium-tab" data-tab="market">Market</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <input type="text" id="notification-search"
+                     class="premium-input premium-input-sm w-48"
+                     placeholder="Search notifications...">
+              <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <select id="notification-filter" class="premium-input premium-select premium-input-sm w-32">
+              <option value="">All Types</option>
+              <option value="high">High Priority</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Notification List -->
+        <div id="notifications-container" class="space-y-3">
+          <!-- Notifications will be rendered here -->
+        </div>
+
+        <!-- Load More -->
+        <div class="mt-6 text-center">
+          <button onclick="smartNotifications.loadMore()" class="premium-btn premium-btn-ghost">
+            Load More Notifications
+          </button>
+        </div>
+      </div>
+
+      <!-- Notification History -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Notification History</h3>
+          <div class="flex items-center gap-2">
+            <input type="date" id="history-date-from" class="premium-input premium-input-sm w-36">
+            <span class="text-zinc-500">to</span>
+            <input type="date" id="history-date-to" class="premium-input premium-input-sm w-36">
+            <button onclick="smartNotifications.searchHistory()" class="premium-btn premium-btn-sm premium-btn-secondary">Search</button>
+          </div>
+        </div>
+        <div id="notification-history" class="space-y-2 mt-4">
+          <!-- History items will be rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar - Alert Configuration & Preferences -->
+    <div class="space-y-6">
+      <!-- Smart Alert Configuration -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Smart Alert Configuration</h3>
+        </div>
+
+        <!-- Price Alerts -->
+        <div class="space-y-4">
+          <div class="stat-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                <span class="font-semibold text-white">Price Alerts</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-price-alerts" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs text-zinc-500 block mb-1">Above Threshold</label>
+                <input type="number" id="price-above" class="premium-input premium-input-sm" placeholder="$0.00">
+              </div>
+              <div>
+                <label class="text-xs text-zinc-500 block mb-1">Below Threshold</label>
+                <input type="number" id="price-below" class="premium-input premium-input-sm" placeholder="$0.00">
+              </div>
+            </div>
+          </div>
+
+          <!-- Portfolio Risk Alerts -->
+          <div class="stat-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </div>
+                <span class="font-semibold text-white">Risk Alerts</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-risk-alerts" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 block mb-1">Beta Threshold</label>
+              <input type="number" id="beta-threshold" class="premium-input premium-input-sm" placeholder="1.5" step="0.1" value="1.5">
+            </div>
+          </div>
+
+          <!-- Opportunity Alerts -->
+          <div class="stat-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                  </svg>
+                </div>
+                <span class="font-semibold text-white">Opportunity Alerts</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-opportunity-alerts" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <input type="checkbox" id="alert-unusual-volume" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+                Unusual Volume
+              </label>
+              <label class="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <input type="checkbox" id="alert-insider-buying" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+                Insider Buying
+              </label>
+            </div>
+          </div>
+
+          <!-- Dividend Alerts -->
+          <div class="stat-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  </svg>
+                </div>
+                <span class="font-semibold text-white">Dividend Alerts</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-dividend-alerts" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <div class="space-y-2">
+              <label class="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <input type="checkbox" id="alert-ex-date" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+                Ex-Dividend Date
+              </label>
+              <label class="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <input type="checkbox" id="alert-payment-date" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+                Payment Date
+              </label>
+            </div>
+          </div>
+
+          <!-- Earnings Alerts -->
+          <div class="stat-card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <span class="font-semibold text-white">Earnings Alerts</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-earnings-alerts" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <div>
+              <label class="text-xs text-zinc-500 block mb-1">Days Before</label>
+              <select id="earnings-days-before" class="premium-input premium-select premium-input-sm">
+                <option value="1">1 day before</option>
+                <option value="3" selected>3 days before</option>
+                <option value="7">1 week before</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Preferences -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h3 class="premium-card-title">Notification Preferences</h3>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Delivery Methods -->
+          <div>
+            <h4 class="text-sm font-semibold text-zinc-400 mb-3">Delivery Methods</h4>
+            <div class="space-y-2">
+              <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 hover:border-indigo-500/30 transition-colors cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <span class="text-white">In-App</span>
+                </div>
+                <input type="checkbox" id="delivery-inapp" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+              </label>
+              <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 hover:border-indigo-500/30 transition-colors cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <span class="text-white">Email</span>
+                </div>
+                <input type="checkbox" id="delivery-email" checked class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+              </label>
+              <label class="flex items-center justify-between p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 hover:border-indigo-500/30 transition-colors cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                  </svg>
+                  <span class="text-white">Push</span>
+                </div>
+                <input type="checkbox" id="delivery-push" class="w-4 h-4 rounded bg-zinc-700 border-zinc-600 text-indigo-500 focus:ring-indigo-500">
+              </label>
+            </div>
+          </div>
+
+          <!-- Quiet Hours -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-semibold text-zinc-400">Quiet Hours</h4>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-quiet-hours" class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs text-zinc-500 block mb-1">Start</label>
+                <input type="time" id="quiet-start" class="premium-input premium-input-sm" value="22:00">
+              </div>
+              <div>
+                <label class="text-xs text-zinc-500 block mb-1">End</label>
+                <input type="time" id="quiet-end" class="premium-input premium-input-sm" value="07:00">
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Filtering -->
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-sm font-semibold text-zinc-400">Smart Filtering</h4>
+                <p class="text-xs text-zinc-500">Reduce noise and group similar alerts</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="enable-smart-filter" checked class="sr-only peer">
+                <div class="w-10 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Save Preferences Button -->
+          <button onclick="smartNotifications.savePreferences()" class="premium-btn premium-btn-forest w-full">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Save Preferences
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create Alert Modal -->
+<div id="create-alert-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="premium-card w-full max-w-lg mx-4 animate-scale-in">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-xl font-bold text-white">Create New Alert</h3>
+      <button onclick="closeCreateAlertModal()" class="text-zinc-400 hover:text-white transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="create-alert-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-zinc-400 mb-2">Alert Type</label>
+        <select id="alert-type" class="premium-input premium-select w-full">
+          <option value="price_above">Price Above</option>
+          <option value="price_below">Price Below</option>
+          <option value="percent_change">Percent Change</option>
+          <option value="volume">Volume Alert</option>
+          <option value="earnings">Earnings Alert</option>
+          <option value="dividend">Dividend Alert</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-zinc-400 mb-2">Symbol</label>
+        <input type="text" id="alert-symbol" class="premium-input w-full" placeholder="AAPL, NVDA, etc." required>
+      </div>
+
+      <div id="threshold-container">
+        <label class="block text-sm font-medium text-zinc-400 mb-2">Threshold</label>
+        <input type="number" id="alert-threshold" class="premium-input w-full" placeholder="Enter value" step="0.01" required>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-zinc-400 mb-2">Priority</label>
+        <div class="flex gap-2">
+          <button type="button" class="priority-btn flex-1 premium-btn premium-btn-sm premium-btn-ghost" data-priority="low">Low</button>
+          <button type="button" class="priority-btn flex-1 premium-btn premium-btn-sm premium-btn-secondary active" data-priority="medium">Medium</button>
+          <button type="button" class="priority-btn flex-1 premium-btn premium-btn-sm premium-btn-ghost" data-priority="high">High</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-zinc-400 mb-2">Note (Optional)</label>
+        <textarea id="alert-note" class="premium-input w-full" rows="2" placeholder="Add a note..."></textarea>
+      </div>
+
+      <div class="flex gap-3 pt-4">
+        <button type="button" onclick="closeCreateAlertModal()" class="flex-1 premium-btn premium-btn-secondary">Cancel</button>
+        <button type="submit" class="flex-1 premium-btn premium-btn-primary">Create Alert</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast Container for Notifications -->
+<div id="notification-toast" class="fixed top-20 right-4 z-50 hidden">
+  <div class="premium-card p-4 max-w-sm animate-slide-down shadow-lg border-l-4 border-indigo-500">
+    <div class="flex items-start gap-3">
+      <div id="toast-icon" class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p id="toast-title" class="font-semibold text-white">Notification Title</p>
+        <p id="toast-message" class="text-sm text-zinc-400 mt-1">Notification message goes here.</p>
+        <p id="toast-time" class="text-xs text-zinc-500 mt-2">Just now</p>
+      </div>
+      <button onclick="hideNotificationToast()" class="text-zinc-400 hover:text-white">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Additional styles for notifications center */
+.notification-card {
+  background: linear-gradient(145deg, rgba(20, 20, 22, 0.9) 0%, rgba(15, 15, 17, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.notification-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: linear-gradient(145deg, rgba(25, 25, 28, 0.95) 0%, rgba(20, 20, 23, 0.98) 100%);
+}
+
+.notification-card.unread {
+  border-left: 3px solid #6366f1;
+}
+
+.notification-card.priority-high {
+  border-left-color: #ef4444;
+}
+
+.notification-card.priority-high .priority-indicator {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.notification-card.priority-medium .priority-indicator {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.notification-card.priority-low .priority-indicator {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.notification-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.notification-icon.type-price { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.1)); }
+.notification-icon.type-dividend { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(96, 165, 250, 0.1)); }
+.notification-icon.type-earnings { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(251, 191, 36, 0.1)); }
+.notification-icon.type-risk { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(248, 113, 113, 0.1)); }
+.notification-icon.type-opportunity { background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(167, 139, 250, 0.1)); }
+.notification-icon.type-portfolio { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(129, 140, 248, 0.1)); }
+.notification-icon.type-market { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(34, 211, 238, 0.1)); }
+
+.priority-btn.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+.premium-input-sm {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease forwards;
+}
+</style>
+
+<script src="/js/smart-notifications.js"></script>
+<script>
+// Initialize Smart Notifications
+document.addEventListener('DOMContentLoaded', function() {
+  window.smartNotifications = new SmartNotificationManager();
+});
+
+// Modal Controls
+function openCreateAlertModal() {
+  const modal = document.getElementById('create-alert-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeCreateAlertModal() {
+  const modal = document.getElementById('create-alert-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  document.getElementById('create-alert-form').reset();
+}
+
+function hideNotificationToast() {
+  document.getElementById('notification-toast').classList.add('hidden');
+}
+
+// Priority button selection
+document.querySelectorAll('.priority-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.priority-btn').forEach(b => {
+      b.classList.remove('active');
+      b.classList.remove('premium-btn-secondary');
+      b.classList.add('premium-btn-ghost');
+    });
+    btn.classList.add('active');
+    btn.classList.remove('premium-btn-ghost');
+    btn.classList.add('premium-btn-secondary');
+  });
+});
+
+// Create Alert Form Submission
+document.getElementById('create-alert-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+
+  const alertType = document.getElementById('alert-type').value;
+  const symbol = document.getElementById('alert-symbol').value.toUpperCase();
+  const threshold = parseFloat(document.getElementById('alert-threshold').value);
+  const note = document.getElementById('alert-note').value;
+  const priority = document.querySelector('.priority-btn.active').dataset.priority;
+
+  smartNotifications.createAlert(alertType, {
+    symbol,
+    threshold,
+    note,
+    priority
+  });
+
+  closeCreateAlertModal();
+});
+
+// Close modal on escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeCreateAlertModal();
+    hideNotificationToast();
+  }
+});
+
+// Close modal on backdrop click
+document.getElementById('create-alert-modal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeCreateAlertModal();
+  }
+});
+</script>
+
+<%- include('../partials/footer') %>

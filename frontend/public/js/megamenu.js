@@ -145,6 +145,7 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Overview</h3>
           <ul class="megamenu-links">
+            <li><a href="/market-data-overview" class="megamenu-link megamenu-link-new">Market Data Overview <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/market" class="megamenu-link">Market Dashboard</a></li>
             <li><a href="/market-breadth" class="megamenu-link">Market Breadth</a></li>
             <li><a href="/market-movers" class="megamenu-link">Top Movers</a></li>
@@ -161,8 +162,9 @@ class MegaMenu {
           </ul>
         </div>
         <div class="megamenu-column">
-          <h3 class="megamenu-column-title">Calendar</h3>
+          <h3 class="megamenu-column-title">Calendar & Economy</h3>
           <ul class="megamenu-links">
+            <li><a href="/economic-indicators" class="megamenu-link megamenu-link-new">Economic Indicators <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/economic-calendar" class="megamenu-link">Economic Calendar</a></li>
             <li><a href="/earnings-calendar" class="megamenu-link">Earnings Calendar</a></li>
             <li><a href="/dividend-calendar" class="megamenu-link">Dividend Calendar</a></li>
@@ -223,7 +225,7 @@ class MegaMenu {
             <li><a href="/transactions" class="megamenu-link">Transactions</a></li>
             <li><a href="/journal" class="megamenu-link">Trading Journal</a></li>
             <li><a href="/import-wizard" class="megamenu-link">Import Wizard</a></li>
-            <li><a href="/share-portfolio" class="megamenu-link">Share Portfolio</a></li>
+            <li><a href="/portfolio-sharing" class="megamenu-link megamenu-link-new">Portfolio Sharing <span class="megamenu-badge">NEW</span></a></li>
           </ul>
         </div>
         <div class="megamenu-column">
@@ -244,22 +246,22 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Fundamentals</h3>
           <ul class="megamenu-links">
+            <li><a href="/fundamental-analysis" class="megamenu-link megamenu-link-new">Fundamental Analysis <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/analytics" class="megamenu-link">Analytics</a></li>
             <li><a href="/research" class="megamenu-link">Research</a></li>
+            <li><a href="/factor-analysis" class="megamenu-link megamenu-link-new">Factor Analysis <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/gross-margin" class="megamenu-link">Gross Margin</a></li>
             <li><a href="/margin-expansion" class="megamenu-link">Margin Expansion</a></li>
-            <li><a href="/revenue-per-employee" class="megamenu-link">Rev/Employee</a></li>
             <li><a href="/price-to-sales" class="megamenu-link">Price to Sales</a></li>
             <li><a href="/debt-maturity" class="megamenu-link">Debt Maturity</a></li>
-            <li><a href="/interest-coverage" class="megamenu-link">Interest Coverage</a></li>
-            <li><a href="/working-capital" class="megamenu-link">Working Capital</a></li>
           </ul>
         </div>
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Technical</h3>
           <ul class="megamenu-links">
+            <li><a href="/technical-analysis" class="megamenu-link megamenu-link-new">Technical Analysis <span class="megamenu-badge">NEW</span></a></li>
+            <li><a href="/advanced-charts" class="megamenu-link megamenu-link-new">Advanced Charts <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/charts" class="megamenu-link">Charts</a></li>
-            <li><a href="/technicals" class="megamenu-link">Technical Analysis</a></li>
             <li><a href="/moving-averages" class="megamenu-link">Moving Averages</a></li>
             <li><a href="/rsi" class="megamenu-link">RSI Indicator</a></li>
             <li><a href="/macd" class="megamenu-link">MACD</a></li>
@@ -268,12 +270,12 @@ class MegaMenu {
             <li><a href="/adx-indicator" class="megamenu-link">ADX Indicator</a></li>
             <li><a href="/fibonacci" class="megamenu-link">Fibonacci</a></li>
             <li><a href="/volume-profile" class="megamenu-link">Volume Profile</a></li>
-            <li><a href="/momentum-screener" class="megamenu-link">Momentum</a></li>
           </ul>
         </div>
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Options</h3>
           <ul class="megamenu-links">
+            <li><a href="/options-strategies" class="megamenu-link megamenu-link-new">Strategy Recommender <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/options-chain" class="megamenu-link">Options Chain</a></li>
             <li><a href="/options-greeks" class="megamenu-link">Options Greeks</a></li>
             <li><a href="/options-straddle" class="megamenu-link">Straddles</a></li>
@@ -284,6 +286,7 @@ class MegaMenu {
           <h3 class="megamenu-column-title">Income</h3>
           <ul class="megamenu-links">
             <li><a href="/dividends" class="megamenu-link">Dividends</a></li>
+            <li><a href="/dividend-forecast" class="megamenu-link megamenu-link-new">Dividend Forecast <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/dividend-screener" class="megamenu-link">Dividend Screener</a></li>
             <li><a href="/dividend-yield-curve" class="megamenu-link">Yield Curve</a></li>
             <li><a href="/payout-ratio" class="megamenu-link">Payout Ratio</a></li>
@@ -292,12 +295,12 @@ class MegaMenu {
           </ul>
         </div>
         <div class="megamenu-column">
-          <h3 class="megamenu-column-title">Risk</h3>
+          <h3 class="megamenu-column-title">Risk & Simulation</h3>
           <ul class="megamenu-links">
+            <li><a href="/monte-carlo" class="megamenu-link megamenu-link-new">Monte Carlo <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/risk" class="megamenu-link">Risk Analysis</a></li>
             <li><a href="/stress-test" class="megamenu-link">Stress Test</a></li>
             <li><a href="/correlation" class="megamenu-link">Correlation</a></li>
-            <li><a href="/factors" class="megamenu-link">Factor Analysis</a></li>
             <li><a href="/esg" class="megamenu-link">ESG Ratings</a></li>
             <li><a href="/esg-breakdown" class="megamenu-link">ESG Breakdown</a></li>
           </ul>
@@ -305,12 +308,12 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Research</h3>
           <ul class="megamenu-links">
+            <li><a href="/peer-benchmarking" class="megamenu-link megamenu-link-new">Peer Benchmarking <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/stock-compare" class="megamenu-link">Stock Compare</a></li>
             <li><a href="/peer-rankings" class="megamenu-link">Peer Rankings</a></li>
             <li><a href="/insider-trading" class="megamenu-link">Insider Trading</a></li>
             <li><a href="/insider-transactions" class="megamenu-link">Insider Txns</a></li>
             <li><a href="/earnings-whispers" class="megamenu-link">Earnings Whispers</a></li>
-            <li><a href="/mutual-funds" class="megamenu-link">Mutual Funds</a></li>
           </ul>
         </div>
       </div>
@@ -343,6 +346,7 @@ class MegaMenu {
           </ul>
           <h3 class="megamenu-column-title" style="margin-top: 1rem;">Tax</h3>
           <ul class="megamenu-links">
+            <li><a href="/tax-lot-optimization" class="megamenu-link megamenu-link-new">Tax Lot Optimization <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/tax-dashboard" class="megamenu-link">Tax Dashboard</a></li>
             <li><a href="/tax-opportunities" class="megamenu-link">Harvest Opportunities</a></li>
             <li><a href="/tax-lots" class="megamenu-link">Tax Lots</a></li>
@@ -351,7 +355,9 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">Alerts & Monitoring</h3>
           <ul class="megamenu-links">
-            <li><a href="/alerts" class="megamenu-link">Price Alerts</a></li>
+            <li><a href="/notifications-center" class="megamenu-link megamenu-link-new">Notifications Center <span class="megamenu-badge">NEW</span></a></li>
+            <li><a href="/price-alerts" class="megamenu-link megamenu-link-new">Price Alerts <span class="megamenu-badge">NEW</span></a></li>
+            <li><a href="/alerts" class="megamenu-link">All Alerts</a></li>
             <li><a href="/alerts-history" class="megamenu-link">Alert History</a></li>
             <li><a href="/currency" class="megamenu-link">Currency</a></li>
             <li><a href="/crypto-portfolio" class="megamenu-link">Crypto Portfolio</a></li>
@@ -360,11 +366,11 @@ class MegaMenu {
         <div class="megamenu-column">
           <h3 class="megamenu-column-title">AI & Integrations</h3>
           <ul class="megamenu-links">
-            <li><a href="/finance-assistant" class="megamenu-link megamenu-link-new">Finance Assistant <span class="megamenu-badge">NEW</span></a></li>
+            <li><a href="/automated-insights" class="megamenu-link megamenu-link-new">Automated Insights <span class="megamenu-badge">NEW</span></a></li>
+            <li><a href="/finance-assistant" class="megamenu-link">Finance Assistant</a></li>
             <li><a href="/assistant" class="megamenu-link">AI Assistant</a></li>
-            <li><a href="/broker" class="megamenu-link">Broker Connect</a></li>
+            <li><a href="/broker-integrations" class="megamenu-link megamenu-link-new">Broker Integrations <span class="megamenu-badge">NEW</span></a></li>
             <li><a href="/api" class="megamenu-link">API Access</a></li>
-            <li><a href="/templates" class="megamenu-link">Templates</a></li>
           </ul>
         </div>
       </div>

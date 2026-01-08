@@ -140,6 +140,12 @@ function requireAuth(req: any, res: any, next: any) {
 
 // ===================== AUTH ROUTES =====================
 
+// Landing page (public)
+app.get('/welcome', (req, res) => {
+  if (res.locals.isAuthenticated) return res.redirect('/');
+  res.render('pages/welcome', { pageTitle: 'WealthPilot Pro - Portfolio Management Platform' });
+});
+
 app.get('/login', (req, res) => {
   if (res.locals.isAuthenticated) return res.redirect('/');
   const success = req.query.registered === 'true' ? 'Registration successful! Please login.' : null;
@@ -1804,6 +1810,41 @@ app.get('/charts-pro', requireAuth, async (req, res) => {
       pageTitle: 'Professional Charts',
       symbol,
       quote: null,
+      fmt
+    });
+  }
+});
+
+// Advanced Charts (Premium Visualizations)
+app.get('/advanced-charts', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+
+  try {
+    // Fetch portfolio data for charts
+    const portfoliosResponse = await apiFetch('/portfolios', token);
+    const portfolios = portfoliosResponse.error ? [] : (Array.isArray(portfoliosResponse) ? portfoliosResponse : []);
+    const activePortfolio = portfolios.length > 0 ? portfolios[0] : null;
+
+    let holdings: any[] = [];
+    if (activePortfolio) {
+      const holdingsResponse = await apiFetch(`/portfolios/${activePortfolio.id}/holdings`, token);
+      holdings = holdingsResponse.error ? [] : (Array.isArray(holdingsResponse) ? holdingsResponse : []);
+    }
+
+    res.render('pages/advanced-charts', {
+      pageTitle: 'Advanced Charts',
+      portfolios,
+      activePortfolio,
+      holdings,
+      fmt
+    });
+  } catch (error) {
+    console.error('Error loading advanced charts:', error);
+    res.render('pages/advanced-charts', {
+      pageTitle: 'Advanced Charts',
+      portfolios: [],
+      activePortfolio: null,
+      holdings: [],
       fmt
     });
   }
@@ -3623,6 +3664,227 @@ app.get('/income', requireAuth, async (req, res) => {
     portfolios,
     selectedPid,
     incomeData,
+    fmt
+  });
+});
+
+// ===================== NEW ADVANCED FEATURES =====================
+
+// Monte Carlo Simulation
+app.get('/monte-carlo', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  const portfolioValue = portfolios.length > 0 ? (portfolios[0].totalValue || 100000) : 100000;
+  res.render('pages/monte-carlo', {
+    pageTitle: 'Monte Carlo Simulation',
+    portfolioValue,
+    portfolios,
+    fmt
+  });
+});
+
+// Options Strategy Recommender
+app.get('/options-strategies', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  let quote = null;
+  try {
+    quote = await apiFetch(`/market/quote/${symbol}`, token);
+    if (quote.error) quote = null;
+  } catch (e) { /* ignore */ }
+  res.render('pages/options-strategies', {
+    pageTitle: 'Options Strategy Recommender',
+    symbol,
+    quote,
+    fmt
+  });
+});
+
+// Economic Indicators Dashboard
+app.get('/economic-indicators', requireAuth, async (req, res) => {
+  res.render('pages/economic-indicators', {
+    pageTitle: 'Economic Indicators',
+    fmt
+  });
+});
+
+// Factor Analysis Dashboard
+app.get('/factor-analysis', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/factor-analysis', {
+    pageTitle: 'Factor Analysis',
+    portfolios,
+    fmt
+  });
+});
+
+// Enhanced Dividend Forecasting
+app.get('/dividend-forecast', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/dividend-forecast', {
+    pageTitle: 'Dividend Forecast',
+    portfolios,
+    fmt
+  });
+});
+
+// Smart Notifications Center
+app.get('/notifications-center', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/notifications-center', {
+    pageTitle: 'Notifications Center',
+    portfolios,
+    fmt
+  });
+});
+
+// Peer Benchmarking Dashboard
+app.get('/peer-benchmarking', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/peer-benchmarking', {
+    pageTitle: 'Peer Benchmarking',
+    portfolios,
+    fmt
+  });
+});
+
+// Mobile Dashboard (optimized for mobile devices)
+app.get('/mobile-dashboard', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+
+  // Get default portfolio with holdings
+  let portfolio = null;
+  let holdings: any[] = [];
+  if (portfolios.length > 0) {
+    const defaultP = portfolios.find((p: any) => p.isDefault) || portfolios[0];
+    portfolio = await apiFetch(`/portfolios/${defaultP.id}`, token);
+    if (!portfolio.error) {
+      const holdingsResult = await apiFetch(`/portfolios/${defaultP.id}/holdings`, token);
+      holdings = holdingsResult.error ? [] : (Array.isArray(holdingsResult) ? holdingsResult : holdingsResult.holdings || []);
+    }
+  }
+
+  // Calculate totals
+  const totalValue = holdings.reduce((sum: number, h: any) => sum + (h.marketValue || 0), 0);
+  const totalGain = holdings.reduce((sum: number, h: any) => sum + (h.gain || 0), 0);
+  const totalGainPct = totalValue > 0 ? (totalGain / (totalValue - totalGain)) * 100 : 0;
+
+  res.render('pages/mobile-dashboard', {
+    pageTitle: 'Dashboard',
+    portfolio,
+    holdings: holdings.slice(0, 5), // Top 5 holdings for mobile
+    totalValue,
+    totalGain,
+    totalGainPct,
+    fmt
+  });
+});
+
+// ===================== ADDITIONAL FEATURE PAGES =====================
+
+// Automated Portfolio Insights
+app.get('/automated-insights', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/automated-portfolio-insights', {
+    pageTitle: 'Automated Insights',
+    portfolios,
+    fmt
+  });
+});
+
+// Broker Integrations
+app.get('/broker-integrations', requireAuth, async (req, res) => {
+  res.render('pages/broker-integrations', {
+    pageTitle: 'Broker Integrations',
+    fmt
+  });
+});
+
+// Edit Holding
+app.get('/edit-holding/:id', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const holdingId = req.params.id;
+  const holding = await apiFetch(`/holdings/${holdingId}`, token);
+  res.render('pages/edit-holding', {
+    pageTitle: 'Edit Holding',
+    holding: holding.error ? null : holding,
+    fmt
+  });
+});
+
+// Fundamental Analysis
+app.get('/fundamental-analysis', requireAuth, async (req, res) => {
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  res.render('pages/fundamental-analysis', {
+    pageTitle: 'Fundamental Analysis',
+    symbol,
+    fmt
+  });
+});
+
+// Market Data Overview
+app.get('/market-data-overview', requireAuth, async (req, res) => {
+  res.render('pages/market-data-overview', {
+    pageTitle: 'Market Data Overview',
+    fmt
+  });
+});
+
+// Portfolio Sharing
+app.get('/portfolio-sharing', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/portfolio-sharing', {
+    pageTitle: 'Share Portfolio',
+    portfolios,
+    fmt
+  });
+});
+
+// Price Alerts Management
+app.get('/price-alerts', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const alertsData = await apiFetch('/alerts', token);
+  const alerts = alertsData.error ? [] : alertsData;
+  res.render('pages/price-alerts', {
+    pageTitle: 'Price Alerts',
+    alerts,
+    fmt
+  });
+});
+
+// Tax Lot Optimization
+app.get('/tax-lot-optimization', requireAuth, async (req, res) => {
+  const token = res.locals.token;
+  const portfoliosData = await apiFetch('/portfolios', token);
+  const portfolios = portfoliosData.error ? [] : portfoliosData;
+  res.render('pages/tax-lot-optimization', {
+    pageTitle: 'Tax Lot Optimization',
+    portfolios,
+    fmt
+  });
+});
+
+// Technical Analysis Page
+app.get('/technical-analysis', requireAuth, async (req, res) => {
+  const symbol = (req.query.symbol as string) || 'AAPL';
+  res.render('pages/technical-analysis', {
+    pageTitle: 'Technical Analysis',
+    symbol,
     fmt
   });
 });

@@ -1,10 +1,10 @@
 <%- include('../partials/header', { pageTitle: 'Market Dashboard' }) %>
 
-<main class="p-4 lg:p-6">
+<main class="page-container p-4 lg:p-6">
   <div class="max-w-full mx-auto space-y-4">
 
     <!-- Header -->
-    <div class="flex items-center justify-between bg-bloomberg-surface border border-bloomberg-border rounded-md px-4 py-3">
+    <div class="page-header aurora-gradient flex items-center justify-between rounded-md px-4 py-3">
       <div class="flex items-center gap-6">
         <h1 class="text-lg font-semibold text-white">Market Overview</h1>
         <div class="flex items-center gap-4 text-sm font-mono">
@@ -26,7 +26,7 @@
     <!-- Major Indices -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
       <!-- S&P 500 -->
-      <div class="bloomberg-card p-4">
+      <div class="stat-card p-4">
         <div class="flex items-start justify-between mb-2">
           <div>
             <div class="text-xs text-slate-500 font-mono">S&P 500</div>
@@ -41,7 +41,7 @@
       </div>
 
       <!-- NASDAQ -->
-      <div class="bloomberg-card p-4">
+      <div class="stat-card p-4">
         <div class="flex items-start justify-between mb-2">
           <div>
             <div class="text-xs text-slate-500 font-mono">NASDAQ</div>
@@ -56,7 +56,7 @@
       </div>
 
       <!-- DOW JONES -->
-      <div class="bloomberg-card p-4">
+      <div class="stat-card p-4">
         <div class="flex items-start justify-between mb-2">
           <div>
             <div class="text-xs text-slate-500 font-mono">DOW JONES</div>
@@ -71,7 +71,7 @@
       </div>
 
       <!-- RUSSELL 2000 -->
-      <div class="bloomberg-card p-4">
+      <div class="stat-card p-4">
         <div class="flex items-start justify-between mb-2">
           <div>
             <div class="text-xs text-slate-500 font-mono">RUSSELL 2000</div>
@@ -86,7 +86,7 @@
       </div>
 
       <!-- VIX -->
-      <div class="bloomberg-card p-4">
+      <div class="stat-card p-4">
         <div class="flex items-start justify-between mb-2">
           <div>
             <div class="text-xs text-slate-500 font-mono">VOLATILITY</div>
@@ -104,7 +104,7 @@
     <!-- Market Stats & Sector Heatmap -->
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <!-- Market Statistics -->
-      <div class="bloomberg-card">
+      <div class="premium-card">
         <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
           <span class="bloomberg-card-title">Market Statistics</span>
         </div>
@@ -142,7 +142,7 @@
       </div>
 
       <!-- Sector Heatmap -->
-      <div class="bloomberg-card xl:col-span-2">
+      <div class="premium-card xl:col-span-2">
         <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
           <span class="bloomberg-card-title">Sector Performance</span>
           <div class="flex gap-2">
@@ -216,13 +216,13 @@
     <!-- Market Movers -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <!-- Top Gainers -->
-      <div class="bloomberg-card">
+      <div class="premium-card">
         <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
           <span class="bloomberg-card-title">Top Gainers</span>
           <a href="/market-movers" class="text-xs text-bloomberg-accent hover:text-bloomberg-accent-hover">View All →</a>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full">
+          <table class="premium-table w-full">
             <thead class="border-b border-bloomberg-border">
               <tr>
                 <th class="text-left p-3 text-xs text-slate-500 font-mono">SYMBOL</th>
@@ -268,13 +268,13 @@
       </div>
 
       <!-- Top Losers -->
-      <div class="bloomberg-card">
+      <div class="premium-card">
         <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
           <span class="bloomberg-card-title">Top Losers</span>
           <a href="/market-movers" class="text-xs text-bloomberg-accent hover:text-bloomberg-accent-hover">View All →</a>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full">
+          <table class="premium-table w-full">
             <thead class="border-b border-bloomberg-border">
               <tr>
                 <th class="text-left p-3 text-xs text-slate-500 font-mono">SYMBOL</th>
@@ -323,7 +323,7 @@
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <!-- Market Breadth -->
-      <div class="bloomberg-card">
+      <div class="premium-card">
         <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
           <span class="bloomberg-card-title">Market Breadth</span>
           <a href="/market-breadth" class="text-xs text-bloomberg-accent hover:text-bloomberg-accent-hover">Details →</a>
@@ -334,7 +334,7 @@
       </div>
 
       <!-- Volatility Trend -->
-      <div class="bloomberg-card">
+      <div class="premium-card">
         <div class="flex items-center justify-between p-4 border-b border-bloomberg-border">
           <span class="bloomberg-card-title">Volatility (VIX)</span>
         </div>

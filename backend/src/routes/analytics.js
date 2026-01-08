@@ -1692,4 +1692,727 @@ router.get('/allocation', async (req, res) => {
   }
 });
 
+// ===================== ADVANCED CHART ENDPOINTS =====================
+
+/**
+ * GET /api/analytics/charts/waterfall
+ * Return attribution data for waterfall chart using real portfolio data
+ */
+router.get('/charts/waterfall', async (req, res) => {
+  try {
+    const { portfolioId, period = '3M' } = req.query;
+
+    // Get portfolio holdings using correct Prisma model names
+    let portfolios = await prisma.portfolios.findMany({
+      where: { user_id: req.user.id },
+      include: { holdings: true }
+    });
+
+    if (portfolioId) {
+      portfolios = portfolios.filter(p => p.id === portfolioId);
+    }
+
+    const allHoldings = portfolios.flatMap(p => p.holdings || []);
+
+    // Return proper empty state when user has no holdings
+    if (allHoldings.length === 0) {
+      return res.json({
+        data: [],
+        message: 'No holdings to analyze',
+        startValue: 0,
+        endValue: 0,
+        labels: [],
+        values: [],
+        period,
+        topContributor: null,
+        biggestDetractor: null
+      });
+    }
+
+    // Calculate period days for historical lookup
+    const periodDays = {
+      '1M': 30, '3M': 90, '6M': 180, '1Y': 365, 'YTD': Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / (1000 * 60 * 60 * 24))
+    };
+    const days = periodDays[period] || 90;
+
+    // Get unique symbols and fetch current quotes
+    const symbols = [...new Set(allHoldings.map(h => h.symbol))];
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Calculate total portfolio value first for weight calculation
+    let totalPortfolioValue = 0;
+    for (const portfolio of portfolios) {
+      totalPortfolioValue += Number(portfolio.cash_balance) || 0;
+      for (const h of portfolio.holdings) {
+        const quote = quotes[h.symbol] || {};
+        const shares = Number(h.shares);
+        const price = Number(quote.price) || Number(h.avg_cost_basis);
+        totalPortfolioValue += shares * price;
+      }
+    }
+
+    // Fetch historical prices and calculate real attribution for each holding
+    const attributions = [];
+    let totalReturn = 0;
+
+    for (const holding of allHoldings) {
+      const symbol = holding.symbol;
+      const shares = Number(holding.shares);
+      const costBasis = Number(holding.avg_cost_basis) || 0;
+      const quote = quotes[symbol] || {};
+      const currentPrice = Number(quote.price) || costBasis;
+      const currentValue = shares * currentPrice;
+
+      // Calculate weight in portfolio
+      const weight = totalPortfolioValue > 0 ? (currentValue / totalPortfolioValue) * 100 : 0;
+
+      // Fetch historical price for the period start
+      let periodStartPrice = costBasis;
+      try {
+        const history = await MarketDataService.getHistoricalPrices(symbol, days);
+        if (history && history.length > 0) {
+          periodStartPrice = Number(history[0].close) || costBasis;
+        }
+      } catch (err) {
+        logger.debug(`Failed to get history for ${symbol}:`, err.message);
+      }
+
+      // Calculate actual return percentage for the period
+      const returnPct = periodStartPrice > 0 ? ((currentPrice - periodStartPrice) / periodStartPrice) * 100 : 0;
+
+      // Contribution = weight * return (weighted contribution to portfolio return)
+      const contribution = (weight / 100) * returnPct;
+
+      attributions.push({
+        symbol,
+        name: quote.name || symbol,
+        shares,
+        currentPrice,
+        periodStartPrice,
+        returnPct: Math.round(returnPct * 100) / 100,
+        weight: Math.round(weight * 100) / 100,
+        contribution: Math.round(contribution * 100) / 100
+      });
+
+      totalReturn += contribution;
+    }
+
+    // Sort by contribution (highest to lowest)
+    attributions.sort((a, b) => b.contribution - a.contribution);
+
+    // Find top contributor and biggest detractor
+    const topContributor = attributions.length > 0 ? {
+      symbol: attributions[0].symbol,
+      contribution: attributions[0].contribution
+    } : null;
+
+    const sortedByContribution = [...attributions].sort((a, b) => a.contribution - b.contribution);
+    const biggestDetractor = sortedByContribution.length > 0 && sortedByContribution[0].contribution < 0 ? {
+      symbol: sortedByContribution[0].symbol,
+      contribution: sortedByContribution[0].contribution
+    } : null;
+
+    res.json({
+      startValue: 0,
+      endValue: Math.round(totalReturn * 100) / 100,
+      labels: attributions.map(a => a.symbol),
+      values: attributions.map(a => a.contribution),
+      attributions, // Include detailed attribution data
+      period,
+      topContributor,
+      biggestDetractor
+    });
+  } catch (err) {
+    logger.error('Waterfall chart error:', err);
+    res.status(500).json({ error: 'Failed to generate waterfall data' });
+  }
+});
+
+/**
+ * GET /api/analytics/charts/correlation
+ * Correlation matrix for holdings using real historical returns
+ */
+router.get('/charts/correlation', async (req, res) => {
+  try {
+    const { portfolioId, period = '3M' } = req.query;
+
+    // Use correct Prisma model names
+    let portfolios = await prisma.portfolios.findMany({
+      where: { user_id: req.user.id },
+      include: { holdings: true }
+    });
+
+    if (portfolioId) {
+      portfolios = portfolios.filter(p => p.id === portfolioId);
+    }
+
+    const allHoldings = portfolios.flatMap(p => p.holdings || []);
+    const symbols = [...new Set(allHoldings.map(h => h.symbol))].slice(0, 15); // Limit to 15 for performance
+
+    // Return proper empty state when not enough holdings for correlation
+    if (symbols.length < 2) {
+      return res.json({
+        data: [],
+        message: 'No holdings to analyze',
+        labels: [],
+        matrix: [],
+        avgCorrelation: 0,
+        highestPair: null,
+        lowestPair: null
+      });
+    }
+
+    // Calculate period days
+    const periodDays = {
+      '1M': 30, '3M': 90, '6M': 180, '1Y': 365
+    };
+    const days = periodDays[period] || 90;
+
+    // Fetch historical returns for each symbol
+    const returns = {};
+    const activeSymbols = [];
+
+    for (const symbol of symbols) {
+      try {
+        const history = await MarketDataService.getHistoricalPrices(symbol, days);
+        if (history && history.length > 10) {
+          // Calculate daily returns
+          const dailyReturns = [];
+          for (let i = 1; i < history.length; i++) {
+            const prev = Number(history[i - 1].close);
+            const curr = Number(history[i].close);
+            if (prev > 0) {
+              dailyReturns.push((curr - prev) / prev);
+            }
+          }
+          if (dailyReturns.length > 10) {
+            returns[symbol] = dailyReturns;
+            activeSymbols.push(symbol);
+          }
+        }
+      } catch (err) {
+        logger.debug(`Failed to get history for ${symbol}:`, err.message);
+      }
+    }
+
+    // Need at least 2 symbols with data
+    if (activeSymbols.length < 2) {
+      return res.json({
+        data: [],
+        message: 'Insufficient historical data for correlation analysis',
+        labels: [],
+        matrix: [],
+        avgCorrelation: 0,
+        highestPair: null,
+        lowestPair: null
+      });
+    }
+
+    // Calculate correlation matrix using actual returns
+    const n = activeSymbols.length;
+    const matrix = Array(n).fill(null).map(() => Array(n).fill(0));
+
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) {
+          matrix[i][j] = 1.0;
+        } else if (j > i) {
+          // Calculate real correlation between returns
+          const corr = calculateCorrelation(returns[activeSymbols[i]], returns[activeSymbols[j]]);
+          matrix[i][j] = Math.round(corr * 100) / 100;
+          matrix[j][i] = matrix[i][j];
+        }
+      }
+    }
+
+    // Find highest and lowest correlations
+    let highest = { symbols: [], correlation: -2 };
+    let lowest = { symbols: [], correlation: 2 };
+    let sum = 0, count = 0;
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const corr = matrix[i][j];
+        sum += corr;
+        count++;
+        if (corr > highest.correlation) {
+          highest = { symbols: [activeSymbols[i], activeSymbols[j]], correlation: corr };
+        }
+        if (corr < lowest.correlation) {
+          lowest = { symbols: [activeSymbols[i], activeSymbols[j]], correlation: corr };
+        }
+      }
+    }
+
+    res.json({
+      labels: activeSymbols,
+      matrix,
+      avgCorrelation: count > 0 ? Math.round((sum / count) * 100) / 100 : 0,
+      highestPair: highest.symbols.length > 0 ? highest : null,
+      lowestPair: lowest.symbols.length > 0 ? lowest : null,
+      period,
+      dataPoints: Object.values(returns)[0]?.length || 0
+    });
+  } catch (err) {
+    logger.error('Correlation chart error:', err);
+    res.status(500).json({ error: 'Failed to generate correlation data' });
+  }
+});
+
+/**
+ * GET /api/analytics/charts/sankey
+ * Capital flow data for Sankey diagram using real portfolio data
+ */
+router.get('/charts/sankey', async (req, res) => {
+  try {
+    const { portfolioId, view = 'allocation' } = req.query;
+
+    // Use correct Prisma model names
+    let portfolios = await prisma.portfolios.findMany({
+      where: { user_id: req.user.id },
+      include: { holdings: true }
+    });
+
+    if (portfolioId) {
+      portfolios = portfolios.filter(p => p.id === portfolioId);
+    }
+
+    const allHoldings = portfolios.flatMap(p => p.holdings || []);
+
+    // Return proper empty state when no holdings
+    if (allHoldings.length === 0) {
+      return res.json({
+        data: [],
+        message: 'No holdings to analyze',
+        nodes: [],
+        links: [],
+        totalValue: 0
+      });
+    }
+
+    // Get unique symbols and fetch current quotes for real prices and sector data
+    const symbols = [...new Set(allHoldings.map(h => h.symbol))];
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Build nodes and links from actual holdings with real market data
+    const nodes = [{ name: 'Portfolio', category: 'Portfolio' }];
+    const links = [];
+    const sectorMap = new Map();
+    let totalValue = 0;
+
+    // First pass: calculate values and group by sector
+    for (const holding of allHoldings) {
+      const quote = quotes[holding.symbol] || {};
+      const shares = Number(holding.shares) || 0;
+      const price = Number(quote.price) || Number(holding.avg_cost_basis) || 0;
+      const value = shares * price;
+      const sector = quote.sector || holding.sector || 'Other';
+
+      totalValue += value;
+
+      if (!sectorMap.has(sector)) {
+        sectorMap.set(sector, { value: 0, holdings: [] });
+      }
+
+      sectorMap.get(sector).value += value;
+      sectorMap.get(sector).holdings.push({
+        symbol: holding.symbol,
+        name: quote.name || holding.symbol,
+        value,
+        shares,
+        price
+      });
+    }
+
+    // Add cash as a separate node if exists
+    let totalCash = 0;
+    for (const portfolio of portfolios) {
+      totalCash += Number(portfolio.cash_balance) || 0;
+    }
+    if (totalCash > 0) {
+      totalValue += totalCash;
+      sectorMap.set('Cash', { value: totalCash, holdings: [{ symbol: 'Cash', name: 'Cash Balance', value: totalCash }] });
+    }
+
+    // Create sector nodes and links from portfolio to sectors
+    let sectorIndex = 1;
+    const sectorIndexMap = new Map();
+
+    for (const [sector, data] of sectorMap) {
+      nodes.push({
+        name: sector,
+        category: sector,
+        value: Math.round(data.value * 100) / 100
+      });
+      sectorIndexMap.set(sector, sectorIndex);
+      links.push({
+        source: 0,
+        target: sectorIndex,
+        value: Math.round(data.value * 100) / 100
+      });
+      sectorIndex++;
+    }
+
+    // Add holdings as nodes and links from sectors to holdings
+    for (const [sector, data] of sectorMap) {
+      const sectorIdx = sectorIndexMap.get(sector);
+
+      for (const holding of data.holdings) {
+        const holdingIndex = nodes.length;
+        nodes.push({
+          name: holding.symbol,
+          fullName: holding.name,
+          category: sector,
+          value: Math.round(holding.value * 100) / 100,
+          shares: holding.shares,
+          price: holding.price
+        });
+        links.push({
+          source: sectorIdx,
+          target: holdingIndex,
+          value: Math.round(holding.value * 100) / 100
+        });
+      }
+    }
+
+    res.json({
+      nodes,
+      links,
+      totalValue: Math.round(totalValue * 100) / 100,
+      sectorCount: sectorMap.size,
+      holdingsCount: allHoldings.length
+    });
+  } catch (err) {
+    logger.error('Sankey chart error:', err);
+    res.status(500).json({ error: 'Failed to generate sankey data' });
+  }
+});
+
+/**
+ * GET /api/analytics/charts/volume-profile/:symbol
+ * Volume profile data for a symbol using real OHLCV data
+ */
+router.get('/charts/volume-profile/:symbol', async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const { period = '3M' } = req.query;
+
+    // Validate symbol
+    if (!symbol || typeof symbol !== 'string' || !/^[A-Z0-9.\-^]{1,10}$/i.test(symbol.trim())) {
+      return res.status(400).json({ error: 'Invalid symbol' });
+    }
+
+    const cleanSymbol = symbol.trim().toUpperCase();
+
+    // Calculate days based on period
+    const periodDays = {
+      '1M': 22, '3M': 66, '6M': 132, '1Y': 252, 'YTD': Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / (1000 * 60 * 60 * 24))
+    };
+    const days = periodDays[period] || 66;
+
+    // Fetch real historical OHLCV data
+    let history = [];
+    try {
+      history = await MarketDataService.getHistoricalPrices(cleanSymbol, days);
+    } catch (err) {
+      logger.warn(`Failed to fetch history for ${cleanSymbol}:`, err.message);
+    }
+
+    // Return empty state if no historical data
+    if (!history || history.length === 0) {
+      return res.json({
+        data: [],
+        message: `No historical data available for ${cleanSymbol}`,
+        symbol: cleanSymbol,
+        period,
+        dates: [],
+        prices: [],
+        volumes: [],
+        volumeProfile: [],
+        poc: null,
+        valueArea: null,
+        currentPrice: 0
+      });
+    }
+
+    // Extract dates, prices (close), and volumes from real data
+    const dates = [];
+    const prices = [];
+    const volumes = [];
+    const ohlcv = []; // Full OHLCV data
+
+    for (const bar of history) {
+      const date = bar.date || new Date().toISOString().split('T')[0];
+      const close = Number(bar.close) || 0;
+      const volume = Number(bar.volume) || 0;
+
+      if (close > 0) {
+        dates.push(date);
+        prices.push(Math.round(close * 100) / 100);
+        volumes.push(volume);
+        ohlcv.push({
+          date,
+          open: Number(bar.open) || close,
+          high: Number(bar.high) || close,
+          low: Number(bar.low) || close,
+          close,
+          volume
+        });
+      }
+    }
+
+    // Return empty if no valid data
+    if (prices.length === 0) {
+      return res.json({
+        data: [],
+        message: `No valid price data for ${cleanSymbol}`,
+        symbol: cleanSymbol,
+        period,
+        dates: [],
+        prices: [],
+        volumes: [],
+        volumeProfile: [],
+        poc: null,
+        valueArea: null,
+        currentPrice: 0
+      });
+    }
+
+    // Calculate volume profile buckets using real data
+    const priceMin = Math.min(...prices);
+    const priceMax = Math.max(...prices);
+    const priceRange = priceMax - priceMin;
+
+    // Determine bucket count based on price range (aim for ~$1-5 per bucket)
+    const idealBucketSize = Math.max(0.5, priceRange / 30);
+    const buckets = Math.max(10, Math.min(50, Math.ceil(priceRange / idealBucketSize)));
+    const bucketSize = priceRange / buckets;
+
+    const volumeProfile = [];
+    for (let i = 0; i < buckets; i++) {
+      const bucketLow = priceMin + i * bucketSize;
+      const bucketHigh = priceMin + (i + 1) * bucketSize;
+      const bucketPrice = (bucketLow + bucketHigh) / 2;
+      let bucketVolume = 0;
+      let buyVolume = 0;
+      let sellVolume = 0;
+
+      prices.forEach((p, idx) => {
+        if (p >= bucketLow && p < bucketHigh) {
+          const vol = volumes[idx];
+          bucketVolume += vol;
+          // Determine buy/sell volume based on price direction
+          if (idx > 0 && prices[idx] > prices[idx - 1]) {
+            buyVolume += vol;
+          } else {
+            sellVolume += vol;
+          }
+        }
+      });
+
+      if (bucketVolume > 0) {
+        volumeProfile.push({
+          price: Math.round(bucketPrice * 100) / 100,
+          priceRange: { low: Math.round(bucketLow * 100) / 100, high: Math.round(bucketHigh * 100) / 100 },
+          volume: bucketVolume,
+          buyVolume,
+          sellVolume,
+          buyPercent: bucketVolume > 0 ? Math.round((buyVolume / bucketVolume) * 100) : 0
+        });
+      }
+    }
+
+    // Find POC (Point of Control) - price level with highest volume
+    const poc = volumeProfile.length > 0
+      ? volumeProfile.reduce((max, v) => v.volume > max.volume ? v : max, volumeProfile[0])
+      : null;
+
+    // Calculate Value Area (70% of total volume)
+    const totalVolume = volumeProfile.reduce((sum, v) => sum + v.volume, 0);
+    const valueAreaVolume = totalVolume * 0.7;
+    const sortedByVolume = [...volumeProfile].sort((a, b) => b.volume - a.volume);
+
+    let accumVolume = 0;
+    let vaHigh = poc ? poc.price : priceMax;
+    let vaLow = poc ? poc.price : priceMin;
+
+    for (const level of sortedByVolume) {
+      accumVolume += level.volume;
+      if (level.price > vaHigh) vaHigh = level.price;
+      if (level.price < vaLow) vaLow = level.price;
+      if (accumVolume >= valueAreaVolume) break;
+    }
+
+    // Get current price from most recent quote
+    let currentPrice = prices[prices.length - 1];
+    try {
+      const quote = await MarketDataService.getQuotes([cleanSymbol]);
+      if (quote[cleanSymbol] && quote[cleanSymbol].price) {
+        currentPrice = Number(quote[cleanSymbol].price);
+      }
+    } catch (err) {
+      logger.debug(`Using historical close for current price`);
+    }
+
+    res.json({
+      symbol: cleanSymbol,
+      period,
+      dates,
+      prices,
+      volumes,
+      ohlcv, // Include full OHLCV data for candlestick charting
+      volumeProfile,
+      poc: poc ? { price: poc.price, volume: poc.volume } : null,
+      valueArea: { high: Math.round(vaHigh * 100) / 100, low: Math.round(vaLow * 100) / 100 },
+      currentPrice: Math.round(currentPrice * 100) / 100,
+      stats: {
+        totalVolume,
+        avgVolume: Math.round(totalVolume / volumes.length),
+        priceRange: { min: Math.round(priceMin * 100) / 100, max: Math.round(priceMax * 100) / 100 },
+        dataPoints: prices.length
+      }
+    });
+  } catch (err) {
+    logger.error('Volume profile error:', err);
+    res.status(500).json({ error: 'Failed to generate volume profile data' });
+  }
+});
+
+/**
+ * GET /api/analytics/charts/bubble-3d
+ * 3D bubble chart data for portfolio visualization using real data
+ */
+router.get('/charts/bubble-3d', async (req, res) => {
+  try {
+    const { portfolioId } = req.query;
+
+    // Use correct Prisma model names
+    let portfolios = await prisma.portfolios.findMany({
+      where: { user_id: req.user.id },
+      include: { holdings: true }
+    });
+
+    if (portfolioId) {
+      portfolios = portfolios.filter(p => p.id === portfolioId);
+    }
+
+    const allHoldings = portfolios.flatMap(p => p.holdings || []);
+
+    // Return proper empty state when no holdings
+    if (allHoldings.length === 0) {
+      return res.json({
+        data: [],
+        message: 'No holdings to analyze',
+        holdings: [],
+        totalValue: 0
+      });
+    }
+
+    // Get unique symbols and fetch current quotes
+    const symbols = [...new Set(allHoldings.map(h => h.symbol))];
+    const quotes = await MarketDataService.getQuotes(symbols);
+
+    // Calculate total portfolio value first
+    let totalValue = 0;
+    for (const portfolio of portfolios) {
+      totalValue += Number(portfolio.cash_balance) || 0;
+      for (const h of portfolio.holdings) {
+        const quote = quotes[h.symbol] || {};
+        const shares = Number(h.shares);
+        const price = Number(quote.price) || Number(h.avg_cost_basis);
+        totalValue += shares * price;
+      }
+    }
+
+    // Fetch historical data to calculate real volatility and returns for each holding
+    const holdings = [];
+
+    for (const holding of allHoldings) {
+      const symbol = holding.symbol;
+      const quote = quotes[symbol] || {};
+      const shares = Number(holding.shares);
+      const costBasis = Number(holding.avg_cost_basis) || 0;
+      const currentPrice = Number(quote.price) || costBasis;
+      const value = shares * currentPrice;
+      const weight = totalValue > 0 ? (value / totalValue) * 100 : 0;
+      const sector = quote.sector || holding.sector || 'Other';
+
+      // Calculate actual return from cost basis
+      const returnPct = costBasis > 0 ? ((currentPrice - costBasis) / costBasis) * 100 : 0;
+
+      // Fetch historical data to calculate real volatility
+      let volatility = 20; // Default volatility
+      try {
+        const history = await MarketDataService.getHistoricalPrices(symbol, 90);
+        if (history && history.length > 10) {
+          // Calculate daily returns
+          const returns = [];
+          for (let i = 1; i < history.length; i++) {
+            const prev = Number(history[i - 1].close);
+            const curr = Number(history[i].close);
+            if (prev > 0) {
+              returns.push((curr - prev) / prev);
+            }
+          }
+
+          // Calculate annualized volatility (standard deviation * sqrt(252))
+          if (returns.length > 5) {
+            const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1);
+            volatility = Math.sqrt(variance) * Math.sqrt(252) * 100; // Annualized as percentage
+          }
+        }
+      } catch (err) {
+        logger.debug(`Using default volatility for ${symbol}`);
+      }
+
+      // Get beta from quote data if available
+      const beta = Number(quote.beta) || 1.0;
+
+      holdings.push({
+        symbol,
+        name: quote.name || symbol,
+        sector,
+        value: Math.round(value * 100) / 100,
+        weight: Math.round(weight * 100) / 100,
+        volatility: Math.round(volatility * 100) / 100,
+        return: Math.round(returnPct * 100) / 100,
+        shares,
+        currentPrice: Math.round(currentPrice * 100) / 100,
+        costBasis: Math.round(costBasis * 100) / 100,
+        beta: Math.round(beta * 100) / 100,
+        dayChange: Number(quote.change) || 0,
+        dayChangePct: Number(quote.changePercent) || 0
+      });
+    }
+
+    // Sort by value (largest first)
+    holdings.sort((a, b) => b.value - a.value);
+
+    // Calculate portfolio-level stats
+    const avgVolatility = holdings.length > 0
+      ? holdings.reduce((sum, h) => sum + (h.volatility * h.weight / 100), 0)
+      : 0;
+
+    const avgReturn = holdings.length > 0
+      ? holdings.reduce((sum, h) => sum + (h.return * h.weight / 100), 0)
+      : 0;
+
+    res.json({
+      holdings,
+      totalValue: Math.round(totalValue * 100) / 100,
+      holdingsCount: holdings.length,
+      sectorCount: [...new Set(holdings.map(h => h.sector))].length,
+      stats: {
+        weightedAvgVolatility: Math.round(avgVolatility * 100) / 100,
+        weightedAvgReturn: Math.round(avgReturn * 100) / 100,
+        topHolding: holdings[0] || null
+      }
+    });
+  } catch (err) {
+    logger.error('3D bubble chart error:', err);
+    res.status(500).json({ error: 'Failed to generate 3D bubble data' });
+  }
+});
+
 module.exports = router;

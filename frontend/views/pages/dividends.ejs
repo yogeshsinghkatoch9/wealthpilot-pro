@@ -108,9 +108,9 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
   .payout-high { color: #ef4444; }
 </style>
 
-<main class="flex-1 px-4 lg:px-8 py-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
+<main class="page-container flex-1 px-4 lg:px-8 py-8 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
   <!-- Header Section -->
-  <div class="flex flex-wrap items-end justify-between gap-4">
+  <div class="page-header aurora-gradient flex flex-wrap items-end justify-between gap-4">
     <div class="flex flex-col gap-2">
       <h1 class="text-3xl md:text-4xl font-black tracking-tight text-white">Dividends & Income</h1>
       <p class="text-[#9e9fb7] text-base font-normal max-w-2xl">
@@ -118,11 +118,11 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
       </p>
     </div>
     <div class="flex gap-3">
-      <button class="stitch-btn-secondary flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm">
+      <button class="premium-btn premium-btn-secondary flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm">
         <span class="material-symbols-outlined text-lg">tune</span>
         <span>Customize</span>
       </button>
-      <button class="stitch-btn-primary flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm">
+      <button class="premium-btn premium-btn-primary flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-sm">
         <span class="material-symbols-outlined text-lg">download</span>
         <span>Export Report</span>
       </button>
@@ -148,7 +148,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
   <!-- Stats Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
     <!-- Est. Annual Income -->
-    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+    <div class="stitch-card premium-card stat-card p-6 flex flex-col gap-4 relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <span class="material-symbols-outlined text-6xl text-[#4850e5]">account_balance_wallet</span>
       </div>
@@ -165,7 +165,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
     </div>
 
     <!-- Portfolio Yield -->
-    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+    <div class="stitch-card premium-card stat-card p-6 flex flex-col gap-4 relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <span class="material-symbols-outlined text-6xl text-[#4850e5]">percent</span>
       </div>
@@ -182,7 +182,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
     </div>
 
     <!-- Yield on Cost -->
-    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+    <div class="stitch-card premium-card stat-card p-6 flex flex-col gap-4 relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <span class="material-symbols-outlined text-6xl text-[#4850e5]">trending_up</span>
       </div>
@@ -199,7 +199,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
     </div>
 
     <!-- Monthly Average -->
-    <div class="stitch-card p-6 flex flex-col gap-4 relative overflow-hidden group">
+    <div class="stitch-card premium-card stat-card p-6 flex flex-col gap-4 relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <span class="material-symbols-outlined text-6xl text-[#4850e5]">calendar_today</span>
       </div>
@@ -221,7 +221,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
     <!-- Left Column: Projections & Table (2 cols wide on large) -->
     <div class="xl:col-span-2 flex flex-col gap-6">
       <!-- Income Projection Chart Area -->
-      <div class="stitch-card overflow-hidden flex flex-col">
+      <div class="stitch-card premium-card overflow-hidden flex flex-col">
         <div class="p-5 border-b border-[#2e2f45] flex items-center justify-between">
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
             <span class="material-symbols-outlined text-[#4850e5]">bar_chart</span>
@@ -265,7 +265,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
       </div>
 
       <!-- Dividend Tracking Table -->
-      <div class="stitch-card overflow-hidden flex flex-col">
+      <div class="stitch-card premium-card overflow-hidden flex flex-col">
         <div class="p-5 border-b border-[#2e2f45] flex items-center justify-between">
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
             <span class="material-symbols-outlined text-[#4850e5]">table_chart</span>
@@ -274,7 +274,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
           <button class="text-sm text-[#4850e5] font-semibold hover:text-[#4850e5]/80">View All</button>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm whitespace-nowrap">
+          <table class="premium-table w-full text-left text-sm whitespace-nowrap">
             <thead class="bg-[#111217] text-slate-400 font-medium border-b border-[#2e2f45]">
               <tr>
                 <th class="px-6 py-4">Holding</th>
@@ -399,7 +399,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
     <!-- Right Column: Analysis Widgets -->
     <div class="flex flex-col gap-6">
       <!-- Upcoming Payouts Calendar Widget -->
-      <div class="stitch-card flex flex-col">
+      <div class="stitch-card premium-card flex flex-col">
         <div class="p-5 border-b border-[#2e2f45] flex items-center justify-between">
           <h2 class="text-lg font-bold text-white flex items-center gap-2">
             <span class="material-symbols-outlined text-[#4850e5]">event_upcoming</span>
@@ -478,7 +478,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
       </div>
 
       <!-- Growth & Safety Score Section -->
-      <div class="stitch-card p-5 flex flex-col gap-4">
+      <div class="stitch-card premium-card p-5 flex flex-col gap-4">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
           <span class="material-symbols-outlined text-[#4850e5]">health_metrics</span>
           Growth & Safety
@@ -516,7 +516,7 @@ const avgPayoutRatio = safeSummary.avgPayoutRatio || 42.5;
         </div>
         <h3 class="font-bold text-lg z-10">Find Dividend Aristocrats</h3>
         <p class="text-blue-100 text-sm z-10">Discover high-quality companies with 25+ years of consecutive dividend increases.</p>
-        <button class="mt-2 bg-white text-[#4850e5] text-sm font-bold py-2 px-4 rounded-lg shadow-lg w-fit z-10 hover:bg-blue-50 transition-colors">
+        <button class="premium-btn premium-btn-primary mt-2 bg-white text-[#4850e5] text-sm font-bold py-2 px-4 rounded-lg shadow-lg w-fit z-10 hover:bg-blue-50 transition-colors">
           Launch Screener
         </button>
       </div>

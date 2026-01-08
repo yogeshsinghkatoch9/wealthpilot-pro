@@ -8,7 +8,12 @@ const { prisma } = require('../db/simpleDb');
 
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY || 'WTV2HVV9OLJ76NEV';
 const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
+const FMP_API_KEY = process.env.FMP_API_KEY || 'nKxGNnbkLs6VUjVsbeKTlQF4UPKyvPbG';
+const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const secApiService = require('../services/secApiService');
+
+// FMP Base URL
+const FMP_BASE_URL = 'https://financialmodelingprep.com/api';
 
 // Alpha Vantage base URL
 const AV_BASE_URL = 'https://www.alphavantage.co/query';
@@ -16,6 +21,495 @@ const AV_BASE_URL = 'https://www.alphavantage.co/query';
 // Cache for fundamentals data (15-minute TTL)
 const fundamentalsCache = new Map();
 const CACHE_TTL = 15 * 60 * 1000;
+
+// Cache for research data (1-hour TTL)
+const researchCache = new Map();
+const RESEARCH_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Get cached research data or null if expired/not found
+ */
+function getResearchCache(key) {
+  const cached = researchCache.get(key);
+  if (cached && Date.now() - cached.timestamp < RESEARCH_CACHE_TTL) {
+    logger.debug(`Using cached research data for ${key}`);
+    return cached.data;
+  }
+  return null;
+}
+
+/**
+ * Set research data in cache
+ */
+function setResearchCache(key, data) {
+  researchCache.set(key, { data, timestamp: Date.now() });
+}
+
+// ==================== FMP API INTEGRATION FOR RESEARCH DATA ====================
+
+/**
+ * Fetch analyst ratings/grades from FMP API
+ * Returns buy/hold/sell counts, consensus, and average price target
+ */
+async function fetchAnalystRatings(symbol) {
+  const cacheKey = `analyst-ratings:${symbol}`;
+  const cached = getResearchCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const url = `${FMP_BASE_URL}/v3/grade/${symbol}?apikey=${FMP_API_KEY}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const grades = response.data || [];
+
+    if (!grades || grades.length === 0) {
+      logger.debug(`No analyst ratings found for ${symbol}`);
+      return {
+        ratings: [],
+        summary: { buy: 0, hold: 0, sell: 0, strongBuy: 0, strongSell: 0 },
+        consensus: 'N/A',
+        totalRatings: 0
+      };
+    }
+
+    // Get recent ratings (last 90 days)
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    const recentGrades = grades.filter(g => {
+      const gradeDate = new Date(g.date);
+      return gradeDate >= ninetyDaysAgo;
+    });
+
+    // Count ratings by type
+    const summary = { buy: 0, hold: 0, sell: 0, strongBuy: 0, strongSell: 0 };
+    const gradeMapping = {
+      'Buy': 'buy',
+      'Strong Buy': 'strongBuy',
+      'Outperform': 'buy',
+      'Overweight': 'buy',
+      'Hold': 'hold',
+      'Neutral': 'hold',
+      'Market Perform': 'hold',
+      'Equal-Weight': 'hold',
+      'Sector Perform': 'hold',
+      'Sell': 'sell',
+      'Underperform': 'sell',
+      'Underweight': 'sell',
+      'Strong Sell': 'strongSell',
+      'Reduce': 'sell'
+    };
+
+    recentGrades.forEach(grade => {
+      const newGrade = grade.newGrade || '';
+      const mappedGrade = gradeMapping[newGrade] || 'hold';
+      summary[mappedGrade]++;
+    });
+
+    // Calculate consensus
+    const totalBullish = summary.buy + summary.strongBuy;
+    const totalBearish = summary.sell + summary.strongSell;
+    const total = totalBullish + summary.hold + totalBearish;
+
+    let consensus = 'Hold';
+    if (total > 0) {
+      const bullishPct = (totalBullish / total) * 100;
+      const bearishPct = (totalBearish / total) * 100;
+      if (bullishPct >= 60) consensus = 'Buy';
+      else if (bullishPct >= 70) consensus = 'Strong Buy';
+      else if (bearishPct >= 60) consensus = 'Sell';
+      else if (bearishPct >= 70) consensus = 'Strong Sell';
+    }
+
+    const result = {
+      ratings: recentGrades.slice(0, 20).map(g => ({
+        date: g.date,
+        gradingCompany: g.gradingCompany,
+        previousGrade: g.previousGrade,
+        newGrade: g.newGrade
+      })),
+      summary,
+      consensus,
+      totalRatings: total
+    };
+
+    setResearchCache(cacheKey, result);
+    logger.info(`Fetched analyst ratings from FMP for ${symbol}`);
+    return result;
+  } catch (error) {
+    logger.error(`Error fetching analyst ratings for ${symbol}:`, error.message);
+    return {
+      ratings: [],
+      summary: { buy: 0, hold: 0, sell: 0, strongBuy: 0, strongSell: 0 },
+      consensus: 'N/A',
+      totalRatings: 0,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Fetch price targets from FMP API
+ * Returns analyst firm, target price, date, and rating
+ */
+async function fetchPriceTargets(symbol) {
+  const cacheKey = `price-targets:${symbol}`;
+  const cached = getResearchCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const url = `${FMP_BASE_URL}/v4/price-target?symbol=${symbol}&apikey=${FMP_API_KEY}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const targets = response.data || [];
+
+    if (!targets || targets.length === 0) {
+      logger.debug(`No price targets found for ${symbol}`);
+      return {
+        priceTargets: [],
+        averageTarget: null,
+        highTarget: null,
+        lowTarget: null,
+        numberOfAnalysts: 0
+      };
+    }
+
+    // Calculate statistics
+    const prices = targets.map(t => t.priceTarget).filter(p => p > 0);
+    const avgTarget = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+    const highTarget = prices.length > 0 ? Math.max(...prices) : null;
+    const lowTarget = prices.length > 0 ? Math.min(...prices) : null;
+
+    const result = {
+      priceTargets: targets.slice(0, 20).map(t => ({
+        date: t.publishedDate,
+        analystName: t.analystName,
+        analystCompany: t.analystCompany,
+        priceTarget: t.priceTarget,
+        priceWhenPosted: t.priceWhenPosted,
+        newsUrl: t.newsURL,
+        newsTitle: t.newsTitle
+      })),
+      averageTarget: avgTarget ? parseFloat(avgTarget.toFixed(2)) : null,
+      highTarget,
+      lowTarget,
+      numberOfAnalysts: prices.length
+    };
+
+    setResearchCache(cacheKey, result);
+    logger.info(`Fetched price targets from FMP for ${symbol}`);
+    return result;
+  } catch (error) {
+    logger.error(`Error fetching price targets for ${symbol}:`, error.message);
+    return {
+      priceTargets: [],
+      averageTarget: null,
+      highTarget: null,
+      lowTarget: null,
+      numberOfAnalysts: 0,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Fetch insider trading data from FMP API
+ * Returns transaction type, shares, value, date, and insider name
+ */
+async function fetchInsiderTradingFMP(symbol) {
+  const cacheKey = `insider-trading:${symbol}`;
+  const cached = getResearchCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const url = `${FMP_BASE_URL}/v4/insider-trading?symbol=${symbol}&apikey=${FMP_API_KEY}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const transactions = response.data || [];
+
+    if (!transactions || transactions.length === 0) {
+      logger.debug(`No insider trading data found for ${symbol}`);
+      return {
+        transactions: [],
+        summary: {
+          totalBuys: 0,
+          totalSells: 0,
+          netShares: 0,
+          netValue: 0,
+          sentiment: 'neutral'
+        }
+      };
+    }
+
+    // Calculate summary statistics
+    let totalBuys = 0;
+    let totalSells = 0;
+    let totalBuyShares = 0;
+    let totalSellShares = 0;
+    let totalBuyValue = 0;
+    let totalSellValue = 0;
+
+    transactions.forEach(t => {
+      const shares = Math.abs(t.securitiesTransacted || 0);
+      const value = Math.abs(t.securitiesTransacted * (t.price || 0));
+
+      if (t.transactionType === 'P-Purchase' || t.acquistionOrDisposition === 'A') {
+        totalBuys++;
+        totalBuyShares += shares;
+        totalBuyValue += value;
+      } else if (t.transactionType === 'S-Sale' || t.acquistionOrDisposition === 'D') {
+        totalSells++;
+        totalSellShares += shares;
+        totalSellValue += value;
+      }
+    });
+
+    const netShares = totalBuyShares - totalSellShares;
+    const netValue = totalBuyValue - totalSellValue;
+    let sentiment = 'neutral';
+    if (netValue > 100000) sentiment = 'bullish';
+    else if (netValue < -100000) sentiment = 'bearish';
+
+    const result = {
+      transactions: transactions.slice(0, 50).map(t => ({
+        date: t.transactionDate || t.filingDate,
+        filingDate: t.filingDate,
+        reportingName: t.reportingName,
+        typeOfOwner: t.typeOfOwner,
+        transactionType: t.transactionType,
+        acquistionOrDisposition: t.acquistionOrDisposition,
+        shares: t.securitiesTransacted,
+        price: t.price,
+        value: t.securitiesTransacted * (t.price || 0),
+        sharesOwned: t.securitiesOwned,
+        link: t.link
+      })),
+      summary: {
+        totalBuys,
+        totalSells,
+        totalBuyShares,
+        totalSellShares,
+        totalBuyValue,
+        totalSellValue,
+        netShares,
+        netValue,
+        sentiment
+      }
+    };
+
+    setResearchCache(cacheKey, result);
+    logger.info(`Fetched insider trading data from FMP for ${symbol}`);
+    return result;
+  } catch (error) {
+    logger.error(`Error fetching insider trading for ${symbol}:`, error.message);
+    return {
+      transactions: [],
+      summary: {
+        totalBuys: 0,
+        totalSells: 0,
+        netShares: 0,
+        netValue: 0,
+        sentiment: 'neutral'
+      },
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Fetch institutional holdings from FMP API
+ * Returns holder name, shares, change, and value
+ */
+async function fetchInstitutionalHoldings(symbol) {
+  const cacheKey = `institutional-holdings:${symbol}`;
+  const cached = getResearchCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const url = `${FMP_BASE_URL}/v3/institutional-holder/${symbol}?apikey=${FMP_API_KEY}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const holdings = response.data || [];
+
+    if (!holdings || holdings.length === 0) {
+      logger.debug(`No institutional holdings found for ${symbol}`);
+      return {
+        holdings: [],
+        totalShares: 0,
+        totalValue: 0,
+        numberOfHolders: 0
+      };
+    }
+
+    // Calculate totals
+    const totalShares = holdings.reduce((sum, h) => sum + (h.shares || 0), 0);
+    const totalValue = holdings.reduce((sum, h) => sum + (h.value || 0), 0);
+
+    const result = {
+      holdings: holdings.slice(0, 30).map(h => ({
+        holder: h.holder,
+        shares: h.shares,
+        dateReported: h.dateReported,
+        change: h.change,
+        changePercent: h.shares > 0 ? ((h.change / h.shares) * 100).toFixed(2) : 0,
+        value: h.value
+      })),
+      totalShares,
+      totalValue,
+      numberOfHolders: holdings.length
+    };
+
+    setResearchCache(cacheKey, result);
+    logger.info(`Fetched institutional holdings from FMP for ${symbol}`);
+    return result;
+  } catch (error) {
+    logger.error(`Error fetching institutional holdings for ${symbol}:`, error.message);
+    return {
+      holdings: [],
+      totalShares: 0,
+      totalValue: 0,
+      numberOfHolders: 0,
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Fetch stock news from FMP API
+ * Returns headline, source, date, and sentiment
+ */
+async function fetchStockNewsFMP(symbol) {
+  const cacheKey = `stock-news:${symbol}`;
+  const cached = getResearchCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    // Try FMP stock news first
+    const url = `${FMP_BASE_URL}/v3/stock_news?tickers=${symbol}&limit=20&apikey=${FMP_API_KEY}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const news = response.data || [];
+
+    if (!news || news.length === 0) {
+      logger.debug(`No news found from FMP for ${symbol}`);
+
+      // Fallback to News API if available
+      if (NEWS_API_KEY) {
+        return await fetchNewsFromNewsAPI(symbol);
+      }
+
+      return { articles: [], count: 0 };
+    }
+
+    // Simple sentiment analysis based on title keywords
+    const analyzeSentiment = (title) => {
+      const positiveWords = ['surge', 'soar', 'jump', 'gain', 'rise', 'bullish', 'beat', 'strong', 'growth', 'profit', 'upgrade'];
+      const negativeWords = ['fall', 'drop', 'plunge', 'decline', 'bearish', 'miss', 'weak', 'loss', 'downgrade', 'cut', 'warn'];
+
+      const titleLower = title.toLowerCase();
+      const positiveCount = positiveWords.filter(w => titleLower.includes(w)).length;
+      const negativeCount = negativeWords.filter(w => titleLower.includes(w)).length;
+
+      if (positiveCount > negativeCount) return 'positive';
+      if (negativeCount > positiveCount) return 'negative';
+      return 'neutral';
+    };
+
+    const result = {
+      articles: news.map(n => ({
+        title: n.title,
+        text: n.text,
+        source: n.site,
+        publishedDate: n.publishedDate,
+        url: n.url,
+        image: n.image,
+        sentiment: analyzeSentiment(n.title)
+      })),
+      count: news.length
+    };
+
+    setResearchCache(cacheKey, result);
+    logger.info(`Fetched stock news from FMP for ${symbol}`);
+    return result;
+  } catch (error) {
+    logger.error(`Error fetching stock news for ${symbol}:`, error.message);
+
+    // Try News API as fallback
+    if (NEWS_API_KEY) {
+      return await fetchNewsFromNewsAPI(symbol);
+    }
+
+    return { articles: [], count: 0, error: error.message };
+  }
+}
+
+/**
+ * Fallback news fetch from News API
+ */
+async function fetchNewsFromNewsAPI(symbol) {
+  try {
+    const url = `https://newsapi.org/v2/everything?q=${symbol}&sortBy=publishedAt&pageSize=20&apiKey=${NEWS_API_KEY}`;
+    const response = await axios.get(url, { timeout: 10000 });
+    const articles = response.data.articles || [];
+
+    return {
+      articles: articles.map(a => ({
+        title: a.title,
+        text: a.description,
+        source: a.source?.name || 'Unknown',
+        publishedDate: a.publishedAt,
+        url: a.url,
+        image: a.urlToImage,
+        sentiment: 'neutral'
+      })),
+      count: articles.length
+    };
+  } catch (error) {
+    logger.error(`Error fetching from News API for ${symbol}:`, error.message);
+    return { articles: [], count: 0, error: error.message };
+  }
+}
+
+/**
+ * Fetch comprehensive research data for a symbol
+ * Combines analyst ratings, price targets, insider trading, news, and institutional holdings
+ */
+async function fetchComprehensiveResearch(symbol) {
+  const cacheKey = `comprehensive-research:${symbol}`;
+  const cached = getResearchCache(cacheKey);
+  if (cached) return cached;
+
+  try {
+    // Fetch all research data in parallel
+    const [analystRatings, priceTargets, insiderTrading, news, institutionalHoldings] = await Promise.all([
+      fetchAnalystRatings(symbol),
+      fetchPriceTargets(symbol),
+      fetchInsiderTradingFMP(symbol),
+      fetchStockNewsFMP(symbol),
+      fetchInstitutionalHoldings(symbol)
+    ]);
+
+    const result = {
+      symbol: symbol.toUpperCase(),
+      lastUpdated: new Date().toISOString(),
+      analystRatings,
+      priceTargets,
+      insiderTrading,
+      news,
+      institutionalHoldings
+    };
+
+    setResearchCache(cacheKey, result);
+    return result;
+  } catch (error) {
+    logger.error(`Error fetching comprehensive research for ${symbol}:`, error.message);
+    return {
+      symbol: symbol.toUpperCase(),
+      lastUpdated: new Date().toISOString(),
+      error: error.message,
+      analystRatings: { ratings: [], summary: {}, consensus: 'N/A' },
+      priceTargets: { priceTargets: [], averageTarget: null },
+      insiderTrading: { transactions: [], summary: {} },
+      news: { articles: [], count: 0 },
+      institutionalHoldings: { holdings: [], totalShares: 0 }
+    };
+  }
+}
 
 /**
  * Fetch fundamentals from Alpha Vantage (fallback when Yahoo Finance fails)
@@ -760,30 +1254,24 @@ async function fetchRevenueSegments(symbol) {
   }
 }
 
-// Helper function to fetch news
+// Helper function to fetch news - now uses real FMP data
 async function fetchNews(symbol) {
   try {
-    // Using a mock news API - replace with actual news API
-    // You can use NewsAPI, Finnhub, or Yahoo Finance RSS
-    const response = await axios.get('https://feeds.finance.yahoo.com/rss/2.0/headline', {
-      params: {
-        s: symbol,
-        region: 'US',
-        lang: 'en-US'
-      }
-    });
-
-    // Parse RSS feed (simplified)
-    return [
-      {
-        title: `${symbol} Latest News`,
-        summary: 'Market updates and company announcements',
-        url: `https://finance.yahoo.com/quote/${symbol}/news`,
-        source: 'Yahoo Finance',
-        date: new Date().toISOString()
-      }
-    ];
+    const newsData = await fetchStockNewsFMP(symbol);
+    if (newsData.articles && newsData.articles.length > 0) {
+      return newsData.articles.map(article => ({
+        title: article.title,
+        summary: article.text,
+        url: article.url,
+        source: article.source,
+        date: article.publishedDate,
+        sentiment: article.sentiment,
+        image: article.image
+      }));
+    }
+    return [];
   } catch (error) {
+    logger.error('Error fetching news:', error.message);
     return [];
   }
 }
@@ -967,32 +1455,43 @@ async function fetchEarnings(symbol) {
   }
 }
 
-// Helper function to fetch analyst data
+// Helper function to fetch analyst data - now uses real FMP data
 async function fetchAnalystData(symbol) {
   try {
-    const headers = {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-    };
-
-    const response = await axios.get(`https://finance.yahoo.com/quote/${symbol}/analysis`, {
-      headers,
-      timeout: 10000
-    });
-
-    const $ = cheerio.load(response.data);
+    // Fetch analyst ratings and price targets from FMP
+    const [ratingsData, targetsData] = await Promise.all([
+      fetchAnalystRatings(symbol),
+      fetchPriceTargets(symbol)
+    ]);
 
     return {
       recommendations: {
-        buy: 0,
-        hold: 0,
-        sell: 0
+        buy: (ratingsData.summary?.buy || 0) + (ratingsData.summary?.strongBuy || 0),
+        hold: ratingsData.summary?.hold || 0,
+        sell: (ratingsData.summary?.sell || 0) + (ratingsData.summary?.strongSell || 0),
+        strongBuy: ratingsData.summary?.strongBuy || 0,
+        strongSell: ratingsData.summary?.strongSell || 0
       },
-      targetPrice: 0,
-      consensus: 'Hold'
+      targetPrice: targetsData.averageTarget || 0,
+      highTarget: targetsData.highTarget,
+      lowTarget: targetsData.lowTarget,
+      numberOfAnalysts: targetsData.numberOfAnalysts,
+      consensus: ratingsData.consensus || 'Hold',
+      recentRatings: ratingsData.ratings?.slice(0, 10) || [],
+      recentPriceTargets: targetsData.priceTargets?.slice(0, 10) || []
     };
   } catch (error) {
     logger.error('Error fetching analyst data:', error.message);
-    return { recommendations: { buy: 0, hold: 0, sell: 0 }, targetPrice: 0, consensus: 'Hold' };
+    return {
+      recommendations: { buy: 0, hold: 0, sell: 0, strongBuy: 0, strongSell: 0 },
+      targetPrice: 0,
+      highTarget: null,
+      lowTarget: null,
+      numberOfAnalysts: 0,
+      consensus: 'N/A',
+      recentRatings: [],
+      recentPriceTargets: []
+    };
   }
 }
 
@@ -2465,6 +2964,139 @@ router.get('/company-summary/:symbol', authenticate, async (req, res) => {
   } catch (error) {
     logger.error('Error fetching company summary:', error);
     res.status(500).json({ error: 'Company data not available' });
+  }
+});
+
+// ==================== NEW RESEARCH ENDPOINTS WITH REAL FMP DATA ====================
+
+// GET /api/research/research/:symbol - Comprehensive research data (analyst ratings, price targets, insider trading, news, institutional holdings)
+router.get('/research/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const researchData = await fetchComprehensiveResearch(symbol.toUpperCase());
+    res.json(researchData);
+  } catch (error) {
+    logger.error('Error fetching comprehensive research:', error);
+    res.status(500).json({ error: 'Research data not available', symbol: req.params.symbol });
+  }
+});
+
+// GET /api/research/analyst-ratings/:symbol - Analyst ratings/grades from FMP
+router.get('/analyst-ratings/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const ratings = await fetchAnalystRatings(symbol.toUpperCase());
+    res.json({
+      symbol: symbol.toUpperCase(),
+      ...ratings
+    });
+  } catch (error) {
+    logger.error('Error fetching analyst ratings:', error);
+    res.status(500).json({ error: 'Analyst ratings not available' });
+  }
+});
+
+// GET /api/research/price-targets/:symbol - Price targets from FMP
+router.get('/price-targets/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const targets = await fetchPriceTargets(symbol.toUpperCase());
+    res.json({
+      symbol: symbol.toUpperCase(),
+      ...targets
+    });
+  } catch (error) {
+    logger.error('Error fetching price targets:', error);
+    res.status(500).json({ error: 'Price targets not available' });
+  }
+});
+
+// GET /api/research/insider-trades/:symbol - Insider trading data from FMP
+router.get('/insider-trades/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const insiderData = await fetchInsiderTradingFMP(symbol.toUpperCase());
+    res.json({
+      symbol: symbol.toUpperCase(),
+      ...insiderData
+    });
+  } catch (error) {
+    logger.error('Error fetching insider trades:', error);
+    res.status(500).json({ error: 'Insider trading data not available' });
+  }
+});
+
+// GET /api/research/institutional/:symbol - Institutional holdings from FMP
+router.get('/institutional/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const holdings = await fetchInstitutionalHoldings(symbol.toUpperCase());
+    res.json({
+      symbol: symbol.toUpperCase(),
+      ...holdings
+    });
+  } catch (error) {
+    logger.error('Error fetching institutional holdings:', error);
+    res.status(500).json({ error: 'Institutional holdings not available' });
+  }
+});
+
+// GET /api/research/stock-news/:symbol - Stock news from FMP
+router.get('/stock-news/:symbol', authenticate, async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    const news = await fetchStockNewsFMP(symbol.toUpperCase());
+    res.json({
+      symbol: symbol.toUpperCase(),
+      ...news
+    });
+  } catch (error) {
+    logger.error('Error fetching stock news:', error);
+    res.status(500).json({ error: 'Stock news not available' });
+  }
+});
+
+// GET /api/research/cache/clear - Clear research cache (admin/debug endpoint)
+router.get('/cache/clear', authenticate, async (req, res) => {
+  try {
+    const sizeBefore = researchCache.size;
+    researchCache.clear();
+    logger.info(`Research cache cleared. Removed ${sizeBefore} entries.`);
+    res.json({
+      success: true,
+      message: `Cleared ${sizeBefore} cached entries`
+    });
+  } catch (error) {
+    logger.error('Error clearing research cache:', error);
+    res.status(500).json({ error: 'Failed to clear cache' });
+  }
+});
+
+// GET /api/research/cache/stats - Get cache statistics
+router.get('/cache/stats', authenticate, async (req, res) => {
+  try {
+    const now = Date.now();
+    let validEntries = 0;
+    let expiredEntries = 0;
+
+    researchCache.forEach((value) => {
+      if (now - value.timestamp < RESEARCH_CACHE_TTL) {
+        validEntries++;
+      } else {
+        expiredEntries++;
+      }
+    });
+
+    res.json({
+      totalEntries: researchCache.size,
+      validEntries,
+      expiredEntries,
+      cacheTTL: RESEARCH_CACHE_TTL,
+      cacheTTLMinutes: RESEARCH_CACHE_TTL / 60000
+    });
+  } catch (error) {
+    logger.error('Error getting cache stats:', error);
+    res.status(500).json({ error: 'Failed to get cache stats' });
   }
 });
 

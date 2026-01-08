@@ -4,14 +4,11 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Login - WealthPilot Pro</title>
-
-  <!-- Stitch Design System -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-
   <script>
     tailwind.config = {
       theme: {
@@ -19,15 +16,16 @@
           colors: {
             "primary": "#4850e5",
             "primary-hover": "#5a62f0",
-            "bg-dark": "#111217",
-            "surface": "#1a1d24",
-            "surface-hover": "#22252e",
-            "border": "#292a38",
+            "bg-dark": "#0a0b0f",
+            "surface": "#13151c",
+            "surface-hover": "#1a1d26",
+            "border": "#23262f",
             "text-primary": "#ffffff",
             "text-secondary": "#9e9fb7",
             "text-muted": "#6b6c7e",
             "success": "#0bda65",
             "error": "#ff4d4d",
+            "warning": "#f59e0b",
           },
           fontFamily: {
             "display": ["Manrope", "sans-serif"]
@@ -36,214 +34,328 @@
       },
     };
   </script>
-
   <style>
-    body {
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
       font-family: 'Manrope', sans-serif;
-      background: #111217;
+      background: #0a0b0f;
+      min-height: 100vh;
     }
-    .glow-primary {
-      box-shadow: 0 0 40px rgba(72, 80, 229, 0.3);
+
+    .page-wrapper {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(72, 80, 229, 0.25) 0%, transparent 50%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(72, 80, 229, 0.15) 0%, transparent 40%),
+        radial-gradient(ellipse 40% 30% at 0% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+        #0a0b0f;
     }
-    .gradient-bg {
-      background: radial-gradient(ellipse at top, rgba(72, 80, 229, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at bottom right, rgba(72, 80, 229, 0.1) 0%, transparent 40%);
+
+    .card-glow {
+      box-shadow:
+        0 0 0 1px rgba(72, 80, 229, 0.1),
+        0 4px 24px rgba(0, 0, 0, 0.4),
+        0 0 80px rgba(72, 80, 229, 0.15);
     }
+
     .input-focus:focus {
       border-color: #4850e5;
-      box-shadow: 0 0 0 3px rgba(72, 80, 229, 0.2);
+      box-shadow: 0 0 0 3px rgba(72, 80, 229, 0.25);
     }
+
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4850e5 0%, #5c64f4 100%);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #5558eb 0%, #6b73ff 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(72, 80, 229, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Animated grid background */
+    .grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image:
+        linear-gradient(rgba(72, 80, 229, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(72, 80, 229, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Floating orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      opacity: 0.6;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: rgba(72, 80, 229, 0.3);
+      top: -150px;
+      right: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: rgba(139, 92, 246, 0.25);
+      bottom: -100px;
+      left: -50px;
+      animation-delay: -7s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* Logo animation */
+    .logo-icon {
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(72, 80, 229, 0.4); }
+      50% { box-shadow: 0 0 40px rgba(72, 80, 229, 0.6); }
     }
   </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4 gradient-bg">
+<body>
+  <div class="page-wrapper min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <!-- Background effects -->
+    <div class="grid-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
 
-  <div class="w-full max-w-md">
-    <!-- Logo -->
-    <div class="text-center mb-10">
-      <div class="inline-flex items-center justify-center gap-3 mb-4">
-        <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
-          <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
-            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" opacity="0.7"/>
-            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" opacity="0.4"/>
-          </svg>
-        </div>
-        <h1 class="text-3xl font-bold text-white tracking-tight">WealthPilot</h1>
-      </div>
-      <p class="text-text-secondary text-sm">Professional Portfolio Management</p>
-    </div>
-
-    <!-- Login Card -->
-    <div class="bg-surface rounded-2xl border border-border p-8 glow-primary">
-
-      <!-- Login Form (Step 1) -->
-      <div id="login-step">
-        <h2 class="text-2xl font-semibold text-white mb-2">Welcome back</h2>
-        <p class="text-text-secondary text-sm mb-8">Sign in to access your portfolio</p>
-
-        <!-- Success message -->
-        <% if (typeof success !== 'undefined' && success) { %>
-        <div class="mb-6 p-4 bg-success/10 border border-success/30 rounded-xl text-success text-sm flex items-center gap-3">
-          <span class="material-symbols-outlined">check_circle</span>
-          <%= success %>
-        </div>
-        <% } %>
-
-        <!-- Error message -->
-        <div id="error-message" class="hidden mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm flex items-center gap-3">
-          <span class="material-symbols-outlined">error</span>
-          <span id="error-text"></span>
-        </div>
-
-        <form id="login-form" class="space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-text-secondary mb-2" for="email">Email</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
-                <span class="material-symbols-outlined text-xl">mail</span>
-              </span>
-              <input
-                class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-border bg-bg-dark text-white placeholder-text-muted focus:outline-none input-focus transition-all"
-                id="email"
-                name="email"
-                placeholder="you@example.com"
-                required
-                type="email"
-              />
-            </div>
+    <div class="w-full max-w-md relative z-10">
+      <!-- Logo -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center gap-3 mb-4">
+          <div class="logo-icon w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+            <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" opacity="0.7"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" opacity="0.4"/>
+            </svg>
           </div>
-
-          <div>
-            <label class="block text-sm font-medium text-text-secondary mb-2" for="password">Password</label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
-                <span class="material-symbols-outlined text-xl">lock</span>
-              </span>
-              <input
-                class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-border bg-bg-dark text-white placeholder-text-muted focus:outline-none input-focus transition-all"
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                required
-                type="password"
-              />
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between pt-1">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                class="w-4 h-4 rounded border-border bg-bg-dark text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-              />
-              <span class="text-sm text-text-secondary">Remember me</span>
-            </label>
-            <a class="text-sm font-medium text-primary hover:text-primary-hover transition-colors" href="/forgot-password">
-              Forgot password?
-            </a>
-          </div>
-
-          <button
-            class="w-full flex justify-center items-center gap-2 py-4 px-4 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            type="submit"
-            id="login-btn"
-          >
-            <span id="login-btn-text">Sign in</span>
-            <span id="login-btn-spinner" class="hidden">
-              <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </span>
-          </button>
-        </form>
-
-        <div class="mt-8 pt-6 border-t border-border text-center">
-          <p class="text-sm text-text-secondary">
-            Don't have an account?
-            <a class="font-semibold text-primary hover:text-primary-hover transition-colors ml-1" href="/register">Create account</a>
-          </p>
+          <h1 class="text-3xl font-bold text-white tracking-tight">WealthPilot</h1>
         </div>
+        <p class="text-text-secondary text-sm">Professional Portfolio Management</p>
       </div>
 
-      <!-- 2FA Verification Step (Step 2) -->
-      <div id="2fa-step" class="hidden">
-        <div class="text-center mb-8">
-          <div class="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span class="material-symbols-outlined text-3xl text-primary">security</span>
+      <!-- Login Card -->
+      <div class="bg-surface/80 backdrop-blur-xl rounded-2xl border border-border p-8 card-glow">
+
+        <!-- Login Form (Step 1) -->
+        <div id="login-step">
+          <h2 class="text-2xl font-semibold text-white mb-2">Welcome back</h2>
+          <p class="text-text-secondary text-sm mb-8">Sign in to continue to your portfolio</p>
+
+          <!-- Success message -->
+          <% if (typeof success !== 'undefined' && success) { %>
+          <div class="mb-6 p-4 bg-success/10 border border-success/30 rounded-xl text-success text-sm flex items-center gap-3">
+            <span class="material-symbols-outlined">check_circle</span>
+            <%= success %>
           </div>
-          <h2 class="text-2xl font-semibold text-white">Two-Factor Authentication</h2>
-          <p class="text-text-secondary mt-2 text-sm">Enter the 6-digit code from your authenticator app</p>
+          <% } %>
+
+          <!-- Error message -->
+          <div id="error-message" class="hidden mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm flex items-center gap-3">
+            <span class="material-symbols-outlined">error</span>
+            <span id="error-text"></span>
+          </div>
+
+          <% if (typeof error !== 'undefined' && error) { %>
+          <div class="mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm flex items-center gap-3">
+            <span class="material-symbols-outlined">error</span>
+            <%= error %>
+          </div>
+          <% } %>
+
+          <form id="login-form" class="space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-text-secondary mb-2" for="email">Email</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
+                  <span class="material-symbols-outlined text-xl">mail</span>
+                </span>
+                <input
+                  class="w-full pl-12 pr-4 py-3.5 rounded-xl border border-border bg-bg-dark/50 text-white placeholder-text-muted focus:outline-none input-focus transition-all"
+                  id="email"
+                  name="email"
+                  placeholder="you@example.com"
+                  required
+                  type="email"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-text-secondary mb-2" for="password">Password</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted">
+                  <span class="material-symbols-outlined text-xl">lock</span>
+                </span>
+                <input
+                  class="w-full pl-12 pr-12 py-3.5 rounded-xl border border-border bg-bg-dark/50 text-white placeholder-text-muted focus:outline-none input-focus transition-all"
+                  id="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  required
+                  type="password"
+                />
+                <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 pr-4 flex items-center text-text-muted hover:text-white transition-colors">
+                  <span class="material-symbols-outlined text-xl">visibility_off</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center">
+                <input
+                  class="w-4 h-4 rounded border-border bg-bg-dark text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                />
+                <label class="ml-2 block text-sm text-text-secondary cursor-pointer select-none" for="remember-me">Remember me</label>
+              </div>
+              <a class="text-sm font-medium text-primary hover:text-primary-hover transition-colors" href="/forgot-password">Forgot password?</a>
+            </div>
+
+            <button
+              class="w-full flex justify-center items-center gap-2 py-4 px-4 rounded-xl text-sm font-semibold text-white btn-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface disabled:opacity-50 disabled:cursor-not-allowed"
+              type="submit"
+              id="login-btn"
+            >
+              <span id="login-btn-text">Sign in</span>
+              <span id="login-btn-spinner" class="hidden">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </span>
+            </button>
+          </form>
+
+          <div class="mt-8 pt-6 border-t border-border text-center">
+            <p class="text-sm text-text-secondary">
+              Don't have an account?
+              <a class="font-semibold text-primary hover:text-primary-hover transition-colors ml-1" href="/register">Sign up</a>
+            </p>
+          </div>
         </div>
 
-        <div id="2fa-error" class="hidden mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm flex items-center gap-3">
-          <span class="material-symbols-outlined">error</span>
-          <span id="2fa-error-text"></span>
-        </div>
+        <!-- 2FA Verification Step (Step 2) -->
+        <div id="2fa-step" class="hidden">
+          <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="material-symbols-outlined text-3xl text-primary">security</span>
+            </div>
+            <h2 class="text-2xl font-semibold text-white">Two-Factor Authentication</h2>
+            <p class="text-text-secondary mt-2 text-sm">Enter the 6-digit code from your authenticator app</p>
+          </div>
 
-        <form id="2fa-form" class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-text-secondary mb-2" for="2fa-code">Verification Code</label>
+          <div id="2fa-error" class="hidden mb-6 p-4 bg-error/10 border border-error/30 rounded-xl text-error text-sm flex items-center gap-3">
+            <span class="material-symbols-outlined">error</span>
+            <span id="2fa-error-text"></span>
+          </div>
+
+          <form id="2fa-form" class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-text-secondary mb-2" for="2fa-code">Verification Code</label>
+              <input
+                type="text"
+                id="2fa-code"
+                required
+                maxlength="6"
+                pattern="[0-9]{6}"
+                autocomplete="one-time-code"
+                class="w-full px-4 py-4 rounded-xl border border-border bg-bg-dark/50 text-white text-center text-2xl tracking-[0.5em] placeholder-text-muted focus:outline-none input-focus transition-all"
+                placeholder="000000"
+              />
+            </div>
+
+            <button
+              type="submit"
+              id="2fa-btn"
+              class="w-full flex justify-center items-center gap-2 py-4 px-4 rounded-xl text-sm font-semibold text-white btn-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            >
+              <span id="2fa-btn-text">Verify</span>
+            </button>
+          </form>
+
+          <div class="mt-6">
+            <button type="button" id="use-backup-btn" class="w-full py-2 text-text-muted text-sm hover:text-text-secondary transition-colors">
+              Use a backup code instead
+            </button>
+          </div>
+
+          <!-- Backup Code Section -->
+          <div id="backup-code-section" class="hidden mt-4 pt-4 border-t border-border">
+            <label class="block text-sm font-medium text-text-secondary mb-2">Backup Code</label>
             <input
               type="text"
-              id="2fa-code"
-              required
-              maxlength="6"
-              pattern="[0-9]{6}"
-              autocomplete="one-time-code"
-              class="w-full px-4 py-4 rounded-xl border border-border bg-bg-dark text-white text-center text-2xl tracking-[0.5em] placeholder-text-muted focus:outline-none input-focus transition-all"
-              placeholder="000000"
+              id="backup-code"
+              maxlength="10"
+              class="w-full px-4 py-3.5 rounded-xl border border-border bg-bg-dark/50 text-white placeholder-text-muted focus:outline-none input-focus transition-all"
+              placeholder="Enter backup code"
             />
+            <button type="button" id="verify-backup-btn" class="w-full mt-3 py-3.5 bg-surface-hover text-white font-medium rounded-xl hover:bg-border transition-colors">
+              Verify with Backup Code
+            </button>
           </div>
 
-          <button
-            type="submit"
-            id="2fa-btn"
-            class="w-full flex justify-center items-center gap-2 py-4 px-4 rounded-xl text-sm font-semibold text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all disabled:opacity-50"
-          >
-            <span id="2fa-btn-text">Verify</span>
-          </button>
-        </form>
-
-        <div class="mt-6">
-          <button type="button" id="use-backup-btn" class="w-full py-2 text-text-secondary text-sm hover:text-white transition-colors">
-            Use a backup code instead
-          </button>
-        </div>
-
-        <!-- Backup Code Section -->
-        <div id="backup-code-section" class="hidden mt-4 pt-4 border-t border-border">
-          <label class="block text-sm font-medium text-text-secondary mb-2">Backup Code</label>
-          <input
-            type="text"
-            id="backup-code"
-            maxlength="10"
-            class="w-full px-4 py-3.5 rounded-xl border border-border bg-bg-dark text-white placeholder-text-muted focus:outline-none input-focus transition-all"
-            placeholder="Enter backup code"
-          />
-          <button type="button" id="verify-backup-btn" class="w-full mt-3 py-3.5 bg-surface-hover text-white font-medium rounded-xl hover:bg-border transition-colors">
-            Verify with Backup Code
-          </button>
-        </div>
-
-        <div class="mt-6 text-center">
-          <button type="button" id="back-to-login" class="text-sm text-text-secondary hover:text-white transition-colors flex items-center justify-center gap-1 mx-auto">
-            <span class="material-symbols-outlined text-lg">arrow_back</span>
-            Back to login
-          </button>
+          <div class="mt-6 text-center">
+            <button type="button" id="back-to-login" class="text-sm text-text-muted hover:text-text-secondary transition-colors flex items-center justify-center gap-1 mx-auto">
+              <span class="material-symbols-outlined text-lg">arrow_back</span>
+              Back to login
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Footer -->
-    <div class="mt-8 text-center">
-      <a class="text-xs text-text-muted hover:text-text-secondary transition-colors" href="/help">Help & Support</a>
+      <!-- Trust Indicators -->
+      <div class="flex justify-center items-center gap-8 mt-8 text-text-muted">
+        <div class="flex items-center gap-2 text-xs">
+          <span class="material-symbols-outlined text-lg">security</span>
+          <span>256-bit Encryption</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="material-symbols-outlined text-lg">verified_user</span>
+          <span>SOC 2 Compliant</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-8 text-center">
+        <a class="text-xs text-text-muted hover:text-text-secondary transition-colors" href="/help">Help & Support</a>
+      </div>
     </div>
   </div>
 
@@ -255,6 +367,19 @@
     document.getElementById('error-text').textContent = <%- JSON.stringify(error || '') %>;
     document.getElementById('error-message').classList.remove('hidden');
     <% } %>
+
+    // Password visibility toggle
+    document.getElementById('toggle-password').addEventListener('click', function() {
+      const input = document.getElementById('password');
+      const icon = this.querySelector('.material-symbols-outlined');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility';
+      } else {
+        input.type = 'password';
+        icon.textContent = 'visibility_off';
+      }
+    });
 
     // Login form handler
     document.getElementById('login-form').addEventListener('submit', async (e) => {

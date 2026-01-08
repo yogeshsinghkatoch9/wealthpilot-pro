@@ -1,0 +1,729 @@
+<%- include('../partials/header', { pageTitle: 'Mobile Dashboard' }) %>
+
+<!-- Mobile Dashboard - Native App Experience -->
+<main class="mobile-dashboard" id="mobileDashboard">
+
+  <!-- Offline Mode Indicator -->
+  <div class="offline-indicator" id="offlineIndicator">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3"/>
+    </svg>
+    <span>Offline Mode</span>
+  </div>
+
+  <!-- Pull to Refresh Container -->
+  <div class="pull-refresh-container" id="pullRefreshContainer">
+    <div class="pull-refresh" id="pullRefresh">
+      <div class="pull-refresh-spinner"></div>
+      <span class="pull-refresh-text">Pull to refresh</span>
+    </div>
+
+    <!-- Quick Glance Metrics Header -->
+    <section class="mobile-metrics-header">
+      <div class="metrics-header-content">
+        <div class="metrics-greeting">
+          <span class="greeting-text">Good <%= new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening' %></span>
+          <% if (typeof user !== 'undefined' && user && user.name) { %>
+            <span class="greeting-name"><%= user.name.split(' ')[0] %></span>
+          <% } %>
+        </div>
+        <div class="market-status-badge">
+          <span class="market-dot"></span>
+          <span id="marketStatusText">Markets Open</span>
+        </div>
+      </div>
+
+      <!-- Total Portfolio Value - Large & Prominent -->
+      <div class="total-value-container">
+        <span class="total-value-label">Total Portfolio Value</span>
+        <div class="total-value-amount" id="totalPortfolioValue">
+          <% if (typeof portfolioSummary !== 'undefined' && portfolioSummary) { %>
+            $<%= portfolioSummary.totalValue ? portfolioSummary.totalValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %>
+          <% } else { %>
+            $0.00
+          <% } %>
+        </div>
+        <div class="total-value-change <%= typeof portfolioSummary !== 'undefined' && portfolioSummary && portfolioSummary.dayChange >= 0 ? 'positive' : 'negative' %>" id="dayChangeIndicator">
+          <svg class="change-arrow" viewBox="0 0 24 24" fill="currentColor">
+            <path d="<%= typeof portfolioSummary !== 'undefined' && portfolioSummary && portfolioSummary.dayChange >= 0 ? 'M7 14l5-5 5 5' : 'M7 10l5 5 5-5' %>"/>
+          </svg>
+          <span class="change-amount">
+            <% if (typeof portfolioSummary !== 'undefined' && portfolioSummary) { %>
+              $<%= Math.abs(portfolioSummary.dayChange || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+            <% } else { %>
+              $0.00
+            <% } %>
+          </span>
+          <span class="change-percent">
+            (<% if (typeof portfolioSummary !== 'undefined' && portfolioSummary) { %>
+              <%= (portfolioSummary.dayChangePercent >= 0 ? '+' : '') + (portfolioSummary.dayChangePercent || 0).toFixed(2) %>%
+            <% } else { %>
+              0.00%
+            <% } %>)
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Row -->
+      <div class="quick-metrics-row">
+        <div class="quick-metric">
+          <span class="quick-metric-label">Cash</span>
+          <span class="quick-metric-value" id="cashAvailable">
+            $<%= typeof portfolioSummary !== 'undefined' && portfolioSummary ? (portfolioSummary.cashBalance || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '0' %>
+          </span>
+        </div>
+        <div class="quick-metric-divider"></div>
+        <div class="quick-metric">
+          <span class="quick-metric-label">Positions</span>
+          <span class="quick-metric-value" id="totalPositions">
+            <%= typeof holdings !== 'undefined' ? holdings.length : 0 %>
+          </span>
+        </div>
+        <div class="quick-metric-divider"></div>
+        <div class="quick-metric">
+          <span class="quick-metric-label">Day P/L</span>
+          <span class="quick-metric-value <%= typeof portfolioSummary !== 'undefined' && portfolioSummary && portfolioSummary.dayChange >= 0 ? 'value-positive' : 'value-negative' %>">
+            <%= typeof portfolioSummary !== 'undefined' && portfolioSummary ? ((portfolioSummary.dayChangePercent >= 0 ? '+' : '') + (portfolioSummary.dayChangePercent || 0).toFixed(2) + '%') : '0.00%' %>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Swipeable Portfolio Cards -->
+    <section class="swipeable-cards-section">
+      <div class="section-header">
+        <h2>Portfolios</h2>
+        <button class="see-all-btn" onclick="window.location.href='/portfolios'">
+          See All
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+      <div class="swipe-container" id="portfolioCardsContainer">
+        <% if (typeof portfolios !== 'undefined' && portfolios && portfolios.length > 0) { %>
+          <% portfolios.forEach((portfolio, index) => { %>
+            <div class="mobile-card portfolio-card" data-portfolio-id="<%= portfolio.id %>">
+              <div class="portfolio-card-header">
+                <span class="portfolio-name"><%= portfolio.name %></span>
+                <span class="portfolio-type-badge"><%= portfolio.type || 'Investment' %></span>
+              </div>
+              <div class="portfolio-card-value">
+                $<%= (portfolio.totalValue || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+              </div>
+              <div class="portfolio-card-change <%= (portfolio.dayChange || 0) >= 0 ? 'positive' : 'negative' %>">
+                <span><%= (portfolio.dayChange || 0) >= 0 ? '+' : '' %><%= (portfolio.dayChangePercent || 0).toFixed(2) %>%</span>
+                <span class="change-label">Today</span>
+              </div>
+              <div class="portfolio-mini-chart" id="miniChart<%= index %>"></div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div class="mobile-card portfolio-card empty-card">
+            <div class="empty-card-content">
+              <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+              </svg>
+              <span>Create your first portfolio</span>
+            </div>
+          </div>
+        <% } %>
+      </div>
+      <div class="swipe-indicators" id="portfolioIndicators">
+        <% if (typeof portfolios !== 'undefined' && portfolios) { %>
+          <% portfolios.forEach((_, i) => { %>
+            <span class="swipe-dot <%= i === 0 ? 'active' : '' %>"></span>
+          <% }); %>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- Touch-Optimized Performance Chart -->
+    <section class="mobile-chart-section">
+      <div class="section-header">
+        <h2>Performance</h2>
+        <div class="chart-timeframe-pills">
+          <button class="timeframe-pill active" data-range="1D">1D</button>
+          <button class="timeframe-pill" data-range="1W">1W</button>
+          <button class="timeframe-pill" data-range="1M">1M</button>
+          <button class="timeframe-pill" data-range="3M">3M</button>
+          <button class="timeframe-pill" data-range="1Y">1Y</button>
+        </div>
+      </div>
+      <div class="mobile-chart-container">
+        <canvas id="mobilePerformanceChart"></canvas>
+        <div class="chart-touch-overlay" id="chartTouchOverlay">
+          <div class="chart-tooltip" id="chartTooltip">
+            <span class="tooltip-date">Jan 15, 2025</span>
+            <span class="tooltip-value">$125,430.00</span>
+            <span class="tooltip-change positive">+2.34%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Holdings List with Swipe Actions -->
+    <section class="holdings-section">
+      <div class="section-header">
+        <h2>Holdings</h2>
+        <button class="see-all-btn" onclick="window.location.href='/holdings'">
+          See All
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+      <div class="holdings-list" id="holdingsList">
+        <% if (typeof holdings !== 'undefined' && holdings && holdings.length > 0) { %>
+          <% holdings.slice(0, 10).forEach(holding => { %>
+            <div class="swipe-container holding-item" data-symbol="<%= holding.symbol %>">
+              <!-- Swipe Right Action (Buy) -->
+              <div class="swipe-action swipe-action-left">
+                <div class="swipe-action-content buy">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  </svg>
+                  <span>Buy</span>
+                </div>
+              </div>
+
+              <!-- Holding Content -->
+              <div class="holding-content">
+                <div class="holding-info">
+                  <div class="holding-symbol-row">
+                    <span class="holding-symbol"><%= holding.symbol %></span>
+                    <span class="holding-shares"><%= holding.shares %> shares</span>
+                  </div>
+                  <span class="holding-name"><%= holding.name || holding.symbol %></span>
+                </div>
+                <div class="holding-values">
+                  <span class="holding-price">$<%= (holding.currentPrice || 0).toFixed(2) %></span>
+                  <span class="holding-change <%= (holding.changePercent || 0) >= 0 ? 'positive' : 'negative' %>">
+                    <%= (holding.changePercent || 0) >= 0 ? '+' : '' %><%= (holding.changePercent || 0).toFixed(2) %>%
+                  </span>
+                </div>
+              </div>
+
+              <!-- Swipe Left Action (Sell) -->
+              <div class="swipe-action swipe-action-right">
+                <div class="swipe-action-content sell">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                  </svg>
+                  <span>Sell</span>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div class="empty-holdings">
+            <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+            <span>No holdings yet</span>
+            <button class="add-holding-btn" onclick="openQuickAdd()">Add your first position</button>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <!-- Quick Actions Section -->
+    <section class="quick-actions-section">
+      <div class="section-header">
+        <h2>Quick Actions</h2>
+      </div>
+      <div class="quick-actions-grid">
+        <button class="quick-action-tile" onclick="openQuickAdd()">
+          <div class="action-icon action-icon-green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+          </div>
+          <span>Add Position</span>
+        </button>
+        <button class="quick-action-tile" onclick="openScanQR()">
+          <div class="action-icon action-icon-purple">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
+          </div>
+          <span>Scan QR</span>
+        </button>
+        <button class="quick-action-tile" onclick="window.location.href='/watchlist'">
+          <div class="action-icon action-icon-amber">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+          <span>Watchlist</span>
+        </button>
+        <button class="quick-action-tile" onclick="window.location.href='/analytics'">
+          <div class="action-icon action-icon-blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <span>Analytics</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Market Movers (Touch Optimized) -->
+    <section class="market-movers-section">
+      <div class="section-header">
+        <h2>Market Movers</h2>
+        <div class="movers-tabs">
+          <button class="mover-tab active" data-type="gainers">Gainers</button>
+          <button class="mover-tab" data-type="losers">Losers</button>
+        </div>
+      </div>
+      <div class="movers-list" id="moversList">
+        <!-- Dynamically populated -->
+        <div class="mover-item">
+          <div class="mover-info">
+            <span class="mover-symbol">NVDA</span>
+            <span class="mover-name">NVIDIA Corp</span>
+          </div>
+          <div class="mover-values positive">
+            <span class="mover-price">$142.50</span>
+            <span class="mover-change">+5.23%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Spacing for Navigation -->
+    <div class="bottom-nav-spacer"></div>
+  </div>
+</main>
+
+<!-- Bottom Action Bar -->
+<nav class="mobile-action-bar" id="mobileActionBar">
+  <button class="action-bar-item" onclick="openQuickAdd()">
+    <div class="action-bar-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+    </div>
+    <span>Add</span>
+  </button>
+
+  <button class="action-bar-item" onclick="openScanQR()">
+    <div class="action-bar-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+      </svg>
+    </div>
+    <span>Scan</span>
+  </button>
+
+  <button class="action-bar-fab" onclick="openVoiceCommand()">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+    </svg>
+  </button>
+
+  <button class="action-bar-item" onclick="window.location.href='/alerts'">
+    <div class="action-bar-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+    </div>
+    <span>Alerts</span>
+  </button>
+
+  <button class="action-bar-item" onclick="refreshData()">
+    <div class="action-bar-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+    </div>
+    <span>Refresh</span>
+  </button>
+</nav>
+
+<!-- Quick Add Bottom Sheet -->
+<div class="bottom-sheet-overlay" id="quickAddOverlay" onclick="closeQuickAdd()"></div>
+<div class="bottom-sheet" id="quickAddSheet">
+  <div class="bottom-sheet-handle"></div>
+  <div class="bottom-sheet-header">
+    <h3>Add Position</h3>
+    <button class="bottom-sheet-close" onclick="closeQuickAdd()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <div class="bottom-sheet-content">
+    <form id="quickAddForm" onsubmit="submitQuickAdd(event)">
+      <div class="form-group">
+        <label>Symbol</label>
+        <input type="text" id="quickAddSymbol" placeholder="e.g., AAPL" class="mobile-input" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Shares</label>
+          <input type="number" id="quickAddShares" placeholder="0" class="mobile-input" step="0.0001" required>
+        </div>
+        <div class="form-group">
+          <label>Price</label>
+          <input type="number" id="quickAddPrice" placeholder="0.00" class="mobile-input" step="0.01" required>
+        </div>
+      </div>
+      <button type="submit" class="mobile-btn mobile-btn-primary">Add Position</button>
+    </form>
+  </div>
+</div>
+
+<!-- Voice Command Bottom Sheet -->
+<div class="bottom-sheet-overlay" id="voiceOverlay" onclick="closeVoiceCommand()"></div>
+<div class="bottom-sheet voice-sheet" id="voiceSheet">
+  <div class="bottom-sheet-handle"></div>
+  <div class="voice-content">
+    <div class="voice-animation" id="voiceAnimation">
+      <div class="voice-ring"></div>
+      <div class="voice-ring"></div>
+      <div class="voice-ring"></div>
+      <div class="voice-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+      </div>
+    </div>
+    <p class="voice-text" id="voiceText">Listening...</p>
+    <p class="voice-hint">Try: "Show me my portfolio" or "Buy 10 shares of Apple"</p>
+    <button class="voice-cancel" onclick="closeVoiceCommand()">Cancel</button>
+  </div>
+</div>
+
+<!-- Include Mobile CSS & JS -->
+<link rel="stylesheet" href="/css/mobile-optimized.css">
+<script src="/js/mobile-gestures.js"></script>
+
+<script>
+// Mobile Dashboard Initialization
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize mobile gesture handler
+  if (typeof MobileGestureHandler !== 'undefined') {
+    window.mobileGestures = new MobileGestureHandler();
+
+    // Initialize pull to refresh
+    mobileGestures.initPullToRefresh();
+
+    // Initialize swipeable portfolio cards
+    mobileGestures.initSwipeableCards();
+
+    // Initialize holding swipe actions
+    document.querySelectorAll('.holding-item').forEach(item => {
+      mobileGestures.initSwipeActions(
+        item,
+        () => openBuySheet(item.dataset.symbol), // Left swipe (buy)
+        () => openSellSheet(item.dataset.symbol) // Right swipe (sell)
+      );
+    });
+
+    // Initialize bottom sheets
+    mobileGestures.initBottomSheet(document.getElementById('quickAddSheet'));
+    mobileGestures.initBottomSheet(document.getElementById('voiceSheet'));
+
+    // Handle offline mode
+    mobileGestures.handleOfflineMode();
+  }
+
+  // Initialize performance chart
+  initMobileChart();
+
+  // Check market status
+  updateMarketStatus();
+
+  // Load market movers
+  loadMarketMovers();
+});
+
+// Initialize touch-optimized chart
+function initMobileChart() {
+  const ctx = document.getElementById('mobilePerformanceChart');
+  if (!ctx) return;
+
+  // Sample data - replace with actual API data
+  const data = {
+    labels: ['9:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '1:00', '1:30', '2:00', '2:30', '3:00', '3:30', '4:00'],
+    datasets: [{
+      label: 'Portfolio Value',
+      data: [120000, 120500, 121200, 120800, 121500, 122000, 121800, 122500, 123000, 122800, 123500, 124000, 123800, 125000],
+      borderColor: '#34D399',
+      backgroundColor: 'rgba(52, 211, 153, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0,
+      pointHoverRadius: 6,
+      pointHoverBackgroundColor: '#34D399',
+      pointHoverBorderColor: '#fff',
+      pointHoverBorderWidth: 2
+    }]
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#fff',
+          bodyColor: '#34D399',
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: function(context) {
+              return '$' + context.parsed.y.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          display: true,
+          grid: { display: false },
+          ticks: {
+            color: '#71717a',
+            font: { size: 10 },
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 6
+          }
+        },
+        y: {
+          display: true,
+          position: 'right',
+          grid: {
+            color: 'rgba(255, 255, 255, 0.03)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#71717a',
+            font: { size: 10 },
+            callback: function(value) {
+              return '$' + (value / 1000).toFixed(0) + 'k';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Timeframe selector
+document.querySelectorAll('.timeframe-pill').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.timeframe-pill').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    loadChartData(this.dataset.range);
+  });
+});
+
+// Market movers tabs
+document.querySelectorAll('.mover-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.mover-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+    loadMarketMovers(this.dataset.type);
+  });
+});
+
+// Bottom sheet functions
+function openQuickAdd() {
+  document.getElementById('quickAddOverlay').classList.add('visible');
+  document.getElementById('quickAddSheet').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+function closeQuickAdd() {
+  document.getElementById('quickAddOverlay').classList.remove('visible');
+  document.getElementById('quickAddSheet').classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+function openVoiceCommand() {
+  document.getElementById('voiceOverlay').classList.add('visible');
+  document.getElementById('voiceSheet').classList.add('visible');
+  document.body.style.overflow = 'hidden';
+  if (navigator.vibrate) navigator.vibrate(15);
+  startVoiceRecognition();
+}
+
+function closeVoiceCommand() {
+  document.getElementById('voiceOverlay').classList.remove('visible');
+  document.getElementById('voiceSheet').classList.remove('visible');
+  document.body.style.overflow = '';
+  stopVoiceRecognition();
+}
+
+function openScanQR() {
+  // Open QR scanner or redirect to scanner page
+  if (navigator.vibrate) navigator.vibrate(10);
+  window.location.href = '/scan';
+}
+
+function openBuySheet(symbol) {
+  document.getElementById('quickAddSymbol').value = symbol;
+  openQuickAdd();
+}
+
+function openSellSheet(symbol) {
+  // Open sell sheet for the symbol
+  if (typeof showToast === 'function') {
+    showToast('Opening sell form for ' + symbol, 'info');
+  }
+}
+
+function submitQuickAdd(event) {
+  event.preventDefault();
+  const symbol = document.getElementById('quickAddSymbol').value;
+  const shares = document.getElementById('quickAddShares').value;
+  const price = document.getElementById('quickAddPrice').value;
+
+  // Submit to API
+  fetch('/api/holdings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + localStorage.getItem('wealthpilot_token')
+    },
+    body: JSON.stringify({ symbol, shares: parseFloat(shares), price: parseFloat(price) })
+  })
+  .then(res => res.json())
+  .then(data => {
+    closeQuickAdd();
+    if (typeof showToast === 'function') {
+      showToast('Position added successfully!', 'success');
+    }
+    setTimeout(() => location.reload(), 500);
+  })
+  .catch(err => {
+    if (typeof showToast === 'function') {
+      showToast('Failed to add position', 'error');
+    }
+  });
+}
+
+function refreshData() {
+  if (navigator.vibrate) navigator.vibrate(10);
+  if (typeof showToast === 'function') {
+    showToast('Refreshing data...', 'info');
+  }
+  setTimeout(() => location.reload(), 300);
+}
+
+function updateMarketStatus() {
+  const now = new Date();
+  const day = now.getDay();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+  const timeInMinutes = hour * 60 + minute;
+
+  // Markets open 9:30 AM - 4:00 PM ET, Mon-Fri
+  const marketOpen = 9 * 60 + 30;
+  const marketClose = 16 * 60;
+  const isWeekday = day >= 1 && day <= 5;
+  const isMarketHours = timeInMinutes >= marketOpen && timeInMinutes < marketClose;
+
+  const statusEl = document.getElementById('marketStatusText');
+  const dotEl = document.querySelector('.market-dot');
+
+  if (isWeekday && isMarketHours) {
+    statusEl.textContent = 'Markets Open';
+    dotEl.classList.add('open');
+    dotEl.classList.remove('closed');
+  } else {
+    statusEl.textContent = 'Markets Closed';
+    dotEl.classList.add('closed');
+    dotEl.classList.remove('open');
+  }
+}
+
+function loadMarketMovers(type = 'gainers') {
+  const list = document.getElementById('moversList');
+  // Replace with actual API call
+  const movers = type === 'gainers' ? [
+    { symbol: 'NVDA', name: 'NVIDIA Corp', price: 142.50, change: 5.23 },
+    { symbol: 'AMD', name: 'AMD Inc', price: 178.30, change: 4.15 },
+    { symbol: 'TSLA', name: 'Tesla Inc', price: 248.50, change: 3.87 }
+  ] : [
+    { symbol: 'INTC', name: 'Intel Corp', price: 42.30, change: -3.45 },
+    { symbol: 'WFC', name: 'Wells Fargo', price: 48.20, change: -2.89 },
+    { symbol: 'BA', name: 'Boeing Co', price: 185.40, change: -2.34 }
+  ];
+
+  list.innerHTML = movers.map(m => `
+    <div class="mover-item" onclick="window.location.href='/stock/${m.symbol}'">
+      <div class="mover-info">
+        <span class="mover-symbol">${m.symbol}</span>
+        <span class="mover-name">${m.name}</span>
+      </div>
+      <div class="mover-values ${m.change >= 0 ? 'positive' : 'negative'}">
+        <span class="mover-price">$${m.price.toFixed(2)}</span>
+        <span class="mover-change">${m.change >= 0 ? '+' : ''}${m.change.toFixed(2)}%</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadChartData(range) {
+  // Load chart data for the selected range
+  if (typeof showToast === 'function') {
+    showToast('Loading ' + range + ' data...', 'info');
+  }
+}
+
+// Voice recognition
+let recognition;
+function startVoiceRecognition() {
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      document.getElementById('voiceText').textContent = transcript;
+    };
+
+    recognition.onend = function() {
+      document.getElementById('voiceText').textContent = 'Processing...';
+      // Process voice command
+      setTimeout(closeVoiceCommand, 1000);
+    };
+
+    recognition.onerror = function() {
+      document.getElementById('voiceText').textContent = 'Could not understand. Please try again.';
+    };
+
+    recognition.start();
+  } else {
+    document.getElementById('voiceText').textContent = 'Voice recognition not supported';
+  }
+}
+
+function stopVoiceRecognition() {
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+  }
+}
+</script>
+
+<%- include('../partials/footer') %>

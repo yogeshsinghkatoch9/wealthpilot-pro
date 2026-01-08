@@ -1,0 +1,980 @@
+<%
+// Demo data for Economic Indicators - structured for easy API integration
+const indicators = {
+  fedFundsRate: { value: 5.50, previous: 5.50, trend: 'stable', change: 0, lastUpdated: '2024-01-31' },
+  treasury10Y: { value: 4.28, previous: 4.15, trend: 'up', change: 0.13, lastUpdated: '2024-01-31' },
+  yieldSpread2_10: { value: -0.32, previous: -0.41, trend: 'up', change: 0.09, status: 'inverted', lastUpdated: '2024-01-31' },
+  unemployment: { value: 3.7, previous: 3.7, trend: 'stable', change: 0, lastUpdated: '2024-01-05' },
+  cpi: { value: 3.4, previous: 3.1, trend: 'up', change: 0.3, lastUpdated: '2024-01-11' },
+  gdpGrowth: { value: 3.3, previous: 4.9, trend: 'down', change: -1.6, lastUpdated: '2024-01-25' },
+  consumerConfidence: { value: 110.7, previous: 101.0, trend: 'up', change: 9.7, lastUpdated: '2024-01-30' },
+  pmi: { value: 50.7, previous: 47.4, trend: 'up', change: 3.3, status: 'expanding', lastUpdated: '2024-02-01' }
+};
+
+const yieldCurve = {
+  '3M': 5.47,
+  '6M': 5.38,
+  '1Y': 5.02,
+  '2Y': 4.60,
+  '5Y': 4.23,
+  '10Y': 4.28,
+  '20Y': 4.57,
+  '30Y': 4.47
+};
+
+// Economic cycle position (Early, Mid, Late, Recession)
+const economicCycle = {
+  position: 'Late',
+  confidence: 72,
+  indicators: {
+    gdp: 'positive',
+    employment: 'strong',
+    inflation: 'elevated',
+    yieldCurve: 'inverted',
+    corporateEarnings: 'mixed'
+  }
+};
+
+// Fed Meeting Calendar
+const fedMeetings = [
+  { date: '2024-03-20', decision: 'pending', rateHikeProb: 3, rateCutProb: 12, holdProb: 85 },
+  { date: '2024-05-01', decision: 'pending', rateHikeProb: 1, rateCutProb: 38, holdProb: 61 },
+  { date: '2024-06-12', decision: 'pending', rateHikeProb: 0, rateCutProb: 62, holdProb: 38 },
+  { date: '2024-07-31', decision: 'pending', rateHikeProb: 0, rateCutProb: 78, holdProb: 22 },
+  { date: '2024-09-18', decision: 'pending', rateHikeProb: 0, rateCutProb: 86, holdProb: 14 }
+];
+
+// Portfolio sector impact analysis
+const sectorImpact = [
+  { sector: 'Financials', ratesSensitivity: 'high', inflationImpact: 'positive', currentOutlook: 'bullish', score: 72 },
+  { sector: 'Technology', ratesSensitivity: 'high', inflationImpact: 'negative', currentOutlook: 'neutral', score: 58 },
+  { sector: 'Healthcare', ratesSensitivity: 'low', inflationImpact: 'neutral', currentOutlook: 'bullish', score: 68 },
+  { sector: 'Consumer Discretionary', ratesSensitivity: 'medium', inflationImpact: 'negative', currentOutlook: 'neutral', score: 52 },
+  { sector: 'Utilities', ratesSensitivity: 'high', inflationImpact: 'negative', currentOutlook: 'bearish', score: 38 },
+  { sector: 'Real Estate', ratesSensitivity: 'very high', inflationImpact: 'mixed', currentOutlook: 'bearish', score: 35 },
+  { sector: 'Energy', ratesSensitivity: 'low', inflationImpact: 'positive', currentOutlook: 'bullish', score: 74 },
+  { sector: 'Materials', ratesSensitivity: 'medium', inflationImpact: 'positive', currentOutlook: 'neutral', score: 55 }
+];
+
+// Alerts for significant changes
+const alerts = [
+  { type: 'warning', indicator: 'CPI', message: 'Inflation increased to 3.4%, above expectations of 3.2%', time: '2 days ago' },
+  { type: 'info', indicator: 'GDP', message: 'Q4 GDP growth at 3.3% beats consensus of 2.0%', time: '1 week ago' },
+  { type: 'positive', indicator: 'Consumer Confidence', message: 'Consumer confidence surges to highest level since 2021', time: '1 day ago' },
+  { type: 'warning', indicator: 'Yield Curve', message: 'Yield curve remains inverted for 18+ months', time: 'ongoing' }
+];
+
+// Historical sparkline data (sample)
+const sparklineData = {
+  fedFundsRate: [5.25, 5.25, 5.50, 5.50, 5.50, 5.50, 5.50, 5.50, 5.50, 5.50, 5.50, 5.50],
+  treasury10Y: [3.88, 4.01, 4.25, 4.57, 4.79, 4.93, 4.62, 4.33, 4.25, 4.09, 4.15, 4.28],
+  unemployment: [3.4, 3.4, 3.5, 3.6, 3.5, 3.8, 3.8, 3.8, 3.7, 3.7, 3.7, 3.7],
+  cpi: [6.4, 6.0, 5.0, 4.9, 4.0, 3.0, 3.2, 3.7, 3.7, 3.2, 3.1, 3.4],
+  gdpGrowth: [2.6, 2.0, 2.1, 2.1, 2.4, 4.9, 3.3],
+  consumerConfidence: [106.1, 104.2, 102.5, 103.7, 109.7, 106.7, 103.8, 106.1, 108.0, 102.0, 101.0, 110.7],
+  pmi: [47.4, 46.9, 46.4, 47.2, 48.7, 49.0, 48.4, 47.6, 46.7, 47.8, 47.4, 50.7]
+};
+
+// Helper function for trend arrows
+const getTrendArrow = (trend) => {
+  switch(trend) {
+    case 'up': return '<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>';
+    case 'down': return '<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>';
+    default: return '<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/></svg>';
+  }
+};
+
+// Helper for positive indicator styling
+const getIndicatorTrendArrow = (trend, isInverted = false) => {
+  const isPositive = isInverted ? trend === 'down' : trend === 'up';
+  if (trend === 'stable') {
+    return '<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/></svg>';
+  }
+  if (trend === 'up') {
+    return '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>';
+  }
+  return '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>';
+};
+%>
+<%- include('../partials/header', { pageTitle: 'Economic Indicators' }) %>
+
+<style>
+  /* Economic Indicators Dashboard Specific Styles */
+  .economic-gauge {
+    position: relative;
+    width: 240px;
+    height: 120px;
+    margin: 0 auto;
+  }
+
+  .gauge-arc {
+    fill: none;
+    stroke-width: 20;
+    stroke-linecap: round;
+  }
+
+  .gauge-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+  }
+
+  .gauge-early {
+    stroke: #10b981;
+  }
+
+  .gauge-mid {
+    stroke: #3b82f6;
+  }
+
+  .gauge-late {
+    stroke: #f59e0b;
+  }
+
+  .gauge-recession {
+    stroke: #ef4444;
+  }
+
+  .gauge-needle {
+    fill: #fafafa;
+    transform-origin: 120px 100px;
+    transition: transform 1s ease-out;
+  }
+
+  .cycle-position-early .gauge-needle { transform: rotate(-67.5deg); }
+  .cycle-position-mid .gauge-needle { transform: rotate(-22.5deg); }
+  .cycle-position-late .gauge-needle { transform: rotate(22.5deg); }
+  .cycle-position-recession .gauge-needle { transform: rotate(67.5deg); }
+
+  .sparkline-container {
+    width: 100%;
+    height: 40px;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .sparkline-bar {
+    flex: 1;
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.6), rgba(99, 102, 241, 0.2));
+    border-radius: 2px 2px 0 0;
+    transition: all 0.3s;
+    min-height: 4px;
+  }
+
+  .sparkline-bar:hover {
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.9), rgba(99, 102, 241, 0.4));
+  }
+
+  .sparkline-positive .sparkline-bar {
+    background: linear-gradient(180deg, var(--positive-green), rgba(52, 211, 153, 0.2));
+  }
+
+  .sparkline-negative .sparkline-bar {
+    background: linear-gradient(180deg, #ef4444, rgba(239, 68, 68, 0.2));
+  }
+
+  .indicator-card {
+    background: linear-gradient(145deg, rgba(20, 20, 22, 0.9) 0%, rgba(15, 15, 17, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .indicator-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .indicator-card.positive-border {
+    border-left: 3px solid var(--positive-green);
+  }
+
+  .indicator-card.negative-border {
+    border-left: 3px solid #ef4444;
+  }
+
+  .indicator-card.warning-border {
+    border-left: 3px solid #f59e0b;
+  }
+
+  .indicator-card.neutral-border {
+    border-left: 3px solid #6b7280;
+  }
+
+  .yield-curve-chart {
+    position: relative;
+    height: 200px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 20px 0;
+  }
+
+  .yield-bar {
+    width: 40px;
+    background: linear-gradient(180deg, #6366f1, rgba(99, 102, 241, 0.3));
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .yield-bar:hover {
+    background: linear-gradient(180deg, #8b5cf6, rgba(139, 92, 246, 0.5));
+  }
+
+  .yield-bar.inverted {
+    background: linear-gradient(180deg, #f59e0b, rgba(245, 158, 11, 0.3));
+  }
+
+  .fed-meeting-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s;
+  }
+
+  .fed-meeting-card:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(99, 102, 241, 0.2);
+  }
+
+  .prob-bar {
+    height: 6px;
+    border-radius: 3px;
+    transition: width 0.5s ease-out;
+  }
+
+  .prob-hike { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .prob-cut { background: linear-gradient(90deg, #10b981, #34d399); }
+  .prob-hold { background: linear-gradient(90deg, #6b7280, #9ca3af); }
+
+  .sector-impact-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+  }
+
+  .sector-impact-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s ease-out;
+  }
+
+  .alert-card {
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: all 0.2s;
+  }
+
+  .alert-card:hover {
+    transform: translateX(4px);
+  }
+
+  .alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .alert-info {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .alert-positive {
+    background: var(--positive-green-bg);
+    border: 1px solid var(--positive-green-border);
+  }
+
+  .cycle-label {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #71717a;
+  }
+
+  @keyframes fadeSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-in {
+    animation: fadeSlideIn 0.5s ease-out forwards;
+  }
+
+  .animate-delay-1 { animation-delay: 0.1s; opacity: 0; }
+  .animate-delay-2 { animation-delay: 0.2s; opacity: 0; }
+  .animate-delay-3 { animation-delay: 0.3s; opacity: 0; }
+  .animate-delay-4 { animation-delay: 0.4s; opacity: 0; }
+  .animate-delay-5 { animation-delay: 0.5s; opacity: 0; }
+</style>
+
+<div class="page-container min-h-screen p-6 lg:p-8">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Page Header -->
+    <div class="page-header animate-in">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="page-title">Economic Indicators Dashboard</h1>
+              <p class="page-subtitle">Track key macroeconomic metrics and their portfolio impact</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="live-indicator">
+            Live Data
+          </div>
+          <span class="text-xs text-tertiary">Last updated: <%= new Date().toLocaleString() %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Section -->
+    <% if (alerts.length > 0) { %>
+    <div class="premium-card animate-in animate-delay-1">
+      <div class="premium-card-header">
+        <h2 class="premium-card-title flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          Economic Alerts
+        </h2>
+        <span class="premium-badge premium-badge-warning"><%= alerts.length %> Active</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <% alerts.forEach(alert => { %>
+          <div class="alert-card alert-<%= alert.type %>">
+            <div class="flex-shrink-0">
+              <% if (alert.type === 'warning') { %>
+                <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <% } else if (alert.type === 'positive') { %>
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <% } else { %>
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <% } %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-sm text-primary"><%= alert.indicator %></span>
+                <span class="text-xs text-tertiary"><%= alert.time %></span>
+              </div>
+              <p class="text-sm text-secondary"><%= alert.message %></p>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Key Indicators Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in animate-delay-2">
+
+      <!-- Federal Funds Rate -->
+      <div class="indicator-card neutral-border">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon stat-icon-purple">
+            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="flex items-center gap-1">
+            <%- getIndicatorTrendArrow(indicators.fedFundsRate.trend) %>
+          </div>
+        </div>
+        <div class="stat-label">Federal Funds Rate</div>
+        <div class="stat-value"><%= indicators.fedFundsRate.value.toFixed(2) %>%</div>
+        <div class="stat-change text-tertiary">
+          Target: <%= indicators.fedFundsRate.value.toFixed(2) %>% - <%= (indicators.fedFundsRate.value + 0.25).toFixed(2) %>%
+        </div>
+        <div class="sparkline-container mt-3">
+          <% sparklineData.fedFundsRate.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= (val / 6) * 100 %>%"></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- 10-Year Treasury Yield -->
+      <div class="indicator-card <%= indicators.treasury10Y.trend === 'up' ? 'warning-border' : 'positive-border' %>">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon stat-icon-blue">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+          </div>
+          <div class="flex items-center gap-1 <%= indicators.treasury10Y.trend === 'up' ? 'text-red-400' : 'text-emerald-400' %>">
+            <%- getIndicatorTrendArrow(indicators.treasury10Y.trend) %>
+            <span class="text-xs font-mono"><%= indicators.treasury10Y.change >= 0 ? '+' : '' %><%= indicators.treasury10Y.change.toFixed(2) %></span>
+          </div>
+        </div>
+        <div class="stat-label">10-Year Treasury Yield</div>
+        <div class="stat-value"><%= indicators.treasury10Y.value.toFixed(2) %>%</div>
+        <div class="stat-change text-tertiary">
+          Previous: <%= indicators.treasury10Y.previous.toFixed(2) %>%
+        </div>
+        <div class="sparkline-container mt-3">
+          <% sparklineData.treasury10Y.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= ((val - 3.5) / 2) * 100 %>%"></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- 2-10 Year Spread -->
+      <div class="indicator-card <%= indicators.yieldSpread2_10.value < 0 ? 'negative-border' : 'positive-border' %>">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon <%= indicators.yieldSpread2_10.value < 0 ? 'stat-icon-red' : 'stat-icon-emerald' %>">
+            <svg class="w-5 h-5 <%= indicators.yieldSpread2_10.value < 0 ? 'text-red-400' : 'text-emerald-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+            </svg>
+          </div>
+          <% if (indicators.yieldSpread2_10.value < 0) { %>
+            <span class="premium-badge premium-badge-danger">Inverted</span>
+          <% } else { %>
+            <span class="premium-badge premium-badge-success">Normal</span>
+          <% } %>
+        </div>
+        <div class="stat-label">2-10 Year Spread</div>
+        <div class="stat-value <%= indicators.yieldSpread2_10.value < 0 ? 'text-negative' : 'value-gain' %>"><%= indicators.yieldSpread2_10.value.toFixed(2) %>%</div>
+        <div class="stat-change text-tertiary">
+          Yield curve indicator
+        </div>
+        <div class="mt-3 text-xs text-tertiary">
+          Inverted curves historically precede recessions
+        </div>
+      </div>
+
+      <!-- Unemployment Rate -->
+      <div class="indicator-card positive-border">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon stat-icon-forest">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+          </div>
+          <span class="premium-badge premium-badge-forest">Strong</span>
+        </div>
+        <div class="stat-label">Unemployment Rate</div>
+        <div class="stat-value value-gain"><%= indicators.unemployment.value.toFixed(1) %>%</div>
+        <div class="stat-change text-tertiary">
+          Near 50-year lows
+        </div>
+        <div class="sparkline-container sparkline-positive mt-3">
+          <% sparklineData.unemployment.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= ((4.5 - val) / 1.5) * 100 %>%"></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- CPI (Inflation) -->
+      <div class="indicator-card <%= indicators.cpi.trend === 'up' ? 'warning-border' : 'positive-border' %>">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon stat-icon-amber">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+          </div>
+          <div class="flex items-center gap-1 <%= indicators.cpi.trend === 'up' ? 'text-red-400' : 'text-emerald-400' %>">
+            <%- getIndicatorTrendArrow(indicators.cpi.trend) %>
+            <span class="text-xs font-mono"><%= indicators.cpi.change >= 0 ? '+' : '' %><%= indicators.cpi.change.toFixed(1) %></span>
+          </div>
+        </div>
+        <div class="stat-label">CPI (Inflation YoY)</div>
+        <div class="stat-value <%= indicators.cpi.value > 3 ? 'text-warning' : 'value-gain' %>"><%= indicators.cpi.value.toFixed(1) %>%</div>
+        <div class="stat-change text-tertiary">
+          Fed target: 2.0%
+        </div>
+        <div class="sparkline-container sparkline-negative mt-3">
+          <% sparklineData.cpi.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= (val / 8) * 100 %>%"></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- GDP Growth -->
+      <div class="indicator-card positive-border">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon stat-icon-emerald">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <span class="premium-badge premium-badge-success">Expanding</span>
+        </div>
+        <div class="stat-label">GDP Growth (QoQ)</div>
+        <div class="stat-value value-gain"><%= indicators.gdpGrowth.value.toFixed(1) %>%</div>
+        <div class="stat-change text-tertiary">
+          Previous: <%= indicators.gdpGrowth.previous.toFixed(1) %>%
+        </div>
+        <div class="sparkline-container sparkline-positive mt-3">
+          <% sparklineData.gdpGrowth.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= (val / 6) * 100 %>%"></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Consumer Confidence -->
+      <div class="indicator-card positive-border">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon stat-icon-cyan">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="flex items-center gap-1 text-emerald-400">
+            <%- getIndicatorTrendArrow(indicators.consumerConfidence.trend) %>
+            <span class="text-xs font-mono">+<%= indicators.consumerConfidence.change.toFixed(1) %></span>
+          </div>
+        </div>
+        <div class="stat-label">Consumer Confidence</div>
+        <div class="stat-value"><%= indicators.consumerConfidence.value.toFixed(1) %></div>
+        <div class="stat-change text-emerald-400">
+          Highest since 2021
+        </div>
+        <div class="sparkline-container sparkline-positive mt-3">
+          <% sparklineData.consumerConfidence.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= ((val - 90) / 30) * 100 %>%"></div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- PMI (Manufacturing) -->
+      <div class="indicator-card <%= indicators.pmi.value >= 50 ? 'positive-border' : 'negative-border' %>">
+        <div class="flex items-center justify-between mb-3">
+          <div class="stat-icon <%= indicators.pmi.value >= 50 ? 'stat-icon-forest' : 'stat-icon-red' %>">
+            <svg class="w-5 h-5 <%= indicators.pmi.value >= 50 ? 'text-emerald-400' : 'text-red-400' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+          </div>
+          <% if (indicators.pmi.value >= 50) { %>
+            <span class="premium-badge premium-badge-success">Expanding</span>
+          <% } else { %>
+            <span class="premium-badge premium-badge-danger">Contracting</span>
+          <% } %>
+        </div>
+        <div class="stat-label">PMI (Manufacturing)</div>
+        <div class="stat-value <%= indicators.pmi.value >= 50 ? 'value-gain' : 'text-negative' %>"><%= indicators.pmi.value.toFixed(1) %></div>
+        <div class="stat-change text-tertiary">
+          Threshold: 50.0
+        </div>
+        <div class="sparkline-container mt-3">
+          <% sparklineData.pmi.forEach((val, idx) => { %>
+            <div class="sparkline-bar" style="height: <%= ((val - 44) / 10) * 100 %>%; background: <%= val >= 50 ? 'linear-gradient(180deg, var(--positive-green), rgba(52, 211, 153, 0.2))' : 'linear-gradient(180deg, #ef4444, rgba(239, 68, 68, 0.2))' %>"></div>
+          <% }) %>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Economic Cycle Position & Yield Curve -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in animate-delay-3">
+
+      <!-- Economic Cycle Position -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h2 class="premium-card-title flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Economic Cycle Position
+          </h2>
+          <span class="premium-badge premium-badge-warning"><%= economicCycle.position %> Cycle</span>
+        </div>
+
+        <div class="relative mb-8">
+          <!-- Economic Cycle Gauge -->
+          <div class="economic-gauge cycle-position-<%= economicCycle.position.toLowerCase() %>">
+            <svg viewBox="0 0 240 130" class="w-full h-full">
+              <!-- Background arc -->
+              <path d="M 20 100 A 100 100 0 0 1 220 100" class="gauge-arc gauge-bg"/>
+
+              <!-- Colored sections -->
+              <path d="M 20 100 A 100 100 0 0 1 70 26" class="gauge-arc gauge-early" stroke-dasharray="94" stroke-dashoffset="0"/>
+              <path d="M 70 26 A 100 100 0 0 1 120 5" class="gauge-arc gauge-mid" stroke-dasharray="60" stroke-dashoffset="0"/>
+              <path d="M 120 5 A 100 100 0 0 1 170 26" class="gauge-arc gauge-late" stroke-dasharray="60" stroke-dashoffset="0"/>
+              <path d="M 170 26 A 100 100 0 0 1 220 100" class="gauge-arc gauge-recession" stroke-dasharray="94" stroke-dashoffset="0"/>
+
+              <!-- Needle -->
+              <polygon points="120,20 116,100 124,100" class="gauge-needle"/>
+              <circle cx="120" cy="100" r="8" fill="#fafafa"/>
+            </svg>
+
+            <!-- Labels -->
+            <span class="cycle-label" style="bottom: 0; left: 0;">Early</span>
+            <span class="cycle-label" style="top: 20px; left: 30px;">Mid</span>
+            <span class="cycle-label" style="top: 20px; right: 30px;">Late</span>
+            <span class="cycle-label" style="bottom: 0; right: 0;">Recession</span>
+          </div>
+        </div>
+
+        <div class="text-center mb-6">
+          <div class="text-3xl font-bold text-primary mb-1"><%= economicCycle.position %> Cycle</div>
+          <div class="text-sm text-tertiary">Confidence: <%= economicCycle.confidence %>%</div>
+        </div>
+
+        <!-- Cycle Indicators -->
+        <div class="grid grid-cols-2 gap-3">
+          <% Object.entries(economicCycle.indicators).forEach(([key, value]) => { %>
+            <div class="flex items-center justify-between p-3 rounded-lg bg-elevated">
+              <span class="text-sm text-secondary capitalize"><%= key.replace(/([A-Z])/g, ' $1').trim() %></span>
+              <span class="premium-badge <%= value === 'positive' || value === 'strong' ? 'premium-badge-success' : value === 'inverted' || value === 'elevated' ? 'premium-badge-warning' : 'premium-badge-neutral' %>">
+                <%= value %>
+              </span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Yield Curve Visualization -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h2 class="premium-card-title flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+            </svg>
+            Treasury Yield Curve
+          </h2>
+          <span class="premium-badge premium-badge-danger">Inverted</span>
+        </div>
+
+        <div class="yield-curve-chart">
+          <% Object.entries(yieldCurve).forEach(([maturity, yield_val]) => { %>
+            <div class="flex flex-col items-center gap-2">
+              <div class="yield-bar <%= ['2Y', '3Y', '5Y'].includes(maturity) && yieldCurve['2Y'] > yieldCurve['10Y'] ? 'inverted' : '' %>"
+                   style="height: <%= ((yield_val - 4) / 2) * 180 %>px"
+                   data-tooltip="<%= maturity %>: <%= yield_val.toFixed(2) %>%">
+                <div class="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-semibold text-primary">
+                  <%= yield_val.toFixed(2) %>%
+                </div>
+              </div>
+              <span class="text-xs text-tertiary font-semibold"><%= maturity %></span>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-xs text-tertiary mb-1">Short Term (3M)</div>
+            <div class="text-lg font-bold text-primary"><%= yieldCurve['3M'].toFixed(2) %>%</div>
+          </div>
+          <div>
+            <div class="text-xs text-tertiary mb-1">Mid Term (5Y)</div>
+            <div class="text-lg font-bold text-primary"><%= yieldCurve['5Y'].toFixed(2) %>%</div>
+          </div>
+          <div>
+            <div class="text-xs text-tertiary mb-1">Long Term (30Y)</div>
+            <div class="text-lg font-bold text-primary"><%= yieldCurve['30Y'].toFixed(2) %>%</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Fed Meeting Calendar & Sector Impact -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in animate-delay-4">
+
+      <!-- Fed Meeting Calendar -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h2 class="premium-card-title flex items-center gap-2">
+            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Fed Meeting Calendar
+          </h2>
+          <span class="text-xs text-tertiary">Rate change probabilities</span>
+        </div>
+
+        <div class="space-y-3">
+          <% fedMeetings.forEach(meeting => { %>
+            <div class="fed-meeting-card">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <span class="text-purple-400 font-bold text-sm">
+                      <%= new Date(meeting.date).toLocaleDateString('en-US', { month: 'short' }) %>
+                    </span>
+                  </div>
+                  <div>
+                    <div class="font-semibold text-primary"><%= new Date(meeting.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %></div>
+                    <div class="text-xs text-tertiary">FOMC Meeting</div>
+                  </div>
+                </div>
+                <span class="premium-badge premium-badge-neutral">Pending</span>
+              </div>
+
+              <!-- Probability Bars -->
+              <div class="space-y-2">
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-tertiary w-12">Hike</span>
+                  <div class="flex-1 bg-elevated rounded-full overflow-hidden">
+                    <div class="prob-bar prob-hike" style="width: <%= meeting.rateHikeProb %>%"></div>
+                  </div>
+                  <span class="text-xs font-mono text-red-400 w-10 text-right"><%= meeting.rateHikeProb %>%</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-tertiary w-12">Hold</span>
+                  <div class="flex-1 bg-elevated rounded-full overflow-hidden">
+                    <div class="prob-bar prob-hold" style="width: <%= meeting.holdProb %>%"></div>
+                  </div>
+                  <span class="text-xs font-mono text-gray-400 w-10 text-right"><%= meeting.holdProb %>%</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-xs text-tertiary w-12">Cut</span>
+                  <div class="flex-1 bg-elevated rounded-full overflow-hidden">
+                    <div class="prob-bar prob-cut" style="width: <%= meeting.rateCutProb %>%"></div>
+                  </div>
+                  <span class="text-xs font-mono text-emerald-400 w-10 text-right"><%= meeting.rateCutProb %>%</span>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Sector Impact Analysis -->
+      <div class="premium-card">
+        <div class="premium-card-header">
+          <h2 class="premium-card-title flex items-center gap-2">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+            </svg>
+            Portfolio Sector Impact
+          </h2>
+          <span class="text-xs text-tertiary">Based on current indicators</span>
+        </div>
+
+        <div class="space-y-4">
+          <% sectorImpact.forEach(sector => { %>
+            <div class="p-3 rounded-lg bg-elevated">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-semibold text-sm text-primary"><%= sector.sector %></span>
+                <span class="premium-badge <%= sector.currentOutlook === 'bullish' ? 'premium-badge-success' : sector.currentOutlook === 'bearish' ? 'premium-badge-danger' : 'premium-badge-neutral' %>">
+                  <%= sector.currentOutlook %>
+                </span>
+              </div>
+              <div class="flex items-center gap-3 mb-2">
+                <div class="sector-impact-bar flex-1">
+                  <div class="sector-impact-fill <%= sector.score >= 60 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400' : sector.score >= 40 ? 'bg-gradient-to-r from-amber-600 to-amber-400' : 'bg-gradient-to-r from-red-600 to-red-400' %>"
+                       style="width: <%= sector.score %>%"></div>
+                </div>
+                <span class="text-sm font-mono font-semibold <%= sector.score >= 60 ? 'text-emerald-400' : sector.score >= 40 ? 'text-amber-400' : 'text-red-400' %>"><%= sector.score %></span>
+              </div>
+              <div class="flex gap-4 text-xs">
+                <span class="text-tertiary">Rates: <span class="text-secondary"><%= sector.ratesSensitivity %></span></span>
+                <span class="text-tertiary">Inflation: <span class="text-secondary"><%= sector.inflationImpact %></span></span>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Historical Charts Section -->
+    <div class="premium-card animate-in animate-delay-5">
+      <div class="premium-card-header">
+        <h2 class="premium-card-title flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Historical Indicator Trends
+        </h2>
+        <div class="premium-tabs">
+          <button class="premium-tab active" onclick="showHistoricalChart('cpi')">CPI</button>
+          <button class="premium-tab" onclick="showHistoricalChart('gdp')">GDP</button>
+          <button class="premium-tab" onclick="showHistoricalChart('unemployment')">Unemployment</button>
+          <button class="premium-tab" onclick="showHistoricalChart('treasury')">Treasury</button>
+        </div>
+      </div>
+
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="historicalChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Historical Data for Charts
+  const historicalData = {
+    cpi: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      data: [6.4, 6.0, 5.0, 4.9, 4.0, 3.0, 3.2, 3.7, 3.7, 3.2, 3.1, 3.4],
+      label: 'CPI YoY %',
+      color: '#f59e0b',
+      target: 2.0
+    },
+    gdp: {
+      labels: ['Q1 2022', 'Q2 2022', 'Q3 2022', 'Q4 2022', 'Q1 2023', 'Q2 2023', 'Q3 2023', 'Q4 2023'],
+      data: [-1.6, -0.6, 3.2, 2.6, 2.0, 2.1, 4.9, 3.3],
+      label: 'GDP Growth QoQ %',
+      color: '#10b981'
+    },
+    unemployment: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      data: [3.4, 3.4, 3.5, 3.4, 3.7, 3.6, 3.5, 3.8, 3.8, 3.8, 3.7, 3.7],
+      label: 'Unemployment Rate %',
+      color: '#6366f1'
+    },
+    treasury: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      data: [3.88, 3.92, 3.48, 3.44, 3.65, 3.84, 4.01, 4.25, 4.57, 4.93, 4.45, 4.28],
+      label: '10-Year Treasury Yield %',
+      color: '#8b5cf6'
+    }
+  };
+
+  let historicalChart = null;
+
+  function showHistoricalChart(type) {
+    // Update active tab
+    document.querySelectorAll('.premium-tab').forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const data = historicalData[type];
+    const ctx = document.getElementById('historicalChart').getContext('2d');
+
+    if (historicalChart) {
+      historicalChart.destroy();
+    }
+
+    const datasets = [{
+      label: data.label,
+      data: data.data,
+      borderColor: data.color,
+      backgroundColor: data.color + '20',
+      fill: true,
+      tension: 0.4,
+      borderWidth: 2,
+      pointBackgroundColor: data.color,
+      pointBorderColor: '#fafafa',
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }];
+
+    // Add target line for CPI
+    if (type === 'cpi' && data.target) {
+      datasets.push({
+        label: 'Fed Target',
+        data: Array(data.data.length).fill(data.target),
+        borderColor: '#ef4444',
+        borderDash: [5, 5],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      });
+    }
+
+    historicalChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.labels,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              color: '#a1a1aa',
+              font: { family: 'Inter', size: 12, weight: '500' },
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 15, 17, 0.95)',
+            titleColor: '#fafafa',
+            bodyColor: '#a1a1aa',
+            borderColor: 'rgba(99, 102, 241, 0.3)',
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#71717a',
+              font: { family: 'Inter', size: 11 }
+            }
+          },
+          y: {
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#71717a',
+              font: { family: 'Inter', size: 11 },
+              callback: function(value) {
+                return value.toFixed(1) + '%';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Initialize with CPI chart
+  document.addEventListener('DOMContentLoaded', function() {
+    showHistoricalChart('cpi');
+  });
+
+  // Animate gauge needle on load
+  document.addEventListener('DOMContentLoaded', function() {
+    const gauge = document.querySelector('.economic-gauge');
+    if (gauge) {
+      setTimeout(() => {
+        gauge.classList.add('animate-in');
+      }, 500);
+    }
+  });
+</script>
+
+<%- include('../partials/footer') %>

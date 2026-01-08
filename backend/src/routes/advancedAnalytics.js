@@ -905,12 +905,17 @@ router.get('/efficient-frontier', async (req, res) => {
       const sector = h.sector || quotes[h.symbol]?.sector || 'Unknown';
       const volatility = sectorVolatility[sector] || 0.22;
 
+      // Calculate expected return from actual cost basis vs current value
+      const actualReturn = cost > 0 ? (value - cost) / cost : 0;
+      // Annualize assuming 1 year holding period as baseline
+      const annualizedReturn = actualReturn;
+
       return {
         symbol: h.symbol,
         value,
         cost,
         volatility,
-        expectedReturn: 0.10 + (Math.random() - 0.5) * 0.1 // 5-15% expected return
+        expectedReturn: annualizedReturn
       };
     });
 
@@ -1361,11 +1366,29 @@ router.get('/client-reporting', async (req, res) => {
       if (drawdown < maxDrawdown) maxDrawdown = drawdown;
     });
 
-    // Calculate simple Sharpe ratio estimate
+    // Calculate Sharpe ratio from actual snapshot data
     const riskFreeRate = 4.5; // Current approx. risk-free rate
     const avgReturn = totalReturn;
-    const stdDev = 15; // Estimate - would calculate from historical returns
-    const sharpeRatio = (avgReturn - riskFreeRate) / stdDev;
+
+    // Calculate standard deviation from historical snapshots
+    let stdDev = 0;
+    if (snapshots.length >= 2) {
+      const returns = [];
+      for (let i = 1; i < snapshots.length; i++) {
+        const prevValue = snapshots[i - 1].totalValue;
+        const currValue = snapshots[i].totalValue;
+        if (prevValue > 0) {
+          returns.push(((currValue - prevValue) / prevValue) * 100);
+        }
+      }
+      if (returns.length > 0) {
+        const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const variance = returns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) / returns.length;
+        stdDev = Math.sqrt(variance) * Math.sqrt(252); // Annualized
+      }
+    }
+
+    const sharpeRatio = stdDev > 0 ? (avgReturn - riskFreeRate) / stdDev : 0;
 
     res.json({
       ytdReturn: parseFloat(ytdReturn.toFixed(2)),
